@@ -135,14 +135,14 @@ const OrderForm = ({ user }) => {
   if (success) {
     return (
       <div className="max-w-2xl mx-auto text-center py-12">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-8">
+        <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-8 shadow-2xl">
           <div className="flex justify-center mb-4">
-            <div className="p-3 rounded-full bg-green-100">
-              <ChefHat className="h-8 w-8 text-green-600" />
+            <div className="p-4 rounded-full bg-green-100">
+              <ChefHat className="h-12 w-12 text-green-600" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
-          <p className="text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
+          <h2 className="text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
+          <p className="text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
           <p className="text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
         </div>
       </div>
@@ -152,14 +152,14 @@ const OrderForm = ({ user }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Nuevo Pedido</h1>
-        <p className="mt-2 text-gray-600">Selecciona tu comida y completa la información</p>
+        <h1 className="text-4xl font-bold text-white drop-shadow-lg">Nuevo Pedido</h1>
+        <p className="mt-2 text-xl text-white/90 drop-shadow">Selecciona tu comida y completa la información</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Información Personal */}
-        <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Información Personal</h2>
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Información Personal</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -224,8 +224,8 @@ const OrderForm = ({ user }) => {
         </div>
 
         {/* Selección de Menú */}
-        <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Selección de Menú</h2>
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Selecciona tu Comida</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {menuItems.map((item) => (
@@ -267,8 +267,8 @@ const OrderForm = ({ user }) => {
 
         {/* Resumen del Pedido */}
         {getSelectedItemsList().length > 0 && (
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Resumen del Pedido</h2>
+          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Resumen del Pedido</h2>
 
             <div className="space-y-3 mb-6">
               {getSelectedItemsList().map((item) => (

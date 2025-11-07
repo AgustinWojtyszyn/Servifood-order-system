@@ -64,11 +64,11 @@ const Dashboard = ({ user }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-gray-600">Bienvenido de vuelta, {user?.email?.split('@')[0]}</p>
+          <h1 className="text-4xl font-bold text-white drop-shadow-lg">Dashboard</h1>
+          <p className="mt-2 text-lg text-white/90 drop-shadow">Bienvenido de vuelta, {user?.email?.split('@')[0]}</p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <Link to="/order" className="btn-primary inline-flex items-center">
+          <Link to="/order" className="btn-primary inline-flex items-center bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
             <Plus className="h-5 w-5 mr-2" />
             Nuevo Pedido
           </Link>
@@ -77,48 +77,48 @@ const Dashboard = ({ user }) => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card">
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-primary-100">
               <ShoppingCart className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Pedidos</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-sm font-semibold text-gray-600">Total Pedidos</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
             </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-yellow-100">
               <Clock className="h-6 w-6 text-yellow-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pendientes</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+              <p className="text-sm font-semibold text-gray-600">Pendientes</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
             </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-green-100">
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Completados</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+              <p className="text-sm font-semibold text-gray-600">Completados</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.completed}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Recent Orders */}
-      <div className="card">
+      <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Pedidos Recientes</h2>
-          <Link to="/order" className="text-primary-600 hover:text-primary-500 text-sm font-medium">
+          <h2 className="text-2xl font-bold text-gray-900">Pedidos Recientes</h2>
+          <Link to="/order" className="text-secondary-600 hover:text-secondary-700 text-sm font-semibold">
             Ver todos
           </Link>
         </div>

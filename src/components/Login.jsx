@@ -46,18 +46,18 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <div className="bg-white p-4 rounded-2xl shadow-2xl transform hover:scale-105 transition-transform duration-300">
+            <div className="bg-white p-6 rounded-3xl shadow-2xl transform hover:scale-105 transition-transform duration-300">
               <img 
                 src={servifoodLogo} 
                 alt="Servifood Catering Logo" 
-                className="h-32 w-auto"
+                className="h-48 w-auto"
               />
             </div>
           </div>
-          <h2 className="mt-6 text-4xl font-extrabold text-white drop-shadow-lg">
+          <h2 className="mt-8 text-5xl font-extrabold text-white drop-shadow-2xl">
             Bienvenido
           </h2>
-          <p className="mt-3 text-lg text-primary-100">
+          <p className="mt-4 text-xl font-semibold text-white drop-shadow-lg">
             Inicia sesión para continuar
           </p>
           <p className="mt-2 text-sm text-primary-200">

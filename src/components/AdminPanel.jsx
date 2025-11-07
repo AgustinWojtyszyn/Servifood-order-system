@@ -134,19 +134,19 @@ const AdminPanel = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
-        <p className="mt-2 text-gray-600">Gestiona usuarios y menú del sistema</p>
+        <h1 className="text-4xl font-bold text-white drop-shadow-lg">Panel de Administración</h1>
+        <p className="mt-2 text-xl text-white/90 drop-shadow">Gestiona usuarios y menú del sistema</p>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b-2 border-white/30">
+        <nav className="-mb-0.5 flex space-x-8">
           <button
             onClick={() => setActiveTab('users')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-1 border-b-4 font-bold text-base transition-colors ${
               activeTab === 'users'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-secondary-500 text-white drop-shadow'
+                : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
             }`}
           >
             <Users className="h-5 w-5 inline mr-2" />
@@ -154,10 +154,10 @@ const AdminPanel = () => {
           </button>
           <button
             onClick={() => setActiveTab('menu')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-1 border-b-4 font-bold text-base transition-colors ${
               activeTab === 'menu'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-secondary-500 text-white drop-shadow'
+                : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
             }`}
           >
             <ChefHat className="h-5 w-5 inline mr-2" />
@@ -168,8 +168,8 @@ const AdminPanel = () => {
 
       {/* Users Tab */}
       {activeTab === 'users' && (
-        <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Gestión de Usuarios</h2>
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestión de Usuarios</h2>
 
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -235,9 +235,9 @@ const AdminPanel = () => {
 
       {/* Menu Tab */}
       {activeTab === 'menu' && (
-        <div className="card">
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Gestión del Menú</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Gestión del Menú</h2>
             {!editingMenu ? (
               <button
                 onClick={() => setEditingMenu(true)}

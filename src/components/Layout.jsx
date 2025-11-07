@@ -25,9 +25,9 @@ const Layout = ({ children, user }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
+    <div className="min-h-screen bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
       {/* Header */}
-      <header className="bg-gradient-to-r from-primary-700 to-primary-800 shadow-lg border-b-4 border-secondary-500">
+      <header className="bg-gradient-to-r from-primary-900 to-primary-800 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -41,14 +41,14 @@ const Layout = ({ children, user }) => {
                 <img 
                   src={servifoodLogo} 
                   alt="Servifood Logo" 
-                  className="h-10 w-auto rounded bg-white p-1"
+                  className="h-12 w-auto rounded bg-white p-1.5"
                 />
                 <span className="ml-3 text-xl font-bold text-white drop-shadow-lg">ServiFood Catering</span>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-white/90">Hola, {user?.email?.split('@')[0]}</span>
+              <span className="text-sm font-medium text-white drop-shadow">Hola, {user?.email?.split('@')[0]}</span>
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
@@ -64,17 +64,17 @@ const Layout = ({ children, user }) => {
         {/* Sidebar */}
         <aside className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-primary-600`}>
-          <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-50 to-primary-100">
+        } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500`}>
+          <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
             <img 
               src={servifoodLogo} 
               alt="Servifood Logo" 
-              className="h-10 w-auto rounded"
+              className="h-12 w-auto rounded bg-white p-1"
             />
-            <span className="ml-3 text-lg font-bold text-primary-900">ServiFood</span>
+            <span className="ml-3 text-lg font-bold text-white drop-shadow">ServiFood</span>
           </div>
 
-          <nav className="mt-8 px-4">
+          <nav className="mt-8 px-4 bg-gradient-to-b from-white to-primary-50 min-h-screen">
             <ul className="space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon
@@ -82,7 +82,7 @@ const Layout = ({ children, user }) => {
                   <li key={item.path}>
                     <Link
                       to={item.path}
-                      className="flex items-center px-4 py-3 text-gray-700 rounded-xl hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white font-medium transition-all duration-200 transform hover:scale-105"
+                      className="flex items-center px-4 py-3 text-gray-800 rounded-xl hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white font-semibold transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg"
                       onClick={() => setSidebarOpen(false)}
                     >
                       <Icon className="h-5 w-5 mr-3" />
