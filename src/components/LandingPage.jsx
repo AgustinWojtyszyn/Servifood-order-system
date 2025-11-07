@@ -29,21 +29,16 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen relative overflow-hidden" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
       {/* Animated Background Circles */}
-      <div className="absolute top-0 left-0 w-96 h-96 rounded-full blur-3xl animate-pulse" style={{backgroundColor: 'rgba(255, 152, 0, 0.3)'}}></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl animate-pulse" style={{backgroundColor: 'rgba(57, 73, 171, 0.3)', animationDelay: '1s'}}></div>
-      
       <div className="relative z-10">
         {/* Navigation */}
         <nav className="container mx-auto px-4 sm:px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-white p-2 rounded-xl shadow-2xl">
-                <img 
-                  src={servifoodLogo} 
-                  alt="Servifood Logo" 
-                  className="h-14 w-auto"
-                />
-              </div>
+              <img 
+                src={servifoodLogo} 
+                alt="Servifood Logo" 
+                className="h-16 sm:h-20 w-auto"
+              />
               <span className="text-xl sm:text-2xl font-extrabold text-white drop-shadow-lg hidden sm:inline">ServiFood Catering</span>
             </div>
             <div className="flex gap-3">
@@ -70,8 +65,18 @@ const LandingPage = () => {
         <div className="container mx-auto px-4 sm:px-6 py-12 sm:py-20 md:py-28">
           <div className="max-w-4xl mx-auto">
             <div className="text-white text-center">
+              {/* Logo y nombre de la empresa centrados */}
+              <div className="flex flex-col items-center mb-8">
+                <img 
+                  src={servifoodLogo} 
+                  alt="Servifood" 
+                  className="h-32 sm:h-40 w-auto mb-4"
+                />
+                <h2 className="text-2xl sm:text-3xl font-bold text-white">ServiFood Catering</h2>
+              </div>
+              
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold mb-6 leading-tight text-white">
-                🍽️ Tu Comida
+                Tu Comida
                 <span className="block mt-2" style={{color: '#ffa726'}}>A Un Click</span>
               </h1>
               <p className="text-lg sm:text-xl md:text-2xl mb-8 leading-relaxed font-semibold drop-shadow-lg" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
