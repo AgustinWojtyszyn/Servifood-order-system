@@ -134,7 +134,7 @@ const OrderForm = ({ user }) => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 p-6 flex items-center justify-center">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="max-w-2xl mx-auto text-center">
           <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-8 shadow-2xl">
             <div className="flex justify-center mb-4">
@@ -152,7 +152,7 @@ const OrderForm = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 p-6">
+    <div className="p-6">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center">
         <h1 className="text-5xl font-bold text-white drop-shadow-2xl mb-3">🍽️ Nuevo Pedido</h1>
