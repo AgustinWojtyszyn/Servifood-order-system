@@ -52,6 +52,16 @@ export const auth = {
     return { data, error }
   },
 
+  updateProfile: async (updates) => {
+    const { data, error } = await supabase.auth.updateUser({
+      email: updates.email,
+      data: {
+        full_name: updates.full_name
+      }
+    })
+    return { data, error }
+  },
+
   getUser: async () => {
     const { data: { user }, error } = await supabase.auth.getUser()
     return { user, error }

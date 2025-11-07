@@ -65,21 +65,21 @@ const ResetPassword = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+      <div className="min-h-screen flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
         <div className="max-w-md w-full">
-          <div className="text-center bg-white rounded-3xl shadow-2xl p-10 border-4 border-white/20">
-            <div className="flex justify-center mb-6">
-              <div className="bg-green-100 rounded-full p-4">
-                <CheckCircle className="h-20 w-20 text-green-600" />
+          <div className="text-center bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-10 border-4 border-white/20">
+            <div className="flex justify-center mb-4 sm:mb-6">
+              <div className="bg-green-100 rounded-full p-3 sm:p-4">
+                <CheckCircle className="h-14 w-14 sm:h-20 sm:w-20 text-green-600" />
               </div>
             </div>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-3 sm:mb-4">
               ¡Contraseña actualizada!
             </h2>
-            <p className="text-lg text-gray-600 mb-6">
+            <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
               Tu contraseña ha sido restablecida exitosamente.
             </p>
-            <p className="text-base text-gray-500">
+            <p className="text-sm sm:text-base text-gray-500">
               Redirigiendo al dashboard...
             </p>
           </div>
@@ -89,26 +89,26 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+      <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4 sm:mb-6">
             <img 
               src={servifoodLogo} 
               alt="Servifood Catering Logo" 
-              className="h-40 w-auto"
+              className="h-24 sm:h-32 md:h-40 w-auto"
             />
           </div>
-          <h2 className="mt-8 text-5xl font-extrabold text-white drop-shadow-2xl">
+          <h2 className="mt-4 sm:mt-8 text-3xl sm:text-4xl md:text-5xl font-extrabold text-white drop-shadow-2xl">
             Nueva Contraseña
           </h2>
-          <p className="mt-4 text-xl font-semibold text-white drop-shadow-lg">
+          <p className="mt-3 sm:mt-4 text-lg sm:text-xl font-semibold text-white drop-shadow-lg">
             Ingresa tu nueva contraseña
           </p>
         </div>
 
         <div className="card bg-white/95 backdrop-blur-sm shadow-2xl border-2 border-white/20">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-xl font-medium">
                 {error}

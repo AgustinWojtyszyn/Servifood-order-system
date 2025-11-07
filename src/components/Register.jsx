@@ -101,23 +101,23 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+    <div className="min-h-screen flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
       <div className="max-w-md w-full">
-        <div className="text-center mb-10">
-          <div className="flex justify-center mb-8">
+        <div className="text-center mb-6 sm:mb-10">
+          <div className="flex justify-center mb-4 sm:mb-8">
             <img 
               src={servifoodLogo} 
               alt="Servifood Catering Logo" 
-              className="h-40 w-auto"
+              className="h-24 sm:h-32 md:h-40 w-auto"
             />
           </div>
-          <h2 className="text-6xl font-extrabold text-white drop-shadow-2xl mb-3">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white drop-shadow-2xl mb-2 sm:mb-3">
             Crear Cuenta
           </h2>
-          <p className="text-2xl font-bold text-white drop-shadow-lg mb-3">
+          <p className="text-lg sm:text-xl md:text-2xl font-bold text-white drop-shadow-lg mb-2 sm:mb-3">
             ¡Únete a ServiFood!
           </p>
-          <p className="text-lg drop-shadow" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
+          <p className="text-sm sm:text-base md:text-lg drop-shadow" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
             ¿Ya tienes cuenta?{' '}
             <Link to="/login" className="font-bold hover:underline transition-colors" style={{color: '#ffa726'}}>
               Inicia sesión aquí
@@ -125,8 +125,8 @@ const Register = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-2xl p-8 border-4 border-white/20">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 border-4 border-white/20">
+          <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border-2 border-red-400 text-red-800 px-5 py-4 rounded-xl font-bold text-base">
                 {error}

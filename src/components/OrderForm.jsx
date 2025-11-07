@@ -160,17 +160,17 @@ const OrderForm = ({ user }) => {
 
   if (success) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-screen">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-8 shadow-2xl">
-            <div className="flex justify-center mb-4">
-              <div className="p-4 rounded-full bg-green-100">
-                <ChefHat className="h-12 w-12 text-green-600" />
+      <div className="p-3 sm:p-6 flex items-center justify-center min-h-screen">
+        <div className="max-w-2xl mx-auto text-center px-4">
+          <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            <div className="flex justify-center mb-3 sm:mb-4">
+              <div className="p-3 sm:p-4 rounded-full bg-green-100">
+                <ChefHat className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
-            <p className="text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
-            <p className="text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
+            <p className="text-base sm:text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
+            <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
           </div>
         </div>
       </div>
@@ -178,25 +178,25 @@ const OrderForm = ({ user }) => {
   }
 
   return (
-    <div className="p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="p-3 sm:p-6">
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         <div className="text-center">
-        <h1 className="text-5xl font-bold text-white drop-shadow-2xl mb-3">Nuevo Pedido</h1>
-        <p className="text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
-        <p className="text-lg text-white/90 mt-2">¡Es rápido y fácil!</p>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
+        <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
+        <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
         {/* Información Personal */}
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-3 rounded-xl">
-              <User className="h-6 w-6" />
+          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
+              <User className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Información Personal</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Información Personal</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Lugar de trabajo *
@@ -260,47 +260,47 @@ const OrderForm = ({ user }) => {
 
         {/* Selección de Menú */}
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
-              <ChefHat className="h-6 w-6" />
+          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 text-white p-2 sm:p-3 rounded-xl">
+              <ChefHat className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">Selecciona tu Menú</h2>
-              <p className="text-sm text-gray-600 font-medium mt-1">Elige uno o más platos disponibles</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Selecciona tu Menú</h2>
+              <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">Elige uno o más platos disponibles</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {menuItems.map((item) => (
-              <div key={item.id} className="border-2 border-gray-200 rounded-xl p-5 hover:border-primary-400 hover:shadow-lg transition-all bg-gradient-to-br from-white to-gray-50">
-                <div className="flex justify-between items-start mb-3">
+              <div key={item.id} className="border-2 border-gray-200 rounded-xl p-4 sm:p-5 hover:border-primary-400 hover:shadow-lg transition-all bg-gradient-to-br from-white to-gray-50">
+                <div className="flex justify-between items-start mb-2 sm:mb-3">
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900">{item.name}</h3>
+                    <h3 className="font-bold text-base sm:text-lg text-gray-900">{item.name}</h3>
                     {item.description && (
-                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">{item.description}</p>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between bg-gray-100 rounded-lg p-2">
                   <span className="text-xs font-semibold text-gray-600">CANTIDAD:</span>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) - 1)}
-                      className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors shadow"
+                      className="p-1.5 sm:p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors shadow"
                     >
-                      <Minus className="h-4 w-4" />
+                      <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
-                    <span className="w-10 text-center font-bold text-xl text-gray-900">
+                    <span className="w-8 sm:w-10 text-center font-bold text-lg sm:text-xl text-gray-900">
                       {selectedItems[item.id] || 0}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) + 1)}
-                      className="p-2 rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors shadow"
+                      className="p-1.5 sm:p-2 rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors shadow"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
                 </div>
@@ -312,36 +312,36 @@ const OrderForm = ({ user }) => {
         {/* Resumen del Pedido */}
         {getSelectedItemsList().length > 0 && (
           <div className="card bg-gradient-to-br from-green-50 to-emerald-50 backdrop-blur-sm shadow-xl border-2 border-green-300">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-3 rounded-xl">
-                <ShoppingCart className="h-6 w-6" />
+            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-2 sm:p-3 rounded-xl">
+                <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-gray-900">Resumen del Pedido</h2>
-                <p className="text-sm text-gray-700 font-semibold mt-1">Revisa tu selección antes de confirmar</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Resumen del Pedido</h2>
+                <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Revisa tu selección antes de confirmar</p>
               </div>
             </div>
 
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
               {getSelectedItemsList().map((item) => (
-                <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <div className="flex items-center">
-                    <span className="font-medium text-gray-900">{item.name}</span>
+                <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-2 border-b border-gray-100">
+                  <div className="flex items-center justify-between sm:justify-start">
+                    <span className="font-medium text-gray-900 text-sm sm:text-base">{item.name}</span>
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, 0)}
                       className="ml-2 p-1 rounded-full hover:bg-red-100 text-red-600"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
-                  <span className="text-gray-600">Cantidad: {selectedItems[item.id]}</span>
+                  <span className="text-gray-600 text-sm sm:text-base">Cantidad: {selectedItems[item.id]}</span>
                 </div>
               ))}
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <div className="flex justify-between items-center text-lg font-semibold">
+            <div className="border-t border-gray-200 pt-3 sm:pt-4">
+              <div className="flex justify-between items-center text-base sm:text-lg font-semibold">
                 <span>Total de items:</span>
                 <span>{calculateTotal()}</span>
               </div>
@@ -351,9 +351,9 @@ const OrderForm = ({ user }) => {
 
         {/* Información Adicional */}
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Información Adicional</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Información Adicional</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Fecha de entrega
@@ -369,7 +369,7 @@ const OrderForm = ({ user }) => {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Comentarios adicionales
             </label>
@@ -385,7 +385,7 @@ const OrderForm = ({ user }) => {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm sm:text-base">
             {error}
           </div>
         )}
@@ -394,16 +394,16 @@ const OrderForm = ({ user }) => {
           <button
             type="submit"
             disabled={loading || getSelectedItemsList().length === 0}
-            className="btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2"></div>
                 Creando pedido...
               </>
             ) : (
               <>
-                <ShoppingCart className="h-5 w-5 mr-2" />
+                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Crear Pedido
               </>
             )}

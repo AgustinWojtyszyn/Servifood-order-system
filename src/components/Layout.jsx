@@ -18,7 +18,7 @@ const Layout = ({ children, user }) => {
   const isAdmin = user?.user_metadata?.role === 'admin'
 
   const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: User },
+    { name: 'Panel Principal', path: '/dashboard', icon: User },
     { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
   ]
 

@@ -6,32 +6,32 @@ const Tutorial = ({ isOpen, onClose }) => {
 
   const steps = [
     {
-      title: '¡Bienvenido a ServiFood! 👋',
+      title: '¡Bienvenido a ServiFood!',
       content: 'Esta es tu plataforma para gestionar pedidos de comida de manera fácil y rápida. Te guiaremos por las funciones principales.',
       image: '🍽️'
     },
     {
-      title: 'Dashboard 📊',
-      content: 'En el dashboard puedes ver un resumen de todos tus pedidos: totales, pendientes y entregados. Aquí también verás tus pedidos más recientes.',
+      title: 'Panel Principal',
+      content: 'En el panel principal puedes ver un resumen de todos tus pedidos: totales, pendientes y completados. Aquí también verás tus pedidos más recientes.',
       image: '📈'
     },
     {
-      title: 'Crear Nuevo Pedido 🛒',
-      content: 'Haz clic en "Nuevo Pedido" para crear un pedido. Selecciona los platos del menú, completa tus datos y elige la fecha de entrega.',
+      title: 'Crear Nuevo Pedido',
+      content: 'Haz clic en "Nuevo Pedido" para crear un pedido. Selecciona los platos del menú, completa tus datos y elige la fecha de entrega. Recuerda: solo 1 menú principal y 1 ensalada por pedido.',
       image: '📝'
     },
     {
-      title: 'Gestionar Pedidos ✅',
-      content: 'Puedes marcar pedidos como entregados haciendo clic en el botón verde ✓. También puedes eliminar pedidos con el botón rojo 🗑️.',
+      title: 'Gestionar Pedidos',
+      content: 'Puedes marcar pedidos como entregados haciendo clic en el botón verde de verificación. Los pedidos completados aparecerán en su propia sección.',
       image: '⚙️'
     },
     {
-      title: 'Panel de Admin (Solo Admin) 👨‍💼',
-      content: 'Si eres administrador, puedes gestionar usuarios, cambiar roles y editar el menú de platos disponibles.',
+      title: 'Panel de Administrador (Solo Admin)',
+      content: 'Si eres administrador, puedes gestionar usuarios, cambiar roles y editar el menú de platos disponibles. También puedes agregar o eliminar opciones del menú.',
       image: '🔐'
     },
     {
-      title: '¡Listo para comenzar! 🎉',
+      title: '¡Listo para comenzar!',
       content: 'Ya conoces las funciones básicas. Puedes volver a ver este tutorial en cualquier momento desde el menú de ayuda.',
       image: '🚀'
     }
@@ -106,15 +106,18 @@ const Tutorial = ({ isOpen, onClose }) => {
           </div>
 
           {/* Navigation */}
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center gap-4">
             <button
               onClick={handlePrev}
               disabled={currentStep === 0}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
                 currentStep === 0
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-primary-600 hover:bg-primary-50'
+                  ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                  : 'text-white hover:shadow-lg transform hover:scale-105'
               }`}
+              style={currentStep === 0 ? {} : {background: 'linear-gradient(to right, #1a237e, #283593)'}}
+              onMouseEnter={(e) => currentStep !== 0 && (e.currentTarget.style.background = 'linear-gradient(to right, #283593, #303f9f)')}
+              onMouseLeave={(e) => currentStep !== 0 && (e.currentTarget.style.background = 'linear-gradient(to right, #1a237e, #283593)')}
             >
               <ChevronLeft className="h-5 w-5" />
               Anterior
@@ -122,7 +125,10 @@ const Tutorial = ({ isOpen, onClose }) => {
 
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+              className="flex items-center gap-2 px-6 py-3 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              style={{background: 'linear-gradient(to right, #1a237e, #283593)'}}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #283593, #303f9f)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #1a237e, #283593)'}
             >
               {currentStep === steps.length - 1 ? 'Finalizar' : 'Siguiente'}
               {currentStep < steps.length - 1 && <ChevronRight className="h-5 w-5" />}

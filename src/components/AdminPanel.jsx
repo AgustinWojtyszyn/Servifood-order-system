@@ -133,35 +133,35 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-3 sm:p-6 space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-5xl font-bold text-white drop-shadow-2xl mb-2">Panel de Administración</h1>
-        <p className="text-xl text-white/90 drop-shadow-lg mt-2">Gestiona usuarios y el menú de opciones</p>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2">Panel de Administración</h1>
+        <p className="text-base sm:text-lg md:text-xl text-white/90 drop-shadow-lg mt-2">Gestiona usuarios y el menú de opciones</p>
       </div>
 
       {/* Tabs */}
       <div className="border-b-2 border-white/30">
-        <nav className="-mb-0.5 flex space-x-8">
+        <nav className="-mb-0.5 flex space-x-4 sm:space-x-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab('users')}
-            className={`py-3 px-1 border-b-4 font-bold text-base transition-colors ${
+            className={`py-2 sm:py-3 px-1 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap ${
               activeTab === 'users'
                 ? 'border-secondary-500 text-white drop-shadow'
                 : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
             }`}
           >
-            <Users className="h-5 w-5 inline mr-2" />
+            <Users className="h-4 w-4 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
             Usuarios
           </button>
           <button
             onClick={() => setActiveTab('menu')}
-            className={`py-3 px-1 border-b-4 font-bold text-base transition-colors ${
+            className={`py-2 sm:py-3 px-1 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap ${
               activeTab === 'menu'
                 ? 'border-secondary-500 text-white drop-shadow'
                 : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
             }`}
           >
-            <ChefHat className="h-5 w-5 inline mr-2" />
+            <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
             Menú
           </button>
         </nav>
@@ -170,25 +170,25 @@ const AdminPanel = () => {
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6 drop-shadow">👥 Gestión de Usuarios</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 drop-shadow">👥 Gestión de Usuarios</h2>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gradient-to-r from-primary-600 to-primary-700">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
                     Usuario
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
                     Rol
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                  <th className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
                     Fecha de Registro
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
@@ -196,16 +196,16 @@ const AdminPanel = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-base font-bold text-gray-900">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm sm:text-base font-bold text-gray-900">
                         {user.user_metadata?.full_name || 'Sin nombre'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-base text-gray-900">{user.email}</div>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-xs sm:text-base text-gray-900 truncate max-w-[120px] sm:max-w-none">{user.email}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-3 py-1 text-sm font-bold rounded-full ${
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 sm:px-3 py-1 text-xs sm:text-sm font-bold rounded-full ${
                         user.user_metadata?.role === 'admin'
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-blue-100 text-blue-800'
@@ -213,10 +213,10 @@ const AdminPanel = () => {
                         {user.user_metadata?.role === 'admin' ? 'Admin' : 'Usuario'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                       {new Date(user.created_at).toLocaleDateString('es-ES')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                       <select
                         value={user.user_metadata?.role || 'user'}
                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
@@ -237,23 +237,23 @@ const AdminPanel = () => {
       {/* Menu Tab */}
       {activeTab === 'menu' && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Gestión del Menú</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Gestión del Menú</h2>
             {!editingMenu ? (
               <button
                 onClick={() => setEditingMenu(true)}
-                className="btn-primary flex items-center"
+                className="btn-primary flex items-center justify-center text-sm sm:text-base"
               >
-                <Edit3 className="h-5 w-5 mr-2" />
+                <Edit3 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Editar Menú
               </button>
             ) : (
               <div className="flex space-x-2">
                 <button
                   onClick={handleMenuUpdate}
-                  className="btn-primary flex items-center"
+                  className="btn-primary flex items-center text-sm sm:text-base px-3 sm:px-4 py-2"
                 >
-                  <Save className="h-5 w-5 mr-2" />
+                  <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                   Guardar
                 </button>
                 <button
@@ -261,9 +261,9 @@ const AdminPanel = () => {
                     setEditingMenu(false)
                     fetchData() // Reset changes
                   }}
-                  className="btn-secondary flex items-center"
+                  className="btn-secondary flex items-center text-sm sm:text-base px-3 sm:px-4 py-2"
                 >
-                  <X className="h-5 w-5 mr-2" />
+                  <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                   Cancelar
                 </button>
               </div>
@@ -271,36 +271,36 @@ const AdminPanel = () => {
           </div>
 
           {!editingMenu ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {menuItems.map((item, index) => (
-                <div key={item.id || index} className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900 mb-2">{item.name}</h3>
+                <div key={item.id || index} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">{item.name}</h3>
                   {item.description && (
-                    <p className="text-sm text-gray-600">{item.description}</p>
+                    <p className="text-xs sm:text-sm text-gray-600">{item.description}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-6">
-                <p className="text-blue-800 font-semibold text-center">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+                <p className="text-blue-800 font-semibold text-center text-sm sm:text-base">
                   Puedes agregar, editar o eliminar opciones del menú. Debe haber al menos un plato.
                 </p>
               </div>
               
               {newMenuItems.map((item, index) => (
-                <div key={index} className="flex items-center space-x-4 p-4 border-2 border-gray-200 rounded-xl bg-white">
-                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold">
+                <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:space-x-4 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-white">
+                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm sm:text-base">
                     {index + 1}
                   </div>
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex-1 grid grid-cols-1 gap-3 sm:gap-4">
                     <input
                       type="text"
                       placeholder="Nombre del plato"
                       value={item.name}
                       onChange={(e) => handleMenuItemChange(index, 'name', e.target.value)}
-                      className="input-field font-semibold"
+                      className="input-field font-semibold text-sm sm:text-base"
                       required
                     />
                     <input
@@ -308,24 +308,24 @@ const AdminPanel = () => {
                       placeholder="Descripción (opcional)"
                       value={item.description}
                       onChange={(e) => handleMenuItemChange(index, 'description', e.target.value)}
-                      className="input-field"
+                      className="input-field text-sm sm:text-base"
                     />
                   </div>
                   <button
                     onClick={() => removeMenuItem(index)}
-                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0"
+                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0 self-end sm:self-auto"
                     title="Eliminar plato"
                   >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
                 </div>
               ))}
               
               <button
                 onClick={addMenuItem}
-                className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-primary-300 rounded-xl text-primary-600 hover:bg-primary-50 hover:border-primary-500 transition-all font-semibold"
+                className="w-full flex items-center justify-center gap-2 p-3 sm:p-4 border-2 border-dashed border-primary-300 rounded-xl text-primary-600 hover:bg-primary-50 hover:border-primary-500 transition-all font-semibold text-sm sm:text-base"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                 Agregar nuevo plato
               </button>
             </div>

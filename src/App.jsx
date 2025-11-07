@@ -9,6 +9,7 @@ import ResetPassword from './components/ResetPassword'
 import Dashboard from './components/Dashboard'
 import AdminPanel from './components/AdminPanel'
 import OrderForm from './components/OrderForm'
+import Profile from './components/Profile'
 import LandingPage from './components/LandingPage'
 import './App.css'
 
@@ -62,6 +63,9 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/order" element={
             user ? <Layout user={user}><OrderForm user={user} /></Layout> : <Navigate to="/login" />
+          } />
+          <Route path="/profile" element={
+            user ? <Layout user={user}><Profile user={user} /></Layout> : <Navigate to="/login" />
           } />
           <Route path="/admin" element={
             user?.user_metadata?.role === 'admin' ? <Layout user={user}><AdminPanel /></Layout> : <Navigate to="/dashboard" />

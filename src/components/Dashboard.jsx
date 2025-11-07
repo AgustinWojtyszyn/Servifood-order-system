@@ -78,54 +78,54 @@ const Dashboard = ({ user }) => {
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-5xl font-bold text-white drop-shadow-2xl mb-2">Dashboard</h1>
-          <p className="mt-2 text-2xl text-white font-semibold drop-shadow-lg">¡Hola, {user?.email?.split('@')[0]}!</p>
-          <p className="text-lg text-white/90 mt-1">Aquí está el resumen de tus pedidos</p>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white drop-shadow-2xl mb-2">Panel Principal</h1>
+          <p className="mt-2 text-xl sm:text-2xl text-white font-semibold drop-shadow-lg">¡Hola, {user?.email?.split('@')[0]}!</p>
+          <p className="text-base sm:text-lg text-white/90 mt-1">Aquí está el resumen de tus pedidos</p>
         </div>
-        <div className="mt-4 sm:mt-0">
-          <Link to="/order" className="btn-primary inline-flex items-center bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-4 px-8 text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-            <Plus className="h-6 w-6 mr-2" />
+        <div className="mt-4 sm:mt-0 w-full sm:w-auto">
+          <Link to="/order" className="btn-primary inline-flex items-center justify-center w-full sm:w-auto bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+            <Plus className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
             Nuevo Pedido
           </Link>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         <div className="card bg-gradient-to-br from-white to-blue-50 shadow-2xl border-2 border-primary-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-4 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg">
-              <ShoppingCart className="h-8 w-8 text-white" />
+            <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg">
+              <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
-            <div className="ml-5">
-              <p className="text-base font-bold text-gray-700 uppercase tracking-wide">Total Pedidos</p>
-              <p className="text-5xl font-black text-primary-700 drop-shadow">{stats.total}</p>
+            <div className="ml-4 sm:ml-5">
+              <p className="text-sm sm:text-base font-bold text-gray-700 uppercase tracking-wide">Total Pedidos</p>
+              <p className="text-3xl sm:text-5xl font-black text-primary-700 drop-shadow">{stats.total}</p>
             </div>
           </div>
         </div>
 
         <div className="card bg-gradient-to-br from-white to-yellow-50 shadow-2xl border-2 border-yellow-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-4 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
-              <Clock className="h-8 w-8 text-white" />
+            <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
+              <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
-            <div className="ml-5">
-              <p className="text-base font-bold text-gray-700 uppercase tracking-wide">Pendientes</p>
-              <p className="text-5xl font-black text-yellow-700 drop-shadow">{stats.pending}</p>
+            <div className="ml-4 sm:ml-5">
+              <p className="text-sm sm:text-base font-bold text-gray-700 uppercase tracking-wide">Pendientes</p>
+              <p className="text-3xl sm:text-5xl font-black text-yellow-700 drop-shadow">{stats.pending}</p>
             </div>
           </div>
         </div>
 
         <div className="card bg-gradient-to-br from-white to-green-50 shadow-2xl border-2 border-green-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-4 rounded-full bg-gradient-to-br from-green-500 to-green-700 shadow-lg">
-              <CheckCircle className="h-8 w-8 text-white" />
+            <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-green-500 to-green-700 shadow-lg">
+              <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
-            <div className="ml-5">
-              <p className="text-base font-bold text-gray-700 uppercase tracking-wide">Completados</p>
-              <p className="text-5xl font-black text-green-600 drop-shadow">{stats.completed}</p>
+            <div className="ml-4 sm:ml-5">
+              <p className="text-sm sm:text-base font-bold text-gray-700 uppercase tracking-wide">Completados</p>
+              <p className="text-3xl sm:text-5xl font-black text-green-600 drop-shadow">{stats.completed}</p>
             </div>
           </div>
         </div>
@@ -152,31 +152,31 @@ const Dashboard = ({ user }) => {
         ) : (
           <div className="space-y-4">
             {orders.filter(o => o.status !== 'delivered').slice(0, 5).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
-                <div className="flex items-center space-x-4 flex-1">
-                  <div className={`p-2 rounded-full ${
+              <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
+                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                  <div className={`p-2 rounded-full flex-shrink-0 ${
                     order.status === 'delivered' ? 'bg-green-100' :
                     order.status === 'pending' ? 'bg-yellow-100' : 'bg-blue-100'
                   }`}>
                     {order.status === 'delivered' ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                     ) : order.status === 'pending' ? (
-                      <Clock className="h-5 w-5 text-yellow-600" />
+                      <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
                     ) : (
-                      <Package className="h-5 w-5 text-blue-600" />
+                      <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                       Pedido #{order.id.slice(-8)}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">
                       {order.location} • {formatDate(order.created_at)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start">
+                  <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
                     order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                     order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-blue-100 text-blue-800'
@@ -188,10 +188,10 @@ const Dashboard = ({ user }) => {
                   {order.status !== 'delivered' && (
                     <button
                       onClick={() => handleMarkAsDelivered(order.id)}
-                      className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                      className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors flex-shrink-0"
                       title="Marcar como entregado"
                     >
-                      <CheckCircle className="h-5 w-5" />
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
                   )}
                 </div>
@@ -213,22 +213,22 @@ const Dashboard = ({ user }) => {
 
           <div className="space-y-4">
             {orders.filter(o => o.status === 'delivered').slice(0, 10).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-4 border-2 border-green-200 bg-green-50 rounded-xl">
-                <div className="flex items-center space-x-4 flex-1">
-                  <div className="p-2 rounded-full bg-green-100">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+              <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-green-200 bg-green-50 rounded-xl">
+                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                  <div className="p-2 rounded-full bg-green-100 flex-shrink-0">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                       Pedido #{order.id.slice(-8)}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">
                       {order.location} • {formatDate(order.created_at)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                <div className="flex items-center gap-3 justify-end sm:justify-start">
+                  <span className="inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 whitespace-nowrap">
                     Entregado
                   </span>
                 </div>
