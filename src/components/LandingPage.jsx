@@ -68,8 +68,8 @@ const LandingPage = () => {
 
         {/* Hero Content */}
         <div className="container mx-auto px-4 sm:px-6 py-12 sm:py-20 md:py-28">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="text-white text-center md:text-left">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-white text-center">
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold mb-6 leading-tight text-white">
                 🍽️ Tu Comida
                 <span className="block mt-2" style={{color: '#ffa726'}}>A Un Click</span>
@@ -78,7 +78,7 @@ const LandingPage = () => {
                 La mejor plataforma para gestionar tus pedidos de comida de manera profesional. 
                 <span className="block mt-2">✨ Fácil, rápido y eficiente.</span>
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/register"
                   className="flex items-center justify-center gap-2 px-8 py-4 text-white font-bold text-lg rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200"
@@ -104,19 +104,6 @@ const LandingPage = () => {
                 >
                   🔑 Iniciar Sesión
                 </Link>
-              </div>
-            </div>
-
-            <div className="hidden md:block">
-              <div className="relative group">
-                <div className="absolute inset-0 rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity" style={{background: 'linear-gradient(to right, #ff9800, #3949ab)'}}></div>
-                <div className="relative bg-white p-8 rounded-3xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300">
-                  <img 
-                    src={servifoodLogo} 
-                    alt="Servifood" 
-                    className="w-full h-auto"
-                  />
-                </div>
               </div>
             </div>
           </div>
