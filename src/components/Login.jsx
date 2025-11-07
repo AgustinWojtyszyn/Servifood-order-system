@@ -7,7 +7,8 @@ import servifoodLogo from '../assets/servifood logo.jpg'
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    rememberMe: false
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -15,9 +16,10 @@ const Login = () => {
   const navigate = useNavigate()
 
   const handleChange = (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: value
     })
   }
 
@@ -27,7 +29,7 @@ const Login = () => {
     setError('')
 
     try {
-      const { error } = await auth.signIn(formData.email, formData.password)
+      const { error } = await auth.signIn(formData.email, formData.password, formData.rememberMe)
 
       if (error) {
         setError(error.message)
@@ -119,6 +121,20 @@ const Login = () => {
                   )}
                 </button>
               </div>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="rememberMe"
+                name="rememberMe"
+                type="checkbox"
+                checked={formData.rememberMe}
+                onChange={handleChange}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+              />
+              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700 font-medium cursor-pointer">
+                Mantener sesión iniciada
+              </label>
             </div>
 
             <div>

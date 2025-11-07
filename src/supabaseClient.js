@@ -19,10 +19,16 @@ export const auth = {
     return { data, error }
   },
 
-  signIn: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+  signIn: async (email, password, rememberMe = false) => {
+    const { data, error} = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
+      options: {
+        // Si rememberMe es true, la sesión persiste indefinidamente
+        // Si es false, la sesión solo dura mientras el navegador esté abierto
+        persistSession: true,
+        ...(rememberMe && { storageOptions: { type: 'local' } })
+      }
     })
     return { data, error }
   },

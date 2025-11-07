@@ -134,24 +134,24 @@ const Dashboard = ({ user }) => {
       {/* Recent Orders */}
       <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Pedidos Recientes</h2>
+          <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Pedidos Activos</h2>
           <Link to="/order" className="text-secondary-600 hover:text-secondary-700 text-lg font-bold hover:underline">
-            Ver todos →
+            Nuevo Pedido →
           </Link>
         </div>
 
-        {orders.length === 0 ? (
+        {orders.filter(o => o.status !== 'delivered').length === 0 ? (
           <div className="text-center py-12">
             <ChefHat className="h-20 w-20 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">No hay pedidos aún</h3>
-            <p className="text-xl text-gray-600 mb-6">¡Crea tu primer pedido para comenzar!</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">No hay pedidos activos</h3>
+            <p className="text-xl text-gray-600 mb-6">¡Crea un nuevo pedido para comenzar!</p>
             <Link to="/order" className="btn-primary bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-4 px-8 text-lg rounded-xl shadow-lg">
-              Crear Primer Pedido
+              Crear Pedido
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.slice(0, 5).map((order) => (
+            {orders.filter(o => o.status !== 'delivered').slice(0, 5).map((order) => (
               <div key={order.id} className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
                 <div className="flex items-center space-x-4 flex-1">
                   <div className={`p-2 rounded-full ${
@@ -200,6 +200,43 @@ const Dashboard = ({ user }) => {
           </div>
         )}
       </div>
+
+      {/* Completed Orders */}
+      {orders.filter(o => o.status === 'delivered').length > 0 && (
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Pedidos Completados</h2>
+            <span className="text-sm text-gray-600 font-semibold">
+              {orders.filter(o => o.status === 'delivered').length} completado(s)
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {orders.filter(o => o.status === 'delivered').slice(0, 10).map((order) => (
+              <div key={order.id} className="flex items-center justify-between p-4 border-2 border-green-200 bg-green-50 rounded-xl">
+                <div className="flex items-center space-x-4 flex-1">
+                  <div className="p-2 rounded-full bg-green-100">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">
+                      Pedido #{order.id.slice(-8)}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {order.location} • {formatDate(order.created_at)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                    Entregado
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
