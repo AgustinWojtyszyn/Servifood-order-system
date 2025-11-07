@@ -81,7 +81,9 @@ const Dashboard = ({ user }) => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-4xl sm:text-5xl font-bold text-white drop-shadow-2xl mb-2">Panel Principal</h1>
-          <p className="mt-2 text-xl sm:text-2xl text-white font-semibold drop-shadow-lg">¡Hola, {user?.email?.split('@')[0]}!</p>
+          <p className="mt-2 text-xl sm:text-2xl text-white font-semibold drop-shadow-lg">
+            ¡Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}!
+          </p>
           <p className="text-base sm:text-lg text-white/90 mt-1">Aquí está el resumen de tus pedidos</p>
         </div>
         <div className="mt-4 sm:mt-0 w-full sm:w-auto">

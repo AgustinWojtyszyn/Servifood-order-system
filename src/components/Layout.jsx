@@ -53,7 +53,9 @@ const Layout = ({ children, user }) => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className="text-base font-bold text-white drop-shadow-lg">Hola, {user?.email?.split('@')[0]}</span>
+              <span className="text-base font-bold text-white drop-shadow-lg">
+                Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              </span>
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
