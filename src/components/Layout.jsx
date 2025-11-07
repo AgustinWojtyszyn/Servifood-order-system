@@ -18,12 +18,12 @@ const Layout = ({ children, user }) => {
   const isAdmin = user?.user_metadata?.role === 'admin'
 
   const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: User },
-    { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
+    { name: '📊 Dashboard', path: '/dashboard', icon: User },
+    { name: '🛒 Nuevo Pedido', path: '/order', icon: ShoppingCart },
   ]
 
   if (isAdmin) {
-    menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
+    menuItems.push({ name: '⚙️ Panel Admin', path: '/admin', icon: Settings })
   }
 
   return (
@@ -50,7 +50,7 @@ const Layout = ({ children, user }) => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-white drop-shadow">Hola, {user?.email?.split('@')[0]}</span>
+              <span className="text-base font-bold text-white drop-shadow-lg">👋 Hola, {user?.email?.split('@')[0]}</span>
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
@@ -84,10 +84,10 @@ const Layout = ({ children, user }) => {
                   <li key={item.path}>
                     <Link
                       to={item.path}
-                      className="flex items-center px-4 py-3 text-gray-800 rounded-xl hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white font-semibold transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg"
+                      className="flex items-center px-4 py-3 text-gray-800 rounded-xl hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg"
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <Icon className="h-5 w-5 mr-3" />
+                      <Icon className="h-6 w-6 mr-3" />
                       {item.name}
                     </Link>
                   </li>
@@ -102,10 +102,10 @@ const Layout = ({ children, user }) => {
                   setTutorialOpen(true)
                   setSidebarOpen(false)
                 }}
-                className="flex items-center w-full px-4 py-3 text-primary-700 rounded-xl hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white font-semibold transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-primary-200 hover:border-transparent"
+                className="flex items-center w-full px-4 py-3 text-primary-700 rounded-xl hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-primary-200 hover:border-transparent"
               >
-                <HelpCircle className="h-5 w-5 mr-3" />
-                Ver Tutorial
+                <HelpCircle className="h-6 w-6 mr-3" />
+                ❓ Ver Tutorial
               </button>
               
               <button
@@ -113,10 +113,10 @@ const Layout = ({ children, user }) => {
                   handleLogout()
                   setSidebarOpen(false)
                 }}
-                className="flex items-center w-full px-4 py-3 text-red-700 rounded-xl hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700 hover:text-white font-semibold transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent"
+                className="flex items-center w-full px-4 py-3 text-red-700 rounded-xl hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700 hover:text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent"
               >
-                <LogOut className="h-5 w-5 mr-3" />
-                Cerrar Sesión
+                <LogOut className="h-6 w-6 mr-3" />
+                🚪 Cerrar Sesión
               </button>
             </div>
           </nav>

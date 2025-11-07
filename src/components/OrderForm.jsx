@@ -152,14 +152,20 @@ const OrderForm = ({ user }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-white drop-shadow-lg">Nuevo Pedido</h1>
-        <p className="mt-2 text-xl text-white/90 drop-shadow">Selecciona tu comida y completa la información</p>
+        <h1 className="text-5xl font-bold text-white drop-shadow-2xl mb-3">🍽️ Nuevo Pedido</h1>
+        <p className="text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
+        <p className="text-lg text-white/90 mt-2">¡Es rápido y fácil!</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Información Personal */}
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Información Personal</h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-3 rounded-xl">
+              <User className="h-6 w-6" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900">📋 Información Personal</h2>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -225,36 +231,45 @@ const OrderForm = ({ user }) => {
 
         {/* Selección de Menú */}
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Selecciona tu Comida</h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
+              <ChefHat className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">🍴 Selecciona tu Menú</h2>
+              <p className="text-sm text-gray-600 font-medium mt-1">Elige uno o más platos disponibles</p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {menuItems.map((item) => (
-              <div key={item.id} className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors">
+              <div key={item.id} className="border-2 border-gray-200 rounded-xl p-5 hover:border-primary-400 hover:shadow-lg transition-all bg-gradient-to-br from-white to-gray-50">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{item.name}</h3>
+                    <h3 className="font-bold text-lg text-gray-900">{item.name}</h3>
                     {item.description && (
                       <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-between bg-gray-100 rounded-lg p-2">
+                  <span className="text-xs font-semibold text-gray-600">CANTIDAD:</span>
+                  <div className="flex items-center space-x-3">
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) - 1)}
-                      className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                      className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors shadow"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
-                    <span className="w-8 text-center font-medium">
+                    <span className="w-10 text-center font-bold text-xl text-gray-900">
                       {selectedItems[item.id] || 0}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) + 1)}
-                      className="p-1 rounded-full bg-primary-100 hover:bg-primary-200 text-primary-600"
+                      className="p-2 rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors shadow"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -267,8 +282,16 @@ const OrderForm = ({ user }) => {
 
         {/* Resumen del Pedido */}
         {getSelectedItemsList().length > 0 && (
-          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Resumen del Pedido</h2>
+          <div className="card bg-gradient-to-br from-green-50 to-emerald-50 backdrop-blur-sm shadow-xl border-2 border-green-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-3 rounded-xl">
+                <ShoppingCart className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900">✅ Resumen del Pedido</h2>
+                <p className="text-sm text-gray-700 font-semibold mt-1">Revisa tu selección antes de confirmar</p>
+              </div>
+            </div>
 
             <div className="space-y-3 mb-6">
               {getSelectedItemsList().map((item) => (

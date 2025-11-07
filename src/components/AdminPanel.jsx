@@ -134,8 +134,8 @@ const AdminPanel = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-bold text-white drop-shadow-lg">Panel de Administración</h1>
-        <p className="mt-2 text-xl text-white/90 drop-shadow">Gestiona usuarios y menú del sistema</p>
+        <h1 className="text-5xl font-bold text-white drop-shadow-2xl mb-2">⚙️ Panel de Administración</h1>
+        <p className="text-xl text-white/90 drop-shadow-lg mt-2">Gestiona usuarios y el menú de opciones</p>
       </div>
 
       {/* Tabs */}
@@ -169,42 +169,42 @@ const AdminPanel = () => {
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestión de Usuarios</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6 drop-shadow">👥 Gestión de Usuarios</h2>
 
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gradient-to-r from-primary-600 to-primary-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Usuario
+                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                    👤 Usuario
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
+                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                    ✉️ Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rol
+                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                    🔑 Rol
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha de Registro
+                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                    📅 Fecha de Registro
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
+                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                    ⚡ Acciones
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-base font-bold text-gray-900">
                         {user.user_metadata?.full_name || 'Sin nombre'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.email}</div>
+                      <div className="text-base text-gray-900">{user.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      <span className={`inline-flex px-3 py-1 text-sm font-bold rounded-full ${
                         user.user_metadata?.role === 'admin'
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-blue-100 text-blue-800'
@@ -282,15 +282,25 @@ const AdminPanel = () => {
             </div>
           ) : (
             <div className="space-y-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-6">
+                <p className="text-blue-800 font-semibold text-center">
+                  ⚠️ Edita los nombres y descripciones de los platos. No puedes eliminar opciones del menú.
+                </p>
+              </div>
+              
               {newMenuItems.map((item, index) => (
-                <div key={index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                <div key={index} className="flex items-center space-x-4 p-4 border-2 border-gray-200 rounded-xl bg-white">
+                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold">
+                    {index + 1}
+                  </div>
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input
                       type="text"
                       placeholder="Nombre del plato"
                       value={item.name}
                       onChange={(e) => handleMenuItemChange(index, 'name', e.target.value)}
-                      className="input-field"
+                      className="input-field font-semibold"
+                      required
                     />
                     <input
                       type="text"
@@ -300,23 +310,8 @@ const AdminPanel = () => {
                       className="input-field"
                     />
                   </div>
-                  <button
-                    onClick={() => removeMenuItem(index)}
-                    disabled={newMenuItems.length <= 1}
-                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
                 </div>
               ))}
-
-              <button
-                onClick={addMenuItem}
-                className="btn-secondary flex items-center w-full justify-center"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Agregar Plato
-              </button>
             </div>
           )}
         </div>

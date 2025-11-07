@@ -96,51 +96,52 @@ const Dashboard = ({ user }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-white drop-shadow-lg">Dashboard</h1>
-          <p className="mt-2 text-lg text-white/90 drop-shadow">Bienvenido de vuelta, {user?.email?.split('@')[0]}</p>
+          <h1 className="text-5xl font-bold text-white drop-shadow-2xl mb-2">📊 Dashboard</h1>
+          <p className="mt-2 text-2xl text-white font-semibold drop-shadow-lg">¡Hola, {user?.email?.split('@')[0]}! 👋</p>
+          <p className="text-lg text-white/90 mt-1">Aquí está el resumen de tus pedidos</p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <Link to="/order" className="btn-primary inline-flex items-center bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-            <Plus className="h-5 w-5 mr-2" />
-            Nuevo Pedido
+          <Link to="/order" className="btn-primary inline-flex items-center bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-4 px-8 text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+            <Plus className="h-6 w-6 mr-2" />
+            ➕ Nuevo Pedido
           </Link>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+        <div className="card bg-gradient-to-br from-white to-blue-50 shadow-2xl border-2 border-primary-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-primary-100">
-              <ShoppingCart className="h-6 w-6 text-primary-600" />
+            <div className="p-4 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg">
+              <ShoppingCart className="h-8 w-8 text-white" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-semibold text-gray-600">Total Pedidos</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+            <div className="ml-5">
+              <p className="text-base font-bold text-gray-700 uppercase tracking-wide">📦 Total Pedidos</p>
+              <p className="text-5xl font-black text-primary-700 drop-shadow">{stats.total}</p>
             </div>
           </div>
         </div>
 
-        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+        <div className="card bg-gradient-to-br from-white to-yellow-50 shadow-2xl border-2 border-yellow-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-yellow-100">
-              <Clock className="h-6 w-6 text-yellow-600" />
+            <div className="p-4 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
+              <Clock className="h-8 w-8 text-white" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-semibold text-gray-600">Pendientes</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
+            <div className="ml-5">
+              <p className="text-base font-bold text-gray-700 uppercase tracking-wide">⏰ Pendientes</p>
+              <p className="text-5xl font-black text-yellow-600 drop-shadow">{stats.pending}</p>
             </div>
           </div>
         </div>
 
-        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+        <div className="card bg-gradient-to-br from-white to-green-50 shadow-2xl border-2 border-green-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-green-100">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="p-4 rounded-full bg-gradient-to-br from-green-500 to-green-700 shadow-lg">
+              <CheckCircle className="h-8 w-8 text-white" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-semibold text-gray-600">Completados</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.completed}</p>
+            <div className="ml-5">
+              <p className="text-base font-bold text-gray-700 uppercase tracking-wide">✅ Completados</p>
+              <p className="text-5xl font-black text-green-600 drop-shadow">{stats.completed}</p>
             </div>
           </div>
         </div>
@@ -149,19 +150,19 @@ const Dashboard = ({ user }) => {
       {/* Recent Orders */}
       <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Pedidos Recientes</h2>
-          <Link to="/order" className="text-secondary-600 hover:text-secondary-700 text-sm font-semibold">
-            Ver todos
+          <h2 className="text-3xl font-bold text-gray-900 drop-shadow">🛍️ Pedidos Recientes</h2>
+          <Link to="/order" className="text-secondary-600 hover:text-secondary-700 text-lg font-bold hover:underline">
+            Ver todos →
           </Link>
         </div>
 
         {orders.length === 0 ? (
           <div className="text-center py-12">
-            <ChefHat className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay pedidos aún</h3>
-            <p className="text-gray-600 mb-6">¡Crea tu primer pedido para comenzar!</p>
-            <Link to="/order" className="btn-primary">
-              Crear Primer Pedido
+            <ChefHat className="h-20 w-20 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">📭 No hay pedidos aún</h3>
+            <p className="text-xl text-gray-600 mb-6">¡Crea tu primer pedido para comenzar!</p>
+            <Link to="/order" className="btn-primary bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-4 px-8 text-lg rounded-xl shadow-lg">
+              ➕ Crear Primer Pedido
             </Link>
           </div>
         ) : (
