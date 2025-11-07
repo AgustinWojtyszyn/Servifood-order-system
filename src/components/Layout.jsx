@@ -27,9 +27,9 @@ const Layout = ({ children, user }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
       {/* Header */}
-      <header className="bg-gradient-to-r from-primary-900 to-primary-800 shadow-2xl border-b-4 border-secondary-500">
+      <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -139,7 +139,7 @@ const Layout = ({ children, user }) => {
         )}
 
         {/* Main content */}
-        <main className="flex-1 md:ml-0 bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 min-h-screen">
+        <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 min-h-screen">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
