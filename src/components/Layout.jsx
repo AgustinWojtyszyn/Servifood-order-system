@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
+import Tutorial from './Tutorial'
 
 const Layout = ({ children, user }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [tutorialOpen, setTutorialOpen] = useState(false)
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -16,7 +18,7 @@ const Layout = ({ children, user }) => {
   const isAdmin = user?.user_metadata?.role === 'admin'
 
   const menuItems = [
-    { name: 'Dashboard', path: '/', icon: User },
+    { name: 'Dashboard', path: '/dashboard', icon: User },
     { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
   ]
 
@@ -94,7 +96,18 @@ const Layout = ({ children, user }) => {
             </ul>
 
             {/* Logout Button */}
-            <div className="mt-auto mb-6">
+            <div className="mt-auto mb-6 space-y-3">
+              <button
+                onClick={() => {
+                  setTutorialOpen(true)
+                  setSidebarOpen(false)
+                }}
+                className="flex items-center w-full px-4 py-3 text-primary-700 rounded-xl hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white font-semibold transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-primary-200 hover:border-transparent"
+              >
+                <HelpCircle className="h-5 w-5 mr-3" />
+                Ver Tutorial
+              </button>
+              
               <button
                 onClick={() => {
                   handleLogout()
@@ -132,6 +145,9 @@ const Layout = ({ children, user }) => {
           </div>
         </main>
       </div>
+      
+      {/* Tutorial Modal */}
+      <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </div>
   )
 }

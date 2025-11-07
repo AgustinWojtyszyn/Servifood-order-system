@@ -7,6 +7,7 @@ import Register from './components/Register'
 import Dashboard from './components/Dashboard'
 import AdminPanel from './components/AdminPanel'
 import OrderForm from './components/OrderForm'
+import LandingPage from './components/LandingPage'
 import './App.css'
 
 function App() {
@@ -42,19 +43,22 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <Routes>
           <Route path="/" element={
+            user ? <Navigate to="/dashboard" /> : <LandingPage />
+          } />
+          <Route path="/dashboard" element={
             user ? <Layout user={user}><Dashboard user={user} /></Layout> : <Navigate to="/login" />
           } />
           <Route path="/login" element={
-            user ? <Navigate to="/" /> : <Login />
+            user ? <Navigate to="/dashboard" /> : <Login />
           } />
           <Route path="/register" element={
-            user ? <Navigate to="/" /> : <Register />
+            user ? <Navigate to="/dashboard" /> : <Register />
           } />
           <Route path="/order" element={
             user ? <Layout user={user}><OrderForm user={user} /></Layout> : <Navigate to="/login" />
           } />
           <Route path="/admin" element={
-            user?.user_metadata?.role === 'admin' ? <Layout user={user}><AdminPanel /></Layout> : <Navigate to="/" />
+            user?.user_metadata?.role === 'admin' ? <Layout user={user}><AdminPanel /></Layout> : <Navigate to="/dashboard" />
           } />
           <Route path="/auth/callback" element={<AuthCallback />} />
         </Routes>
@@ -72,7 +76,7 @@ function AuthCallback() {
         console.error('Error en callback de auth:', error)
       }
       // Redirigir al dashboard
-      window.location.href = '/'
+      window.location.href = '/dashboard'
     }
 
     handleAuthCallback()

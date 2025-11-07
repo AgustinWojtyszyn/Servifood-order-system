@@ -84,6 +84,23 @@ export const db = {
     return { data, error }
   },
 
+  updateOrderStatus: async (orderId, status) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', orderId)
+      .select()
+    return { data, error }
+  },
+
+  deleteOrder: async (orderId) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId)
+    return { data, error }
+  },
+
   // Menú
   getMenuItems: async () => {
     const { data, error } = await supabase

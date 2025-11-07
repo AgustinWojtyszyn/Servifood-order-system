@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus } from 'lucide-react'
+import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Trash2, Package } from 'lucide-react'
 
 const Dashboard = ({ user }) => {
   const [orders, setOrders] = useState([])
@@ -49,6 +49,38 @@ const Dashboard = ({ user }) => {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const handleMarkAsDelivered = async (orderId) => {
+    if (confirm('¿Marcar este pedido como entregado?')) {
+      try {
+        const { error } = await db.updateOrderStatus(orderId, 'delivered')
+        if (error) {
+          alert('Error al actualizar el pedido')
+        } else {
+          fetchOrders() // Recargar pedidos
+        }
+      } catch (err) {
+        console.error('Error:', err)
+        alert('Error al actualizar el pedido')
+      }
+    }
+  }
+
+  const handleDeleteOrder = async (orderId) => {
+    if (confirm('¿Estás seguro de que quieres eliminar este pedido?')) {
+      try {
+        const { error } = await db.deleteOrder(orderId)
+        if (error) {
+          alert('Error al eliminar el pedido')
+        } else {
+          fetchOrders() // Recargar pedidos
+        }
+      } catch (err) {
+        console.error('Error:', err)
+        alert('Error al eliminar el pedido')
+      }
+    }
   }
 
   if (loading) {
@@ -135,22 +167,22 @@ const Dashboard = ({ user }) => {
         ) : (
           <div className="space-y-4">
             {orders.slice(0, 5).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <div className="flex items-center space-x-4">
+              <div key={order.id} className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
+                <div className="flex items-center space-x-4 flex-1">
                   <div className={`p-2 rounded-full ${
-                    order.status === 'completed' ? 'bg-green-100' :
-                    order.status === 'pending' ? 'bg-yellow-100' : 'bg-gray-100'
+                    order.status === 'delivered' ? 'bg-green-100' :
+                    order.status === 'pending' ? 'bg-yellow-100' : 'bg-blue-100'
                   }`}>
-                    {order.status === 'completed' ? (
+                    {order.status === 'delivered' ? (
                       <CheckCircle className="h-5 w-5 text-green-600" />
                     ) : order.status === 'pending' ? (
                       <Clock className="h-5 w-5 text-yellow-600" />
                     ) : (
-                      <ShoppingCart className="h-5 w-5 text-gray-600" />
+                      <Package className="h-5 w-5 text-blue-600" />
                     )}
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">
                       Pedido #{order.id.slice(-8)}
                     </p>
                     <p className="text-sm text-gray-600">
@@ -158,15 +190,33 @@ const Dashboard = ({ user }) => {
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                    order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                     order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
+                    'bg-blue-100 text-blue-800'
                   }`}>
-                    {order.status === 'completed' ? 'Completado' :
-                     order.status === 'pending' ? 'Pendiente' : 'Procesando'}
+                    {order.status === 'delivered' ? 'Entregado' :
+                     order.status === 'pending' ? 'Pendiente' : 'En Proceso'}
                   </span>
+                  
+                  {order.status !== 'delivered' && (
+                    <button
+                      onClick={() => handleMarkAsDelivered(order.id)}
+                      className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                      title="Marcar como entregado"
+                    >
+                      <CheckCircle className="h-5 w-5" />
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={() => handleDeleteOrder(order.id)}
+                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                    title="Eliminar pedido"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
             ))}
