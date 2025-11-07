@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
-import { Menu, X, User, LogOut, ChefHat, ShoppingCart, Settings } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings } from 'lucide-react'
+import servifoodLogo from '../assets/servifood logo.jpg'
 
 const Layout = ({ children, user }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -37,8 +38,12 @@ const Layout = ({ children, user }) => {
                 <Menu className="h-6 w-6" />
               </button>
               <div className="flex items-center ml-4 md:ml-0">
-                <ChefHat className="h-8 w-8 text-primary-600" />
-                <span className="ml-2 text-xl font-bold text-gray-900">ServiFood</span>
+                <img 
+                  src={servifoodLogo} 
+                  alt="Servifood Logo" 
+                  className="h-10 w-auto rounded"
+                />
+                <span className="ml-3 text-xl font-bold text-gray-900">ServiFood Catering</span>
               </div>
             </div>
 
@@ -61,8 +66,12 @@ const Layout = ({ children, user }) => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0`}>
           <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
-            <ChefHat className="h-8 w-8 text-primary-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">ServiFood</span>
+            <img 
+              src={servifoodLogo} 
+              alt="Servifood Logo" 
+              className="h-10 w-auto rounded"
+            />
+            <span className="ml-3 text-lg font-bold text-gray-900">ServiFood</span>
           </div>
 
           <nav className="mt-8 px-4">

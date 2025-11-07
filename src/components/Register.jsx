@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
-import { ChefHat, Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle } from 'lucide-react'
+import servifoodLogo from '../assets/servifood logo.jpg'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -97,7 +98,11 @@ const Register = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <ChefHat className="h-16 w-16 text-primary-600" />
+            <img 
+              src={servifoodLogo} 
+              alt="Servifood Catering Logo" 
+              className="h-24 w-auto rounded-lg shadow-lg"
+            />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Crear Cuenta
