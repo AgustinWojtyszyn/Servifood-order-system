@@ -65,12 +65,10 @@ const AdminPanel = () => {
       const { error } = await db.updateUserRole(userId, newRole)
       if (error) {
         console.error('Error updating role:', error)
-        alert('Error al actualizar el rol del usuario')
+        alert('Error al actualizar el rol del usuario: ' + error.message)
       } else {
-        // Update local state
-        setUsers(users.map(user =>
-          user.id === userId ? { ...user, role: newRole } : user
-        ))
+        // Refrescar datos para obtener el cambio actualizado
+        await fetchData()
         alert('Rol actualizado exitosamente')
       }
     } catch (err) {
@@ -226,7 +224,7 @@ const AdminPanel = () => {
                   <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div className="text-sm sm:text-base font-bold text-gray-900">
-                        {user.user_metadata?.full_name || 'Sin nombre'}
+                        {user.full_name || user.email || 'Sin nombre'}
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
@@ -234,11 +232,11 @@ const AdminPanel = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 sm:px-3 py-1 text-xs sm:text-sm font-bold rounded-full ${
-                        user.user_metadata?.role === 'admin'
+                        user.role === 'admin'
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {user.user_metadata?.role === 'admin' ? 'Admin' : 'Usuario'}
+                        {user.role === 'admin' ? 'Admin' : 'Usuario'}
                       </span>
                     </td>
                     <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
@@ -247,7 +245,7 @@ const AdminPanel = () => {
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <select
-                          value={user.user_metadata?.role || 'user'}
+                          value={user.role || 'user'}
                           onChange={(e) => handleRoleChange(user.id, e.target.value)}
                           className="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
@@ -255,7 +253,7 @@ const AdminPanel = () => {
                           <option value="admin">Admin</option>
                         </select>
                         <button
-                          onClick={() => handleDeleteUser(user.id, user.user_metadata?.full_name || user.email)}
+                          onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
                           className="p-1.5 sm:p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors"
                           title="Eliminar usuario"
                         >
