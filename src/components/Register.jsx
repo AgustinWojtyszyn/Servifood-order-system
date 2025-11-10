@@ -48,17 +48,20 @@ const Register = () => {
     }
 
     try {
-      const { error } = await auth.signUp(formData.email, formData.password, {
+      const { data, error } = await auth.signUp(formData.email, formData.password, {
         full_name: formData.fullName
       })
 
       if (error) {
-        setError(error.message)
+        console.error('Error de registro:', error)
+        setError(error.message || 'Error al crear la cuenta')
       } else {
+        console.log('Usuario registrado exitosamente:', data)
         setSuccess(true)
       }
     } catch (err) {
-      setError('Error al crear la cuenta')
+      console.error('Error en handleSubmit:', err)
+      setError(`Error al crear la cuenta: ${err.message || 'Error desconocido'}`)
     } finally {
       setLoading(false)
     }
