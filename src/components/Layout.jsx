@@ -4,12 +4,14 @@ import { auth } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
+import AdminTutorial from './AdminTutorial'
 import NotificationBell from './NotificationBell'
 import SupportButton from './SupportButton'
 
 const Layout = ({ children, user }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [tutorialOpen, setTutorialOpen] = useState(false)
+  const [adminTutorialOpen, setAdminTutorialOpen] = useState(false)
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -105,6 +107,19 @@ const Layout = ({ children, user }) => {
 
             {/* Logout Button */}
             <div className="mt-auto mb-6 space-y-3">
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setAdminTutorialOpen(true)
+                    setSidebarOpen(false)
+                  }}
+                  className="flex items-center w-full px-4 py-3 text-purple-700 rounded-xl hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-700 hover:text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent"
+                >
+                  <Settings className="h-6 w-6 mr-3" />
+                  Tutorial Admin 👨‍💼
+                </button>
+              )}
+              
               <button
                 onClick={() => {
                   setTutorialOpen(true)
@@ -159,6 +174,11 @@ const Layout = ({ children, user }) => {
       
       {/* Tutorial Modal */}
       <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+      
+      {/* Admin Tutorial Modal */}
+      {isAdmin && (
+        <AdminTutorial isOpen={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
+      )}
     </div>
   )
 }
