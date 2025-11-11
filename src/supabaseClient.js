@@ -223,5 +223,60 @@ export const db = {
     const results = await Promise.all(promises)
     const error = results.find(r => r.error)?.error
     return { error }
+  },
+
+  // Notificaciones
+  getNotifications: async (userId) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    return { data, error }
+  },
+
+  getUnreadNotifications: async (userId) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('read', false)
+      .order('created_at', { ascending: false })
+    return { data, error }
+  },
+
+  markNotificationAsRead: async (notificationId) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId)
+      .select()
+    return { data, error }
+  },
+
+  markAllNotificationsAsRead: async (userId) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('read', false)
+    return { data, error }
+  },
+
+  subscribeToNotifications: (userId, callback) => {
+    return supabase
+      .channel('notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        callback
+      )
+      .subscribe()
   }
 }
+

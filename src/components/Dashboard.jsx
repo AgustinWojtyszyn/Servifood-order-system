@@ -48,13 +48,28 @@ const Dashboard = ({ user }) => {
       } else {
         // Obtener información de usuarios para mostrar nombres
         const { data: usersData } = await db.getUsers()
-        const ordersWithUserNames = (data || []).map(order => {
+        
+        // Obtener fecha de hoy
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        let ordersWithUserNames = (data || []).map(order => {
           const orderUser = usersData?.find(u => u.id === order.user_id)
           return {
             ...order,
-            user_name: orderUser?.user_metadata?.full_name || orderUser?.email?.split('@')[0] || 'Usuario'
+            user_name: orderUser?.user_metadata?.full_name || 'Usuario Sin Nombre'
           }
         })
+        
+        // Si NO es admin, filtrar solo pedidos de hoy
+        if (!isAdmin) {
+          ordersWithUserNames = ordersWithUserNames.filter(order => {
+            const orderDate = new Date(order.created_at)
+            orderDate.setHours(0, 0, 0, 0)
+            return orderDate.getTime() === today.getTime()
+          })
+        }
+        
         setOrders(ordersWithUserNames)
         calculateStats(ordersWithUserNames)
       }
@@ -383,13 +398,15 @@ const Dashboard = ({ user }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start">
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    className="p-2 hover:bg-primary-100 rounded-lg transition-colors text-primary-600"
-                    title="Ver detalles"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="p-2 hover:bg-primary-100 rounded-lg transition-colors text-primary-600"
+                      title="Ver detalles"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  )}
                   {isAdmin ? (
                     <select
                       value={order.status}
@@ -444,7 +461,7 @@ const Dashboard = ({ user }) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                      {order.user_name} - Pedido #{order.id.slice(-8)}
+                      {isAdmin ? `${order.user_name} - ` : ''}Pedido #{order.id.slice(-8)}
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600 truncate">
                       {order.location} • {formatDate(order.created_at)}
@@ -452,13 +469,15 @@ const Dashboard = ({ user }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 justify-end sm:justify-start">
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    className="p-2 hover:bg-green-200 rounded-lg transition-colors text-green-700"
-                    title="Ver detalles"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="p-2 hover:bg-green-200 rounded-lg transition-colors text-green-700"
+                      title="Ver detalles"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  )}
                   <span className="inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 whitespace-nowrap">
                     Entregado
                   </span>

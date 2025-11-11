@@ -4,6 +4,7 @@ import { auth } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
+import NotificationBell from './NotificationBell'
 
 const Layout = ({ children, user }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -53,6 +54,7 @@ const Layout = ({ children, user }) => {
             </div>
 
             <div className="flex items-center space-x-4">
+              <NotificationBell user={user} />
               <span className="text-base font-bold text-white drop-shadow-lg">
                 Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </span>
