@@ -55,9 +55,21 @@ const Dashboard = ({ user }) => {
         
         let ordersWithUserNames = (data || []).map(order => {
           const orderUser = usersData?.find(u => u.id === order.user_id)
+          // Intentar obtener el nombre de diferentes fuentes
+          let userName = 'Usuario'
+          if (orderUser) {
+            userName = orderUser.full_name || 
+                      orderUser.user_metadata?.full_name || 
+                      orderUser.email?.split('@')[0] || 
+                      order.customer_name ||
+                      'Usuario'
+          } else if (order.customer_name) {
+            userName = order.customer_name
+          }
+          
           return {
             ...order,
-            user_name: orderUser?.user_metadata?.full_name || 'Usuario Sin Nombre'
+            user_name: userName
           }
         })
         
