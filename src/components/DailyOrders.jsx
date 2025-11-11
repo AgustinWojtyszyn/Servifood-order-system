@@ -1,0 +1,528 @@
+import { useState, useEffect } from 'react'
+import { db } from '../supabaseClient'
+import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield } from 'lucide-react'
+
+const DailyOrders = ({ user }) => {
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState('all')
+  const [stats, setStats] = useState({
+    total: 0,
+    byLocation: {},
+    totalItems: 0,
+    completed: 0,
+    pending: 0,
+    cancelled: 0
+  })
+
+  const locations = ['Los Berros', 'La Laja', 'Padre Bueno']
+
+  useEffect(() => {
+    checkIfAdmin()
+  }, [user])
+
+  useEffect(() => {
+    if (isAdmin === true) {
+      fetchDailyOrders()
+    }
+  }, [isAdmin])
+
+  const checkIfAdmin = async () => {
+    try {
+      const { data, error } = await db.getUsers()
+      if (!error && data) {
+        const currentUser = data.find(u => u.id === user.id)
+        setIsAdmin(currentUser?.role === 'admin' || currentUser?.is_superadmin === true)
+      }
+    } catch (err) {
+      console.error('Error checking admin status:', err)
+      setIsAdmin(false)
+    }
+  }
+
+  const fetchDailyOrders = async () => {
+    try {
+      const { data: ordersData, error } = await db.getOrders()
+
+      if (error) {
+        console.error('Error fetching orders:', error)
+      } else {
+        // Obtener información de usuarios para mostrar nombres
+        const { data: usersData } = await db.getUsers()
+        
+        // Obtener fecha de hoy
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        // Filtrar solo pedidos de hoy
+        const todayOrders = (ordersData || []).filter(order => {
+          const orderDate = new Date(order.created_at)
+          orderDate.setHours(0, 0, 0, 0)
+          return orderDate.getTime() === today.getTime()
+        }).map(order => {
+          const orderUser = usersData?.find(u => u.id === order.user_id)
+          let userName = 'Usuario'
+          if (orderUser) {
+            userName = orderUser.full_name || 
+                      orderUser.user_metadata?.full_name || 
+                      orderUser.email?.split('@')[0] || 
+                      order.customer_name ||
+                      'Usuario'
+          } else if (order.customer_name) {
+            userName = order.customer_name
+          }
+          
+          return {
+            ...order,
+            user_name: userName,
+            user_email: orderUser?.email || order.customer_email || ''
+          }
+        })
+        
+        setOrders(todayOrders)
+        calculateStats(todayOrders)
+      }
+    } catch (err) {
+      console.error('Error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const calculateStats = (ordersData) => {
+    const byLocation = {}
+    let totalItems = 0
+    let completed = 0
+    let pending = 0
+    let cancelled = 0
+
+    ordersData.forEach(order => {
+      // Contar por ubicación
+      if (!byLocation[order.location]) {
+        byLocation[order.location] = 0
+      }
+      byLocation[order.location]++
+
+      // Contar items totales
+      totalItems += order.total_items || 0
+
+      // Contar por estado
+      if (order.status === 'completed' || order.status === 'delivered') {
+        completed++
+      } else if (order.status === 'cancelled') {
+        cancelled++
+      } else {
+        pending++
+      }
+    })
+
+    setStats({
+      total: ordersData.length,
+      byLocation,
+      totalItems,
+      completed,
+      pending,
+      cancelled
+    })
+  }
+
+  const getTomorrowDate = () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const formatTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'completed':
+      case 'delivered':
+        return 'bg-green-100 text-green-800 border-green-300'
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 border-red-300'
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300'
+    }
+  }
+
+  const getStatusText = (status) => {
+    switch(status) {
+      case 'completed':
+        return 'Completado'
+      case 'delivered':
+        return 'Entregado'
+      case 'cancelled':
+        return 'Cancelado'
+      case 'pending':
+        return 'Pendiente'
+      default:
+        return status
+    }
+  }
+
+  const filteredOrders = selectedLocation === 'all' 
+    ? orders 
+    : orders.filter(order => order.location === selectedLocation)
+
+  const exportToExcel = () => {
+    // Crear CSV con formato Excel
+    const headers = [
+      'Fecha Pedido',
+      'Hora Pedido',
+      'Usuario',
+      'Email',
+      'Ubicación',
+      'Fecha Entrega',
+      'Platillos',
+      'Cantidad Items',
+      'Estado',
+      'Comentarios',
+      'Opciones Adicionales',
+      'Teléfono',
+      'Cliente'
+    ]
+
+    const rows = filteredOrders.map(order => {
+      const items = order.items.map(item => 
+        `${item.name} (x${item.quantity})`
+      ).join('; ')
+
+      const customResponses = order.custom_responses
+        ?.filter(r => r.response)
+        .map(r => {
+          const response = Array.isArray(r.response) ? r.response.join(', ') : r.response
+          return `${r.title}: ${response}`
+        }).join(' | ') || '-'
+
+      return [
+        formatDate(order.created_at),
+        formatTime(order.created_at),
+        order.user_name || 'Sin nombre',
+        order.customer_email || '-',
+        order.location,
+        getTomorrowDate(),
+        items,
+        order.total_items,
+        getStatusText(order.status),
+        order.comments || '-',
+        customResponses,
+        order.customer_phone || '-',
+        order.customer_name || '-'
+      ]
+    })
+
+    // Crear contenido CSV
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => 
+        row.map(cell => {
+          // Escapar comillas y comas en el contenido
+          const cellStr = String(cell).replace(/"/g, '""')
+          return `"${cellStr}"`
+        }).join(',')
+      )
+    ].join('\n')
+
+    // Crear Blob y descargar
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    
+    const today = new Date().toISOString().split('T')[0]
+    link.setAttribute('href', url)
+    link.setAttribute('download', `pedidos_diarios_${today}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-red-100 rounded-full">
+              <Shield className="h-12 w-12 text-red-600" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-red-900 mb-2">Acceso Restringido</h2>
+          <p className="text-red-700">Solo los administradores pueden ver los pedidos diarios.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+        <p className="mt-4 text-white text-lg">Cargando pedidos diarios...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-2xl">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Calendar className="h-10 w-10" />
+              <h1 className="text-4xl font-bold">Pedidos Diarios</h1>
+            </div>
+            <p className="text-blue-100 text-lg">
+              Todos los pedidos para entregar mañana
+            </p>
+            <div className="flex items-center gap-2 mt-3 bg-white/20 rounded-lg px-4 py-2 inline-block">
+              <Clock className="h-5 w-5" />
+              <span className="font-semibold capitalize">{getTomorrowDate()}</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-3">
+            {/* Botón de exportar */}
+            <button
+              onClick={exportToExcel}
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <Download className="h-5 w-5" />
+              Exportar a Excel
+            </button>
+
+            {/* Filtro por ubicación */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <label className="text-sm font-semibold mb-2 block flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filtrar por ubicación
+              </label>
+              <select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-white text-gray-900 font-semibold focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="all">Todas las ubicaciones ({stats.total})</option>
+                {locations.map(location => (
+                  <option key={location} value={location}>
+                    {location} ({stats.byLocation[location] || 0})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Estadísticas */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
+          <div className="text-center">
+            <Package className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-600 font-semibold">Total Pedidos</p>
+            <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
+          <div className="text-center">
+            <TrendingUp className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-600 font-semibold">Total Items</p>
+            <p className="text-3xl font-bold text-purple-600">{stats.totalItems}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-yellow-200">
+          <div className="text-center">
+            <Clock className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-600 font-semibold">Pendientes</p>
+            <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-green-200">
+          <div className="text-center">
+            <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-600 font-semibold">Completados</p>
+            <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-red-200">
+          <div className="text-center">
+            <XCircle className="h-8 w-8 text-red-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-600 font-semibold">Cancelados</p>
+            <p className="text-3xl font-bold text-red-600">{stats.cancelled}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de pedidos */}
+      {filteredOrders.length === 0 ? (
+        <div className="bg-white rounded-xl p-12 text-center shadow-lg">
+          <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-700 mb-2">
+            {selectedLocation === 'all' 
+              ? 'No hay pedidos para hoy' 
+              : `No hay pedidos para ${selectedLocation}`}
+          </h3>
+          <p className="text-gray-500">Los pedidos aparecerán aquí cuando se realicen.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Package className="h-6 w-6" />
+            Listado de Pedidos ({filteredOrders.length})
+          </h2>
+          
+          {filteredOrders.map((order) => (
+            <div 
+              key={order.id} 
+              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-gray-200 overflow-hidden"
+            >
+              {/* Header del pedido */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b-2 border-gray-200">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <User className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">{order.user_name}</h3>
+                      <p className="text-sm text-gray-600">{order.user_email}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <span className={`px-4 py-2 rounded-lg font-bold text-sm border-2 ${getStatusColor(order.status)}`}>
+                      {getStatusText(order.status)}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {formatTime(order.created_at)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contenido del pedido */}
+              <div className="p-6 space-y-4">
+                {/* Ubicación */}
+                <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+                  <MapPin className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-gray-600 font-semibold">Ubicación de Entrega</p>
+                    <p className="text-lg font-bold text-gray-900">{order.location}</p>
+                  </div>
+                </div>
+
+                {/* Items del pedido */}
+                <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200">
+                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-gray-700" />
+                    Platillos Solicitados ({order.total_items} items)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {order.items && order.items.map((item, index) => (
+                      <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-gray-900">{item.name}</span>
+                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-bold">
+                            x{item.quantity}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Aclaraciones especiales */}
+                {(order.comments || (order.custom_responses && order.custom_responses.length > 0)) && (
+                  <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-200">
+                    <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <MessageCircle className="h-5 w-5 text-purple-600" />
+                      Aclaraciones Especiales
+                    </h4>
+                    
+                    {order.comments && (
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-600 font-semibold mb-1">Comentarios:</p>
+                        <p className="text-gray-900 bg-white rounded-lg p-3 border border-purple-200">
+                          {order.comments}
+                        </p>
+                      </div>
+                    )}
+
+                    {order.custom_responses && order.custom_responses.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600 font-semibold">Opciones Adicionales:</p>
+                        {order.custom_responses
+                          .filter(resp => resp.response)
+                          .map((resp, index) => (
+                            <div key={index} className="bg-white rounded-lg p-3 border border-purple-200">
+                              <p className="font-semibold text-purple-900 text-sm mb-1">{resp.title}</p>
+                              <p className="text-gray-900">
+                                {Array.isArray(resp.response) 
+                                  ? resp.response.join(', ') 
+                                  : resp.response}
+                              </p>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Info de contacto adicional */}
+                {(order.customer_phone) && (
+                  <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
+                    <h4 className="font-bold text-gray-900 mb-2 text-sm">Información de Contacto</h4>
+                    <p className="text-gray-900">📞 {order.customer_phone}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Resumen por ubicación */}
+      {selectedLocation === 'all' && stats.total > 0 && (
+        <div className="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <MapPin className="h-6 w-6 text-blue-600" />
+            Resumen por Ubicación
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {locations.map(location => (
+              <div key={location} className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-2 border-blue-200">
+                <h3 className="font-bold text-gray-900 text-lg mb-2">{location}</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Pedidos:</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    {stats.byLocation[location] || 0}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default DailyOrders

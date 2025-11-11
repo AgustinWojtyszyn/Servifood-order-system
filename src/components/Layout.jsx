@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
@@ -27,6 +27,12 @@ const Layout = ({ children, user }) => {
   ]
 
   if (isAdmin) {
+    menuItems.push({ 
+      name: 'Pedidos Diarios', 
+      path: '/daily-orders', 
+      icon: Calendar,
+      highlighted: true  // Marcar como destacado
+    })
     menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
   }
 
@@ -90,15 +96,24 @@ const Layout = ({ children, user }) => {
             <ul className="space-y-2 flex-1">
               {menuItems.map((item) => {
                 const Icon = item.icon
+                const baseClasses = "flex items-center px-4 py-3 rounded-xl font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg"
+                const normalClasses = "text-gray-800 hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white"
+                const highlightedClasses = "text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg border-2 border-blue-300 animate-pulse-slow"
+                
                 return (
                   <li key={item.path}>
                     <Link
                       to={item.path}
-                      className="flex items-center px-4 py-3 text-gray-800 rounded-xl hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg"
+                      className={`${baseClasses} ${item.highlighted ? highlightedClasses : normalClasses}`}
                       onClick={() => setSidebarOpen(false)}
                     >
                       <Icon className="h-6 w-6 mr-3" />
                       {item.name}
+                      {item.highlighted && (
+                        <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-black">
+                          ¡NUEVO!
+                        </span>
+                      )}
                     </Link>
                   </li>
                 )

@@ -9,6 +9,7 @@ import ResetPassword from './components/ResetPassword'
 import Dashboard from './components/Dashboard'
 import AdminPanel from './components/AdminPanel'
 import SuperAdminPanel from './components/SuperAdminPanel'
+import DailyOrders from './components/DailyOrders'
 import OrderForm from './components/OrderForm'
 import Profile from './components/Profile'
 import LandingPage from './components/LandingPage'
@@ -73,6 +74,9 @@ function App() {
           } />
           <Route path="/superadmin" element={
             user ? <Layout user={user}><SuperAdminPanel user={user} /></Layout> : <Navigate to="/login" />
+          } />
+          <Route path="/daily-orders" element={
+            user ? <Layout user={user}><DailyOrders user={user} /></Layout> : <Navigate to="/login" />
           } />
           <Route path="/auth/callback" element={<AuthCallback />} />
         </Routes>
