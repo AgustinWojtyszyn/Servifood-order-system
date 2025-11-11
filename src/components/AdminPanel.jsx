@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown } from 'lucide-react'
+import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Crown } from 'lucide-react'
 
-const AdminPanel = () => {
+const AdminPanel = ({ user }) => {
   const [activeTab, setActiveTab] = useState('users')
   const [users, setUsers] = useState([])
   const [menuItems, setMenuItems] = useState([])
@@ -12,6 +13,7 @@ const AdminPanel = () => {
   const [newMenuItems, setNewMenuItems] = useState([])
   const [editingOptions, setEditingOptions] = useState(false)
   const [newOption, setNewOption] = useState(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -30,6 +32,9 @@ const AdminPanel = () => {
         console.error('Error fetching users:', usersResult.error)
       } else {
         setUsers(usersResult.data || [])
+        // Verificar si el usuario actual es superadmin
+        const currentUser = usersResult.data?.find(u => u.id === user?.id)
+        setIsSuperAdmin(currentUser?.is_superadmin === true)
       }
 
       if (menuResult.error) {
@@ -747,6 +752,30 @@ const AdminPanel = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Superadmin Access - Mostrar solo si es superadmin */}
+      {isSuperAdmin && (
+        <div className="mt-8 bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-300 rounded-xl p-6 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-600 rounded-full">
+                <Crown className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-purple-900">Panel de Superadministrador</h3>
+                <p className="text-purple-700 mt-1">Gestión avanzada de usuarios y sistema</p>
+              </div>
+            </div>
+            <Link
+              to="/superadmin"
+              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+            >
+              <Crown className="h-5 w-5" />
+              Acceder al Panel
+            </Link>
+          </div>
         </div>
       )}
     </div>

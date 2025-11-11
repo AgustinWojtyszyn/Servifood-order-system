@@ -91,6 +91,14 @@ export const db = {
     return { data, error }
   },
 
+  updateUserSuperadmin: async (userId, isSuperadmin) => {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ is_superadmin: isSuperadmin })
+      .eq('id', userId)
+    return { data, error }
+  },
+
   deleteUser: async (userId) => {
     // Primero eliminar todos los pedidos del usuario
     const { error: ordersError } = await supabase
@@ -100,6 +108,14 @@ export const db = {
 
     if (ordersError) return { error: ordersError }
 
+    // Eliminar notificaciones del usuario
+    const { error: notificationsError } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId)
+
+    if (notificationsError) return { error: notificationsError }
+
     // Luego eliminar el usuario de auth usando Admin API
     // Nota: Esto requiere que tengas configurado el Service Role Key
     // Por ahora solo eliminamos de la tabla users
@@ -108,6 +124,22 @@ export const db = {
       .delete()
       .eq('id', userId)
     
+    return { data, error }
+  },
+
+  deleteAllOrders: async () => {
+    const { data, error } = await supabase
+      .from('orders')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000') // Eliminar todos
+    return { data, error }
+  },
+
+  deleteAllNotifications: async () => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000') // Eliminar todos
     return { data, error }
   },
 

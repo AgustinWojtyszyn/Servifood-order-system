@@ -28,18 +28,23 @@ SELECT
     o.total_items as total_items,
     o.custom_responses as respuestas_json,
     -- Extraer respuestas personalizadas en formato legible
-    (
-        SELECT string_agg(
-            response->>'title' || ': ' || 
-            CASE 
-                WHEN jsonb_typeof(response->'response') = 'array' 
-                THEN (SELECT string_agg(elem::text, ', ') FROM jsonb_array_elements_text(response->'response') elem)
-                ELSE COALESCE(response->>'response', 'Sin respuesta')
-            END,
-            ' | '
-        )
-        FROM jsonb_array_elements(o.custom_responses) response
-        WHERE response->>'response' IS NOT NULL
+    COALESCE(
+        (
+            SELECT string_agg(
+                response->>'title' || ': ' || 
+                CASE 
+                    WHEN jsonb_typeof(response->'response') = 'array' 
+                    THEN (SELECT string_agg(elem::text, ', ') FROM jsonb_array_elements_text(response->'response') elem)
+                    ELSE response->>'response'
+                END,
+                ' | '
+            )
+            FROM jsonb_array_elements(o.custom_responses) response
+            WHERE response->>'response' IS NOT NULL 
+            AND response->>'response' != 'null'
+            AND response->>'response' != ''
+        ),
+        '-'
     ) as respuestas_personalizadas_texto
 FROM public.orders o
 LEFT JOIN public.users u ON o.user_id = u.id
@@ -88,18 +93,23 @@ SELECT
     ) as platillos,
     o.comments as comentarios,
     -- Respuestas personalizadas
-    (
-        SELECT string_agg(
-            response->>'title' || ': ' || 
-            CASE 
-                WHEN jsonb_typeof(response->'response') = 'array' 
-                THEN (SELECT string_agg(elem::text, ', ') FROM jsonb_array_elements_text(response->'response') elem)
-                ELSE COALESCE(response->>'response', 'N/A')
-            END,
-            ' | '
-        )
-        FROM jsonb_array_elements(o.custom_responses) response
-        WHERE response->>'response' IS NOT NULL
+    COALESCE(
+        (
+            SELECT string_agg(
+                response->>'title' || ': ' || 
+                CASE 
+                    WHEN jsonb_typeof(response->'response') = 'array' 
+                    THEN (SELECT string_agg(elem::text, ', ') FROM jsonb_array_elements_text(response->'response') elem)
+                    ELSE response->>'response'
+                END,
+                ' | '
+            )
+            FROM jsonb_array_elements(o.custom_responses) response
+            WHERE response->>'response' IS NOT NULL
+            AND response->>'response' != 'null'
+            AND response->>'response' != ''
+        ),
+        '-'
     ) as opciones_adicionales
 FROM public.orders o
 LEFT JOIN public.users u ON o.user_id = u.id

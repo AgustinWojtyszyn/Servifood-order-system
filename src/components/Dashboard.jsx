@@ -164,6 +164,37 @@ const Dashboard = ({ user }) => {
     }
   }
 
+  const handleMarkAllAsCompleted = async () => {
+    const pendingOrders = orders.filter(order => order.status === 'pending')
+    
+    if (pendingOrders.length === 0) {
+      alert('No hay pedidos pendientes para marcar como completados')
+      return
+    }
+
+    if (confirm(`¿Marcar todos los ${pendingOrders.length} pedidos pendientes como completados?`)) {
+      try {
+        const promises = pendingOrders.map(order => 
+          db.updateOrderStatus(order.id, 'completed')
+        )
+        
+        const results = await Promise.all(promises)
+        const errors = results.filter(r => r.error)
+        
+        if (errors.length > 0) {
+          alert(`Se actualizaron ${pendingOrders.length - errors.length} pedidos. ${errors.length} fallaron.`)
+        } else {
+          alert(`✓ ${pendingOrders.length} pedidos marcados como completados`)
+        }
+        
+        fetchOrders() // Recargar pedidos
+      } catch (err) {
+        console.error('Error:', err)
+        alert('Error al actualizar los pedidos')
+      }
+    }
+  }
+
   const formatCustomResponses = (customResponses) => {
     if (!customResponses || customResponses.length === 0) {
       return null
@@ -326,7 +357,16 @@ const Dashboard = ({ user }) => {
           </p>
           <p className="text-base sm:text-lg text-white/90 mt-1">Aquí está el resumen de tus pedidos</p>
         </div>
-        <div className="mt-4 sm:mt-0 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0 w-full sm:w-auto">
+          {isAdmin && (
+            <button
+              onClick={handleMarkAllAsCompleted}
+              className="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            >
+              <CheckCircle className="h-5 w-5 mr-2" />
+              Marcar Todos Completos
+            </button>
+          )}
           <Link to="/order" className="btn-primary inline-flex items-center justify-center w-full sm:w-auto bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
             <Plus className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
             Nuevo Pedido

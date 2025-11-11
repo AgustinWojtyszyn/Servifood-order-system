@@ -214,12 +214,18 @@ const OrderForm = ({ user }) => {
         title: option.title,
         response: customResponses[option.id] || null
       }))
+
+      // Obtener el nombre del usuario desde auth
+      const userName = user?.user_metadata?.full_name || 
+                      formData.name || 
+                      user?.email?.split('@')[0] || 
+                      'Usuario'
       
       const orderData = {
         user_id: user.id,
         location: formData.location,
-        customer_name: formData.name,
-        customer_email: formData.email,
+        customer_name: userName, // Usar el nombre del usuario autenticado
+        customer_email: formData.email || user?.email,
         customer_phone: formData.phone,
         items: selectedItemsList.map(item => ({
           id: item.id,
