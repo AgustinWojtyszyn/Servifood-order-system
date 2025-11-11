@@ -250,6 +250,35 @@ food-order-app/
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
 
+## 🧪 Pruebas de Carga
+
+El proyecto incluye un completo sistema de pruebas de carga para simular múltiples usuarios concurrentes:
+
+### Inicio rápido
+
+```bash
+cd testing
+./start-test.sh  # Asistente interactivo
+```
+
+### Scripts disponibles
+
+- **Crear usuarios de prueba:** `node create-test-users.js`
+- **Prueba ligera:** `npm run test:load-light` (10 usuarios)
+- **Prueba media:** `npm run test:load-medium` (50 usuarios)
+- **Prueba intensa:** `npm run test:load-heavy` (200 usuarios)
+- **Monitor en tiempo real:** `npm run monitor`
+
+### Documentación completa
+
+Consulta la [documentación de pruebas](testing/README.md) para:
+- Configuración detallada
+- Escenarios de prueba recomendados
+- Análisis de resultados
+- Troubleshooting
+
+**Guía rápida:** [testing/QUICKSTART.md](testing/QUICKSTART.md)
+
 ## 📞 Soporte
 
 Para soporte, enviar email a support@servifood.com o crear un issue en el repositorio.

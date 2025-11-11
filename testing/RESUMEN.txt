@@ -1,0 +1,170 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║   🧪 SISTEMA DE PRUEBAS DE CARGA PARA SERVIFOOD - CREADO ✅              ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+📂 ARCHIVOS CREADOS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 Raíz del proyecto:
+   ├── generate-test-users.sql       ➜ Script SQL para ver usuarios
+   ├── generate-test-orders.sql      ➜ Script SQL para generar pedidos
+   └── .env.example                  ➜ Actualizado con nuevas variables
+
+📁 testing/ (nueva carpeta):
+   ├── README.md                     ➜ Documentación completa (¡LEER!)
+   ├── QUICKSTART.md                 ➜ Guía rápida de inicio
+   ├── EJEMPLOS-SALIDA.md            ➜ Ejemplos de salidas esperadas
+   ├── package.json                  ➜ Scripts npm configurados
+   ├── start-test.sh                 ➜ Asistente interactivo ⭐
+   ├── create-test-users.js          ➜ Crear usuarios reales
+   ├── load-test.js                  ➜ Simular usuarios concurrentes
+   └── monitor.js                    ➜ Monitor en tiempo real
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 INICIO RÁPIDO EN 3 PASOS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   1️⃣  Configurar .env con tus credenciales de Supabase
+       
+       cp .env.example .env
+       nano .env  # Editar con tus keys
+
+   2️⃣  Crear usuarios de prueba (100 usuarios por defecto)
+       
+       cd testing
+       node create-test-users.js
+
+   3️⃣  Ejecutar prueba de carga
+       
+       ./start-test.sh        # Asistente interactivo
+       
+       O usar scripts predefinidos:
+       npm run test:load-light    # 10 usuarios
+       npm run test:load-medium   # 50 usuarios
+       npm run test:load-heavy    # 200 usuarios
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 CARACTERÍSTICAS PRINCIPALES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ✅ Creación masiva de usuarios de prueba
+   ✅ Generación de pedidos con datos realistas
+   ✅ Simulación de usuarios concurrentes
+   ✅ Login y creación de pedidos simultáneos
+   ✅ Estadísticas detalladas de rendimiento
+   ✅ Monitor en tiempo real
+   ✅ Scripts SQL para datos masivos
+   ✅ Configuración flexible por variables de entorno
+   ✅ Múltiples escenarios predefinidos
+   ✅ Asistente interactivo fácil de usar
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 ESCENARIOS DE PRUEBA DISPONIBLES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   🔹 LIGERA     → 10 usuarios  × 2 pedidos  = ~20 pedidos
+   🔹 MEDIA      → 50 usuarios  × 5 pedidos  = ~250 pedidos
+   🔹 INTENSA    → 200 usuarios × 10 pedidos = ~2000 pedidos
+   🔹 EXTREMA    → 500 usuarios × 5 pedidos  = ~2500 pedidos
+   🔹 CUSTOM     → Tú defines los parámetros
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 MÉTRICAS QUE SE MIDEN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ⏱️  Tiempo total de ejecución
+   ⏱️  Tiempo promedio por usuario
+   ✅ Tasa de éxito de logins
+   📦 Pedidos creados vs fallidos
+   ⚠️  Errores detectados
+   📈 Throughput (pedidos/segundo)
+   🔥 Actividad en tiempo real
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🛠️  CONFIGURACIÓN NECESARIA EN .ENV:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Variables REQUERIDAS:
+   • VITE_SUPABASE_URL              → URL de tu proyecto Supabase
+   • VITE_SUPABASE_ANON_KEY         → Anon key (pública)
+   • SUPABASE_SERVICE_ROLE_KEY      → Service role (¡PRIVADA!)
+
+   Variables OPCIONALES (tienen defaults):
+   • TEST_USERS_COUNT=100           → Usuarios a crear
+   • CONCURRENT_USERS=50            → Usuarios simultáneos
+   • ORDERS_PER_USER=3              → Pedidos por usuario
+   • DELAY_MS=500                   → Delay entre pedidos
+   • USER_DELAY_MS=100              → Delay entre usuarios
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 COMANDOS ÚTILES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   # Ver estructura de testing
+   tree testing
+
+   # Crear 200 usuarios
+   TEST_USERS_COUNT=200 node testing/create-test-users.js
+
+   # Prueba personalizada
+   CONCURRENT_USERS=100 ORDERS_PER_USER=5 node testing/load-test.js
+
+   # Monitor en vivo
+   npm run monitor --prefix testing
+
+   # Ver todos los scripts disponibles
+   cat testing/package.json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTACIÓN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   📖 testing/README.md          → Guía completa y detallada
+   🚀 testing/QUICKSTART.md      → Inicio rápido (5 minutos)
+   📸 testing/EJEMPLOS-SALIDA.md → Ver ejemplos de salidas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎓 CASOS DE USO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ✓ Probar rendimiento antes de lanzamiento
+   ✓ Identificar cuellos de botella
+   ✓ Validar límites de Supabase
+   ✓ Verificar políticas RLS bajo carga
+   ✓ Generar datos demo realistas
+   ✓ Entrenar al equipo con datos de prueba
+   ✓ Hacer demos con datos abundantes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  IMPORTANTE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   🔐 NUNCA subir .env a Git (está en .gitignore)
+   🔐 Service Role Key es PRIVADA - solo para backend
+   ⚡ Supabase Free tier tiene límites de requests
+   🧹 Limpia datos de prueba regularmente
+   📊 Monitorea Supabase Dashboard durante pruebas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ ¡TODO LISTO PARA EMPEZAR!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   cd testing
+   ./start-test.sh
+
+   O lee la guía rápida:
+   cat testing/QUICKSTART.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

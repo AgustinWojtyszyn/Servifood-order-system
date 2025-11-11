@@ -1,0 +1,18 @@
+{
+  "name": "servifood-testing",
+  "version": "1.0.0",
+  "description": "Scripts de pruebas de carga para ServiFood",
+  "type": "module",
+  "scripts": {
+    "test:create-users": "node create-test-users.js",
+    "test:load": "node load-test.js",
+    "test:load-light": "CONCURRENT_USERS=10 ORDERS_PER_USER=2 node load-test.js",
+    "test:load-medium": "CONCURRENT_USERS=50 ORDERS_PER_USER=5 node load-test.js",
+    "test:load-heavy": "CONCURRENT_USERS=200 ORDERS_PER_USER=10 node load-test.js",
+    "test:load-extreme": "CONCURRENT_USERS=500 ORDERS_PER_USER=5 DELAY_MS=100 USER_DELAY_MS=50 node load-test.js",
+    "monitor": "node monitor.js"
+  },
+  "keywords": ["testing", "load-test", "supabase"],
+  "author": "",
+  "license": "ISC"
+}

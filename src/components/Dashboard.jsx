@@ -56,9 +56,22 @@ const Dashboard = ({ user }) => {
   }
 
   const calculateStats = (ordersData) => {
-    const total = ordersData.length
-    const pending = ordersData.filter(order => order.status === 'pending').length
-    const completed = ordersData.filter(order => order.status === 'completed').length
+    // Obtener fecha de hoy a las 00:00:00
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // Filtrar solo pedidos de hoy
+    const todayOrders = ordersData.filter(order => {
+      const orderDate = new Date(order.created_at)
+      orderDate.setHours(0, 0, 0, 0)
+      return orderDate.getTime() === today.getTime()
+    })
+    
+    const total = todayOrders.length
+    const pending = todayOrders.filter(order => order.status === 'pending').length
+    const completed = todayOrders.filter(order => 
+      order.status === 'completed' || order.status === 'delivered'
+    ).length
 
     setStats({ total, pending, completed })
   }
@@ -77,6 +90,32 @@ const Dashboard = ({ user }) => {
     if (confirm('¿Marcar este pedido como entregado?')) {
       try {
         const { error } = await db.updateOrderStatus(orderId, 'delivered')
+        if (error) {
+          alert('Error al actualizar el pedido')
+        } else {
+          fetchOrders() // Recargar pedidos
+        }
+      } catch (err) {
+        console.error('Error:', err)
+        alert('Error al actualizar el pedido')
+      }
+    }
+  }
+
+  const handleStatusChange = async (orderId, newStatus, currentStatus) => {
+    if (currentStatus === newStatus) return // No hacer nada si es el mismo estado
+    
+    const statusNames = {
+      'pending': 'Pendiente',
+      'processing': 'En Proceso',
+      'completed': 'Completado',
+      'delivered': 'Entregado',
+      'cancelled': 'Cancelado'
+    }
+    
+    if (confirm(`¿Cambiar estado a "${statusNames[newStatus]}"?`)) {
+      try {
+        const { error } = await db.updateOrderStatus(orderId, newStatus)
         if (error) {
           alert('Error al actualizar el pedido')
         } else {
@@ -124,7 +163,7 @@ const Dashboard = ({ user }) => {
               <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="ml-4 sm:ml-5">
-              <p className="text-sm sm:text-base font-bold text-gray-700 uppercase tracking-wide">Total Pedidos</p>
+              <p className="text-sm sm:text-base font-bold text-gray-700 uppercase tracking-wide">Pedidos Hoy</p>
               <p className="text-3xl sm:text-5xl font-black text-primary-700 drop-shadow">{stats.total}</p>
             </div>
           </div>
@@ -164,7 +203,7 @@ const Dashboard = ({ user }) => {
           </Link>
         </div>
 
-        {orders.filter(o => o.status !== 'delivered').length === 0 ? (
+        {orders.filter(o => o.status !== 'delivered' && o.status !== 'completed').length === 0 ? (
           <div className="text-center py-12">
             <ChefHat className="h-20 w-20 text-gray-400 mx-auto mb-4" />
             <h3 className="text-2xl font-bold text-gray-900 mb-2">No hay pedidos activos</h3>
@@ -175,7 +214,7 @@ const Dashboard = ({ user }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.filter(o => o.status !== 'delivered').slice(0, 5).map((order) => (
+            {orders.filter(o => o.status !== 'delivered' && o.status !== 'completed').slice(0, 5).map((order) => (
               <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                   <div className={`p-2 rounded-full flex-shrink-0 ${
@@ -200,23 +239,37 @@ const Dashboard = ({ user }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start">
-                  <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-blue-100 text-blue-800'
-                  }`}>
-                    {order.status === 'delivered' ? 'Entregado' :
-                     order.status === 'pending' ? 'Pendiente' : 'En Proceso'}
-                  </span>
-                  
-                  {isAdmin && order.status !== 'delivered' && (
-                    <button
-                      onClick={() => handleMarkAsDelivered(order.id)}
-                      className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors flex-shrink-0"
-                      title="Marcar como entregado"
+                  {isAdmin ? (
+                    <select
+                      value={order.status}
+                      onChange={(e) => handleStatusChange(order.id, e.target.value, order.status)}
+                      className={`text-xs font-semibold rounded-full px-2 sm:px-3 py-1 border-2 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        order.status === 'delivered' ? 'bg-green-100 text-green-800 border-green-300' :
+                        order.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' :
+                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                        order.status === 'processing' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                        'bg-red-100 text-red-800 border-red-300'
+                      }`}
                     >
-                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </button>
+                      <option value="pending">Pendiente</option>
+                      <option value="processing">En Proceso</option>
+                      <option value="completed">Completado</option>
+                      <option value="delivered">Entregado</option>
+                      <option value="cancelled">Cancelado</option>
+                    </select>
+                  ) : (
+                    <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+                      order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                      order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {order.status === 'delivered' ? 'Entregado' :
+                       order.status === 'completed' ? 'Completado' :
+                       order.status === 'pending' ? 'Pendiente' : 
+                       order.status === 'processing' ? 'En Proceso' : 'Cancelado'}
+                    </span>
                   )}
                 </div>
               </div>
@@ -226,17 +279,17 @@ const Dashboard = ({ user }) => {
       </div>
 
       {/* Completed Orders */}
-      {orders.filter(o => o.status === 'delivered').length > 0 && (
+      {orders.filter(o => o.status === 'delivered' || o.status === 'completed').length > 0 && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Pedidos Completados</h2>
             <span className="text-sm text-gray-600 font-semibold">
-              {orders.filter(o => o.status === 'delivered').length} completado(s)
+              {orders.filter(o => o.status === 'delivered' || o.status === 'completed').length} completado(s)
             </span>
           </div>
 
           <div className="space-y-4">
-            {orders.filter(o => o.status === 'delivered').slice(0, 10).map((order) => (
+            {orders.filter(o => o.status === 'delivered' || o.status === 'completed').slice(0, 10).map((order) => (
               <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-green-200 bg-green-50 rounded-xl">
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                   <div className="p-2 rounded-full bg-green-100 flex-shrink-0">
