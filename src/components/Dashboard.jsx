@@ -61,12 +61,14 @@ const Dashboard = ({ user }) => {
           }
         })
         
-        // Si NO es admin, filtrar solo pedidos de hoy
+        // Si NO es admin, filtrar solo pedidos de hoy Y excluir completados/entregados
         if (!isAdmin) {
           ordersWithUserNames = ordersWithUserNames.filter(order => {
             const orderDate = new Date(order.created_at)
             orderDate.setHours(0, 0, 0, 0)
-            return orderDate.getTime() === today.getTime()
+            const isToday = orderDate.getTime() === today.getTime()
+            const isNotCompleted = order.status !== 'completed' && order.status !== 'delivered'
+            return isToday && isNotCompleted
           })
         }
         
@@ -171,8 +173,14 @@ const Dashboard = ({ user }) => {
     if (!order) return null
 
     return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <div 
+          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="sticky top-0 bg-gradient-to-r from-primary-600 to-primary-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">Detalles del Pedido</h2>
@@ -442,8 +450,8 @@ const Dashboard = ({ user }) => {
         )}
       </div>
 
-      {/* Completed Orders */}
-      {orders.filter(o => o.status === 'delivered' || o.status === 'completed').length > 0 && (
+      {/* Completed Orders - Solo para admins */}
+      {isAdmin && orders.filter(o => o.status === 'delivered' || o.status === 'completed').length > 0 && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Pedidos Completados</h2>
