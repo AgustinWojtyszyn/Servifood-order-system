@@ -121,7 +121,7 @@ const Layout = ({ children, user }) => {
                         const baseClasses = "flex items-center px-4 py-3 rounded-xl font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg"
                         const normalClasses = "text-gray-800 hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white"
                         const highlightedClasses = "text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg border-2 border-blue-300"
-                        const activeClasses = "bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg border-2 border-primary-300"
+                        const activeClasses = "bg-gradient-to-r from-blue-700 to-blue-800 text-white shadow-xl border-2 border-blue-400"
                         
                         // Si está activo, usar estilos activos
                         if (isActive) {

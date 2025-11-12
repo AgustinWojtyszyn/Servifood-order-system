@@ -14,7 +14,12 @@ const AdminChat = ({ user }) => {
   useEffect(() => {
     loadMessages()
     loadAdmins()
-    subscribeToMessages()
+    
+    const subscription = subscribeToMessages()
+    
+    return () => {
+      if (subscription) subscription()
+    }
   }, [])
 
   useEffect(() => {
