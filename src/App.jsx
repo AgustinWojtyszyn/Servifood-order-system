@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard'
 import AdminPanel from './components/AdminPanel'
 import SuperAdminPanel from './components/SuperAdminPanel'
 import DailyOrders from './components/DailyOrders'
+import AdminChat from './components/AdminChat'
 import OrderForm from './components/OrderForm'
 import Profile from './components/Profile'
 import LandingPage from './components/LandingPage'
@@ -77,6 +78,9 @@ function App() {
           } />
           <Route path="/daily-orders" element={
             user ? <Layout user={user}><DailyOrders user={user} /></Layout> : <Navigate to="/login" />
+          } />
+          <Route path="/admin-chat" element={
+            user ? <Layout user={user}><AdminChat user={user} /></Layout> : <Navigate to="/login" />
           } />
           <Route path="/auth/callback" element={<AuthCallback />} />
         </Routes>

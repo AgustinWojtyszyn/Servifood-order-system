@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
@@ -50,6 +50,7 @@ const Layout = ({ children, user }) => {
       highlighted: true  // Marcar como destacado
     })
     menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
+    menuItems.push({ name: 'Chat Admins', path: '/admin-chat', icon: MessageCircle })
   }
 
   // Add Profile option for all users
