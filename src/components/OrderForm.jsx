@@ -621,23 +621,23 @@ const OrderForm = ({ user }) => {
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex justify-center sm:justify-end mt-6">
           <button
             type="submit"
             disabled={loading || getSelectedItemsList().length === 0 || hasOrderToday || isPastDeadline}
-            className="btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
+            className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-8 rounded-xl shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 transition-all duration-200 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-2xl border-2 border-green-500"
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                 Creando pedido...
               </>
             ) : hasOrderToday ? (
               'Ya tienes un pedido pendiente'
             ) : (
               <>
-                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                Crear Pedido
+                <ShoppingCart className="h-6 w-6 mr-3" />
+                Confirmar Pedido
               </>
             )}
           </button>
