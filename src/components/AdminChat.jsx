@@ -67,7 +67,11 @@ const AdminChat = ({ user }) => {
 
   const subscribeToMessages = () => {
     const channel = supabase
-      .channel('admin-chat-channel')
+      .channel('admin-chat-realtime', {
+        config: {
+          broadcast: { self: true }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -76,8 +80,16 @@ const AdminChat = ({ user }) => {
           table: 'admin_chat'
         },
         (payload) => {
+          console.log('Chat event received:', payload.eventType, payload)
+          
           if (payload.eventType === 'INSERT') {
-            setMessages(prev => [...prev, payload.new])
+            setMessages(prev => {
+              // Evitar duplicados
+              if (prev.some(msg => msg.id === payload.new.id)) {
+                return prev
+              }
+              return [...prev, payload.new]
+            })
           } else if (payload.eventType === 'UPDATE') {
             setMessages(prev =>
               prev.map(msg => msg.id === payload.new.id ? payload.new : msg)
@@ -87,9 +99,12 @@ const AdminChat = ({ user }) => {
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Subscription status:', status)
+      })
 
     return () => {
+      console.log('Cleaning up subscription')
       supabase.removeChannel(channel)
     }
   }
@@ -98,19 +113,48 @@ const AdminChat = ({ user }) => {
     e.preventDefault()
     if (!newMessage.trim() || loading) return
 
+    const messageText = newMessage.trim()
+    setNewMessage('') // Limpiar input inmediatamente
     setLoading(true)
+
+    // Crear mensaje temporal para mostrar instantáneamente (optimistic update)
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      user_id: user.id,
+      message: messageText,
+      created_at: new Date().toISOString(),
+      is_edited: false,
+      _temp: true // Marcar como temporal
+    }
+
+    // Agregar mensaje temporalmente
+    setMessages(prev => [...prev, tempMessage])
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('admin_chat')
         .insert({
           user_id: user.id,
-          message: newMessage.trim()
+          message: messageText
         })
+        .select()
+        .single()
 
-      if (!error) {
-        setNewMessage('')
+      if (error) {
+        // Si hay error, remover el mensaje temporal
+        setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id))
+        setNewMessage(messageText) // Restaurar el texto
+        console.error('Error sending message:', error)
+      } else if (data) {
+        // Reemplazar mensaje temporal con el real
+        setMessages(prev => 
+          prev.map(msg => msg.id === tempMessage.id ? data : msg)
+        )
       }
     } catch (err) {
+      // Si hay error, remover el mensaje temporal
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id))
+      setNewMessage(messageText) // Restaurar el texto
       console.error('Error sending message:', err)
     } finally {
       setLoading(false)
