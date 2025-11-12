@@ -4,6 +4,11 @@ import { X, ChevronLeft, ChevronRight, Users, ChefHat, Settings, Eye, CheckCircl
 const AdminTutorial = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0)
 
+  const handleClose = () => {
+    setCurrentStep(0) // Reiniciar al paso 1 cuando se cierra
+    onClose()
+  }
+
   const steps = [
     {
       title: '¡Bienvenido al Panel de Administración! 👨‍💼',
@@ -450,7 +455,7 @@ const AdminTutorial = ({ isOpen, onClose }) => {
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 hover:bg-white/30 rounded-lg transition-colors bg-white/10 border-2 border-white/30"
               title="Cerrar tutorial"
             >
@@ -518,7 +523,7 @@ const AdminTutorial = ({ isOpen, onClose }) => {
 
           {currentStep === steps.length - 1 ? (
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold bg-green-600 hover:bg-green-700 text-white transition-all shadow-md hover:shadow-lg transform hover:scale-105"
             >
               ¡Entendido!

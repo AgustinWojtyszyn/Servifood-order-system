@@ -4,6 +4,11 @@ import { X, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
 const Tutorial = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0)
 
+  const handleClose = () => {
+    setCurrentStep(0) // Reiniciar al paso 1 cuando se cierra
+    onClose()
+  }
+
   const steps = [
     {
       title: '¡Bienvenido a ServiFood!',
@@ -51,11 +56,6 @@ const Tutorial = ({ isOpen, onClose }) => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
     }
-  }
-
-  const handleClose = () => {
-    setCurrentStep(0)
-    onClose()
   }
 
   return (
