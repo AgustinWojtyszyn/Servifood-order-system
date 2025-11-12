@@ -438,39 +438,37 @@ const OrderForm = ({ user }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {menuItems.map((item) => (
-              <div key={item.id} className="border-2 border-gray-200 rounded-xl p-4 sm:p-5 hover:border-primary-400 hover:shadow-lg transition-all bg-gradient-to-br from-white to-gray-50 h-full min-h-[220px] sm:min-h-[240px] flex flex-col">
-                <div className="mb-2 sm:mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg sm:text-xl md:text-xl text-gray-900 leading-tight">{item.name}</h3>
-                    {item.description && (
-                      <p className="text-sm sm:text-sm text-gray-600 mt-2">{item.description}</p>
-                    )}
-                  </div>
+              <div key={item.id} className="bg-white border-2 border-gray-200 rounded-2xl p-5 hover:border-primary-500 hover:shadow-xl transition-all duration-300 flex flex-col">
+                <div className="flex-1 mb-4">
+                  <h3 className="font-bold text-xl text-gray-900 mb-2">{item.name}</h3>
+                  {item.description && (
+                    <p className="text-sm text-gray-600">{item.description}</p>
+                  )}
                 </div>
 
-                <div className="mt-auto flex items-center justify-between bg-gray-100 rounded-lg p-3">
-                  <span className="text-sm font-semibold text-gray-600">CANTIDAD</span>
-                  <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                  <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">Cantidad</span>
+                  <div className="flex items-center space-x-3">
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) - 1)}
-                      className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors shadow-md"
+                      className="p-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95"
                       aria-label={`Disminuir ${item.name}`}
                     >
-                      <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <Minus className="h-5 w-5" />
                     </button>
-                    <span className="w-9 sm:w-11 text-center font-bold text-lg sm:text-xl text-gray-900">
+                    <span className="w-12 text-center font-bold text-2xl text-gray-900">
                       {selectedItems[item.id] || 0}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) + 1)}
-                      className="p-2 rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors shadow-md"
+                      className="p-2.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95"
                       aria-label={`Aumentar ${item.name}`}
                     >
-                      <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <Plus className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
