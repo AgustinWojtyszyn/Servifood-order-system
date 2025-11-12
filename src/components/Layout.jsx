@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
@@ -113,15 +113,28 @@ const Layout = ({ children, user }) => {
             <ul className="space-y-2 flex-1">
               {menuItems.map((item) => {
                 const Icon = item.icon
-                const baseClasses = "flex items-center px-4 py-3 rounded-xl font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg"
-                const normalClasses = "text-gray-800 hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white"
-                const highlightedClasses = "text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg border-2 border-blue-300 animate-pulse-slow"
                 
                 return (
                   <li key={item.path}>
-                    <Link
+                    <NavLink
                       to={item.path}
-                      className={`${baseClasses} ${item.highlighted ? highlightedClasses : normalClasses}`}
+                      className={({ isActive }) => {
+                        const baseClasses = "flex items-center px-4 py-3 rounded-xl font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg"
+                        const normalClasses = "text-gray-800 hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700 hover:text-white"
+                        const highlightedClasses = "text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg border-2 border-blue-300"
+                        const activeClasses = "bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg border-2 border-primary-300"
+                        
+                        // Si está activo, usar estilos activos
+                        if (isActive) {
+                          return `${baseClasses} ${activeClasses}`
+                        }
+                        // Si es destacado (nuevo), usar estilos destacados
+                        if (item.highlighted) {
+                          return `${baseClasses} ${highlightedClasses} animate-pulse-slow`
+                        }
+                        // Estilos normales
+                        return `${baseClasses} ${normalClasses}`
+                      }}
                       onClick={() => setSidebarOpen(false)}
                     >
                       <Icon className="h-6 w-6 mr-3" />
@@ -131,7 +144,7 @@ const Layout = ({ children, user }) => {
                           ¡NUEVO!
                         </span>
                       )}
-                    </Link>
+                    </NavLink>
                   </li>
                 )
               })}
