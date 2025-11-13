@@ -3,6 +3,9 @@
 -- Ejecutar TODO en Supabase SQL Editor
 -- ========================================
 
+-- 0. ELIMINAR COLUMNA is_superadmin SI EXISTE (ya no se usa)
+ALTER TABLE users DROP COLUMN IF EXISTS is_superadmin;
+
 -- 1. Crear función para verificar si un usuario es admin
 CREATE OR REPLACE FUNCTION is_admin()
 RETURNS BOOLEAN AS $$
@@ -19,7 +22,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 2. POLÍTICAS PARA MENU_ITEMS
 -- ========================================
 
--- Eliminar políticas antiguas
+-- Eliminar políticas antiguas (incluyendo las de superadmin)
 DROP POLICY IF EXISTS "Anyone can view menu_items" ON menu_items;
 DROP POLICY IF EXISTS "Admins can insert menu_items" ON menu_items;
 DROP POLICY IF EXISTS "Admins can update menu_items" ON menu_items;
@@ -28,6 +31,9 @@ DROP POLICY IF EXISTS "All admins can insert menu_items" ON menu_items;
 DROP POLICY IF EXISTS "All admins can update menu_items" ON menu_items;
 DROP POLICY IF EXISTS "All admins can delete menu_items" ON menu_items;
 DROP POLICY IF EXISTS "Enable read access for all users" ON menu_items;
+DROP POLICY IF EXISTS "Superadmins can insert menu_items" ON menu_items;
+DROP POLICY IF EXISTS "Superadmins can update menu_items" ON menu_items;
+DROP POLICY IF EXISTS "Superadmins can delete menu_items" ON menu_items;
 
 -- Crear nuevas políticas (todos los admin tienen permisos completos)
 CREATE POLICY "Anyone can view menu_items"
@@ -55,13 +61,15 @@ CREATE POLICY "All admins can delete menu_items"
 -- 3. POLÍTICAS PARA USERS
 -- ========================================
 
--- Eliminar políticas antiguas
+-- Eliminar políticas antiguas (incluyendo las de superadmin)
 DROP POLICY IF EXISTS "Users can view all profiles" ON users;
 DROP POLICY IF EXISTS "Users can update own profile" ON users;
 DROP POLICY IF EXISTS "Admins can update all users" ON users;
 DROP POLICY IF EXISTS "Enable read access for all users" ON users;
 DROP POLICY IF EXISTS "Everyone can view all users" ON users;
 DROP POLICY IF EXISTS "All admins can update any user" ON users;
+DROP POLICY IF EXISTS "Superadmins can delete users" ON users;
+DROP POLICY IF EXISTS "Superadmins can update user roles" ON users;
 
 -- Crear nuevas políticas
 CREATE POLICY "Everyone can view all users"
@@ -85,7 +93,7 @@ CREATE POLICY "All admins can update any user"
 -- 4. POLÍTICAS PARA ORDERS
 -- ========================================
 
--- Eliminar políticas antiguas
+-- Eliminar políticas antiguas (incluyendo las de superadmin)
 DROP POLICY IF EXISTS "Users can view own orders" ON orders;
 DROP POLICY IF EXISTS "Users can create own orders" ON orders;
 DROP POLICY IF EXISTS "Users can update own orders" ON orders;
@@ -95,6 +103,7 @@ DROP POLICY IF EXISTS "Enable read access for authenticated users" ON orders;
 DROP POLICY IF EXISTS "All admins can view all orders" ON orders;
 DROP POLICY IF EXISTS "Users can update own pending orders" ON orders;
 DROP POLICY IF EXISTS "All admins can update any order" ON orders;
+DROP POLICY IF EXISTS "Superadmins can delete any order" ON orders;
 
 -- Crear nuevas políticas
 CREATE POLICY "Users can view own orders"
@@ -141,9 +150,11 @@ BEGIN
   RAISE NOTICE '========================================';
   RAISE NOTICE '✓ POLÍTICAS ACTUALIZADAS CORRECTAMENTE';
   RAISE NOTICE '========================================';
-  RAISE NOTICE '✓ Tabla: menu_items - Admins tienen permisos completos';
-  RAISE NOTICE '✓ Tabla: users - Admins pueden editar roles';
-  RAISE NOTICE '✓ Tabla: orders - Admins pueden ver y editar todos los pedidos';
-  RAISE NOTICE '✓ TODOS los administradores tienen exactamente los mismos permisos';
+  RAISE NOTICE '✓ Columna is_superadmin ELIMINADA (ya no se usa)';
+  RAISE NOTICE '✓ Tabla: menu_items - TODOS los admins tienen permisos completos';
+  RAISE NOTICE '✓ Tabla: users - TODOS los admins pueden editar roles';
+  RAISE NOTICE '✓ Tabla: orders - TODOS los admins pueden ver y editar todos los pedidos';
+  RAISE NOTICE '✓ TODOS los administradores tienen EXACTAMENTE los mismos permisos';
+  RAISE NOTICE '✓ NO HAY diferencia entre administradores - TODOS son iguales';
   RAISE NOTICE '========================================';
 END $$;

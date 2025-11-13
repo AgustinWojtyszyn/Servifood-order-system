@@ -91,14 +91,6 @@ export const db = {
     return { data, error }
   },
 
-  updateUserSuperadmin: async (userId, isSuperadmin) => {
-    const { data, error } = await supabase
-      .from('users')
-      .update({ is_superadmin: isSuperadmin })
-      .eq('id', userId)
-    return { data, error }
-  },
-
   deleteUser: async (userId) => {
     // Primero eliminar todos los pedidos del usuario
     const { error: ordersError } = await supabase
