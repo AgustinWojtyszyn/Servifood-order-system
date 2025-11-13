@@ -119,29 +119,29 @@ const Layout = ({ children, user }) => {
                       to={item.path}
                       className={({ isActive }) => {
                         // Clase base para todos
-                        let classes = "flex items-center px-4 py-3 rounded-xl font-bold text-base transition-all duration-200 shadow-sm bg-white"
+                        let classes = "flex items-center px-4 py-3 rounded-xl font-bold text-base transition-all duration-200 shadow-sm"
                         
                         // Si está activo - fondo azul sólido con texto blanco
                         if (isActive) {
-                          classes += " !bg-blue-600 !text-white shadow-lg"
+                          classes += " bg-blue-600 text-white shadow-lg"
                         }
                         // Si es destacado pero no activo
                         else if (item.highlighted) {
-                          classes += " !bg-gradient-to-r !from-blue-500 !to-blue-600 !text-white shadow-md animate-pulse-slow"
+                          classes += " bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md animate-pulse-slow"
                         }
                         // Normal
                         else {
-                          classes += " text-gray-800 hover:!bg-blue-50"
+                          classes += " text-gray-800 hover:bg-blue-50"
                         }
                         
                         return classes
                       }}
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <Icon className="h-6 w-6 mr-3" />
-                      {item.name}
+                      <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                      <span className="flex-1">{item.name}</span>
                       {item.highlighted && (
-                        <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-black">
+                        <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-black flex-shrink-0">
                           ¡NUEVO!
                         </span>
                       )}
@@ -159,10 +159,10 @@ const Layout = ({ children, user }) => {
                     setAdminTutorialOpen(true)
                     setSidebarOpen(false)
                   }}
-                  className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl !bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:!border-transparent hover:!bg-gradient-to-r hover:!from-purple-600 hover:!to-purple-700"
+                  className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-700"
                 >
-                  <Settings className="h-6 w-6 mr-3 group-hover:!text-white transition-colors" />
-                  <span className="group-hover:!text-white transition-colors">Tutorial Admin 👨‍💼</span>
+                  <Settings className="h-5 w-5 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                  <span className="group-hover:text-white transition-colors">Tutorial Admin 👨‍💼</span>
                 </button>
               )}
               
@@ -171,10 +171,10 @@ const Layout = ({ children, user }) => {
                   setTutorialOpen(true)
                   setSidebarOpen(false)
                 }}
-                className="group flex items-center w-full px-4 py-3 text-primary-700 rounded-xl !bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-primary-200 hover:!border-transparent hover:!bg-gradient-to-r hover:!from-primary-600 hover:!to-primary-700"
+                className="group flex items-center w-full px-4 py-3 text-primary-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-primary-200 hover:border-transparent hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700"
               >
-                <HelpCircle className="h-6 w-6 mr-3 group-hover:!text-white transition-colors" />
-                <span className="group-hover:!text-white transition-colors">Ver Tutorial</span>
+                <HelpCircle className="h-5 w-5 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                <span className="group-hover:text-white transition-colors">Ver Tutorial</span>
               </button>
               
               <button
@@ -182,10 +182,10 @@ const Layout = ({ children, user }) => {
                   handleLogout()
                   setSidebarOpen(false)
                 }}
-                className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl !bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:!border-transparent hover:!bg-gradient-to-r hover:!from-red-600 hover:!to-red-700"
+                className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
               >
-                <LogOut className="h-6 w-6 mr-3 group-hover:!text-white transition-colors" />
-                <span className="group-hover:!text-white transition-colors">Cerrar Sesión</span>
+                <LogOut className="h-5 w-5 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
               </button>
             </div>
           </nav>
