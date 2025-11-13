@@ -412,13 +412,13 @@ const AdminPanel = ({ user }) => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm sm:text-base font-bold text-gray-900">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <div className="text-sm sm:text-base font-bold text-gray-900 max-w-[120px] sm:max-w-none truncate">
                         {user.full_name || user.email || 'Sin nombre'}
                       </div>
                     </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-xs sm:text-base text-gray-900 truncate max-w-[120px] sm:max-w-none">{user.email}</div>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <div className="text-xs sm:text-base text-gray-900 truncate max-w-[150px] sm:max-w-none">{user.email}</div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 sm:px-3 py-1 text-xs sm:text-sm font-bold rounded-full ${
@@ -437,17 +437,17 @@ const AdminPanel = ({ user }) => {
                         <select
                           value={user.role || 'user'}
                           onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                          className="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="text-sm sm:text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[100px]"
                         >
                           <option value="user">Usuario</option>
                           <option value="admin">Admin</option>
                         </select>
                         <button
                           onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
-                          className="p-1.5 sm:p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors"
+                          className="p-2 sm:p-2.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors flex-shrink-0"
                           title="Eliminar usuario"
                         >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <Trash2 className="h-4 w-4 sm:h-4 sm:w-4" />
                         </button>
                       </div>
                     </td>
