@@ -416,28 +416,54 @@ const DailyOrders = ({ user }) => {
         month: 'long',
         day: 'numeric'
       })
-
-      let message = `📋 *PEDIDOS SERVIFOOD - ${today.toUpperCase()}*\n\n`
-      message += `📊 *RESUMEN*\n`
-      message += `• Total: ${stats.total} pedidos\n`
-      message += `• Completados: ${stats.completed}\n`
-      message += `• Pendientes: ${stats.pending}\n`
-      message += `• Items totales: ${stats.totalItems}\n\n`
-
-      message += `📍 *POR UBICACIÓN*\n`
-      Object.entries(stats.byLocation).forEach(([location, count]) => {
-        message += `• ${location}: ${count} pedidos\n`
+      
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tomorrowDate = tomorrow.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
       })
 
-      message += `\n🍽️ *PLATILLOS MÁS PEDIDOS*\n`
-      const topDishes = Object.entries(stats.byDish)
+      let message = `📋 *PEDIDOS SERVIFOOD*\n`
+      message += `📅 Fecha de pedido: ${today}\n`
+      message += `🚚 Fecha de entrega: ${tomorrowDate}\n`
+      message += `${'='.repeat(40)}\n\n`
+
+      // RESUMEN GENERAL
+      message += `📊 *RESUMEN GENERAL*\n`
+      message += `• Total de pedidos: ${stats.total}\n`
+      message += `• Completados: ${stats.completed} ✅\n`
+      message += `• Pendientes: ${stats.pending} ⏳\n`
+      message += `• Cancelados: ${stats.cancelled} ❌\n`
+      message += `• Total de items: ${stats.totalItems}\n\n`
+
+      // DESGLOSE POR UBICACIÓN
+      message += `📍 *DESGLOSE POR UBICACIÓN*\n`
+      Object.entries(stats.byLocation)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
-      topDishes.forEach(([dish, count]) => {
-        message += `• ${dish}: ${count} unidades\n`
-      })
+        .forEach(([location, count]) => {
+          // Calcular items por ubicación
+          const locationOrders = sortedOrders.filter(o => o.location === location)
+          const locationItems = locationOrders.reduce((sum, o) => sum + (o.total_items || 0), 0)
+          message += `\n*${location}*\n`
+          message += `  • Pedidos: ${count}\n`
+          message += `  • Menús: ${locationItems}\n`
+        })
 
-      // Agregar guarniciones personalizadas si existen
+      // DETALLE DE PLATILLOS
+      message += `\n\n🍽️ *DETALLE DE PLATILLOS*\n`
+      const sortedDishes = Object.entries(stats.byDish)
+        .sort(([, a], [, b]) => b - a)
+      
+      let totalMenus = 0
+      sortedDishes.forEach(([dish, count]) => {
+        totalMenus += count
+        message += `• ${dish}: ${count} unidad${count > 1 ? 'es' : ''}\n`
+      })
+      message += `\n*Total menús del día: ${totalMenus}*\n`
+
+      // GUARNICIONES PERSONALIZADAS
       const customSides = sortedOrders
         .map(order => getCustomSideFromResponses(order.custom_responses))
         .filter(side => side !== null)
@@ -451,7 +477,74 @@ const DailyOrders = ({ user }) => {
         })
       }
 
-      message += `\n_Para ver detalles completos, descarga el archivo Excel_`
+      // OPCIONES ADICIONALES
+      const allCustomResponses = sortedOrders
+        .flatMap(order => getOtherCustomResponses(order.custom_responses))
+        .filter(resp => resp.response)
+
+      if (allCustomResponses.length > 0) {
+        message += `\n⚙️ *OPCIONES ADICIONALES*\n`
+        
+        // Agrupar opciones por título
+        const optionsByTitle = {}
+        allCustomResponses.forEach(resp => {
+          if (!optionsByTitle[resp.title]) {
+            optionsByTitle[resp.title] = []
+          }
+          const response = Array.isArray(resp.response) 
+            ? resp.response.join(', ') 
+            : resp.response
+          optionsByTitle[resp.title].push(response)
+        })
+
+        Object.entries(optionsByTitle).forEach(([title, responses]) => {
+          message += `\n*${title}*\n`
+          
+          // Contar respuestas únicas
+          const responseCounts = {}
+          responses.forEach(resp => {
+            responseCounts[resp] = (responseCounts[resp] || 0) + 1
+          })
+          
+          Object.entries(responseCounts)
+            .sort(([, a], [, b]) => b - a)
+            .forEach(([resp, count]) => {
+              message += `  • ${resp}: ${count}\n`
+            })
+        })
+      }
+
+      // DETALLE POR UBICACIÓN Y PLATILLO
+      message += `\n\n📋 *DETALLE POR UBICACIÓN*\n`
+      Object.entries(stats.byLocation)
+        .sort(([, a], [, b]) => b - a)
+        .forEach(([location]) => {
+          const locationOrders = sortedOrders.filter(o => o.location === location)
+          
+          message += `\n*${location}:*\n`
+          
+          // Platillos en esta ubicación
+          const dishesInLocation = {}
+          locationOrders.forEach(order => {
+            if (order.items && Array.isArray(order.items)) {
+              order.items.forEach(item => {
+                if (item.name) {
+                  dishesInLocation[item.name] = (dishesInLocation[item.name] || 0) + (item.quantity || 1)
+                }
+              })
+            }
+          })
+          
+          Object.entries(dishesInLocation)
+            .sort(([, a], [, b]) => b - a)
+            .forEach(([dish, count]) => {
+              message += `  • ${dish}: ${count}\n`
+            })
+        })
+
+      message += `\n${'='.repeat(40)}\n`
+      message += `\n✅ *Resumen listo para preparar*\n`
+      message += `_Para detalles individuales, consulta el panel de administración_`
 
       // Abrir WhatsApp con el mensaje
       const encodedMessage = encodeURIComponent(message)
