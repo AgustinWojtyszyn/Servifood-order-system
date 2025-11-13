@@ -3,14 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/jpeg" href="/src/assets/servifood logo.jpg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Viewport optimizado para móviles -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    
+    <!-- Optimización para iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ServiFood" />
+    <link rel="apple-touch-icon" href="/src/assets/servifood logo.jpg" />
+    
+    <!-- Optimización para Android/Chrome -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#1e3a8a" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#1e3a8a" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e3a8a" />
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="ServiFood Catering - Sistema de gestión de pedidos de comida para empresas. Pide tu menú del día fácil y rápido." />
     <meta name="keywords" content="servifood, catering, pedidos comida, menú del día, gestión pedidos, comida empresas" />
     <meta name="author" content="ServiFood" />
     <meta name="robots" content="index, follow" />
-    <meta name="theme-color" content="#1e3a8a" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -29,7 +42,46 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://food-order-app-3avy.onrender.com/" />
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Preconnect para performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Formato de detección de teléfonos -->
+    <meta name="format-detection" content="telephone=yes" />
+    <meta name="format-detection" content="address=no" />
+    
     <title>ServiFood Catering - Gestión de Pedidos</title>
+    
+    <!-- Estilos inline críticos para móviles -->
+    <style>
+      /* Prevenir scroll horizontal en móviles */
+      html, body {
+        overflow-x: hidden;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      
+      /* Mejorar rendimiento en móviles */
+      * {
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        -webkit-touch-callout: none;
+      }
+      
+      /* Scroll suave */
+      html {
+        scroll-behavior: smooth;
+      }
+      
+      /* Loading state optimizado para móviles */
+      #root {
+        min-height: 100vh;
+        width: 100%;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

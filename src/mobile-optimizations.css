@@ -1,0 +1,377 @@
+/* 
+ * OPTIMIZACIONES MÓVILES PARA SERVIFOOD
+ * Mejoras específicas para dispositivos táctiles y móviles
+ */
+
+/* ============================================
+   PREVENCIÓN DE PROBLEMAS COMUNES EN MÓVILES
+   ============================================ */
+
+/* Prevenir zoom no deseado en inputs (iOS) */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select {
+  font-size: 16px !important; /* Previene auto-zoom en iOS */
+}
+
+/* Mejorar área táctil de botones */
+button,
+a,
+.clickable {
+  min-height: 44px; /* Tamaño mínimo recomendado por Apple */
+  min-width: 44px;
+}
+
+/* ============================================
+   SCROLL Y NAVEGACIÓN SUAVE
+   ============================================ */
+
+/* Scroll suave y optimizado */
+* {
+  -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+  scroll-behavior: smooth;
+}
+
+/* Prevenir rebote en scroll (iOS Safari) */
+body {
+  position: fixed;
+  overflow: hidden;
+  width: 100%;
+  height: 100vh;
+}
+
+#root {
+  position: absolute;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+  height: 100vh;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   OPTIMIZACIÓN DE RENDIMIENTO
+   ============================================ */
+
+/* Acelerar animaciones con GPU */
+.animate-slide,
+.animate-fade,
+.transition-transform,
+.transform {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Optimizar imágenes */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ============================================
+   INTERACCIONES TÁCTILES
+   ============================================ */
+
+/* Mejorar feedback táctil */
+button:active,
+a:active,
+.btn:active {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
+/* Eliminar highlight azul en Android */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Permitir selección de texto donde sea necesario */
+input,
+textarea,
+.selectable {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* ============================================
+   TIPOGRAFÍA MÓVIL
+   ============================================ */
+
+/* Escala de texto legible en móviles */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px; /* Base más pequeña en móviles */
+  }
+  
+  h1 {
+    font-size: 1.75rem; /* 24.5px */
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-size: 1.5rem; /* 21px */
+    line-height: 1.3;
+  }
+  
+  h3 {
+    font-size: 1.25rem; /* 17.5px */
+    line-height: 1.4;
+  }
+  
+  p, li, span {
+    font-size: 1rem; /* 14px */
+    line-height: 1.5;
+  }
+  
+  small {
+    font-size: 0.875rem; /* 12.25px */
+  }
+}
+
+/* ============================================
+   ESPACIADO MÓVIL
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Reducir padding en contenedores */
+  .container,
+  .max-w-7xl {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Espaciado vertical optimizado */
+  .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+  
+  .space-y-4 > * + * {
+    margin-top: 0.75rem;
+  }
+}
+
+/* ============================================
+   FORMULARIOS MÓVILES
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Inputs más grandes para facilitar toque */
+  input,
+  select,
+  textarea {
+    padding: 0.75rem;
+    font-size: 16px;
+  }
+  
+  /* Botones más grandes */
+  button,
+  .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 16px;
+  }
+}
+
+/* ============================================
+   MODALES Y OVERLAYS MÓVILES
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Modales de altura completa en móviles */
+  .modal,
+  .dialog {
+    position: fixed;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/* ============================================
+   TABLAS RESPONSIVAS
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Convertir tablas en cards en móviles */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Scroll horizontal para tablas anchas */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ============================================
+   NAVEGACIÓN MÓVIL
+   ============================================ */
+
+@media (max-width: 768px) {
+  /* Menú móvil sticky */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+  }
+  
+  /* Espaciado para botones de navegación */
+  nav a,
+  nav button {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+/* ============================================
+   ORIENTACIÓN
+   ============================================ */
+
+/* Ajustes para landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Reducir padding vertical */
+  .py-6 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  /* Headers más compactos */
+  header {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* ============================================
+   ACCESIBILIDAD MÓVIL
+   ============================================ */
+
+/* Focus visible mejorado para teclados físicos */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Contraste mejorado en modo oscuro */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1a1a1a;
+    color: #ffffff;
+  }
+}
+
+/* ============================================
+   PERFORMANCE: REDUCIR ANIMACIONES
+   ============================================ */
+
+/* Respetar preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================
+   FIX ESPECÍFICOS PARA iOS SAFARI
+   ============================================ */
+
+/* Prevenir zoom en double-tap */
+.no-zoom {
+  touch-action: manipulation;
+}
+
+/* Fix para 100vh en iOS Safari */
+.min-h-screen-mobile {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Fix para safe area en iOS (notch) */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+  
+  header,
+  nav {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  
+  footer {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* ============================================
+   UTILIDADES MÓVILES
+   ============================================ */
+
+/* Ocultar en móviles */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Mostrar solo en móviles */
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .show-mobile {
+    display: block;
+  }
+}
+
+/* Texto más pequeño en móviles */
+@media (max-width: 640px) {
+  .text-sm-mobile {
+    font-size: 0.875rem;
+  }
+}
+
+/* ============================================
+   PRINT STYLES (Bonus)
+   ============================================ */
+
+@media print {
+  /* Ocultar navegación e interactivos al imprimir */
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Optimizar para impresión */
+  body {
+    background: white;
+    color: black;
+  }
+}
