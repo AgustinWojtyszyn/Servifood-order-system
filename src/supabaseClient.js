@@ -13,7 +13,7 @@ export const auth = {
       password,
       options: {
         data: metadata,
-        emailRedirectTo: `${window.location.origin}/verify-email`
+        emailRedirectTo: `${window.location.origin}/dashboard`
       }
     })
     return { data, error }
