@@ -73,7 +73,7 @@ const Layout = ({ children, user }) => {
                 <img 
                   src={servifoodLogo} 
                   alt="Servifood Logo" 
-                  className="h-12 w-auto rounded"
+                  className="h-10 w-10 rounded object-cover"
                 />
                 <span className="ml-3 text-xl font-bold text-white drop-shadow-lg">ServiFood Catering</span>
               </div>
@@ -103,7 +103,7 @@ const Layout = ({ children, user }) => {
             <img 
               src={servifoodLogo} 
               alt="Servifood Logo" 
-              className="h-12 w-auto rounded"
+              className="h-10 w-10 rounded object-cover"
             />
             <span className="ml-3 text-lg font-bold text-white drop-shadow">ServiFood</span>
           </div>
@@ -138,7 +138,7 @@ const Layout = ({ children, user }) => {
                       }}
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                      <Icon className="h-6 w-6 mr-3 flex-shrink-0" />
                       <span className="flex-1">{item.name}</span>
                       {item.highlighted && (
                         <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-black flex-shrink-0">
@@ -161,7 +161,7 @@ const Layout = ({ children, user }) => {
                   }}
                   className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-700"
                 >
-                  <Settings className="h-5 w-5 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                  <Settings className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
                   <span className="group-hover:text-white transition-colors">Tutorial Admin 👨‍💼</span>
                 </button>
               )}
@@ -173,7 +173,7 @@ const Layout = ({ children, user }) => {
                 }}
                 className="group flex items-center w-full px-4 py-3 text-primary-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-primary-200 hover:border-transparent hover:bg-gradient-to-r hover:from-primary-600 hover:to-primary-700"
               >
-                <HelpCircle className="h-5 w-5 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                <HelpCircle className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
                 <span className="group-hover:text-white transition-colors">Ver Tutorial</span>
               </button>
               
@@ -184,7 +184,7 @@ const Layout = ({ children, user }) => {
                 }}
                 className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
               >
-                <LogOut className="h-5 w-5 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                <LogOut className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
                 <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
               </button>
             </div>
