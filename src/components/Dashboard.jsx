@@ -380,8 +380,8 @@ const Dashboard = ({ user }) => {
               <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="ml-4 sm:ml-5">
-              <p className="text-sm sm:text-base font-bold text-gray-700 uppercase tracking-wide">Pedidos Hoy</p>
-              <p className="text-3xl sm:text-5xl font-black text-primary-700 drop-shadow">{stats.total}</p>
+              <p className="text-xs sm:text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-1">PEDIDOS HOY</p>
+              <p className="text-4xl sm:text-5xl font-black text-primary-700 drop-shadow">{stats.total}</p>
             </div>
           </div>
         </div>
@@ -392,8 +392,8 @@ const Dashboard = ({ user }) => {
               <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="ml-4 sm:ml-5">
-              <p className="text-sm sm:text-base font-bold text-gray-700 uppercase tracking-wide">Pendientes</p>
-              <p className="text-3xl sm:text-5xl font-black text-yellow-700 drop-shadow">{stats.pending}</p>
+              <p className="text-xs sm:text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-1">PENDIENTES</p>
+              <p className="text-4xl sm:text-5xl font-black text-yellow-700 drop-shadow">{stats.pending}</p>
             </div>
           </div>
         </div>
@@ -404,8 +404,8 @@ const Dashboard = ({ user }) => {
               <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="ml-4 sm:ml-5">
-              <p className="text-sm sm:text-base font-bold text-gray-700 uppercase tracking-wide">Completados</p>
-              <p className="text-3xl sm:text-5xl font-black text-green-600 drop-shadow">{stats.completed}</p>
+              <p className="text-xs sm:text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-1">COMPLETADOS</p>
+              <p className="text-4xl sm:text-5xl font-black text-green-600 drop-shadow">{stats.completed}</p>
             </div>
           </div>
         </div>

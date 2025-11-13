@@ -515,8 +515,8 @@ const AdminPanel = ({ user }) => {
               </div>
               
               {newMenuItems.map((item, index) => (
-                <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:space-x-4 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-white">
-                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm sm:text-base">
+                <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:space-x-4 p-4 sm:p-4 border-2 border-gray-200 rounded-xl bg-white">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-8 sm:h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-base sm:text-base">
                     {index + 1}
                   </div>
                   <div className="flex-1 grid grid-cols-1 gap-3 sm:gap-4">
@@ -525,7 +525,7 @@ const AdminPanel = ({ user }) => {
                       placeholder="Nombre del plato"
                       value={item.name}
                       onChange={(e) => handleMenuItemChange(index, 'name', e.target.value)}
-                      className="input-field font-semibold text-sm sm:text-base"
+                      className="input-field font-semibold text-base sm:text-base bg-white text-gray-900"
                       required
                     />
                     <input
@@ -533,7 +533,7 @@ const AdminPanel = ({ user }) => {
                       placeholder="Descripción (opcional)"
                       value={item.description}
                       onChange={(e) => handleMenuItemChange(index, 'description', e.target.value)}
-                      className="input-field text-sm sm:text-base"
+                      className="input-field text-base sm:text-base bg-white text-gray-900"
                     />
                   </div>
                   <button
@@ -541,7 +541,7 @@ const AdminPanel = ({ user }) => {
                     className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0 self-end sm:self-auto"
                     title="Eliminar plato"
                   >
-                    <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Trash2 className="h-5 w-5 sm:h-5 sm:w-5" />
                   </button>
                 </div>
               ))}
