@@ -464,23 +464,23 @@ const AdminPanel = ({ user }) => {
       {/* Menu Tab */}
       {activeTab === 'menu' && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Gestión del Menú</h2>
             {!editingMenu ? (
               <button
                 onClick={() => setEditingMenu(true)}
-                className="btn-primary flex items-center justify-center text-sm sm:text-base"
+                className="btn-primary flex items-center justify-center text-sm sm:text-base w-full sm:w-auto"
               >
                 <Edit3 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Editar Menú
               </button>
             ) : (
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   onClick={handleMenuUpdate}
-                  className="btn-primary flex items-center text-sm sm:text-base px-3 sm:px-4 py-2"
+                  className="btn-primary flex items-center justify-center text-sm sm:text-base px-4 py-2.5 flex-1"
                 >
-                  <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                  <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   Guardar
                 </button>
                 <button
@@ -488,9 +488,9 @@ const AdminPanel = ({ user }) => {
                     setEditingMenu(false)
                     fetchData() // Reset changes
                   }}
-                  className="btn-secondary flex items-center text-sm sm:text-base px-3 sm:px-4 py-2"
+                  className="btn-secondary flex items-center justify-center text-sm sm:text-base px-4 py-2.5 flex-1"
                 >
-                  <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                  <X className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   Cancelar
                 </button>
               </div>
@@ -498,36 +498,45 @@ const AdminPanel = ({ user }) => {
           </div>
 
           {!editingMenu ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {menuItems.map((item, index) => (
-                <div key={item.id || index} className="border border-gray-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">{item.name}</h3>
+                <div key={item.id || index} className="border-2 border-gray-200 rounded-lg p-4 bg-white hover:border-primary-300 transition-colors">
+                  <h3 className="font-bold text-gray-900 mb-2 text-base">{item.name}</h3>
                   {item.description && (
-                    <p className="text-xs sm:text-sm text-gray-600">{item.description}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="space-y-3 sm:space-y-4">
-              <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
-                <p className="text-blue-800 font-semibold text-center text-sm sm:text-base">
+            <div className="space-y-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-4">
+                <p className="text-blue-800 font-semibold text-center text-sm leading-relaxed">
                   Puedes agregar, editar o eliminar opciones del menú. Debe haber al menos un plato.
                 </p>
               </div>
               
               {newMenuItems.map((item, index) => (
-                <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:space-x-4 p-4 sm:p-4 border-2 border-gray-200 rounded-xl bg-white">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-8 sm:h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-base sm:text-base">
-                    {index + 1}
+                <div key={index} className="border-2 border-gray-200 rounded-xl bg-white p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    <button
+                      onClick={() => removeMenuItem(index)}
+                      className="ml-auto p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0"
+                      title="Eliminar plato"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
                   </div>
-                  <div className="flex-1 grid grid-cols-1 gap-3 sm:gap-4">
+                  <div className="space-y-3">
                     <input
                       type="text"
                       placeholder="Nombre del plato"
                       value={item.name}
                       onChange={(e) => handleMenuItemChange(index, 'name', e.target.value)}
-                      className="input-field font-semibold text-base sm:text-base bg-white text-gray-900"
+                      className="input-field font-semibold text-base bg-white text-gray-900 w-full"
                       required
                     />
                     <input
@@ -535,24 +544,17 @@ const AdminPanel = ({ user }) => {
                       placeholder="Descripción (opcional)"
                       value={item.description}
                       onChange={(e) => handleMenuItemChange(index, 'description', e.target.value)}
-                      className="input-field text-base sm:text-base bg-white text-gray-900"
+                      className="input-field text-sm bg-white text-gray-900 w-full"
                     />
                   </div>
-                  <button
-                    onClick={() => removeMenuItem(index)}
-                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0 self-end sm:self-auto"
-                    title="Eliminar plato"
-                  >
-                    <Trash2 className="h-5 w-5 sm:h-5 sm:w-5" />
-                  </button>
                 </div>
               ))}
               
               <button
                 onClick={addMenuItem}
-                className="w-full flex items-center justify-center gap-2 p-3 sm:p-4 border-2 border-dashed border-primary-300 rounded-xl text-primary-600 hover:bg-primary-50 hover:border-primary-500 transition-all font-semibold text-sm sm:text-base"
+                className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-primary-300 rounded-xl text-primary-600 hover:bg-primary-50 hover:border-primary-500 transition-all font-semibold text-sm"
               >
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Plus className="h-5 w-5" />
                 Agregar nuevo plato
               </button>
             </div>
@@ -563,7 +565,7 @@ const AdminPanel = ({ user }) => {
       {/* Custom Options Tab */}
       {activeTab === 'options' && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Opciones Personalizables</h2>
               <p className="text-sm text-gray-600 mt-1">Agrega preguntas, encuestas u opciones adicionales para los pedidos</p>
@@ -571,7 +573,7 @@ const AdminPanel = ({ user }) => {
             {!editingOptions && (
               <button
                 onClick={handleCreateOption}
-                className="btn-primary flex items-center justify-center text-sm sm:text-base"
+                className="btn-primary flex items-center justify-center text-sm sm:text-base w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Nueva Opción
@@ -581,69 +583,74 @@ const AdminPanel = ({ user }) => {
 
           {/* Lista de opciones existentes */}
           {!editingOptions && customOptions.length > 0 && (
-            <div className="space-y-3 mb-6">
+            <div className="space-y-4">
               {customOptions.map((option, index) => (
                 <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-primary-300 transition-all">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-bold text-lg text-gray-900">{option.title}</h3>
-                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                          option.type === 'multiple_choice' ? 'bg-blue-100 text-blue-800' :
-                          option.type === 'checkbox' ? 'bg-purple-100 text-purple-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {option.type === 'multiple_choice' ? 'Opción Múltiple' :
-                           option.type === 'checkbox' ? 'Casillas' : 'Texto'}
+                  {/* Header con título y badges */}
+                  <div className="mb-3">
+                    <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-2">{option.title}</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                        option.type === 'multiple_choice' ? 'bg-blue-100 text-blue-800' :
+                        option.type === 'checkbox' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {option.type === 'multiple_choice' ? 'Opción Múltiple' :
+                         option.type === 'checkbox' ? 'Casillas' : 'Texto'}
+                      </span>
+                      {option.required && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
+                          Requerido
                         </span>
-                        {option.required && (
-                          <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
-                            Requerido
-                          </span>
-                        )}
-                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                          option.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {option.active ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </div>
-                      
-                      {(option.type === 'multiple_choice' || option.type === 'checkbox') && option.options && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {option.options.map((opt, i) => (
-                            <span key={i} className="text-sm px-3 py-1 bg-gray-100 rounded-full text-gray-700">
-                              {opt}
-                            </span>
-                          ))}
-                        </div>
                       )}
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                        option.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {option.active ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Opciones de respuesta */}
+                  {(option.type === 'multiple_choice' || option.type === 'checkbox') && option.options && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {option.options.map((opt, i) => (
+                        <span key={i} className="text-xs sm:text-sm px-3 py-1.5 bg-gray-100 rounded-full text-gray-700 font-medium">
+                          {opt}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Controles - Optimizados para mobile */}
+                  <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-gray-200">
+                    {/* Botones de orden */}
+                    <div className="flex gap-2 order-2 sm:order-1">
+                      <button
+                        onClick={() => handleMoveOption(index, 'up')}
+                        disabled={index === 0}
+                        className="flex-1 sm:flex-none px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed border border-gray-300 flex items-center justify-center gap-1"
+                        title="Subir"
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                        <span className="text-xs font-medium">Subir</span>
+                      </button>
+                      <button
+                        onClick={() => handleMoveOption(index, 'down')}
+                        disabled={index === customOptions.length - 1}
+                        className="flex-1 sm:flex-none px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed border border-gray-300 flex items-center justify-center gap-1"
+                        title="Bajar"
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                        <span className="text-xs font-medium">Bajar</span>
+                      </button>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      {/* Botones de orden */}
-                      <div className="flex flex-col gap-1">
-                        <button
-                          onClick={() => handleMoveOption(index, 'up')}
-                          disabled={index === 0}
-                          className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30"
-                          title="Subir"
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleMoveOption(index, 'down')}
-                          disabled={index === customOptions.length - 1}
-                          className="p-1 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30"
-                          title="Bajar"
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </button>
-                      </div>
-                      
-                      {/* Toggle activo/inactivo */}
+                    {/* Toggle y eliminar */}
+                    <div className="flex gap-2 order-1 sm:order-2 sm:ml-auto">
                       <button
                         onClick={() => handleToggleOption(option.id, option.active)}
-                        className={`px-3 py-1 rounded-lg text-sm font-semibold transition-colors ${
+                        className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                           option.active 
                             ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -652,13 +659,13 @@ const AdminPanel = ({ user }) => {
                         {option.active ? 'Desactivar' : 'Activar'}
                       </button>
                       
-                      {/* Eliminar */}
                       <button
                         onClick={() => handleDeleteOption(option.id)}
-                        className="p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600"
+                        className="flex-shrink-0 px-4 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold text-sm flex items-center gap-1"
                         title="Eliminar"
                       >
                         <Trash2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Eliminar</span>
                       </button>
                     </div>
                   </div>
@@ -677,15 +684,15 @@ const AdminPanel = ({ user }) => {
 
           {/* Formulario para nueva opción */}
           {editingOptions && newOption && (
-            <div className="border-2 border-primary-300 rounded-xl p-6 bg-primary-50">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Nueva Opción Personalizable</h3>
+            <div className="border-2 border-primary-300 rounded-xl p-4 sm:p-6 bg-primary-50">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Nueva Opción Personalizable</h3>
                 <button
                   onClick={() => {
                     setEditingOptions(false)
                     setNewOption(null)
                   }}
-                  className="p-2 hover:bg-red-100 rounded-lg text-red-600"
+                  className="p-2 hover:bg-red-100 rounded-lg text-red-600 flex-shrink-0"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -694,27 +701,27 @@ const AdminPanel = ({ user }) => {
               <div className="space-y-4">
                 {/* Título */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
                     Título/Pregunta *
                   </label>
                   <input
                     type="text"
                     value={newOption.title}
                     onChange={(e) => handleOptionFieldChange('title', e.target.value)}
-                    className="input-field"
+                    className="input-field w-full bg-white text-gray-900"
                     placeholder="Ej: ¿Prefieres alguna bebida?"
                   />
                 </div>
 
                 {/* Tipo */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
                     Tipo de Respuesta *
                   </label>
                   <select
                     value={newOption.type}
                     onChange={(e) => handleOptionFieldChange('type', e.target.value)}
-                    className="input-field"
+                    className="input-field w-full bg-white text-gray-900 text-sm sm:text-base"
                   >
                     <option value="multiple_choice">Opción Múltiple (una respuesta)</option>
                     <option value="checkbox">Casillas (múltiples respuestas)</option>
@@ -725,7 +732,7 @@ const AdminPanel = ({ user }) => {
                 {/* Opciones (solo para multiple_choice y checkbox) */}
                 {(newOption.type === 'multiple_choice' || newOption.type === 'checkbox') && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
                       Opciones de Respuesta
                     </label>
                     <div className="space-y-2">
@@ -735,13 +742,13 @@ const AdminPanel = ({ user }) => {
                             type="text"
                             value={opt}
                             onChange={(e) => handleOptionChoiceChange(index, e.target.value)}
-                            className="input-field flex-1"
+                            className="input-field flex-1 bg-white text-gray-900"
                             placeholder={`Opción ${index + 1}`}
                           />
                           {newOption.options.length > 1 && (
                             <button
                               onClick={() => handleRemoveOptionChoice(index)}
-                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                              className="p-2.5 text-red-600 hover:bg-red-100 rounded-lg flex-shrink-0"
                             >
                               <X className="h-5 w-5" />
                             </button>
@@ -750,7 +757,7 @@ const AdminPanel = ({ user }) => {
                       ))}
                       <button
                         onClick={handleAddOptionChoice}
-                        className="w-full flex items-center justify-center gap-2 p-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-all"
+                        className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-all font-medium"
                       >
                         <Plus className="h-4 w-4" />
                         Agregar opción
@@ -760,24 +767,24 @@ const AdminPanel = ({ user }) => {
                 )}
 
                 {/* Requerido */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-white rounded-lg p-3 border border-gray-200">
                   <input
                     type="checkbox"
                     id="required"
                     checked={newOption.required}
                     onChange={(e) => handleOptionFieldChange('required', e.target.checked)}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <label htmlFor="required" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="required" className="text-sm font-bold text-gray-900 cursor-pointer select-none">
                     Campo requerido
                   </label>
                 </div>
 
                 {/* Botones */}
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     onClick={handleSaveOption}
-                    className="btn-primary flex-1 flex items-center justify-center"
+                    className="btn-primary flex-1 flex items-center justify-center py-3"
                   >
                     <Save className="h-5 w-5 mr-2" />
                     Guardar Opción
@@ -787,7 +794,7 @@ const AdminPanel = ({ user }) => {
                       setEditingOptions(false)
                       setNewOption(null)
                     }}
-                    className="btn-secondary flex-1"
+                    className="btn-secondary flex-1 py-3"
                   >
                     Cancelar
                   </button>
