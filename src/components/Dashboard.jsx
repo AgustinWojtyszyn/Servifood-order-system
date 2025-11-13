@@ -381,7 +381,7 @@ const Dashboard = ({ user }) => {
             </div>
             <div className="ml-4 sm:ml-5">
               <p className="text-xs sm:text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-1">PEDIDOS HOY</p>
-              <p className="text-4xl sm:text-5xl font-black text-primary-700 drop-shadow">{stats.total}</p>
+              <p className="text-4xl sm:text-5xl font-black text-gray-900 drop-shadow">{stats.total}</p>
             </div>
           </div>
         </div>
