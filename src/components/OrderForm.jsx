@@ -215,9 +215,9 @@ const OrderForm = ({ user }) => {
       return
     }
 
-    // Validar opciones requeridas
+    // Validar opciones requeridas (solo las que están activas)
     const missingRequiredOptions = customOptions
-      .filter(opt => opt.required && !customResponses[opt.id])
+      .filter(opt => opt.active && opt.required && !customResponses[opt.id])
       .map(opt => opt.title)
 
     if (missingRequiredOptions.length > 0) {
@@ -232,12 +232,14 @@ const OrderForm = ({ user }) => {
       tomorrow.setDate(tomorrow.getDate() + 1)
       const deliveryDate = tomorrow.toISOString().split('T')[0]
       
-      // Preparar respuestas personalizadas
-      const customResponsesArray = customOptions.map(option => ({
-        option_id: option.id,
-        title: option.title,
-        response: customResponses[option.id] || null
-      }))
+      // Preparar respuestas personalizadas (solo las activas con respuesta)
+      const customResponsesArray = customOptions
+        .filter(opt => opt.active && customResponses[opt.id])
+        .map(option => ({
+          option_id: option.id,
+          title: option.title,
+          response: customResponses[option.id]
+        }))
 
       // Obtener el nombre del usuario desde auth
       const userName = user?.user_metadata?.full_name || 
@@ -528,8 +530,8 @@ const OrderForm = ({ user }) => {
           </div>
         )}
 
-        {/* Opciones Personalizadas */}
-        {customOptions.length > 0 && (
+        {/* Opciones Personalizadas - Solo mostrar opciones activas */}
+        {customOptions.filter(opt => opt.active).length > 0 && (
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
@@ -542,7 +544,7 @@ const OrderForm = ({ user }) => {
             </div>
 
             <div className="space-y-6">
-              {customOptions.map((option) => (
+              {customOptions.filter(opt => opt.active).map((option) => (
                 <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50">
                   <label className="block text-sm font-medium text-gray-900 mb-3">
                     {option.title}

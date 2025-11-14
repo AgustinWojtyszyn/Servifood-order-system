@@ -430,51 +430,51 @@ const AdminPanel = ({ user }) => {
         <p className="text-base sm:text-lg md:text-xl text-white/90 drop-shadow-lg mt-2">Gestiona usuarios y el menú de opciones</p>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b-2 border-white/30">
-        <nav className="-mb-0.5 flex space-x-4 sm:space-x-8 overflow-x-auto">
+      {/* Tabs - Optimizado para mobile con scroll horizontal visible */}
+      <div className="border-b-2 border-white/30 -mx-3 sm:mx-0 px-3 sm:px-0">
+        <nav className="-mb-0.5 flex space-x-2 sm:space-x-8 overflow-x-auto pb-px scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
           <button
             onClick={() => setActiveTab('users')}
-            className={`py-2 sm:py-3 px-1 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap ${
+            className={`py-2 sm:py-3 px-2 sm:px-4 border-b-4 font-bold text-xs sm:text-base transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'users'
                 ? 'border-secondary-500 text-white drop-shadow'
                 : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
             }`}
           >
-            <Users className="h-4 w-4 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
+            <Users className="h-3 w-3 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
             Usuarios
           </button>
           <button
             onClick={() => setActiveTab('menu')}
-            className={`py-2 sm:py-3 px-1 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap ${
+            className={`py-2 sm:py-3 px-2 sm:px-4 border-b-4 font-bold text-xs sm:text-base transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'menu'
                 ? 'border-secondary-500 text-white drop-shadow'
                 : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
             }`}
           >
-            <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
+            <ChefHat className="h-3 w-3 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
             Menú
           </button>
           <button
             onClick={() => setActiveTab('options')}
-            className={`py-2 sm:py-3 px-1 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap ${
+            className={`py-2 sm:py-3 px-2 sm:px-4 border-b-4 font-bold text-xs sm:text-base transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'options'
                 ? 'border-secondary-500 text-white drop-shadow'
                 : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
             }`}
           >
-            <Settings className="h-4 w-4 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
+            <Settings className="h-3 w-3 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
             Opciones
           </button>
           <button
             onClick={() => setActiveTab('cleanup')}
-            className={`py-2 sm:py-3 px-1 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap relative ${
+            className={`py-2 sm:py-3 px-2 sm:px-4 border-b-4 font-bold text-xs sm:text-base transition-colors whitespace-nowrap flex-shrink-0 relative ${
               activeTab === 'cleanup'
                 ? 'border-secondary-500 text-white drop-shadow'
                 : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
             }`}
           >
-            <Database className="h-4 w-4 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
+            <Database className="h-3 w-3 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
             Limpieza
             {completedOrdersCount > 0 && (
               <span className="ml-1 sm:ml-2 inline-flex items-center justify-center px-1.5 sm:px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
