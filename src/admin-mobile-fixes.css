@@ -1,0 +1,112 @@
+/* ============================================
+   ADMIN PANEL MOBILE FIXES
+   ============================================ */
+
+/* Habilitar scroll horizontal en el panel de admin */
+.admin-panel-content {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Asegurar que las tablas y contenido ancho se puedan desplazar */
+@media (max-width: 768px) {
+  .admin-panel-content table,
+  .admin-panel-content .table-responsive {
+    min-width: 600px; /* Ancho mínimo para forzar scroll */
+  }
+
+  /* Tabs del panel de admin con scroll horizontal */
+  .admin-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  .admin-tabs::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
+  /* Cards en mobile con scroll si es necesario */
+  .admin-card {
+    min-width: 280px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Contenedor principal del panel de admin */
+  .admin-panel-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Asegurar que el contenido no se corte */
+  .admin-panel-container .card {
+    min-width: fit-content;
+  }
+
+  /* Tabla de usuarios en mobile */
+  .admin-users-table {
+    min-width: 500px;
+  }
+
+  /* Formularios de edición */
+  .admin-edit-form {
+    min-width: 300px;
+  }
+}
+
+/* ============================================
+   SCROLLBAR HIDE UTILITY
+   ============================================ */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* ============================================
+   MOBILE SPECIFIC FIXES FOR ADMIN PANEL
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Reducir padding en el panel de admin para móviles */
+  .admin-panel-content {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Botones más grandes para toque fácil */
+  .admin-panel-content button {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Inputs más grandes */
+  .admin-panel-content input,
+  .admin-panel-content select {
+    min-height: 44px;
+    font-size: 16px; /* Previene zoom en iOS */
+  }
+
+  /* Texto más legible en móviles */
+  .admin-panel-content {
+    font-size: 14px;
+  }
+
+  .admin-panel-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .admin-panel-content h2 {
+    font-size: 1.25rem;
+  }
+
+  .admin-panel-content h3 {
+    font-size: 1.125rem;
+  }
+}
