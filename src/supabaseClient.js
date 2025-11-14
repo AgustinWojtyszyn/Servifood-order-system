@@ -234,6 +234,22 @@ export const db = {
     return { data, error }
   },
 
+  deleteCompletedOrders: async () => {
+    const { data, error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('status', 'completed')
+    return { data, error }
+  },
+
+  getCompletedOrdersCount: async () => {
+    const { count, error } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'completed')
+    return { count, error }
+  },
+
   // Menú
   getMenuItems: async () => {
     // Usar cache para menú (cambia poco)

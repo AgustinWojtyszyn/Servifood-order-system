@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter } from 'lucide-react'
+import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle } from 'lucide-react'
 
 const AdminPanel = ({ user }) => {
   const [activeTab, setActiveTab] = useState('users')
@@ -18,6 +18,10 @@ const AdminPanel = ({ user }) => {
   // Estados para búsqueda y filtrado de usuarios
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all') // 'all', 'admin', 'user'
+  
+  // Estados para limpieza de datos
+  const [completedOrdersCount, setCompletedOrdersCount] = useState(0)
+  const [deletingOrders, setDeletingOrders] = useState(false)
 
   useEffect(() => {
     checkIfAdmin()
@@ -26,8 +30,15 @@ const AdminPanel = ({ user }) => {
   useEffect(() => {
     if (isAdmin === true) {
       fetchData()
+      fetchCompletedOrdersCount()
     }
   }, [isAdmin])
+
+  useEffect(() => {
+    if (isAdmin === true && activeTab === 'cleanup') {
+      fetchCompletedOrdersCount()
+    }
+  }, [activeTab, isAdmin])
 
   const checkIfAdmin = async () => {
     try {
@@ -92,6 +103,60 @@ const AdminPanel = ({ user }) => {
       console.error('Error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCompletedOrdersCount = async () => {
+    try {
+      const { count, error } = await db.getCompletedOrdersCount()
+      if (!error) {
+        setCompletedOrdersCount(count || 0)
+      }
+    } catch (err) {
+      console.error('Error fetching completed orders count:', err)
+    }
+  }
+
+  const handleDeleteCompletedOrders = async () => {
+    const confirmed = window.confirm(
+      `⚠️ ADVERTENCIA: Estás a punto de eliminar ${completedOrdersCount} pedidos completados.\n\n` +
+      '✓ Esta acción liberará espacio en la base de datos\n' +
+      '✗ Los pedidos completados serán eliminados permanentemente\n' +
+      '✗ Esta acción NO se puede deshacer\n\n' +
+      '¿Estás seguro de continuar?'
+    )
+
+    if (!confirmed) return
+
+    // Segunda confirmación de seguridad
+    const doubleCheck = window.confirm(
+      '🔒 CONFIRMACIÓN FINAL\n\n' +
+      'Esta es tu última oportunidad de cancelar.\n' +
+      `Se eliminarán ${completedOrdersCount} pedidos completados.\n\n` +
+      '¿Confirmas que deseas proceder?'
+    )
+
+    if (!doubleCheck) return
+
+    setDeletingOrders(true)
+    
+    try {
+      const { error } = await db.deleteCompletedOrders()
+      
+      if (error) {
+        console.error('Error deleting completed orders:', error)
+        alert('❌ Error al eliminar los pedidos: ' + error.message)
+      } else {
+        alert(`✅ Se eliminaron ${completedOrdersCount} pedidos completados exitosamente.\n\n` +
+              'Se ha liberado espacio en la base de datos.')
+        setCompletedOrdersCount(0)
+        fetchData() // Refrescar datos
+      }
+    } catch (err) {
+      console.error('Error:', err)
+      alert('❌ Error al eliminar los pedidos')
+    } finally {
+      setDeletingOrders(false)
     }
   }
 
@@ -400,6 +465,22 @@ const AdminPanel = ({ user }) => {
           >
             <Settings className="h-4 w-4 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
             Opciones
+          </button>
+          <button
+            onClick={() => setActiveTab('cleanup')}
+            className={`py-2 sm:py-3 px-1 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap relative ${
+              activeTab === 'cleanup'
+                ? 'border-secondary-500 text-white drop-shadow'
+                : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
+            }`}
+          >
+            <Database className="h-4 w-4 sm:h-5 sm:w-5 inline mr-1 sm:mr-2" />
+            Limpieza
+            {completedOrdersCount > 0 && (
+              <span className="ml-1 sm:ml-2 inline-flex items-center justify-center px-1.5 sm:px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                {completedOrdersCount}
+              </span>
+            )}
           </button>
         </nav>
       </div>
@@ -947,6 +1028,184 @@ const AdminPanel = ({ user }) => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Cleanup Tab */}
+      {activeTab === 'cleanup' && (
+        <div className="space-y-6">
+          {/* Advertencia importante */}
+          <div className="card bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 shadow-xl">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 p-3 bg-yellow-400 rounded-full">
+                <AlertTriangle className="h-8 w-8 text-yellow-900" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-yellow-900 mb-2">⚠️ Recordatorio Importante</h3>
+                <div className="text-yellow-800 space-y-2 leading-relaxed">
+                  <p className="font-semibold">
+                    Recuerda limpiar regularmente los pedidos completados para ahorrar recursos en Supabase.
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Los pedidos completados ocupan espacio en la base de datos</li>
+                    <li>Se recomienda limpiar al final de cada día o semana</li>
+                    <li>Esta acción es <strong>irreversible</strong> - los datos no se pueden recuperar</li>
+                    <li>Solo se eliminan pedidos con estado "Completado"</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Panel de limpieza de pedidos completados */}
+          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
+                <Database className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Limpieza de Pedidos Completados</h2>
+                <p className="text-gray-600 mt-1">Libera espacio eliminando pedidos finalizados</p>
+              </div>
+            </div>
+
+            {/* Estadísticas */}
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border-2 border-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Pedidos Completados</p>
+                      <p className="text-3xl sm:text-4xl font-bold text-blue-600">
+                        {completedOrdersCount}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-blue-100 rounded-full">
+                      <Database className="h-8 w-8 text-blue-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Listos para eliminar
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border-2 border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Espacio Estimado</p>
+                      <p className="text-3xl sm:text-4xl font-bold text-green-600">
+                        ~{(completedOrdersCount * 2).toFixed(1)}KB
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-100 rounded-full">
+                      <Trash2 className="h-8 w-8 text-green-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    A liberar aproximadamente
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Información y controles */}
+            {completedOrdersCount > 0 ? (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    ¿Qué se eliminará?
+                  </h4>
+                  <ul className="text-blue-800 space-y-1 text-sm ml-7">
+                    <li>• {completedOrdersCount} pedidos con estado "Completado"</li>
+                    <li>• Información de items y opciones personalizadas</li>
+                    <li>• Timestamps y datos asociados</li>
+                  </ul>
+                </div>
+
+                <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
+                  <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    ¡Atención! Acción Irreversible
+                  </h4>
+                  <p className="text-red-800 text-sm leading-relaxed">
+                    Una vez eliminados, los pedidos completados <strong>no se pueden recuperar</strong>. 
+                    Asegúrate de haber exportado o guardado cualquier información importante antes de proceder.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleDeleteCompletedOrders}
+                  disabled={deletingOrders}
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${
+                    deletingOrders
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'
+                  }`}
+                >
+                  {deletingOrders ? (
+                    <>
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-500"></div>
+                      Eliminando...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-6 w-6" />
+                      Eliminar {completedOrdersCount} Pedidos Completados
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+                  <Database className="h-10 w-10 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">✨ Todo Limpio</h3>
+                <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                  No hay pedidos completados para eliminar en este momento.
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border-2 border-green-200 rounded-lg text-green-700 font-semibold">
+                  <span className="text-2xl">✓</span>
+                  Base de datos optimizada
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Tips adicionales */}
+          <div className="card bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-300">
+            <h3 className="text-xl font-bold text-purple-900 mb-4 flex items-center gap-2">
+              <Settings className="h-6 w-6" />
+              💡 Mejores Prácticas
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-purple-800">
+              <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                <h4 className="font-bold mb-2">🕐 Frecuencia Recomendada</h4>
+                <p className="text-sm leading-relaxed">
+                  Limpia los pedidos completados una vez por semana o cuando acumules más de 100 pedidos.
+                </p>
+              </div>
+              <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                <h4 className="font-bold mb-2">📊 Antes de Eliminar</h4>
+                <p className="text-sm leading-relaxed">
+                  Considera exportar reportes o estadísticas importantes desde la sección de Pedidos.
+                </p>
+              </div>
+              <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                <h4 className="font-bold mb-2">💾 Ahorro de Recursos</h4>
+                <p className="text-sm leading-relaxed">
+                  Mantener la base de datos limpia mejora el rendimiento y reduce costos en Supabase.
+                </p>
+              </div>
+              <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                <h4 className="font-bold mb-2">🔄 Automatización</h4>
+                <p className="text-sm leading-relaxed">
+                  En el futuro se podría implementar limpieza automática programada.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
