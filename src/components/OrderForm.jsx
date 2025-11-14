@@ -665,19 +665,25 @@ const OrderForm = ({ user }) => {
           <button
             type="submit"
             disabled={loading || getSelectedItemsList().length === 0 || hasOrderToday || isPastDeadline}
-            className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-8 rounded-xl shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 transition-all duration-200 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-2xl border-2 border-green-500"
+            style={{ 
+              backgroundColor: '#16a34a',
+              color: '#ffffff',
+              WebkitTextFillColor: '#ffffff',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+            }}
+            className="w-full sm:w-auto hover:bg-green-700 font-bold py-4 px-8 rounded-xl shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 transition-all duration-200 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-2xl border-2 border-green-600"
           >
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                Creando pedido...
+                <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>Creando pedido...</span>
               </>
             ) : hasOrderToday ? (
-              'Ya tienes un pedido pendiente'
+              <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>Ya tienes un pedido pendiente</span>
             ) : (
               <>
-                <ShoppingCart className="h-6 w-6 mr-3" />
-                Confirmar Pedido
+                <ShoppingCart className="h-6 w-6 mr-3" style={{ color: '#ffffff' }} />
+                <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>Confirmar Pedido</span>
               </>
             )}
           </button>
