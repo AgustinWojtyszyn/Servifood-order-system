@@ -479,23 +479,27 @@ const AdminPanel = ({ user }) => {
               <Settings className="h-5 w-5 flex-shrink-0" />
               <span>Opciones</span>
             </button>
-            <button
-              onClick={() => setActiveTab('cleanup')}
-              className={`py-4 px-4 sm:px-5 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap flex items-center gap-2 relative ${
-                activeTab === 'cleanup'
-                  ? 'border-secondary-500 text-white drop-shadow'
-                  : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
-              }`}
-            >
-              <Database className="h-5 w-5 flex-shrink-0" />
-              <span>Limpieza</span>
-              {completedOrdersCount > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                  {completedOrdersCount}
-                </span>
-              )}
-            </button>
           </nav>
+        </div>
+        
+        {/* Botón de Limpiar Cache - Solo para Admins */}
+        <div className="px-3 sm:px-4 mt-3">
+          <button
+            onClick={() => setActiveTab('cleanup')}
+            className={`w-full py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'cleanup'
+                ? 'bg-red-600 text-white shadow-lg'
+                : 'bg-white/20 text-white hover:bg-white/30 border-2 border-white/40'
+            }`}
+          >
+            <Database className="h-5 w-5 flex-shrink-0" />
+            <span>Limpiar Cache</span>
+            {completedOrdersCount > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center px-2.5 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full shadow-md">
+                {completedOrdersCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -821,14 +825,14 @@ const AdminPanel = ({ user }) => {
             )}
           </div>
 
-          {/* Lista de opciones existentes */}
+          {/* Lista de opciones existentes - Con scroll adaptativo */}
           {!editingOptions && customOptions.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {customOptions.map((option, index) => (
-                <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-primary-300 transition-all">
+                <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-primary-300 transition-all min-w-0">
                   {/* Header con título y badges */}
                   <div className="mb-3">
-                    <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-2">{option.title}</h3>
+                    <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-2 break-words">{option.title}</h3>
                     <div className="flex flex-wrap gap-2">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                         option.type === 'multiple_choice' ? 'bg-blue-100 text-blue-800' :
@@ -851,14 +855,16 @@ const AdminPanel = ({ user }) => {
                     </div>
                   </div>
                   
-                  {/* Opciones de respuesta */}
+                  {/* Opciones de respuesta - Con scroll horizontal si es necesario */}
                   {(option.type === 'multiple_choice' || option.type === 'checkbox') && option.options && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {option.options.map((opt, i) => (
-                        <span key={i} className="text-xs sm:text-sm px-3 py-1.5 bg-gray-100 rounded-full text-gray-700 font-medium">
-                          {opt}
-                        </span>
-                      ))}
+                    <div className="overflow-x-auto pb-2 mb-4 -mx-2 px-2">
+                      <div className="flex gap-2 min-w-max">
+                        {option.options.map((opt, i) => (
+                          <span key={i} className="text-xs sm:text-sm px-3 py-1.5 bg-gray-100 rounded-full text-gray-700 font-medium whitespace-nowrap">
+                            {opt}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
                   
@@ -1078,7 +1084,7 @@ const AdminPanel = ({ user }) => {
                 <Database className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Limpieza de Pedidos Completados</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Limpiar Cache</h2>
                 <p className="text-gray-600 mt-1">Libera espacio eliminando pedidos finalizados</p>
               </div>
             </div>
