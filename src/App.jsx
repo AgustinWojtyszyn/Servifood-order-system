@@ -34,6 +34,7 @@ const InternalLoader = () => (
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [initialCheckDone, setInitialCheckDone] = useState(false)
   const [showSplash, setShowSplash] = useState(() => {
     // Solo mostrar splash en primera carga (no en recargas)
     const hasLoadedBefore = sessionStorage.getItem('hasLoadedApp')
@@ -41,26 +42,36 @@ function App() {
   })
 
   useEffect(() => {
-    // Obtener usuario inicial
-    auth.getUser().then(({ user }) => {
-      setUser(user)
+    // Verificar sesión existente rápidamente
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUser(session.user)
+      }
       setLoading(false)
-      // Marcar que la app ya cargó en esta sesión
+      setInitialCheckDone(true)
       sessionStorage.setItem('hasLoadedApp', 'true')
-    })
+    }
+
+    checkSession()
 
     // Escuchar cambios de autenticación
     const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      setLoading(false)
+      if (loading) setLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
   // Mostrar splash screen solo en primera carga
-  if (showSplash && loading) {
+  if (showSplash && !initialCheckDone) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />
+  }
+
+  // Mostrar loader discreto mientras verifica autenticación
+  if (loading || !initialCheckDone) {
+    return <InternalLoader />
   }
 
   return (
