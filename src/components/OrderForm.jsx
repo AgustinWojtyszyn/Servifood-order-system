@@ -324,7 +324,7 @@ const OrderForm = ({ user }) => {
   }
 
   return (
-    <div className="p-3 sm:p-6">
+    <div className="p-3 sm:p-6 pb-24 sm:pb-6">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         <div className="text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
@@ -660,7 +660,8 @@ const OrderForm = ({ user }) => {
           </div>
         )}
 
-        <div className="flex justify-center sm:justify-end mt-6">
+        {/* Botón de confirmación - Sticky en mobile */}
+        <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto bg-white sm:bg-transparent p-4 sm:p-0 shadow-2xl sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-50">
           <button
             type="submit"
             disabled={loading || getSelectedItemsList().length === 0 || hasOrderToday || isPastDeadline}
