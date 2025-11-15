@@ -324,8 +324,8 @@ const OrderForm = ({ user }) => {
   }
 
   return (
-    <div className="p-3 sm:p-6 pb-24 sm:pb-6">
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+    <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen overflow-y-auto">
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4">
         <div className="text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
         <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
@@ -660,8 +660,8 @@ const OrderForm = ({ user }) => {
           </div>
         )}
 
-        {/* Botón de confirmación - Sticky en mobile */}
-        <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto bg-white sm:bg-transparent p-4 sm:p-0 shadow-2xl sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-50">
+        {/* Botón de confirmación - Sticky en mobile con safe area */}
+        <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto bg-gradient-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <button
             type="submit"
             disabled={loading || getSelectedItemsList().length === 0 || hasOrderToday || isPastDeadline}
@@ -669,21 +669,22 @@ const OrderForm = ({ user }) => {
               backgroundColor: '#16a34a',
               color: '#ffffff',
               WebkitTextFillColor: '#ffffff',
-              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+              WebkitAppearance: 'none'
             }}
-            className="w-full sm:w-auto hover:bg-green-700 font-bold py-4 px-8 rounded-xl shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 transition-all duration-200 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-2xl border-2 border-green-600"
+            className="w-full sm:w-auto hover:bg-green-700 font-black py-5 px-8 rounded-xl shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-2xl border-2 border-green-600"
           >
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>Creando pedido...</span>
+                <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', fontWeight: '900' }}>Creando pedido...</span>
               </>
             ) : hasOrderToday ? (
-              <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>Ya tienes un pedido pendiente</span>
+              <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', fontWeight: '900' }}>Ya tienes un pedido pendiente</span>
             ) : (
               <>
-                <ShoppingCart className="h-6 w-6 mr-3" style={{ color: '#ffffff' }} />
-                <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>Confirmar Pedido</span>
+                <ShoppingCart className="h-6 w-6 mr-3" style={{ color: '#ffffff', stroke: '#ffffff', strokeWidth: 2 }} />
+                <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', fontWeight: '900' }}>Confirmar Pedido</span>
               </>
             )}
           </button>
