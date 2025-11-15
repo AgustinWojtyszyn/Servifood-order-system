@@ -327,9 +327,9 @@ const OrderForm = ({ user }) => {
     <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen overflow-y-auto">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4">
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
-          <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
+          <p className="text-2xl sm:text-3xl md:text-4xl text-white font-extrabold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
+          <p className="text-lg sm:text-xl font-bold text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
         </div>
 
       {!isPastDeadline && !hasOrderToday && (
@@ -388,14 +388,14 @@ const OrderForm = ({ user }) => {
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
-              <User className="h-5 w-5 sm:h-6 sm:w-6" />
+              <User className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Información Personal</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Información Personal</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label htmlFor="location" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="location" className="block text-base sm:text-lg font-extrabold text-gray-700 mb-2">
                 Lugar de trabajo *
               </label>
               <select
@@ -415,7 +415,7 @@ const OrderForm = ({ user }) => {
             </div>
 
             <div>
-              <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-base sm:text-lg font-extrabold text-gray-700 mb-2">
                 Nombre completo *
               </label>
               <input
@@ -431,7 +431,7 @@ const OrderForm = ({ user }) => {
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-base sm:text-lg font-extrabold text-gray-700 mb-2">
                 Correo electrónico *
               </label>
               <input
@@ -447,7 +447,7 @@ const OrderForm = ({ user }) => {
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="phone" className="block text-base sm:text-lg font-extrabold text-gray-700 mb-2">
                 Teléfono
               </label>
               <input
@@ -467,11 +467,11 @@ const OrderForm = ({ user }) => {
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 text-white p-2 sm:p-3 rounded-xl">
-              <ChefHat className="h-5 w-5 sm:h-6 sm:w-6" />
+              <ChefHat className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Menú del Día</h2>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">Selecciona tu plato principal</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Menú del Día</h2>
+              <p className="text-lg sm:text-xl font-bold text-gray-700 mt-1">Selecciona tu plato principal</p>
             </div>
           </div>
 
@@ -479,14 +479,14 @@ const OrderForm = ({ user }) => {
             {menuItems.map((item) => (
               <div key={item.id} className="bg-white border-2 border-gray-200 rounded-2xl p-4 sm:p-5 hover:border-primary-500 hover:shadow-xl transition-all duration-300 flex flex-col">
                 <div className="flex-1 mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">{item.name}</h3>
+                  <h3 className="text-lg sm:text-xl font-extrabold text-gray-900 mb-2">{item.name}</h3>
                   {item.description && (
-                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{item.description}</p>
+                    <p className="text-base sm:text-lg font-bold text-gray-700 leading-relaxed">{item.description}</p>
                   )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 sm:p-4 border border-gray-200 gap-3 sm:gap-0">
-                  <span className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide text-center sm:text-left">Cantidad</span>
+                  <span className="text-base sm:text-lg font-extrabold text-gray-700 uppercase tracking-wide text-center sm:text-left">Cantidad</span>
                   <div className="flex items-center justify-center space-x-2 sm:space-x-3">
                     <button
                       type="button"
@@ -496,7 +496,7 @@ const OrderForm = ({ user }) => {
                     >
                       <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
-                    <span className="min-w-[3rem] text-center font-bold text-2xl text-gray-900">
+                    <span className="min-w-[3rem] text-center font-extrabold text-3xl text-gray-900">
                       {selectedItems[item.id] || 0}
                     </span>
                     <button
@@ -522,8 +522,8 @@ const OrderForm = ({ user }) => {
                 <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Resumen del Pedido</h2>
-                <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Revisa tu selección antes de confirmar</p>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Resumen del Pedido</h2>
+                <p className="text-base sm:text-lg font-bold text-gray-700 mt-1">Revisa tu selección antes de confirmar</p>
               </div>
             </div>
 
@@ -531,7 +531,7 @@ const OrderForm = ({ user }) => {
               {getSelectedItemsList().map((item) => (
                 <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-2 border-b border-gray-100">
                   <div className="flex items-center justify-between sm:justify-start">
-                    <span className="font-medium text-gray-900 text-sm sm:text-base">{item.name}</span>
+                    <span className="font-extrabold text-gray-900 text-base sm:text-lg">{item.name}</span>
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, 0)}
@@ -540,7 +540,7 @@ const OrderForm = ({ user }) => {
                       <X className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
-                  <span className="text-gray-600 text-sm sm:text-base">Cantidad: {selectedItems[item.id]}</span>
+                  <span className="text-gray-700 text-base sm:text-lg font-bold">Cantidad: {selectedItems[item.id]}</span>
                 </div>
               ))}
             </div>
@@ -562,15 +562,15 @@ const OrderForm = ({ user }) => {
                 <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Opciones Adicionales</h2>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">Personaliza tu pedido</p>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Opciones Adicionales</h2>
+              <p className="text-lg sm:text-xl font-bold text-gray-700 mt-1">Personaliza tu pedido</p>
             </div>
           </div>
 
           <div className="space-y-6">
             {customOptions.filter(opt => opt.active).map((option) => (
               <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50">
-                <label className="block text-sm font-bold text-gray-700 mb-3">
+                <label className="block text-base sm:text-lg font-extrabold text-gray-700 mb-3">
                   {option.title}
                   {option.required && <span className="text-red-600 ml-1">*</span>}
                 </label>                  {option.type === 'multiple_choice' && option.options && (
@@ -585,7 +585,7 @@ const OrderForm = ({ user }) => {
                             onChange={(e) => handleCustomResponse(option.id, e.target.value, 'multiple_choice')}
                             className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
                           />
-                          <span className="ml-3 text-sm text-gray-700">{opt}</span>
+                          <span className="ml-3 text-base sm:text-lg font-bold text-gray-700">{opt}</span>
                         </label>
                       ))}
                     </div>
@@ -602,7 +602,7 @@ const OrderForm = ({ user }) => {
                             onChange={(e) => handleCustomResponse(option.id, e.target.value, 'checkbox')}
                             className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                           />
-                          <span className="ml-3 text-sm text-gray-700">{opt}</span>
+                          <span className="ml-3 text-base sm:text-lg font-bold text-gray-700">{opt}</span>
                         </label>
                       ))}
                     </div>
@@ -627,10 +627,10 @@ const OrderForm = ({ user }) => {
 
         {/* Información Adicional */}
         <div className="card">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Información Adicional</h2>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-4 sm:mb-6">Información Adicional</h2>
 
           <div>
-            <label htmlFor="additional-comments" className="block text-sm font-bold text-gray-700 mb-2">
+            <label htmlFor="additional-comments" className="block text-base sm:text-lg font-extrabold text-gray-700 mb-2">
               Comentarios adicionales
             </label>
             <textarea
@@ -645,7 +645,7 @@ const OrderForm = ({ user }) => {
           </div>
           
           <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-800">
+            <p className="text-base sm:text-lg font-bold text-blue-800">
               <strong>📅 Fecha de entrega:</strong> Todos los pedidos se entregan al día siguiente
             </p>
           </div>
