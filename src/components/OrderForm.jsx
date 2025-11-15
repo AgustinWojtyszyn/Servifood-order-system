@@ -479,30 +479,32 @@ const OrderForm = ({ user }) => {
             {menuItems.map((item) => (
               <div key={item.id} className="bg-white border-2 border-gray-200 rounded-2xl p-5 hover:border-primary-500 hover:shadow-xl transition-all duration-300 flex flex-col">
                 <div className="flex-1 mb-4">
-                  <h3 style={{ fontWeight: '900' }} className="text-xl sm:text-2xl text-gray-900 mb-2">{item.name}</h3>
+                  {/* TEXTO MÁS GRANDE PARA LOS PLATILLOS */}
+                  <h3 style={{ fontWeight: '900' }} className="text-2xl sm:text-3xl text-gray-900 mb-3 leading-tight">{item.name}</h3>
                   {item.description && (
-                    <p style={{ fontWeight: '900' }} className="text-sm text-gray-900 leading-relaxed">{item.description}</p>
+                    <p style={{ fontWeight: '900' }} className="text-lg text-gray-900 leading-relaxed">{item.description}</p>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                  <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">Cantidad</span>
-                  <div className="flex items-center space-x-3">
+                {/* CONTENEDOR DE BOTONES MEJORADO */}
+                <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 min-h-[80px]">
+                  <span className="text-sm font-bold text-gray-700 uppercase tracking-wide flex-shrink-0 mr-3">Cantidad</span>
+                  <div className="flex items-center space-x-2 flex-1 justify-end">
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) - 1)}
-                      className="p-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95"
+                      className="p-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95 flex-shrink-0"
                       aria-label={`Disminuir ${item.name}`}
                     >
                       <Minus className="h-5 w-5" />
                     </button>
-                    <span className="w-12 text-center font-bold text-2xl text-gray-900">
+                    <span className="w-12 text-center font-bold text-2xl text-gray-900 flex-shrink-0">
                       {selectedItems[item.id] || 0}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) + 1)}
-                      className="p-2.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95"
+                      className="p-2.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95 flex-shrink-0"
                       aria-label={`Aumentar ${item.name}`}
                     >
                       <Plus className="h-5 w-5" />
@@ -531,7 +533,8 @@ const OrderForm = ({ user }) => {
               {getSelectedItemsList().map((item) => (
                 <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-2 border-b border-gray-100">
                   <div className="flex items-center justify-between sm:justify-start">
-                    <span className="font-medium text-gray-900 text-sm sm:text-base">{item.name}</span>
+                    {/* TEXTO MÁS GRANDE EN EL RESUMEN */}
+                    <span className="font-medium text-gray-900 text-lg sm:text-xl">{item.name}</span>
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, 0)}
@@ -540,13 +543,13 @@ const OrderForm = ({ user }) => {
                       <X className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
-                  <span className="text-gray-600 text-sm sm:text-base">Cantidad: {selectedItems[item.id]}</span>
+                  <span className="text-gray-600 text-base sm:text-lg">Cantidad: {selectedItems[item.id]}</span>
                 </div>
               ))}
             </div>
 
             <div className="border-t border-gray-200 pt-3 sm:pt-4">
-              <div className="flex justify-between items-center text-base sm:text-lg font-semibold">
+              <div className="flex justify-between items-center text-lg sm:text-xl font-semibold">
                 <span>Total de items:</span>
                 <span>{calculateTotal()}</span>
               </div>
