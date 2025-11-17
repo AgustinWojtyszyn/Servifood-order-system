@@ -485,9 +485,10 @@ const OrderForm = ({ user }) => {
                 key={item.id}
                 className="card bg-white border-2 border-gray-200 rounded-2xl p-5
                            hover:border-primary-500 hover:shadow-xl transition-all duration-300
-                           flex flex-col justify-between min-h-[260px]"
+                           flex flex-col justify-between min-h-[280px]"
               >
-                <div>
+                {/* Contenido del item */}
+                <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
                     {item.name}
                   </h3>
@@ -498,8 +499,10 @@ const OrderForm = ({ user }) => {
                   )}
                 </div>
 
-                {/* Checkbox estilizado */}
-                <div className="flex justify-end mt-4">
+                {/* Zona inferior con ambos botones */}
+                <div className="mt-6 flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200">
+
+                  {/* Checkbox estilizado */}
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -508,8 +511,19 @@ const OrderForm = ({ user }) => {
                       className="h-5 w-5 rounded border-gray-400 text-primary-600
                                  focus:ring-primary-500 focus:outline-none"
                     />
-                    <span className="text-sm font-semibold text-gray-700">Seleccionar</span>
+                    <span className="text-sm font-semibold text-gray-700">
+                      Seleccionar
+                    </span>
                   </label>
+
+                  {/* Botón secundario (opcional o ya existente) */}
+                  <button
+                    className="px-4 py-2 rounded-xl font-semibold text-sm
+                               bg-primary-600 text-white hover:bg-primary-700
+                               transition-all duration-200 shadow-md"
+                  >
+                    Agregar
+                  </button>
                 </div>
               </div>
             ))}
