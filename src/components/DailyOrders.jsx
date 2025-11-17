@@ -614,75 +614,83 @@ const DailyOrders = ({ user }) => {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-2xl">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Calendar className="h-10 w-10" />
-              <h1 className="text-4xl font-bold">Pedidos Diarios</h1>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl">
+        <div className="flex flex-col gap-4">
+          {/* Título y fecha */}
+          <div className="text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+              <Calendar className="h-8 w-8 md:h-10 md:w-10" />
+              <h1 className="text-2xl md:text-4xl font-bold">Pedidos Diarios</h1>
             </div>
-            <p className="text-blue-100 text-lg">
+            <p className="text-blue-100 text-base md:text-lg">
               Todos los pedidos para entregar mañana
             </p>
-            <div className="flex items-center gap-2 mt-3 bg-white/20 rounded-lg px-4 py-2 inline-block">
-              <Clock className="h-5 w-5" />
-              <span className="font-semibold capitalize">{getTomorrowDate()}</span>
+            <div className="flex items-center justify-center md:justify-start gap-2 mt-3 bg-white/20 rounded-lg px-3 py-2 md:px-4 md:py-2 inline-block">
+              <Clock className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="font-semibold text-sm md:text-base capitalize">{getTomorrowDate()}</span>
             </div>
           </div>
-          
-          <div className="flex flex-col gap-3">
+
+          {/* Botones de acción - Grid responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Botón de refrescar */}
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className={`font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 ${
-                refreshing 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
+                refreshing
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-500 hover:bg-blue-600 text-white'
               }`}
             >
-              <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Actualizando...' : 'Actualizar Pedidos'}
+              <RefreshCw className={`h-4 w-4 md:h-5 md:w-5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
+              <span className="sm:hidden">{refreshing ? '...' : 'Refresh'}</span>
             </button>
 
             {/* Botón de exportar a Excel */}
             <button
               onClick={exportToExcel}
               disabled={sortedOrders.length === 0}
-              className={`font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 ${
-                sortedOrders.length === 0 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
+                sortedOrders.length === 0
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-green-500 hover:bg-green-600 text-white'
               }`}
             >
-              <FileSpreadsheet className="h-5 w-5" />
-              Exportar a Excel ({sortedOrders.length})
+              <FileSpreadsheet className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="hidden sm:inline">Excel ({sortedOrders.length})</span>
+              <span className="sm:hidden">Excel</span>
             </button>
 
             {/* Botón de compartir por WhatsApp */}
             <button
               onClick={shareViaWhatsApp}
               disabled={sortedOrders.length === 0}
-              className={`font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 ${
-                sortedOrders.length === 0 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
+                sortedOrders.length === 0
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700 text-white'
               }`}
             >
-              <Send className="h-5 w-5" />
-              Compartir Resumen
+              <Send className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="hidden sm:inline">WhatsApp</span>
+              <span className="sm:hidden">Share</span>
             </button>
+          </div>
 
+          {/* Filtros - Grid responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Filtro por ubicación */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <label className="text-sm font-semibold mb-2 block flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Filtrar por ubicación
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+                <MapPin className="h-3 w-3 md:h-4 md:w-4" />
+                Ubicación
               </label>
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-white text-gray-900 font-semibold focus:ring-2 focus:ring-blue-400"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
               >
                 <option value="all">Todas ({stats.total})</option>
                 {locations.map(location => (
@@ -694,17 +702,17 @@ const DailyOrders = ({ user }) => {
             </div>
 
             {/* Filtro por estado */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <label className="text-sm font-semibold mb-2 block flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Filtrar por estado
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+                <Filter className="h-3 w-3 md:h-4 md:w-4" />
+                Estado
               </label>
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-white text-gray-900 font-semibold focus:ring-2 focus:ring-blue-400"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
               >
-                <option value="all">Todos los estados</option>
+                <option value="all">Todos</option>
                 <option value="pending">Pendientes ({stats.pending})</option>
                 <option value="completed">Completados ({stats.completed})</option>
                 <option value="cancelled">Cancelados ({stats.cancelled})</option>
@@ -712,38 +720,38 @@ const DailyOrders = ({ user }) => {
             </div>
 
             {/* Filtro por platillo */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <label className="text-sm font-semibold mb-2 block flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Filtrar por platillo
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+                <Package className="h-3 w-3 md:h-4 md:w-4" />
+                Platillo
               </label>
               <select
                 value={selectedDish}
                 onChange={(e) => setSelectedDish(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-white text-gray-900 font-semibold focus:ring-2 focus:ring-blue-400"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
               >
-                <option value="all">Todos los platillos</option>
+                <option value="all">Todos</option>
                 {availableDishes.map(dish => (
                   <option key={dish} value={dish}>
-                    {dish} ({stats.byDish[dish] || 0} unidades)
+                    {dish} ({stats.byDish[dish] || 0})
                   </option>
                 ))}
               </select>
             </div>
 
             {/* Ordenar por */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <label className="text-sm font-semibold mb-2 block flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Ordenar por
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+                <TrendingUp className="h-3 w-3 md:h-4 md:w-4" />
+                Ordenar
               </label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-white text-gray-900 font-semibold focus:ring-2 focus:ring-blue-400"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
               >
-                <option value="time">Más recientes primero</option>
-                <option value="location">Ubicación (A-Z)</option>
+                <option value="time">Recientes</option>
+                <option value="location">Ubicación</option>
                 <option value="status">Estado</option>
               </select>
             </div>
@@ -752,44 +760,44 @@ const DailyOrders = ({ user }) => {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200">
           <div className="text-center">
-            <Package className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 font-semibold">Total Pedidos</p>
-            <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
+            <Package className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mx-auto mb-2" />
+            <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Pedidos</p>
+            <p className="text-2xl md:text-3xl font-bold text-blue-600">{stats.total}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-purple-200">
+        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-purple-200">
           <div className="text-center">
-            <TrendingUp className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 font-semibold">Total Items</p>
-            <p className="text-3xl font-bold text-purple-600">{stats.totalItems}</p>
+            <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-purple-600 mx-auto mb-2" />
+            <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Items</p>
+            <p className="text-2xl md:text-3xl font-bold text-purple-600">{stats.totalItems}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-yellow-200">
+        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-yellow-200">
           <div className="text-center">
-            <Clock className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 font-semibold">Pendientes</p>
-            <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
+            <Clock className="h-6 w-6 md:h-8 md:w-8 text-yellow-600 mx-auto mb-2" />
+            <p className="text-xs md:text-sm text-gray-600 font-semibold">Pendientes</p>
+            <p className="text-2xl md:text-3xl font-bold text-yellow-600">{stats.pending}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-green-200">
+        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-green-200">
           <div className="text-center">
-            <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 font-semibold">Completados</p>
-            <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
+            <CheckCircle className="h-6 w-6 md:h-8 md:w-8 text-green-600 mx-auto mb-2" />
+            <p className="text-xs md:text-sm text-gray-600 font-semibold">Completados</p>
+            <p className="text-2xl md:text-3xl font-bold text-green-600">{stats.completed}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-red-200">
+        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-red-200">
           <div className="text-center">
-            <XCircle className="h-8 w-8 text-red-600 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 font-semibold">Cancelados</p>
-            <p className="text-3xl font-bold text-red-600">{stats.cancelled}</p>
+            <XCircle className="h-6 w-6 md:h-8 md:w-8 text-red-600 mx-auto mb-2" />
+            <p className="text-xs md:text-sm text-gray-600 font-semibold">Cancelados</p>
+            <p className="text-2xl md:text-3xl font-bold text-red-600">{stats.cancelled}</p>
           </div>
         </div>
       </div>
@@ -827,75 +835,83 @@ const DailyOrders = ({ user }) => {
           </div>
           
           {sortedOrders.map((order) => (
-            <div 
-              key={order.id} 
+            <div
+              key={order.id}
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-gray-200 overflow-hidden"
             >
-              {/* Header del pedido */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b-2 border-gray-200">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <User className="h-5 w-5 text-blue-600" />
+              {/* Header del pedido - Mobile optimized */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 md:px-6 py-3 md:py-4 border-b-2 border-gray-200">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                      <div className="p-1.5 md:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                        <User className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base md:text-lg font-bold text-gray-900 truncate">{order.user_name}</h3>
+                        <p className="text-xs md:text-sm text-gray-600 truncate">{order.user_email}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">{order.user_name}</h3>
-                      <p className="text-sm text-gray-600">{order.user_email}</p>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`px-2 md:px-4 py-1 md:py-2 rounded-lg font-bold text-xs md:text-sm border-2 ${getStatusColor(order.status)}`}>
+                        {getStatusText(order.status)}
+                      </span>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <span className={`px-4 py-2 rounded-lg font-bold text-sm border-2 ${getStatusColor(order.status)}`}>
-                      {getStatusText(order.status)}
-                    </span>
-                    <span className="text-sm text-gray-500">
+
+                  <div className="flex items-center justify-between text-xs md:text-sm">
+                    <span className="text-gray-500">
                       {formatTime(order.created_at)}
+                    </span>
+                    <span className="font-semibold text-gray-700">
+                      {order.total_items} items
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Contenido del pedido */}
-              <div className="p-6 space-y-4">
+              {/* Contenido del pedido - Mobile optimized */}
+              <div className="p-4 md:p-6 space-y-3 md:space-y-4">
                 {/* Ubicación */}
-                <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
-                  <MapPin className="h-6 w-6 text-blue-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600 font-semibold">Ubicación de Entrega</p>
-                    <p className="text-lg font-bold text-gray-900">{order.location}</p>
+                <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3 md:p-4 border-2 border-blue-200">
+                  <MapPin className="h-5 w-5 md:h-6 md:w-6 text-blue-600 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs md:text-sm text-gray-600 font-semibold">Ubicación de Entrega</p>
+                    <p className="text-base md:text-lg font-bold text-gray-900 truncate">{order.location}</p>
                   </div>
                 </div>
 
                 {/* Items del pedido */}
-                <div className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200">
-                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-gray-700" />
-                    Platillos Solicitados ({order.total_items} items)
+                <div className="bg-gray-50 rounded-lg p-3 md:p-4 border-2 border-gray-200">
+                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm md:text-base">
+                    <Package className="h-4 w-4 md:h-5 md:w-5 text-gray-700" />
+                    Platillos Solicitados
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2">
                     {order.items && order.items.map((item, index) => (
-                      <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-gray-200">
                         <div className="flex items-center justify-between">
-                          <span style={{ fontWeight: '900' }} className="text-gray-900">{item.name}</span>
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-bold">
+                          <span style={{ fontWeight: '900' }} className="text-sm md:text-base text-gray-900 flex-1 truncate mr-2">{item.name}</span>
+                          <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-bold flex-shrink-0">
                             x{item.quantity}
                           </span>
                         </div>
                       </div>
                     ))}
-                    
+
                     {/* Guarnición personalizada si existe */}
                     {(() => {
                       const customSide = getCustomSideFromResponses(order.custom_responses)
                       if (customSide) {
                         return (
-                          <div className="bg-orange-50 rounded-lg p-3 border-2 border-orange-300">
+                          <div className="bg-orange-50 rounded-lg p-2 md:p-3 border-2 border-orange-300">
                             <div className="flex items-center justify-between">
-                              <div>
-                                <span className="font-bold text-orange-900">🔸 Guarnición Personalizada</span>
-                                <p className="text-sm font-bold text-orange-700 mt-1">{customSide}</p>
+                              <div className="min-w-0 flex-1">
+                                <span className="font-bold text-orange-900 text-sm">🔸 Guarnición Personalizada</span>
+                                <p className="text-xs md:text-sm font-bold text-orange-700 mt-1 truncate">{customSide}</p>
                               </div>
-                              <span className="px-3 py-1 bg-orange-200 text-orange-900 rounded-full text-xs font-bold">
+                              <span className="px-2 py-1 bg-orange-200 text-orange-900 rounded-full text-xs font-bold flex-shrink-0 ml-2">
                                 CUSTOM
                               </span>
                             </div>
@@ -909,16 +925,16 @@ const DailyOrders = ({ user }) => {
 
                 {/* Aclaraciones especiales */}
                 {(order.comments || getOtherCustomResponses(order.custom_responses).length > 0) && (
-                  <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-200">
-                    <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <MessageCircle className="h-5 w-5 text-purple-600" />
+                  <div className="bg-purple-50 rounded-lg p-3 md:p-4 border-2 border-purple-200">
+                    <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm md:text-base">
+                      <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
                       Aclaraciones Especiales
                     </h4>
-                    
+
                     {order.comments && (
                       <div className="mb-3">
-                        <p className="text-sm text-gray-600 font-semibold mb-1">Comentarios:</p>
-                        <p className="text-gray-900 bg-white rounded-lg p-3 border border-purple-200">
+                        <p className="text-xs md:text-sm text-gray-600 font-semibold mb-1">Comentarios:</p>
+                        <p className="text-gray-900 bg-white rounded-lg p-2 md:p-3 border border-purple-200 text-sm md:text-base">
                           {order.comments}
                         </p>
                       </div>
@@ -926,14 +942,14 @@ const DailyOrders = ({ user }) => {
 
                     {getOtherCustomResponses(order.custom_responses).length > 0 && (
                       <div className="space-y-2">
-                        <p style={{ fontWeight: '900' }} className="text-sm text-gray-900 mb-2">Opciones Adicionales:</p>
+                        <p style={{ fontWeight: '900' }} className="text-xs md:text-sm text-gray-900 mb-2">Opciones Adicionales:</p>
                         {getOtherCustomResponses(order.custom_responses)
                           .map((resp, index) => (
-                            <div key={index} className="bg-white rounded-lg p-3 border border-purple-200">
-                              <p style={{ fontWeight: '900' }} className="text-purple-900 text-sm mb-1">{resp.title}</p>
-                              <p style={{ fontWeight: '900' }} className="text-gray-900">
-                                {Array.isArray(resp.response) 
-                                  ? resp.response.join(', ') 
+                            <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-purple-200">
+                              <p style={{ fontWeight: '900' }} className="text-purple-900 text-xs md:text-sm mb-1">{resp.title}</p>
+                              <p style={{ fontWeight: '900' }} className="text-gray-900 text-sm md:text-base">
+                                {Array.isArray(resp.response)
+                                  ? resp.response.join(', ')
                                   : resp.response}
                               </p>
                             </div>
@@ -945,9 +961,9 @@ const DailyOrders = ({ user }) => {
 
                 {/* Info de contacto adicional */}
                 {(order.customer_phone) && (
-                  <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
-                    <h4 className="font-bold text-gray-900 mb-2 text-sm">Información de Contacto</h4>
-                    <p className="text-gray-900">📞 {order.customer_phone}</p>
+                  <div className="bg-green-50 rounded-lg p-3 md:p-4 border-2 border-green-200">
+                    <h4 className="font-bold text-gray-900 mb-2 text-xs md:text-sm">Información de Contacto</h4>
+                    <p className="text-gray-900 text-sm md:text-base">📞 {order.customer_phone}</p>
                   </div>
                 )}
               </div>
