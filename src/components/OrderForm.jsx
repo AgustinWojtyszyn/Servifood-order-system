@@ -109,37 +109,41 @@ const OrderForm = ({ user }) => {
     }
   }
 
-  const handleItemSelect = (itemId, quantity) => {
+  const handleItemSelect = (itemId, isSelected) => {
     const item = menuItems.find(m => m.id === itemId)
     const isEnsalada = item?.name?.toLowerCase().includes('ensalada')
-    
-    // Limitar ensaladas a 1 unidad máxima
-    if (isEnsalada && quantity > 1) {
-      alert('Solo puedes seleccionar 1 ensalada')
-      return
+
+    if (isSelected) {
+      // Si está seleccionando
+      if (isEnsalada) {
+        // Para ensaladas, solo permitir 1
+        setSelectedItems(prev => ({
+          ...prev,
+          [itemId]: true
+        }))
+      } else {
+        // Para menús principales, verificar si ya hay uno seleccionado
+        const mainMenuSelected = menuItems
+          .filter(m => !m.name?.toLowerCase().includes('ensalada'))
+          .some(m => selectedItems[m.id])
+
+        if (mainMenuSelected && !selectedItems[itemId]) {
+          alert('Solo puedes seleccionar 1 menú por persona.')
+          return
+        }
+
+        setSelectedItems(prev => ({
+          ...prev,
+          [itemId]: true
+        }))
+      }
+    } else {
+      // Si está deseleccionando
+      setSelectedItems(prev => ({
+        ...prev,
+        [itemId]: false
+      }))
     }
-    
-    // Contar cuántos menús principales ya están seleccionados (sin ensaladas)
-    const mainMenuCount = menuItems
-      .filter(m => !m.name?.toLowerCase().includes('ensalada'))
-      .reduce((count, m) => count + (selectedItems[m.id] || 0), 0)
-    
-    // Si intentamos agregar un menú principal y ya hay uno seleccionado
-    if (!isEnsalada && quantity > 0 && mainMenuCount >= 1 && !selectedItems[itemId]) {
-      alert('Solo puedes seleccionar 1 menú por persona. ')
-      return
-    }
-    
-    // Si ya tiene un menú principal seleccionado, no puede cambiar la cantidad a más de 1
-    if (!isEnsalada && quantity > 1) {
-      alert('Solo puedes seleccionar 1 unidad del menú principal')
-      return
-    }
-    
-    setSelectedItems(prev => ({
-      ...prev,
-      [itemId]: Math.max(0, quantity)
-    }))
   }
 
   const handleFormChange = (e) => {
@@ -172,13 +176,11 @@ const OrderForm = ({ user }) => {
   }
 
   const getSelectedItemsList = () => {
-    return menuItems.filter(item => selectedItems[item.id] > 0)
+    return menuItems.filter(item => selectedItems[item.id] === true)
   }
 
   const calculateTotal = () => {
-    return getSelectedItemsList().reduce((total, item) => {
-      return total + (selectedItems[item.id] || 0)
-    }, 0)
+    return getSelectedItemsList().length
   }
 
   const handleSubmit = async (e) => {
@@ -273,7 +275,7 @@ const OrderForm = ({ user }) => {
         items: selectedItemsList.map(item => ({
           id: item.id,
           name: item.name,
-          quantity: selectedItems[item.id]
+          quantity: 1
         })),
         comments: formData.comments,
         delivery_date: deliveryDate,
@@ -487,30 +489,17 @@ const OrderForm = ({ user }) => {
                   )}
                 </div>
 
-                {/* === CAMBIO CLAVE AQUÍ: Nuevo div con clase 'cantidad-container' === */}
-                <div className="cantidad-container">
-                  <span className="cantidad-title">CANTIDAD</span>
-                  <div className="counter-container">
-                    <button
-                      type="button"
-                      onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) - 1)}
-                      className="button bg-red-500 hover:bg-red-600"
-                      aria-label={`Disminuir ${item.name}`}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="count font-bold text-2xl text-gray-900">
-                      {selectedItems[item.id] || 0}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) + 1)}
-                      className="button bg-green-500 hover:bg-green-600"
-                      aria-label={`Aumentar ${item.name}`}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
+                {/* === NUEVO: Checkbox para selección === */}
+                <div className="selection-container">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems[item.id] === true}
+                      onChange={(e) => handleItemSelect(item.id, e.target.checked)}
+                      className="selection-checkbox"
+                    />
+                    <span className="checkbox-text">Seleccionar</span>
+                  </label>
                 </div>
               </div>
             ))}
@@ -538,13 +527,13 @@ const OrderForm = ({ user }) => {
                     <span className="font-medium text-gray-900 text-lg sm:text-xl">{item.name}</span>
                     <button
                       type="button"
-                      onClick={() => handleItemSelect(item.id, 0)}
+                      onClick={() => handleItemSelect(item.id, false)}
                       className="ml-2 p-1 rounded-full hover:bg-red-100 text-red-600"
                     >
                       <X className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
-                  <span className="text-gray-600 text-base sm:text-lg">Cantidad: {selectedItems[item.id]}</span>
+                  <span className="text-gray-600 text-base sm:text-lg">Seleccionado</span>
                 </div>
               ))}
             </div>
