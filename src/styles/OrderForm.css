@@ -9,17 +9,17 @@
     height: 100%; /* Asegura que la tarjeta llena el espacio de la cuadrícula */
 }
 
-.cantidad-container {
-    /* El truco de la alineación: empuja hacia el fondo */
-    margin-top: auto;
+/* src/styles/OrderForm.css */
 
-    /* === CAMBIOS CLAVE === */
+.cantidad-container {
+    /* Mantener las propiedades de alineación vertical y margen */
+    margin-top: auto;
     display: flex;
-    justify-content: flex-start; /* Alinea los elementos al inicio (izquierda) */
+    justify-content: flex-start;
     align-items: center;
     width: 100%;
     padding-top: 15px;
-    gap: 15px; /* Añade un espacio entre "CANTIDAD" y el contador */
+    gap: 15px;
 
     /* Estilos del contenedor de cantidad */
     background: linear-gradient(to right, #f9fafb, #f3f4f6);
@@ -38,17 +38,33 @@
     flex-shrink: 0;
 }
 
+/* --- Ajuste del contenedor de los botones y el número --- */
 .counter-container {
-    display: flex; /* Asegura que los elementos internos estén en fila */
-    align-items: center; /* Centra verticalmente los botones y el número */
-    gap: 5px; /* Reduce el espacio entre el botón, número y botón */
+    display: flex;
+    align-items: center;
 
-    /* === CAMBIOS CLAVE: Más pequeño === */
-    padding: 0;
-    border-radius: 20px; /* Si quieres bordes más redondeados para los botones */
-    overflow: hidden; /* Asegura que los botones queden dentro del borde redondeado */
+    /* === SOLUCIÓN CLAVE para que el botón verde se vea === */
+    /* Asegúrate de que tenga suficiente espacio, o permite que crezca */
+    width: auto; /* Permite que el ancho se ajuste al contenido (botones y número) */
+    min-width: 120px; /* Dale un ancho mínimo razonable para todo el contador */
+
+    /* El contenedor blanco redondeado */
+    padding: 8px; /* Ajusta este padding si es necesario */
+    border: 1px solid #ddd;
+    border-radius: 10px;
 }
 
+/* --- Ajuste del espacio entre elementos del contador --- */
+.count {
+    /* Mantén tus estilos existentes */
+    font-size: 1.1em; /* Ajusta el tamaño del número */
+    min-width: 25px; /* Asegura un ancho mínimo para el número para que no se vea aplastado */
+    text-align: center;
+    /* === CAMBIOS CLAVE: Espaciado si es necesario === */
+    margin: 0 10px; /* Asegura un buen espacio entre los botones y el número */
+}
+
+/* --- Ajuste de los botones --- */
 .button {
     /* Mantiene tus estilos de color y background existentes */
     display: flex;
@@ -63,13 +79,5 @@
     width: 30px; /* Ancho del botón */
     height: 30px; /* Alto del botón */
     border-radius: 50%; /* Para hacerlos perfectamente circulares si quieres */
-}
-
-.count {
-    /* Mantén tus estilos existentes */
-    font-size: 1.1em; /* Ajusta el tamaño del número */
-    min-width: 25px; /* Asegura un ancho mínimo para el número para que no se vea aplastado */
-    text-align: center;
-    /* === CAMBIOS CLAVE: Espaciado si es necesario === */
-    padding: 0 5px; /* Reduce o ajusta el padding horizontal */
+    flex-shrink: 0; /* IMPORANTE: Evita que el botón se comprima si no hay espacio */
 }
