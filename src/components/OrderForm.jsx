@@ -485,45 +485,36 @@ const OrderForm = ({ user }) => {
         key={item.id}
         className="card bg-white border-2 border-gray-200 rounded-2xl p-5
                    hover:border-primary-500 hover:shadow-xl transition-all duration-300
-                   flex flex-col justify-between min-h-[280px]"
+                   flex flex-col justify-between min-h-[260px]"
       >
-        {/* Contenido del item */}
-        <div className="flex-1">
-          <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
+        <div>
+          {/* 🔥 Título más grande y en negrita */}
+          <h3 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">
             {item.name}
           </h3>
+
+          {/* 🔥 Descripción un poco más grande y legible */}
           {item.description && (
-            <p className="text-base text-gray-800 leading-snug font-semibold">
+            <p className="text-lg text-gray-800 leading-snug font-medium">
               {item.description}
             </p>
           )}
         </div>
 
-        {/* Zona inferior con ambos botones */}
-        <div className="mt-6 flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200">
-
-          {/* Checkbox estilizado */}
+        {/* Checkbox funcional */}
+        <div className="flex justify-end mt-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={selectedItems[item.id] === true}
               onChange={(e) => handleItemSelect(item.id, e.target.checked)}
-              className="h-5 w-5 rounded border-gray-400 text-primary-600
+              className="h-6 w-6 rounded border-gray-400 text-primary-600
                          focus:ring-primary-500 focus:outline-none"
             />
-            <span className="text-sm font-semibold text-gray-700">
+            <span className="text-base font-semibold text-gray-700">
               Seleccionar
             </span>
           </label>
-
-          {/* Botón secundario (opcional o ya existente) */}
-          <button
-            className="px-4 py-2 rounded-xl font-semibold text-sm
-                       bg-white text-gray-900 border border-primary-500
-                       hover:bg-primary-50 transition-all duration-200 shadow-sm"
-          >
-            Agregar
-          </button>
         </div>
       </div>
     ))}
