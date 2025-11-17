@@ -4,6 +4,37 @@ services:
     env: node
     buildCommand: npm install && npm run build
     startCommand: npx serve -s dist -l 10000
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*.js
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*.css
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*.jpg
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*.png
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*.svg
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*.woff2
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /index.html
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+      - path: /robots.txt
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /sitemap.xml
+        name: Cache-Control
+        value: public, max-age=86400
     envVars:
       - key: NODE_VERSION
         value: 22.16.0
