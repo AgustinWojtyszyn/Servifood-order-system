@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle } from 'lucide-react'
-import '../styles/OrderForm.css'
 
 const OrderForm = ({ user }) => {
   const [menuItems, setMenuItems] = useState([])
@@ -468,37 +467,48 @@ const OrderForm = ({ user }) => {
 
         {/* Selección de Menú */}
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 text-white p-2 sm:p-3 rounded-xl">
-              <ChefHat className="h-5 w-5 sm:h-6 sm:w-6" />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
+              <ChefHat className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Selecciona tu Menú</h2>
-              <p style={{ fontWeight: '900' }} className="text-xs sm:text-sm text-gray-900 mt-1">Elige uno o más platos disponibles</p>
+              <h2 className="text-2xl font-bold text-gray-900">Selecciona tu Menú</h2>
+              <p className="text-sm text-gray-600 font-semibold mt-1">
+                Elige uno o más platos disponibles
+              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {menuItems.map((item) => (
-              <div key={item.id} className="card bg-white border-2 border-gray-200 rounded-2xl p-5 hover:border-primary-500 hover:shadow-xl transition-all duration-300">
-                <div className="flex-1 mb-4">
-                  {/* TEXTO MÁS GRANDE PARA LOS PLATILLOS */}
-                  <h3 style={{ fontWeight: '900' }} className="text-2xl sm:text-3xl text-gray-900 mb-3 leading-tight">{item.name}</h3>
+              <div
+                key={item.id}
+                className="card bg-white border-2 border-gray-200 rounded-2xl p-5
+                           hover:border-primary-500 hover:shadow-xl transition-all duration-300
+                           flex flex-col justify-between min-h-[260px]"
+              >
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
+                    {item.name}
+                  </h3>
                   {item.description && (
-                    <p style={{ fontWeight: '900' }} className="text-lg text-gray-900 leading-relaxed">{item.description}</p>
+                    <p className="text-base text-gray-800 leading-snug font-semibold">
+                      {item.description}
+                    </p>
                   )}
                 </div>
 
-                {/* === NUEVO: Checkbox para selección === */}
-                <div className="selection-container">
-                  <label className="checkbox-label">
+                {/* Checkbox estilizado */}
+                <div className="flex justify-end mt-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedItems[item.id] === true}
                       onChange={(e) => handleItemSelect(item.id, e.target.checked)}
-                      className="selection-checkbox"
+                      className="h-5 w-5 rounded border-gray-400 text-primary-600
+                                 focus:ring-primary-500 focus:outline-none"
                     />
-                    <span className="checkbox-text">Seleccionar</span>
+                    <span className="text-sm font-semibold text-gray-700">Seleccionar</span>
                   </label>
                 </div>
               </div>
