@@ -1,0 +1,47 @@
+/* src/styles/OrderForm.css */
+
+.card {
+    /* Mantén tus estilos existentes (border, box-shadow, etc.) */
+
+    /* === CAMBIOS CLAVE === */
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Asegura que la tarjeta llena el espacio de la cuadrícula */
+}
+
+.cantidad-container {
+    /* El truco de la alineación: empuja hacia el fondo */
+    margin-top: auto;
+
+    /* Flexbox para alinear 'CANTIDAD' y el 'counter-container' */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%; /* Opcional, asegura que ocupe todo el ancho */
+    padding-top: 15px; /* Pequeño margen superior para separación */
+
+    /* Estilos del contenedor de cantidad */
+    background: linear-gradient(to right, #f9fafb, #f3f4f6);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #d1d5db;
+    min-height: 90px;
+}
+
+.cantidad-title {
+    font-size: 0.875rem;
+    font-weight: bold;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    margin-right: 0.75rem;
+}
+
+.counter-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    justify-content: flex-end;
+}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle } from 'lucide-react'
+import '../styles/OrderForm.css'
 
 const OrderForm = ({ user }) => {
   const [menuItems, setMenuItems] = useState([])
@@ -477,7 +478,7 @@ const OrderForm = ({ user }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {menuItems.map((item) => (
-              <div key={item.id} className="bg-white border-2 border-gray-200 rounded-2xl p-5 hover:border-primary-500 hover:shadow-xl transition-all duration-300 flex flex-col">
+              <div key={item.id} className="card bg-white border-2 border-gray-200 rounded-2xl p-5 hover:border-primary-500 hover:shadow-xl transition-all duration-300">
                 <div className="flex-1 mb-4">
                   {/* TEXTO MÁS GRANDE PARA LOS PLATILLOS */}
                   <h3 style={{ fontWeight: '900' }} className="text-2xl sm:text-3xl text-gray-900 mb-3 leading-tight">{item.name}</h3>
@@ -486,10 +487,10 @@ const OrderForm = ({ user }) => {
                   )}
                 </div>
 
-                {/* CONTENEDOR DE BOTONES MEJORADO */}
-                <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 min-h-[90px]">
-                  <span className="text-sm font-bold text-gray-700 uppercase tracking-wide flex-shrink-0 mr-3">Cantidad</span>
-                  <div className="flex items-center space-x-4 sm:space-x-2 flex-1 justify-end">
+                {/* === CAMBIO CLAVE AQUÍ: Nuevo div con clase 'cantidad-container' === */}
+                <div className="cantidad-container">
+                  <span className="cantidad-title">CANTIDAD</span>
+                  <div className="counter-container">
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) - 1)}
