@@ -494,21 +494,21 @@ const OrderForm = ({ user }) => {
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) - 1)}
-                      className="p-4 sm:p-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95 flex-shrink-0"
+                      className="button bg-red-500 hover:bg-red-600"
                       aria-label={`Disminuir ${item.name}`}
                     >
-                      <Minus className="h-7 w-7 sm:h-5 sm:w-5" />
+                      <Minus className="h-4 w-4" />
                     </button>
-                    <span className="w-16 sm:w-12 text-center font-bold text-3xl sm:text-2xl text-gray-900 flex-shrink-0">
+                    <span className="count font-bold text-2xl text-gray-900">
                       {selectedItems[item.id] || 0}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item.id, (selectedItems[item.id] || 0) + 1)}
-                      className="p-4 sm:p-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95 flex-shrink-0"
+                      className="button bg-green-500 hover:bg-green-600"
                       aria-label={`Aumentar ${item.name}`}
                     >
-                      <Plus className="h-7 w-7 sm:h-5 sm:w-5" />
+                      <Plus className="h-4 w-4" />
                     </button>
                   </div>
                 </div>

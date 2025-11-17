@@ -13,12 +13,13 @@
     /* El truco de la alineación: empuja hacia el fondo */
     margin-top: auto;
 
-    /* Flexbox para alinear 'CANTIDAD' y el 'counter-container' */
+    /* === CAMBIOS CLAVE === */
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; /* Alinea los elementos al inicio (izquierda) */
     align-items: center;
-    width: 100%; /* Opcional, asegura que ocupe todo el ancho */
-    padding-top: 15px; /* Pequeño margen superior para separación */
+    width: 100%;
+    padding-top: 15px;
+    gap: 15px; /* Añade un espacio entre "CANTIDAD" y el contador */
 
     /* Estilos del contenedor de cantidad */
     background: linear-gradient(to right, #f9fafb, #f3f4f6);
@@ -29,19 +30,46 @@
 }
 
 .cantidad-title {
-    font-size: 0.875rem;
+    font-size: 0.9em;
+    color: #555;
     font-weight: bold;
-    color: #374151;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     flex-shrink: 0;
-    margin-right: 0.75rem;
 }
 
 .counter-container {
+    display: flex; /* Asegura que los elementos internos estén en fila */
+    align-items: center; /* Centra verticalmente los botones y el número */
+    gap: 5px; /* Reduce el espacio entre el botón, número y botón */
+
+    /* === CAMBIOS CLAVE: Más pequeño === */
+    padding: 0;
+    border-radius: 20px; /* Si quieres bordes más redondeados para los botones */
+    overflow: hidden; /* Asegura que los botones queden dentro del borde redondeado */
+}
+
+.button {
+    /* Mantiene tus estilos de color y background existentes */
     display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 1rem;
-    flex: 1;
-    justify-content: flex-end;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em; /* Puedes ajustar el tamaño del signo + y - */
+    color: white; /* Color del texto del botón */
+
+    /* === CAMBIOS CLAVE: Botones más chicos === */
+    width: 30px; /* Ancho del botón */
+    height: 30px; /* Alto del botón */
+    border-radius: 50%; /* Para hacerlos perfectamente circulares si quieres */
+}
+
+.count {
+    /* Mantén tus estilos existentes */
+    font-size: 1.1em; /* Ajusta el tamaño del número */
+    min-width: 25px; /* Asegura un ancho mínimo para el número para que no se vea aplastado */
+    text-align: center;
+    /* === CAMBIOS CLAVE: Espaciado si es necesario === */
+    padding: 0 5px; /* Reduce o ajusta el padding horizontal */
 }
