@@ -519,8 +519,8 @@ const OrderForm = ({ user }) => {
           {/* Botón secundario (opcional o ya existente) */}
           <button
             className="px-4 py-2 rounded-xl font-semibold text-sm
-                       bg-primary-600 text-white hover:bg-primary-700
-                       transition-all duration-200 shadow-md"
+                       bg-white text-gray-900 border border-primary-500
+                       hover:bg-primary-50 transition-all duration-200 shadow-sm"
           >
             Agregar
           </button>
