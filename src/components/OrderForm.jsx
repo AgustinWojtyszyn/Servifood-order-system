@@ -125,7 +125,7 @@ const OrderForm = ({ user }) => {
     
     // Si intentamos agregar un menú principal y ya hay uno seleccionado
     if (!isEnsalada && quantity > 0 && mainMenuCount >= 1 && !selectedItems[itemId]) {
-      alert('Solo puedes seleccionar 1 menú principal por persona. Si necesitas más, haz múltiples pedidos.')
+      alert('Solo puedes seleccionar 1 menú por persona. ')
       return
     }
     

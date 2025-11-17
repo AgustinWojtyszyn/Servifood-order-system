@@ -1,0 +1,202 @@
+import { createClient } from '@supabase/supabase-js'
+import { sanitizeInput } from '../utils'
+
+// Configuración del cliente Supabase optimizada
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
+// Cliente principal con configuración avanzada
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'x-application-name': 'servifood-app',
+      'x-client-info': 'servifood-web'
+    }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+})
+
+// Cache inteligente con TTL y LRU-like eviction
+class SmartCache {
+  constructor(maxSize = 100, defaultTTL = 30000) {
+    this.cache = new Map()
+    this.maxSize = maxSize
+    this.defaultTTL = defaultTTL
+  }
+
+  get(key) {
+    const item = this.cache.get(key)
+    if (!item) return null
+
+    if (Date.now() > item.expiry) {
+      this.cache.delete(key)
+      return null
+    }
+
+    // Actualizar LRU
+    item.lastAccessed = Date.now()
+    return item.value
+  }
+
+  set(key, value, ttl = this.defaultTTL) {
+    const expiry = Date.now() + ttl
+
+    if (this.cache.size >= this.maxSize) {
+      // Evict least recently used
+      let oldestKey = null
+      let oldestTime = Date.now()
+
+      for (const [k, v] of this.cache) {
+        if (v.lastAccessed < oldestTime) {
+          oldestTime = v.lastAccessed
+          oldestKey = k
+        }
+      }
+
+      if (oldestKey) {
+        this.cache.delete(oldestKey)
+      }
+    }
+
+    this.cache.set(key, {
+      value,
+      expiry,
+      lastAccessed: Date.now()
+    })
+  }
+
+  clear() {
+    this.cache.clear()
+  }
+
+  delete(key) {
+    return this.cache.delete(key)
+  }
+
+  has(key) {
+    const item = this.cache.get(key)
+    if (!item) return false
+
+    if (Date.now() > item.expiry) {
+      this.cache.delete(key)
+      return false
+    }
+
+    return true
+  }
+}
+
+// Instancia global del cache
+export const cache = new SmartCache()
+
+// Wrapper para operaciones con retry y cache
+class SupabaseService {
+  constructor() {
+    this.maxRetries = 3
+    this.retryDelay = 1000
+  }
+
+  async withRetry(operation, context = '') {
+    let lastError
+
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await operation()
+      } catch (error) {
+        lastError = error
+
+        if (attempt === this.maxRetries) {
+          console.error(`Operation failed after ${this.maxRetries} attempts${context ? ` in ${context}` : ''}:`, error)
+          throw error
+        }
+
+        // Exponential backoff
+        const delay = this.retryDelay * Math.pow(2, attempt - 1)
+        console.warn(`Attempt ${attempt} failed${context ? ` in ${context}` : ''}, retrying in ${delay}ms...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+
+    throw lastError
+  }
+
+  async cachedQuery(key, queryFn, ttl = 30000, force = false) {
+    if (!force && cache.has(key)) {
+      return cache.get(key)
+    }
+
+    const result = await this.withRetry(queryFn, `cached query ${key}`)
+    cache.set(key, result, ttl)
+    return result
+  }
+
+  invalidateCache(pattern = null) {
+    if (pattern) {
+      // Invalidate by pattern (simple string matching)
+      for (const key of cache.cache.keys()) {
+        if (key.includes(pattern)) {
+          cache.delete(key)
+        }
+      }
+    } else {
+      cache.clear()
+    }
+  }
+}
+
+// Instancia global del servicio
+export const supabaseService = new SupabaseService()
+
+// Función helper para sanitizar queries
+export const sanitizeQuery = (query) => {
+  if (typeof query === 'string') {
+    return sanitizeInput(query)
+  }
+  if (typeof query === 'object' && query !== null) {
+    const sanitized = {}
+    for (const [key, value] of Object.entries(query)) {
+      sanitized[key] = typeof value === 'string' ? sanitizeInput(value) : value
+    }
+    return sanitized
+  }
+  return query
+}
+
+// Health check del servicio
+export const healthCheck = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('count', { count: 'exact', head: true })
+      .limit(1)
+
+    return {
+      healthy: !error,
+      timestamp: new Date().toISOString(),
+      error: error?.message
+    }
+  } catch (error) {
+    return {
+      healthy: false,
+      timestamp: new Date().toISOString(),
+      error: error.message
+    }
+  }
+}

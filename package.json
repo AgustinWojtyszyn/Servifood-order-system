@@ -18,12 +18,20 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.80.0",
+    "clsx": "^2.1.1",
+    "dompurify": "^3.3.0",
     "dotenv": "^17.2.3",
+    "framer-motion": "^12.23.24",
     "lucide-react": "^0.553.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-error-boundary": "^6.0.0",
+    "react-hook-form": "^7.66.0",
     "react-router-dom": "^7.9.5",
-    "xlsx": "^0.18.5"
+    "tailwind-merge": "^3.4.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.1.12",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
