@@ -184,6 +184,13 @@ export const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+export const isOrderEditable = (createdAt, minutesLimit = 15) => {
+  const now = new Date()
+  const created = new Date(createdAt)
+  const diffInMinutes = (now - created) / (1000 * 60)
+  return diffInMinutes <= minutesLimit
+}
+
 export const getTimeAgo = (dateString) => {
   const now = new Date()
   const date = new Date(dateString)

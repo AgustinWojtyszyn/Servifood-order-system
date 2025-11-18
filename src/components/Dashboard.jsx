@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw } from 'lucide-react'
+import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2 } from 'lucide-react'
+import { isOrderEditable } from '../utils'
 
 const Dashboard = ({ user }) => {
   const [orders, setOrders] = useState([])
@@ -14,6 +15,7 @@ const Dashboard = ({ user }) => {
     pending: 0,
     completed: 0
   })
+  const navigate = useNavigate()
 
   useEffect(() => {
     checkIfAdmin()
@@ -185,7 +187,7 @@ const Dashboard = ({ user }) => {
 
   const handleMarkAllAsCompleted = async () => {
     const pendingOrders = orders.filter(order => order.status === 'pending')
-    
+
     if (pendingOrders.length === 0) {
       alert('No hay pedidos pendientes para marcar como completados')
       return
@@ -193,23 +195,45 @@ const Dashboard = ({ user }) => {
 
     if (confirm(`¿Marcar todos los ${pendingOrders.length} pedidos pendientes como completados?`)) {
       try {
-        const promises = pendingOrders.map(order => 
+        const promises = pendingOrders.map(order =>
           db.updateOrderStatus(order.id, 'completed')
         )
-        
+
         const results = await Promise.all(promises)
         const errors = results.filter(r => r.error)
-        
+
         if (errors.length > 0) {
           alert(`Se actualizaron ${pendingOrders.length - errors.length} pedidos. ${errors.length} fallaron.`)
         } else {
           alert(`✓ ${pendingOrders.length} pedidos marcados como completados`)
         }
-        
+
         fetchOrders() // Recargar pedidos
       } catch (err) {
         console.error('Error:', err)
         alert('Error al actualizar los pedidos')
+      }
+    }
+  }
+
+  const handleEditOrder = (order) => {
+    // Navigate to edit order page with order data
+    navigate('/edit-order', { state: { order } })
+  }
+
+  const handleDeleteOrder = async (orderId) => {
+    if (confirm('¿Estás seguro de que quieres eliminar este pedido? Esta acción no se puede deshacer.')) {
+      try {
+        const { error } = await db.deleteOrder(orderId)
+        if (error) {
+          alert('Error al eliminar el pedido: ' + error.message)
+        } else {
+          alert('Pedido eliminado exitosamente')
+          fetchOrders() // Recargar pedidos
+        }
+      } catch (err) {
+        console.error('Error:', err)
+        alert('Error al eliminar el pedido')
       }
     }
   }
@@ -516,6 +540,25 @@ const Dashboard = ({ user }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start">
+                  {/* Edit and Delete buttons for orders within 15 minutes */}
+                  {!isAdmin && isOrderEditable(order.created_at) && (
+                    <>
+                      <button
+                        onClick={() => handleEditOrder(order)}
+                        className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
+                        title="Editar pedido"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteOrder(order.id)}
+                        className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+                        title="Eliminar pedido"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
                   {isAdmin && (
                     <button
                       onClick={() => setSelectedOrder(order)}
@@ -549,7 +592,7 @@ const Dashboard = ({ user }) => {
                     }`}>
                       {order.status === 'delivered' ? 'Entregado' :
                        order.status === 'completed' ? 'Completado' :
-                       order.status === 'pending' ? 'Pendiente' : 
+                       order.status === 'pending' ? 'Pendiente' :
                        order.status === 'processing' ? 'En Proceso' : 'Cancelado'}
                     </span>
                   )}

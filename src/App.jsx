@@ -19,6 +19,7 @@ const SuperAdminPanel = lazy(() => import('./components/SuperAdminPanel'))
 const DailyOrders = lazy(() => import('./components/DailyOrders'))
 const AdminChat = lazy(() => import('./components/AdminChat'))
 const OrderForm = lazy(() => import('./components/OrderForm'))
+const EditOrderForm = lazy(() => import('./components/EditOrderForm'))
 const Profile = lazy(() => import('./components/Profile'))
 
 // Componente de carga interno (para Suspense)
@@ -97,6 +98,9 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/order" element={
               user ? <Layout user={user}><OrderForm user={user} /></Layout> : <Navigate to="/login" />
+            } />
+            <Route path="/edit-order" element={
+              user ? <Layout user={user}><EditOrderForm user={user} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/profile" element={
               user ? <Layout user={user}><Profile user={user} /></Layout> : <Navigate to="/login" />
