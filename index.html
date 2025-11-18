@@ -2,6 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://connect.facebook.net https://jsdelivr.net https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';" />
+
     <link rel="icon" type="image/jpeg" href="/src/assets/servifood logo.jpg" />
     
     <!-- Viewport optimizado para móviles con safe-area para iPhone -->
@@ -60,7 +64,7 @@
     <meta name="format-detection" content="address=no" />
     
     <title>ServiFood Catering - Gestión de Pedidos</title>
-    
+
     <!-- Estilos inline críticos para móviles -->
     <style>
       /* Prevenir scroll horizontal en móviles */
