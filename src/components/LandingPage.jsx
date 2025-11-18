@@ -59,10 +59,10 @@ const LandingPage = () => {
             <div className="text-white text-center">
               {/* Logo y nombre de la empresa centrados */}
               <div className="flex flex-col items-center mb-8">
-                <img 
-                  src={servifoodLogo} 
-                  alt="Servifood" 
-                  className="h-32 sm:h-40 w-auto mb-4"
+                <img
+                  src={servifoodLogo}
+                  alt="Servifood"
+                  className="h-20 sm:h-24 md:h-28 w-auto mb-4"
                 />
                 <h2 className="text-2xl sm:text-3xl font-bold text-white">ServiFood Catering</h2>
               </div>
