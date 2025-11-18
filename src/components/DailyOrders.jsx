@@ -349,6 +349,7 @@ const DailyOrders = ({ user }) => {
           'Ubicación': order.location || 'Sin ubicación',
           'Fecha Entrega': getTomorrowDate(),
           'Platillos': items,
+          'Guarnición': customSide || 'Sin guarnición',
           'Cantidad Items': order.total_items || 0,
           'Estado': getStatusText(order.status),
           'Comentarios': order.comments || 'Sin comentarios',
@@ -395,6 +396,7 @@ const DailyOrders = ({ user }) => {
         { wch: 15 }, // Ubicación
         { wch: 25 }, // Fecha Entrega
         { wch: 40 }, // Platillos
+        { wch: 18 }, // Guarnición
         { wch: 12 }, // Cantidad Items
         { wch: 12 }, // Estado
         { wch: 30 }, // Comentarios

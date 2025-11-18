@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle, Save } from 'lucide-react'
+import { isOrderEditable } from '../utils'
+
+const EDIT_WINDOW_MINUTES = 10
 
 const EditOrderForm = ({ user }) => {
   const [menuItems, setMenuItems] = useState([])
@@ -26,6 +29,12 @@ const EditOrderForm = ({ user }) => {
 
   useEffect(() => {
     if (!order) {
+      navigate('/dashboard')
+      return
+    }
+
+    if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
+      alert(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos de haberlo creado.`)
       navigate('/dashboard')
       return
     }
@@ -176,6 +185,12 @@ const EditOrderForm = ({ user }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!isOrderEditable(order?.created_at, EDIT_WINDOW_MINUTES)) {
+      setError(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos de haberlo creado.`)
+      return
+    }
+
     setLoading(true)
     setError('')
 
@@ -292,7 +307,7 @@ const EditOrderForm = ({ user }) => {
         <div className="text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Editar Pedido</h1>
           <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Modifica tu pedido antes de que sea procesado</p>
-          <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Solo tienes 15 minutos para editarlo!</p>
+          <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Solo tienes {EDIT_WINDOW_MINUTES} minutos para editarlo!</p>
         </div>
 
         <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 shadow-lg">
@@ -300,7 +315,7 @@ const EditOrderForm = ({ user }) => {
             <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div>
               <p className="text-sm sm:text-base text-blue-800 font-medium">
-                <strong>Edición disponible:</strong> Solo puedes editar pedidos dentro de los primeros 15 minutos de creación
+                <strong>Edición disponible:</strong> Solo puedes editar pedidos dentro de los primeros {EDIT_WINDOW_MINUTES} minutos de creación
               </p>
               <p className="text-xs sm:text-sm text-blue-700 mt-1">
                 Después de este tiempo, contacta al soporte si necesitas cambios

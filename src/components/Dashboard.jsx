@@ -4,6 +4,8 @@ import { db } from '../supabaseClient'
 import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2 } from 'lucide-react'
 import { isOrderEditable } from '../utils'
 
+const EDIT_WINDOW_MINUTES = 10
+
 const Dashboard = ({ user }) => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -217,14 +219,23 @@ const Dashboard = ({ user }) => {
   }
 
   const handleEditOrder = (order) => {
+    if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
+      alert(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+      return
+    }
     // Navigate to edit order page with order data
     navigate('/edit-order', { state: { order } })
   }
 
-  const handleDeleteOrder = async (orderId) => {
+  const handleDeleteOrder = async (order) => {
+    if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
+      alert(`Solo puedes eliminar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+      return
+    }
+
     if (confirm('¿Estás seguro de que quieres eliminar este pedido? Esta acción no se puede deshacer.')) {
       try {
-        const { error } = await db.deleteOrder(orderId)
+        const { error } = await db.deleteOrder(order.id)
         if (error) {
           alert('Error al eliminar el pedido: ' + error.message)
         } else {
@@ -540,8 +551,8 @@ const Dashboard = ({ user }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start">
-                  {/* Edit and Delete buttons for orders within 15 minutes */}
-                  {!isAdmin && isOrderEditable(order.created_at) && (
+                  {/* Edit and Delete buttons for orders within the allowed window */}
+                  {!isAdmin && isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES) && (
                     <>
                       <button
                         onClick={() => handleEditOrder(order)}
@@ -551,7 +562,7 @@ const Dashboard = ({ user }) => {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteOrder(order.id)}
+                        onClick={() => handleDeleteOrder(order)}
                         className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
                         title="Eliminar pedido"
                       >

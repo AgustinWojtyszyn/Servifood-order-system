@@ -184,7 +184,7 @@ export const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-export const isOrderEditable = (createdAt, minutesLimit = 15) => {
+export const isOrderEditable = (createdAt, minutesLimit = 10) => {
   const now = new Date()
   const created = new Date(createdAt)
   const diffInMinutes = (now - created) / (1000 * 60)
