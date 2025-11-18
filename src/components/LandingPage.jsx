@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ChefHat, ShoppingCart, Clock, Star, ArrowRight, CheckCircle } from 'lucide-react'
-import servifoodLogo from '../assets/servifood logo.jpg'
+import servifoodLogo from '../assets/servifood-logo.png'
 
 const LandingPage = () => {
   const features = [
@@ -32,7 +32,15 @@ const LandingPage = () => {
       <div className="relative z-10">
         {/* Navigation */}
         <nav className="container mx-auto px-4 sm:px-6 py-6">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-between">
+            <Link to="/">
+              <img
+                src={servifoodLogo}
+                alt="Servifood"
+                className="w-8 sm:w-10 md:w-12 h-auto object-contain"
+                style={{ maxWidth: "48px", maxHeight: "48px" }}
+              />
+            </Link>
             <div className="flex gap-3">
               <Link
                 to="/login"
@@ -62,7 +70,8 @@ const LandingPage = () => {
                 <img
                   src={servifoodLogo}
                   alt="Servifood"
-                  className="max-w-[40px] sm:max-w-[60px] h-auto object-contain"
+                  className="w-8 sm:w-10 md:w-12 h-auto object-contain"
+                  style={{ maxWidth: '48px', maxHeight: '48px' }}
                 />
                 <h2 className="text-2xl sm:text-3xl font-bold text-white">ServiFood Catering</h2>
               </div>
