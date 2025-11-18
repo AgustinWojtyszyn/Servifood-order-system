@@ -62,7 +62,7 @@ const LandingPage = () => {
                 <img
                   src={servifoodLogo}
                   alt="Servifood"
-                  className="h-8 sm:h-12 md:h-16 w-auto max-w-[100px] sm:max-w-[140px] object-contain mb-4"
+                  className="h-6 sm:h-10 md:h-12 w-auto max-w-[80px] sm:max-w-[120px] object-contain mb-4"
                 />
                 <h2 className="text-2xl sm:text-3xl font-bold text-white">ServiFood Catering</h2>
               </div>
