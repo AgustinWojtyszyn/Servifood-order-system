@@ -41,8 +41,7 @@ const Layout = ({ children, user }) => {
     menuItems.push({ 
       name: 'Pedidos Diarios', 
       path: '/daily-orders', 
-      icon: Calendar,
-      highlighted: true  // Marcar como destacado
+      icon: Calendar
     })
     menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
     menuItems.push({ name: 'Chat Admins', path: '/admin-chat', icon: MessageCircle })
@@ -75,7 +74,7 @@ const Layout = ({ children, user }) => {
             </div>
 
             <div className="flex items-center space-x-4 relative w-full min-w-0">
-              <span className="text-base font-bold text-white drop-shadow-lg flex-1 text-right pr-2 truncate max-w-[120px] sm:max-w-none">
+              <span className="text-base font-bold text-white drop-shadow-lg flex-1 text-right pr-2 truncate max-w-[50vw] sm:max-w-[250px] md:max-w-none">
                 Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </span>
               <button
@@ -96,10 +95,10 @@ const Layout = ({ children, user }) => {
               >
                 <LogOut className="h-5 w-5" />
               </button>
-              {/* Botón accesibilidad flotante en mobile */}
+              {/* Botón accesibilidad flotante en mobile, reubicado para no tapar WhatsApp */}
               <button
                 onClick={() => setFontLarge(f => !f)}
-                className={`fixed bottom-4 right-4 z-50 px-3 py-2 rounded-xl font-bold text-white drop-shadow-2xl bg-orange-500 hover:bg-orange-600 transition-all text-xs flex items-center gap-2 border-2 border-white/30 sm:hidden`}
+                className={`fixed bottom-20 right-4 z-50 px-3 py-2 rounded-xl font-bold text-white drop-shadow-2xl bg-orange-500 hover:bg-orange-600 transition-all text-xs flex items-center gap-2 border-2 border-white/30 sm:hidden`}
                 aria-label="Activar modo letra grande"
                 style={{ minWidth: '36px', minHeight: '36px', fontSize: fontLarge ? '0.9rem' : '0.85rem', lineHeight: '1.2', maxWidth: '70vw' }}
               >
