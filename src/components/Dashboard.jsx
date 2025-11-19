@@ -556,17 +556,19 @@ const Dashboard = ({ user }) => {
                     <>
                       <button
                         onClick={() => handleEditOrder(order)}
-                        className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
+                        className="flex items-center gap-1 p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
                         title="Editar pedido"
                       >
                         <Edit className="h-4 w-4" />
+                        <span className="hidden sm:inline text-xs font-semibold">Editar</span>
                       </button>
                       <button
                         onClick={() => handleDeleteOrder(order)}
-                        className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+                        className="flex items-center gap-1 p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
                         title="Eliminar pedido"
                       >
                         <Trash2 className="h-4 w-4" />
+                        <span className="hidden sm:inline text-xs font-semibold">Eliminar</span>
                       </button>
                     </>
                   )}
