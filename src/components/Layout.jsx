@@ -96,12 +96,12 @@ const Layout = ({ children, user }) => {
               {/* Botón de accesibilidad letra grande */}
               <button
                 onClick={() => setFontLarge(f => !f)}
-                className={`p-2 rounded-xl font-bold text-white drop-shadow-lg bg-orange-500 hover:bg-orange-600 transition-all text-lg flex items-center gap-2 border-2 border-white/30 ${fontLarge ? 'ring-4 ring-yellow-400' : ''}`}
+                className={`px-4 py-2 rounded-xl font-bold text-white drop-shadow-lg bg-orange-500 hover:bg-orange-600 transition-all text-base flex items-center gap-2 border-2 border-white/30 ${fontLarge ? 'ring-4 ring-yellow-400' : ''}`}
                 aria-label="Activar modo letra grande"
-                style={{ fontSize: '1.5rem' }}
+                style={{ minWidth: '48px', minHeight: '48px', fontSize: fontLarge ? '1.25rem' : '1.1rem', lineHeight: '1.2' }}
               >
-                <Type className="h-7 w-7" />
-                {fontLarge ? 'Letra Normal' : 'Letra Grande'}
+                <Type className="h-6 w-6" />
+                <span>{fontLarge ? 'Letra Normal' : 'Letra Grande'}</span>
               </button>
               <span className="text-base font-bold text-white drop-shadow-lg">
                 Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
