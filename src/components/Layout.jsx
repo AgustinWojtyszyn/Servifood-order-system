@@ -24,26 +24,8 @@ const Layout = ({ children, user }) => {
     } else {
       html.classList.remove('font-large-mode')
     }
-    localStorage.setItem('fontLargeMode', fontLarge)
-  }, [fontLarge])
-
-  useEffect(() => {
-    checkUserRole()
-  }, [user])
-
-  const checkUserRole = async () => {
-    try {
-      const { data, error } = await db.getUsers()
-      if (!error && data) {
-        const currentUser = data.find(u => u.id === user?.id)
-        setIsAdmin(currentUser?.role === 'admin')
-      }
-    } catch (err) {
-      console.error('Error checking user role:', err)
-      // Fallback a user_metadata si falla la consulta
-      setIsAdmin(user?.user_metadata?.role === 'admin')
-    }
-  }
+    setIsAdmin(user?.user_metadata?.role === 'admin')
+  }, [fontLarge, user])
 
   const handleLogout = async () => {
     await auth.signOut()
@@ -74,36 +56,36 @@ const Layout = ({ children, user }) => {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
+          <div className="flex flex-wrap justify-between items-center h-16">
+            <div className="flex items-center min-w-0">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden"
               >
                 <Menu className="h-6 w-6" />
               </button>
-              <div className="flex items-center ml-4 md:ml-0">
+              <div className="flex items-center ml-4 md:ml-0 min-w-0">
                 <img 
                   src={servifoodLogo} 
                   alt="Servifood Logo" 
                   className="h-12 w-12 rounded object-cover"
                 />
-                <span className="ml-3 text-2xl font-bold text-white drop-shadow-lg">ServiFood Catering</span>
+                <span className="ml-3 text-2xl font-bold text-white drop-shadow-lg truncate max-w-[120px] sm:max-w-none">ServiFood Catering</span>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4 relative w-full">
-              <span className="text-base font-bold text-white drop-shadow-lg flex-1 text-right pr-2">
+            <div className="flex items-center space-x-4 relative w-full min-w-0">
+              <span className="text-base font-bold text-white drop-shadow-lg flex-1 text-right pr-2 truncate max-w-[120px] sm:max-w-none">
                 Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </span>
               <button
                 onClick={() => setFontLarge(f => !f)}
                 className={`px-2 py-1 rounded-xl font-bold text-white drop-shadow-lg bg-orange-500 hover:bg-orange-600 transition-all text-base flex items-center gap-2 border-2 border-white/30 ${fontLarge ? 'ring-4 ring-yellow-400' : ''}
-                  max-w-[140px] whitespace-nowrap overflow-hidden text-ellipsis
+                  max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis
                   md:text-base md:max-w-none md:whitespace-normal
                   hidden sm:inline-block ml-2`}
                 aria-label="Activar modo letra grande"
-                style={{ minWidth: '36px', minHeight: '36px', fontSize: fontLarge ? '0.95rem' : '0.9rem', lineHeight: '1.2' }}
+                style={{ minWidth: '36px', minHeight: '36px', fontSize: fontLarge ? '1rem' : '0.9rem', lineHeight: '1.2' }}
               >
                 <Type className="h-4 w-4" />
                 <span className="truncate">{fontLarge ? 'Letra Normal' : 'Letra Grande'}</span>
@@ -119,7 +101,7 @@ const Layout = ({ children, user }) => {
                 onClick={() => setFontLarge(f => !f)}
                 className={`fixed bottom-4 right-4 z-50 px-3 py-2 rounded-xl font-bold text-white drop-shadow-2xl bg-orange-500 hover:bg-orange-600 transition-all text-xs flex items-center gap-2 border-2 border-white/30 sm:hidden`}
                 aria-label="Activar modo letra grande"
-                style={{ minWidth: '36px', minHeight: '36px', fontSize: fontLarge ? '0.95rem' : '0.9rem', lineHeight: '1.2' }}
+                style={{ minWidth: '36px', minHeight: '36px', fontSize: fontLarge ? '0.9rem' : '0.85rem', lineHeight: '1.2', maxWidth: '70vw' }}
               >
                 <Type className="h-4 w-4" />
                 <span className="truncate">{fontLarge ? 'Letra Normal' : 'Letra Grande'}</span>
