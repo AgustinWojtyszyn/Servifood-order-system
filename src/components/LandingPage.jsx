@@ -1,3 +1,4 @@
+// ...existing code removed...
 import { Link } from 'react-router-dom';
 import servifoodLogo from '../assets/servifood logo.jpg';
 // Import missing icons and features
@@ -30,88 +31,32 @@ const features = [
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
-      <div className="flex flex-col items-center justify-center w-full pt-16 pb-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
+      <div className="flex flex-col items-center justify-center w-full pt-20 pb-10">
         <img
           src={servifoodLogo}
           alt="Servifood Catering Logo"
-          className="mx-auto"
-          style={{ width: '220px', height: '220px', objectFit: 'contain' }}
+          className="mx-auto rounded-xl shadow-2xl"
+          style={{ width: '180px', height: '180px', objectFit: 'contain' }}
         />
-        <h1 className="mt-6 text-4xl sm:text-5xl font-extrabold text-white text-center drop-shadow-lg tracking-wide">
+        <h1 className="mt-8 text-5xl sm:text-6xl font-extrabold text-white text-center drop-shadow-lg tracking-wide">
           SERVIFOOD CATERING
         </h1>
       </div>
-      <nav className="container mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center justify-center gap-6">
+      <div className="flex flex-col items-center justify-center gap-4 mt-6">
+        <div className="flex gap-4">
           <Link
             to="/login"
-            className="px-4 py-2 sm:px-6 sm:py-3 text-white font-bold text-sm sm:text-base hover:text-secondary-300 transition-colors"
+            className="px-6 py-3 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl bg-[#283593] hover:bg-[#3949ab] transition-colors"
           >
             Iniciar Sesión
           </Link>
           <Link
             to="/register"
-            className="px-4 py-2 sm:px-6 sm:py-3 text-white font-bold text-sm sm:text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #fb8c00, #f57c00)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #ff9800, #fb8c00)'}
+            className="px-6 py-3 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl bg-gradient-to-r from-[#ff9800] to-[#fb8c00] hover:from-[#fb8c00] hover:to-[#f57c00] transition-all duration-200"
           >
             Registrarse
           </Link>
-        </div>
-      </nav>
-
-      <div className="container mx-auto px-4 sm:px-6 py-12 sm:py-20 md:py-28">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-white text-center">
-            {/* Logo y nombre de la empresa centrados */}
-            <div className="flex flex-col items-center mb-8">
-              <img
-                src={servifoodLogo}
-                alt="Servifood"
-                className="w-8 sm:w-10 md:w-12 h-auto object-contain"
-                style={{ maxWidth: '48px', maxHeight: '48px' }}
-              />
-              <h2 className="text-2xl sm:text-3xl font-bold text-white">ServiFood Catering</h2>
-            </div>
-            
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold mb-6 leading-tight text-white">
-              Tu Comida
-              <span className="block mt-2" style={{color: '#ffa726'}}>A Un Click</span>
-            </h1>
-            <p className="text-lg sm:text-xl md:text-2xl mb-8 leading-relaxed font-semibold drop-shadow-lg" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
-              La mejor plataforma para gestionar tus pedidos de comida de manera profesional. 
-              <span className="block mt-2">Fácil, rápido y eficiente.</span>
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/register"
-                className="flex items-center justify-center gap-2 px-8 py-4 text-white font-bold text-lg rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200"
-                style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #fb8c00, #f57c00)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #ff9800, #fb8c00)'}
-              >
-                Comenzar Ahora
-                <ArrowRight className="h-6 w-6" />
-              </Link>
-              <Link
-                to="/login"
-                className="flex items-center justify-center gap-2 px-8 py-4 backdrop-blur-sm text-white font-bold text-lg rounded-xl border-2 transition-all duration-200"
-                style={{backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.3)'}}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
-                }}
-              >
-                🔑 Iniciar Sesión
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
 
