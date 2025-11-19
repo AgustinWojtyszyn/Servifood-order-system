@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, Type } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
@@ -12,7 +12,20 @@ const Layout = ({ children, user }) => {
   const [tutorialOpen, setTutorialOpen] = useState(false)
   const [adminTutorialOpen, setAdminTutorialOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [fontLarge, setFontLarge] = useState(() => {
+    return localStorage.getItem('fontLargeMode') === 'true'
+  })
   const navigate = useNavigate()
+  // Accesibilidad: alternar modo de letra grande
+  useEffect(() => {
+    const html = document.documentElement
+    if (fontLarge) {
+      html.classList.add('font-large-mode')
+    } else {
+      html.classList.remove('font-large-mode')
+    }
+    localStorage.setItem('fontLargeMode', fontLarge)
+  }, [fontLarge])
 
   useEffect(() => {
     checkUserRole()
@@ -80,6 +93,16 @@ const Layout = ({ children, user }) => {
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Botón de accesibilidad letra grande */}
+              <button
+                onClick={() => setFontLarge(f => !f)}
+                className={`p-2 rounded-xl font-bold text-white drop-shadow-lg bg-orange-500 hover:bg-orange-600 transition-all text-lg flex items-center gap-2 border-2 border-white/30 ${fontLarge ? 'ring-4 ring-yellow-400' : ''}`}
+                aria-label="Activar modo letra grande"
+                style={{ fontSize: '1.5rem' }}
+              >
+                <Type className="h-7 w-7" />
+                {fontLarge ? 'Letra Normal' : 'Letra Grande'}
+              </button>
               <span className="text-base font-bold text-white drop-shadow-lg">
                 Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </span>
