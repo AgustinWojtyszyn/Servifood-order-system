@@ -169,8 +169,30 @@ class OrdersService {
         throw new Error('ID de pedido requerido')
       }
 
-      const sanitizedUpdates = sanitizeQuery(updates)
+      // Obtener pedido actual
+      const { data: order, error: orderError } = await this.getOrderById(orderId)
+      if (orderError || !order) {
+        throw new Error('Pedido no encontrado')
+      }
 
+      // Obtener usuario actual
+      const { user } = await import('./auth').then(m => m.default.getUser())
+      if (!user) throw new Error('Usuario no autenticado')
+
+      // Verificar si es admin
+      const isAdmin = user.role === 'admin'
+
+      // Validar tiempo para usuarios normales
+      if (!isAdmin) {
+        const createdAt = new Date(order.created_at)
+        const now = new Date()
+        const diffMinutes = (now - createdAt) / (1000 * 60)
+        if (diffMinutes > 15) {
+          throw new Error('Solo puedes editar el pedido dentro de los 15 minutos posteriores a su creación')
+        }
+      }
+
+      const sanitizedUpdates = sanitizeQuery(updates)
       const updateData = {
         ...sanitizedUpdates,
         updated_at: new Date().toISOString()
@@ -203,6 +225,29 @@ class OrdersService {
     try {
       if (!orderId) {
         throw new Error('ID de pedido requerido')
+      }
+
+      // Obtener pedido actual
+      const { data: order, error: orderError } = await this.getOrderById(orderId)
+      if (orderError || !order) {
+        throw new Error('Pedido no encontrado')
+      }
+
+      // Obtener usuario actual
+      const { user } = await import('./auth').then(m => m.default.getUser())
+      if (!user) throw new Error('Usuario no autenticado')
+
+      // Verificar si es admin
+      const isAdmin = user.role === 'admin'
+
+      // Validar tiempo para usuarios normales
+      if (!isAdmin) {
+        const createdAt = new Date(order.created_at)
+        const now = new Date()
+        const diffMinutes = (now - createdAt) / (1000 * 60)
+        if (diffMinutes > 15) {
+          throw new Error('Solo puedes borrar el pedido dentro de los 15 minutos posteriores a su creación')
+        }
       }
 
       const { error } = await supabaseService.withRetry(

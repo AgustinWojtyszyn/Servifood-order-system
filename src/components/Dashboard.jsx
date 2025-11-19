@@ -4,7 +4,7 @@ import { db } from '../supabaseClient'
 import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2 } from 'lucide-react'
 import { isOrderEditable } from '../utils'
 
-const EDIT_WINDOW_MINUTES = 10
+const EDIT_WINDOW_MINUTES = 15
 
 const Dashboard = ({ user }) => {
   const [orders, setOrders] = useState([])
@@ -551,8 +551,8 @@ const Dashboard = ({ user }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start">
-                  {/* Edit and Delete buttons for orders within the allowed window */}
-                  {!isAdmin && isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES) && (
+                  {/* Editar/Borrar: usuarios solo si < 15 min, admins siempre */}
+                  {(isAdmin || isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) && (
                     <>
                       <button
                         onClick={() => handleEditOrder(order)}
