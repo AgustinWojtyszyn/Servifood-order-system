@@ -10,6 +10,7 @@ const DailyOrders = ({ user }) => {
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedDish, setSelectedDish] = useState('all')
+  const [selectedSide, setSelectedSide] = useState('all')
   const [sortBy, setSortBy] = useState('time') // time, location, status
   const [availableDishes, setAvailableDishes] = useState([])
   const [refreshing, setRefreshing] = useState(false)
@@ -251,11 +252,19 @@ const DailyOrders = ({ user }) => {
       })
 
   // Aplicar filtro por platillo
-  const dishFilteredOrders = selectedDish === 'all'
+  let dishFilteredOrders = selectedDish === 'all'
     ? statusFilteredOrders
     : statusFilteredOrders.filter(order => {
         return order.items?.some(item => item.name === selectedDish)
       })
+
+  // Aplicar filtro por guarnición
+  if (selectedSide !== 'all') {
+    dishFilteredOrders = dishFilteredOrders.filter(order => {
+      const customSide = getCustomSideFromResponses(order.custom_responses)
+      return customSide === selectedSide
+    })
+  }
 
   // Aplicar ordenamiento
   const sortedOrders = [...dishFilteredOrders].sort((a, b) => {
@@ -682,7 +691,7 @@ const DailyOrders = ({ user }) => {
           </div>
 
           {/* Filtros - Grid responsive */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {/* Filtro por ubicación */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
               <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
@@ -737,6 +746,24 @@ const DailyOrders = ({ user }) => {
                   <option key={dish} value={dish}>
                     {dish} ({stats.byDish[dish] || 0})
                   </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro por guarnición */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+                <Package className="h-3 w-3 md:h-4 md:w-4" />
+                Guarnición
+              </label>
+              <select
+                value={selectedSide}
+                onChange={(e) => setSelectedSide(e.target.value)}
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              >
+                <option value="all">Todas</option>
+                {[...new Set(orders.map(order => getCustomSideFromResponses(order.custom_responses)).filter(Boolean))].map(side => (
+                  <option key={side} value={side}>{side}</option>
                 ))}
               </select>
             </div>
