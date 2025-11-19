@@ -2,28 +2,30 @@
 import { Link } from 'react-router-dom';
 import servifoodLogo from '../assets/servifood logo.jpg';
 // Import missing icons and features
-import { ArrowRight } from 'react-feather'; // Or your icon library
-// import { ChefHat } from 'react-feather'; // Eliminado porque no existe en react-feather
+import { ArrowRight } from 'react-feather';
+import timerIcon from '../assets/timer icon.png';
+import expertiseIcon from '../assets/expertise icon.png';
+import cyberSecurityIcon from '../assets/cyber-security icon.png';
+import settingsIcon from '../assets/setting-lines icon.png';
 
-// Example features array (replace with your actual data)
 const features = [
   {
-    icon: <ArrowRight className="h-8 w-8" />,
+    icon: <img src={timerIcon} alt="Rapidez" className="h-12 w-12 mx-auto" />,
     title: 'Rápido',
     description: 'Gestión de pedidos en segundos.',
   },
   {
-    // icon: <ChefHat className="h-8 w-8" />,
+    icon: <img src={expertiseIcon} alt="Profesional" className="h-12 w-12 mx-auto" />,
     title: 'Profesional',
     description: 'Solución para empresas y eventos.',
   },
   {
-    icon: <ArrowRight className="h-8 w-8" />,
+    icon: <img src={cyberSecurityIcon} alt="Seguro" className="h-12 w-12 mx-auto" />,
     title: 'Seguro',
     description: 'Tus datos protegidos y privados.',
   },
   {
-    // icon: <ChefHat className="h-8 w-8" />,
+    icon: <img src={settingsIcon} alt="Flexible" className="h-12 w-12 mx-auto" />,
     title: 'Flexible',
     description: 'Personaliza tu experiencia.',
   },
