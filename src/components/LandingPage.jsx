@@ -108,9 +108,6 @@ const LandingPage = () => {
       <div className="py-16 sm:py-20">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="rounded-3xl p-8 sm:p-12 shadow-2xl text-center" style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}>
-            <div className="bg-white rounded-full p-4 w-fit mx-auto mb-6">
-              {/* Icono eliminado porque no existe en react-feather */}
-            </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6">
               🚀 ¿Listo para comenzar?
             </h2>
