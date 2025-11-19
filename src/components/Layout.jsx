@@ -92,28 +92,37 @@ const Layout = ({ children, user }) => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              {/* Botón de accesibilidad letra grande */}
+            <div className="flex items-center space-x-4 relative w-full">
+              <span className="text-base font-bold text-white drop-shadow-lg flex-1 text-right pr-2">
+                Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              </span>
               <button
                 onClick={() => setFontLarge(f => !f)}
                 className={`px-2 py-1 rounded-xl font-bold text-white drop-shadow-lg bg-orange-500 hover:bg-orange-600 transition-all text-base flex items-center gap-2 border-2 border-white/30 ${fontLarge ? 'ring-4 ring-yellow-400' : ''}
                   max-w-[140px] whitespace-nowrap overflow-hidden text-ellipsis
                   md:text-base md:max-w-none md:whitespace-normal
-                  sm:text-xs sm:px-1 sm:py-1 sm:max-w-[80px] sm:absolute sm:top-2 sm:right-2 sm:z-50`}
+                  hidden sm:inline-block ml-2`}
                 aria-label="Activar modo letra grande"
                 style={{ minWidth: '36px', minHeight: '36px', fontSize: fontLarge ? '0.95rem' : '0.9rem', lineHeight: '1.2' }}
               >
                 <Type className="h-4 w-4" />
                 <span className="truncate">{fontLarge ? 'Letra Normal' : 'Letra Grande'}</span>
               </button>
-              <span className="text-base font-bold text-white drop-shadow-lg">
-                Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-              </span>
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <LogOut className="h-5 w-5" />
+              </button>
+              {/* Botón accesibilidad flotante en mobile */}
+              <button
+                onClick={() => setFontLarge(f => !f)}
+                className={`fixed bottom-4 right-4 z-50 px-3 py-2 rounded-xl font-bold text-white drop-shadow-2xl bg-orange-500 hover:bg-orange-600 transition-all text-xs flex items-center gap-2 border-2 border-white/30 sm:hidden`}
+                aria-label="Activar modo letra grande"
+                style={{ minWidth: '36px', minHeight: '36px', fontSize: fontLarge ? '0.95rem' : '0.9rem', lineHeight: '1.2' }}
+              >
+                <Type className="h-4 w-4" />
+                <span className="truncate">{fontLarge ? 'Letra Normal' : 'Letra Grande'}</span>
               </button>
             </div>
           </div>
