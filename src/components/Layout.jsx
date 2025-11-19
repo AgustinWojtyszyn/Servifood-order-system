@@ -99,11 +99,11 @@ const Layout = ({ children, user }) => {
                 className={`px-2 py-1 rounded-xl font-bold text-white drop-shadow-lg bg-orange-500 hover:bg-orange-600 transition-all text-base flex items-center gap-2 border-2 border-white/30 ${fontLarge ? 'ring-4 ring-yellow-400' : ''}
                   max-w-[140px] whitespace-nowrap overflow-hidden text-ellipsis
                   md:text-base md:max-w-none md:whitespace-normal
-                  sm:text-sm sm:px-1 sm:py-1 sm:max-w-[100px]`}
+                  sm:text-xs sm:px-1 sm:py-1 sm:max-w-[80px] sm:absolute sm:top-2 sm:right-2 sm:z-50`}
                 aria-label="Activar modo letra grande"
-                style={{ minWidth: '40px', minHeight: '40px', fontSize: fontLarge ? '1.02rem' : '0.95rem', lineHeight: '1.2' }}
+                style={{ minWidth: '36px', minHeight: '36px', fontSize: fontLarge ? '0.95rem' : '0.9rem', lineHeight: '1.2' }}
               >
-                <Type className="h-5 w-5" />
+                <Type className="h-4 w-4" />
                 <span className="truncate">{fontLarge ? 'Letra Normal' : 'Letra Grande'}</span>
               </button>
               <span className="text-base font-bold text-white drop-shadow-lg">
@@ -160,12 +160,14 @@ const Layout = ({ children, user }) => {
                       onClick={() => setSidebarOpen(false)}
                     >
                       <Icon className="h-6 w-6 mr-3 flex-shrink-0" />
-                      <span className="flex-1">{item.name}</span>
-                      {item.highlighted && (
-                        <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-black flex-shrink-0">
-                          ¡NUEVO!
-                        </span>
-                      )}
+                      <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis flex items-center">
+                        {item.name}
+                        {item.highlighted && (
+                          <span className="badge-nuevo ml-2 text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-black flex-shrink-0 inline-block align-middle">
+                            ¡NUEVO!
+                          </span>
+                        )}
+                      </span>
                     </NavLink>
                   </li>
                 )
