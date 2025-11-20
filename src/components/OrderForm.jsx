@@ -369,21 +369,7 @@ const OrderForm = ({ user }) => {
         </div>
       )}
 
-      {hasOrderToday && !isPastDeadline && (
-        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 sm:p-6 shadow-lg">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 bg-yellow-100 rounded-full p-2">
-              <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-yellow-900 mb-1">Ya tienes un pedido pendiente</h3>
-              <p className="text-yellow-800">Solo puedes tener un pedido activo a la vez. Espera a que tu pedido actual sea entregado para crear uno nuevo, o elimínalo desde el Dashboard.</p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
         {/* Información Personal */}
