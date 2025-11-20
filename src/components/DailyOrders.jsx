@@ -729,9 +729,8 @@ const DailyOrders = ({ user }) => {
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
             >
-              <span className="material-icons">email</span>
-              <span className="hidden sm:inline">Email</span>
-              <span className="sm:hidden">Mail</span>
+              <Mail className="h-4 w-4 md:h-5 md:w-5" />
+              <span>Email</span>
             </button>
           </div>
 
