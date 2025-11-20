@@ -1,12 +1,16 @@
 // ...existing imports...
 // Nueva función para exportar por email usando el backend
+import { useRef } from 'react'
+const emailLoadingRef = useRef(false)
 const exportViaEmail = async () => {
+  if (emailLoadingRef.current) return
   if (sortedOrders.length === 0) {
     alert('No hay pedidos para exportar')
     return
   }
   const toEmail = prompt('Ingresa el email de destino:')
   if (!toEmail) return
+  emailLoadingRef.current = true
   try {
     // Adaptar los datos para el backend
     const ordersForEmail = sortedOrders.map(order => ({
@@ -19,6 +23,7 @@ const exportViaEmail = async () => {
       estado: getStatusText(order.status),
       comentarios: order.comments || 'Sin comentarios'
     }))
+    alert('Enviando pedidos por email...')
     const response = await fetch('/api/send-daily-orders-email', {
       method: 'POST',
       headers: {
@@ -33,12 +38,14 @@ const exportViaEmail = async () => {
     if (response.ok) {
       alert('✓ Pedidos enviados por email correctamente')
     } else {
+      console.error('Error backend:', result)
       alert('Error al exportar por email: ' + (result.error || 'Error desconocido'))
     }
   } catch (error) {
     console.error('Error al exportar por email:', error)
     alert('Error al exportar por email. Por favor, revisa la configuración.')
   }
+  emailLoadingRef.current = false
 }
 import { useState, useEffect } from 'react'
 import { db } from '../supabaseClient'
