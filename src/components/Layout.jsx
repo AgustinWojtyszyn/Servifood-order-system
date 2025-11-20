@@ -135,11 +135,7 @@ const Layout = ({ children, user }) => {
                     >
                       <Icon className="h-6 w-6 mr-3 flex-shrink-0" />
                       <span className="flex-1">{item.name}</span>
-                      {item.highlighted && (
-                        <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-black flex-shrink-0">
-                          ¡NUEVO!
-                        </span>
-                      )}
+                      {/* Eliminado cartel NUEVO */}
                     </NavLink>
                   </li>
                 )
