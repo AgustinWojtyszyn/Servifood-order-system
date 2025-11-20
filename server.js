@@ -1,5 +1,29 @@
-const bodyParser = require('body-parser');
-const { sendDailyOrdersExcel } = require('./sendDailyOrdersEmail');
+import bodyParser from 'body-parser';
+import express from 'express';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import path from 'path';
+import cluster from 'cluster';
+import os from 'os';
+import { fileURLToPath } from 'url';
+import { sendDailyOrdersExcel } from './sendDailyOrdersEmail.js';
+
+const PORT = process.env.PORT || 3000;
+const numCPUs = os.cpus().length;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+if (cluster.isMaster) {
+  console.log(`Master PID ${process.pid} - lanzando ${numCPUs} workers`);
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`Worker ${worker.process.pid} murió. Lanzando uno nuevo...`);
+    cluster.fork();
+  });
+} else {
+  const app = express();
   app.use(bodyParser.json());
   // Endpoint para enviar pedidos diarios por email
   app.post('/api/send-daily-orders-email', async (req, res) => {
@@ -16,27 +40,6 @@ const { sendDailyOrdersExcel } = require('./sendDailyOrdersEmail');
     }
   });
 
-const express = require('express');
-const rateLimit = require('express-rate-limit');
-const compression = require('compression');
-const path = require('path');
-const cluster = require('cluster');
-const os = require('os');
-
-const PORT = process.env.PORT || 3000;
-const numCPUs = os.cpus().length;
-
-if (cluster.isMaster) {
-  console.log(`Master PID ${process.pid} - lanzando ${numCPUs} workers`);
-  for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();
-  }
-  cluster.on('exit', (worker, code, signal) => {
-    console.log(`Worker ${worker.process.pid} murió. Lanzando uno nuevo...`);
-    cluster.fork();
-  });
-} else {
-  const app = express();
   // Rate limiting: máximo 1000 requests por IP cada 15 minutos (más permisivo para pruebas de carga)
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos

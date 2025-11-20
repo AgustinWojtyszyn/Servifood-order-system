@@ -1,7 +1,11 @@
-const nodemailer = require('nodemailer');
-const XLSX = require('xlsx');
-const fs = require('fs');
-const path = require('path');
+import nodemailer from 'nodemailer';
+import XLSX from 'xlsx';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configura tu cuenta de Gmail
 const transporter = nodemailer.createTransport({
@@ -13,7 +17,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Función para enviar pedidos diarios por email
-async function sendDailyOrdersExcel(toEmail, orders) {
+export async function sendDailyOrdersExcel(toEmail, orders) {
   // Generar datos para Excel
   const excelData = orders.map(order => ({
     'Fecha Pedido': order.fecha,
@@ -53,5 +57,3 @@ async function sendDailyOrdersExcel(toEmail, orders) {
   // Eliminar archivo temporal
   fs.unlinkSync(filePath);
 }
-
-module.exports = { sendDailyOrdersExcel };
