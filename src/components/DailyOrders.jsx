@@ -8,6 +8,17 @@ const exportViaEmail = async () => {
   const toEmail = prompt('Ingresa el email de destino:')
   if (!toEmail) return
   try {
+    // Adaptar los datos para el backend
+    const ordersForEmail = sortedOrders.map(order => ({
+      fecha: formatDate(order.created_at),
+      usuario: order.user_name || 'Sin nombre',
+      email: order.customer_email || order.user_email || 'Sin email',
+      telefono: order.customer_phone || 'Sin teléfono',
+      ubicacion: order.location || 'Sin ubicación',
+      platillos: (order.items?.map(item => `${normalizeDishName(item.name)} (x${item.quantity})`).join('; ') || 'Sin items'),
+      estado: getStatusText(order.status),
+      comentarios: order.comments || 'Sin comentarios'
+    }))
     const response = await fetch('/api/send-daily-orders-email', {
       method: 'POST',
       headers: {
@@ -15,7 +26,7 @@ const exportViaEmail = async () => {
       },
       body: JSON.stringify({
         toEmail,
-        orders: sortedOrders
+        orders: ordersForEmail
       })
     })
     const result = await response.json()
