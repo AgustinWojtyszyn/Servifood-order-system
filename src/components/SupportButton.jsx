@@ -12,7 +12,7 @@ const SupportButton = () => {
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="group flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-6 rounded-full shadow-2xl hover:shadow-green-500/50 transform hover:scale-110 transition-all duration-300 animate-bounce hover:animate-none"
+        className="group flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-6 rounded-full shadow-2xl hover:shadow-green-500/50 transform hover:scale-110 transition-all duration-300"
       >
         <img src={whatsappIcon} alt="WhatsApp" className="h-8 w-8" />
         <span className="hidden sm:inline">¿Necesitas ayuda?</span>
