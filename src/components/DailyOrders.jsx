@@ -1,3 +1,34 @@
+// ...existing imports...
+// Nueva función para exportar por email usando el backend
+const exportViaEmail = async () => {
+  if (sortedOrders.length === 0) {
+    alert('No hay pedidos para exportar')
+    return
+  }
+  const toEmail = prompt('Ingresa el email de destino:')
+  if (!toEmail) return
+  try {
+    const response = await fetch('/api/send-daily-orders-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        toEmail,
+        orders: sortedOrders
+      })
+    })
+    const result = await response.json()
+    if (response.ok) {
+      alert('✓ Pedidos enviados por email correctamente')
+    } else {
+      alert('Error al exportar por email: ' + (result.error || 'Error desconocido'))
+    }
+  } catch (error) {
+    console.error('Error al exportar por email:', error)
+    alert('Error al exportar por email. Por favor, revisa la configuración.')
+  }
+}
 import { useState, useEffect } from 'react'
 import { db } from '../supabaseClient'
 import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw } from 'lucide-react'
@@ -679,14 +710,28 @@ const DailyOrders = ({ user }) => {
               onClick={shareViaWhatsApp}
               disabled={sortedOrders.length === 0}
               className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
-                sortedOrders.length === 0
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 text-white'
-              }`}
+              sortedOrders.length === 0
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
             >
               <Send className="h-4 w-4 md:h-5 md:w-5" />
               <span className="hidden sm:inline">WhatsApp</span>
               <span className="sm:hidden">Share</span>
+            </button>
+            {/* Botón de exportar por Email */}
+            <button
+              onClick={exportViaEmail}
+              disabled={sortedOrders.length === 0}
+              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
+              sortedOrders.length === 0
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+            >
+              <span className="material-icons">email</span>
+              <span className="hidden sm:inline">Email</span>
+              <span className="sm:hidden">Mail</span>
             </button>
           </div>
 

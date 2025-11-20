@@ -1,3 +1,20 @@
+const bodyParser = require('body-parser');
+const { sendDailyOrdersExcel } = require('./sendDailyOrdersEmail');
+  app.use(bodyParser.json());
+  // Endpoint para enviar pedidos diarios por email
+  app.post('/api/send-daily-orders-email', async (req, res) => {
+    const { toEmail, orders } = req.body;
+    if (!toEmail || !orders || !Array.isArray(orders)) {
+      return res.status(400).json({ error: 'Faltan datos o formato incorrecto' });
+    }
+    try {
+      await sendDailyOrdersExcel(toEmail, orders);
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Error enviando email:', err);
+      res.status(500).json({ error: 'Error enviando email' });
+    }
+  });
 
 const express = require('express');
 const rateLimit = require('express-rate-limit');
