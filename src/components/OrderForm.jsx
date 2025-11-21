@@ -130,7 +130,6 @@ const OrderForm = ({ user }) => {
           alert('Solo puedes seleccionar 1 menú por persona.')
           return
         }
-
         setSelectedItems(prev => ({
           ...prev,
           [itemId]: true
@@ -236,34 +235,15 @@ const OrderForm = ({ user }) => {
       
       // Preparar respuestas personalizadas (solo las activas con respuesta válida)
       const customResponsesArray = customOptions
-        .filter(opt => {
-          if (!opt.active) return false
-          const response = customResponses[opt.id]
-          // Verificar que la respuesta existe y no está vacía
-          if (!response) return false
-          if (Array.isArray(response) && response.length === 0) return false
-          if (typeof response === 'string' && response.trim() === '') return false
-          return true
-        })
-        .map(option => ({
-          option_id: option.id,
-          title: option.title,
-          response: customResponses[option.id]
-        }))
-
-      // Log para depuración
-      console.log('📋 Opciones personalizadas a guardar:', {
-        todasLasOpciones: customOptions.length,
-        opcionesActivas: customOptions.filter(o => o.active).length,
-        respuestasUsuario: customResponses,
-        respuestasAGuardar: customResponsesArray
+      .filter(opt => {
+        if (!opt.active) return false
+        const response = customResponses[opt.id]
+        // Verificar que la respuesta existe y no está vacía
+        if (!response) return false
+        if (Array.isArray(response) && response.length === 0) return false
+        if (typeof response === 'string' && response.trim() === '') return false
+        return true
       })
-
-      // Obtener el nombre del usuario desde auth
-      const userName = user?.user_metadata?.full_name || 
-                      formData.name || 
-                      user?.email?.split('@')[0] || 
-                      'Usuario'
       
       const orderData = {
         user_id: user.id,
@@ -655,7 +635,7 @@ const OrderForm = ({ user }) => {
         )}
 
         {/* Botón de confirmación - Sticky en mobile con safe area */}
-        <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto bg-gradient-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+        <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto bg-gradient-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))', position: 'sticky', bottom: 0 }}>
           <button
             type="submit"
             disabled={loading || getSelectedItemsList().length === 0 || hasOrderToday || isPastDeadline}

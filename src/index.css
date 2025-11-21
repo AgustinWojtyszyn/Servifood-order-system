@@ -14,12 +14,17 @@
     margin: 0;
     padding: 0;
     -webkit-overflow-scrolling: touch;
+    min-height: 100vh;
+    background: #f3f4f6;
   }
 
   #root {
     min-height: 100dvh;
     width: 100%;
     position: relative;
+    overflow-y: auto;
+    min-height: 100vh;
+    background: #f3f4f6;
   }
   
   /* Asegurar contraste en todos los inputs - Mobile First */
