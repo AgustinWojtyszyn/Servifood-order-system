@@ -61,27 +61,25 @@ const Layout = ({ children, user }) => {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center h-20 sm:h-16 py-2 sm:py-0">
-            <div className="flex items-center w-full sm:w-auto justify-center sm:justify-start">
+          <div className="flex flex-row justify-between items-center h-16 py-0">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden"
               >
                 <Menu className="h-6 w-6" />
               </button>
-              <div className="flex items-center ml-2 sm:ml-0">
-                <img 
-                  src={servifoodLogo} 
-                  alt="Servifood Logo" 
-                  className="h-10 w-10 sm:h-12 sm:w-12 rounded object-cover"
-                />
-                <span className="ml-2 sm:ml-3 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span>
-              </div>
+              <img 
+                src={servifoodLogo} 
+                alt="Servifood Logo" 
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded object-cover"
+              />
+              <span className="ml-2 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span>
             </div>
 
-            <div className="flex items-center space-x-2 sm:space-x-4 mt-2 sm:mt-0">
-              <span className="text-sm sm:text-base font-bold text-white drop-shadow-lg truncate max-w-[120px] sm:max-w-none">
-                Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+            <div className="flex items-center gap-2">
+              <span className="text-sm sm:text-base font-bold text-white drop-shadow-lg truncate max-w-[120px] sm:max-w-none text-right">
+                {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </span>
               <button
                 onClick={handleLogout}
