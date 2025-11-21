@@ -310,9 +310,11 @@ const DailyOrders = ({ user }) => {
   // Aplicar filtro por guarnición
   if (selectedSide !== 'all') {
     dishFilteredOrders = dishFilteredOrders.filter(order => {
-      const customSide = getCustomSideFromResponses(order.custom_responses)
-      return customSide === selectedSide
-    })
+      // Evitar error si custom_responses no está inicializado
+      if (!order || !order.custom_responses) return false;
+      const customSide = getCustomSideFromResponses(order.custom_responses);
+      return customSide === selectedSide;
+    });
   }
 
   // Aplicar ordenamiento
