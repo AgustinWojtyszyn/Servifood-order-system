@@ -340,23 +340,15 @@ const DailyOrders = ({ user }) => {
     })
   }
 
-  // Función helper para detectar y extraer guarniciones personalizadas
-  const getCustomSideFromResponses = (customResponses) => {
-    if (!customResponses || !Array.isArray(customResponses)) return null
-    
-    // Buscar opciones que contengan "guarnición" o "guarnicion" en el título
-    const sideOption = customResponses.find(r => 
-      r.title?.toLowerCase().includes('guarnición') || 
-      r.title?.toLowerCase().includes('guarnicion')
-    )
-    
-    if (sideOption && sideOption.response) {
-      return Array.isArray(sideOption.response) 
-        ? sideOption.response.join(', ') 
-        : sideOption.response
+  // Función robusta para detectar y extraer guarniciones personalizadas
+  const getCustomSideFromResponses = (responses = []) => {
+    if (!Array.isArray(responses) || responses.length === 0) return null;
+    for (const r of responses) {
+      if (r?.title?.toLowerCase().includes('guarn')) {
+        return r?.answer ?? r?.response ?? null;
+      }
     }
-    
-    return null
+    return null;
   }
 
   // Función helper para obtener otras opciones (sin guarniciones)
