@@ -61,8 +61,8 @@ const Layout = ({ children, user }) => {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-row items-center h-16 py-0">
-            <div className="flex items-center gap-3 sm:gap-6">
+          <div className="flex flex-row items-center h-16 py-0 overflow-hidden">
+            <div className="flex items-center gap-3 sm:gap-6 h-full">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden"
@@ -72,9 +72,9 @@ const Layout = ({ children, user }) => {
               <img 
                 src={servifoodLogo} 
                 alt="Servifood Logo" 
-                className="h-14 w-14 sm:h-20 sm:w-20 rounded object-cover"
+                className="max-h-14 sm:max-h-16 w-auto rounded object-cover"
+                style={{height: '56px', maxHeight: '100%', display: 'block'}}
               />
-              {/* <span className="ml-2 sm:ml-4 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span> */}
             </div>
             <div className="flex-grow"></div>
             <div className="flex items-center gap-2">
