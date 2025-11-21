@@ -61,8 +61,8 @@ const Layout = ({ children, user }) => {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-row justify-between items-center h-16 py-0">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-row items-center h-16 py-0">
+            <div className="flex items-center gap-3 sm:gap-6">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden"
@@ -74,10 +74,10 @@ const Layout = ({ children, user }) => {
                 alt="Servifood Logo" 
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded object-cover"
               />
-              <span className="ml-4 sm:ml-6 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span>
+              <span className="ml-2 sm:ml-4 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span>
             </div>
-
-            <div className="flex items-center gap-2 ml-4 sm:ml-12">
+            <div className="flex-grow"></div>
+            <div className="flex items-center gap-2">
               <span className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate max-w-[120px] sm:max-w-none text-right">
                 {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </span>
