@@ -74,11 +74,11 @@ const Layout = ({ children, user }) => {
                 alt="Servifood Logo" 
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded object-cover"
               />
-              <span className="ml-2 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span>
+              <span className="ml-4 sm:ml-6 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm sm:text-base font-bold text-white drop-shadow-lg truncate max-w-[120px] sm:max-w-none text-right">
+            <div className="flex items-center gap-2 ml-4 sm:ml-12">
+              <span className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate max-w-[120px] sm:max-w-none text-right">
                 {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </span>
               <button
