@@ -443,9 +443,9 @@ const AdminPanel = ({ user }) => {
       </div>
 
       {/* Tabs - Scroll horizontal completo en mobile */}
-      <div className="border-b-2 border-white/30 w-full overflow-hidden">
-        <div className="overflow-x-auto scrollbar-hide -mx-3 sm:-mx-6 md:mx-0">
-          <nav className="-mb-0.5 flex space-x-2 sm:space-x-4 md:space-x-8 min-w-max px-3 sm:px-6 md:px-0">
+      <div className="border-b-2 border-white/30 w-full" style={{ overflowX: 'auto', minWidth: 0 }}>
+        <div className="overflow-x-auto scrollbar-hide -mx-3 sm:-mx-6 md:mx-0" style={{ WebkitOverflowScrolling: 'touch', minWidth: 0 }}>
+          <nav className="-mb-0.5 flex space-x-2 sm:space-x-4 md:space-x-8 min-w-max px-3 sm:px-6 md:px-0" style={{ minWidth: '100%', flexWrap: 'nowrap', overflowX: 'auto' }}>
             <button
               onClick={() => setActiveTab('users')}
               className={`py-3 px-3 sm:px-4 border-b-4 font-bold text-xs sm:text-sm transition-colors whitespace-nowrap flex items-center gap-1 sm:gap-2 ${
