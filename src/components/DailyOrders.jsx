@@ -12,17 +12,17 @@ const exportViaEmail = async () => {
   emailLoadingRef.current = true
   try {
     // Adaptar los datos para el backend
-    const ordersForEmail = sortedOrders.map(order => ({
+    const ordersForEmail = Array.isArray(sortedOrders) ? sortedOrders.map(order => ({
       fecha: formatDate(order.created_at),
       usuario: order.user_name || 'Sin nombre',
       email: order.customer_email || order.user_email || 'Sin email',
       telefono: order.customer_phone || 'Sin teléfono',
       ubicacion: order.location || 'Sin ubicación',
-      platillos: (order.items?.map(item => `${normalizeDishName(item.name)} (x${item.quantity})`).join('; ') || 'Sin items'),
+      platillos: (Array.isArray(order.items) ? order.items.map(item => `${normalizeDishName(item.name)} (x${item.quantity})`) : []).join('; ') || 'Sin items',
       estado: getStatusText(order.status),
       comentarios: order.comments || 'Sin comentarios'
-    }))
-    alert('Enviando pedidos por email...')
+    })) : [];
+    alert('Enviando pedidos por email...');
     const response = await fetch('/api/send-daily-orders-email', {
       method: 'POST',
       headers: {
@@ -127,38 +127,37 @@ const DailyOrders = ({ user }) => {
         const dishesSet = new Set()
         
         // Filtrar solo pedidos de hoy
-        const todayOrders = (ordersData || []).filter(order => {
+        const todayOrders = Array.isArray(ordersData) ? ordersData.filter(order => {
+          if (!order || !order.created_at) return false;
           const orderDate = new Date(order.created_at)
           orderDate.setHours(0, 0, 0, 0)
           return orderDate.getTime() === today.getTime()
         }).map(order => {
-          const orderUser = usersData?.find(u => u.id === order.user_id)
+          const orderUser = Array.isArray(usersData) ? usersData.find(u => u && u.id === order.user_id) : null;
           let userName = 'Usuario'
           if (orderUser) {
             userName = orderUser.full_name || 
-                      orderUser.user_metadata?.full_name || 
-                      orderUser.email?.split('@')[0] || 
+                      (orderUser.user_metadata && orderUser.user_metadata.full_name) || 
+                      (orderUser.email ? orderUser.email.split('@')[0] : null) || 
                       order.customer_name ||
                       'Usuario'
           } else if (order.customer_name) {
             userName = order.customer_name
           }
-          
           // Recopilar platillos únicos
-          if (order.items && Array.isArray(order.items)) {
+          if (Array.isArray(order.items)) {
             order.items.forEach(item => {
-              if (item.name) {
+              if (item && item.name) {
                 dishesSet.add(item.name)
               }
             })
           }
-          
           return {
             ...order,
             user_name: userName,
-            user_email: orderUser?.email || order.customer_email || ''
+            user_email: orderUser && orderUser.email ? orderUser.email : (order.customer_email || '')
           }
-        })
+        }) : [];
         
         setOrders(todayOrders)
         setAvailableDishes(Array.from(dishesSet).sort())
@@ -195,7 +194,7 @@ const DailyOrders = ({ user }) => {
     let pending = 0
     let cancelled = 0
 
-    ordersData.forEach(order => {
+    Array.isArray(ordersData) && ordersData.forEach(order => {
       // Contar por ubicación
       if (!byLocation[order.location]) {
         byLocation[order.location] = 0
@@ -205,7 +204,7 @@ const DailyOrders = ({ user }) => {
       // Contar por platillo (con normalización de nombres)
       if (order.items && Array.isArray(order.items)) {
         order.items.forEach(item => {
-          if (item.name) {
+          if (item && item.name) {
             const normalizedName = normalizeDishName(item.name)
             if (!byDish[normalizedName]) {
               byDish[normalizedName] = 0
@@ -287,34 +286,36 @@ const DailyOrders = ({ user }) => {
   }
 
   const filteredOrders = selectedLocation === 'all' 
-    ? orders 
-    : orders.filter(order => order.location === selectedLocation)
+    ? Array.isArray(orders) ? orders : []
+    : Array.isArray(orders) ? orders.filter(order => order && order.location === selectedLocation) : []
 
   // Aplicar filtro por estado
   const statusFilteredOrders = selectedStatus === 'all'
-    ? filteredOrders
-    : filteredOrders.filter(order => {
+    ? Array.isArray(filteredOrders) ? filteredOrders : []
+    : Array.isArray(filteredOrders) ? filteredOrders.filter(order => {
+        if (!order) return false;
         if (selectedStatus === 'completed') {
           return order.status === 'completed' || order.status === 'delivered'
         }
         return order.status === selectedStatus
-      })
+      }) : []
 
   // Aplicar filtro por platillo
   let dishFilteredOrders = selectedDish === 'all'
-    ? statusFilteredOrders
-    : statusFilteredOrders.filter(order => {
-        return order.items?.some(item => item.name === selectedDish)
-      })
+    ? Array.isArray(statusFilteredOrders) ? statusFilteredOrders : []
+    : Array.isArray(statusFilteredOrders) ? statusFilteredOrders.filter(order => {
+        if (!order || !Array.isArray(order.items)) return false;
+        return order.items.some(item => item && item.name === selectedDish)
+      }) : []
 
   // Filtro robusto por guarnición
   if (selectedSide !== 'all') {
-    dishFilteredOrders = dishFilteredOrders.filter(order => {
+    dishFilteredOrders = Array.isArray(dishFilteredOrders) ? dishFilteredOrders.filter(order => {
       // Siempre pasar array, nunca undefined
       const customResponses = Array.isArray(order?.custom_responses) ? order.custom_responses : [];
       const customSide = getCustomSideFromResponses(customResponses);
       return customSide === selectedSide;
-    });
+    }) : [];
   }
 
   // Aplicar ordenamiento
@@ -970,15 +971,17 @@ const DailyOrders = ({ user }) => {
                     Platillos Solicitados
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
-                    {order.items && order.items.map((item, index) => (
-                      <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <span style={{ fontWeight: '900' }} className="text-sm md:text-base text-gray-900 flex-1 truncate mr-2">{item.name}</span>
-                          <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-bold flex-shrink-0">
-                            x{item.quantity}
-                          </span>
+                    {Array.isArray(order.items) && order.items.map((item, index) => (
+                      item ? (
+                        <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <span style={{ fontWeight: '900' }} className="text-sm md:text-base text-gray-900 flex-1 truncate mr-2">{item.name}</span>
+                            <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-bold flex-shrink-0">
+                              x{item.quantity}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      ) : null
                     ))}
 
                     {/* Guarnición personalizada si existe */}
