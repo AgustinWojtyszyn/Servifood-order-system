@@ -98,10 +98,14 @@ const DailyOrders = ({ user }) => {
       if (!error && data) {
         const currentUser = data.find(u => u.id === user.id)
         setIsAdmin(currentUser?.role === 'admin')
+      } else {
+        // Fallback: usar user_metadata si la consulta falla
+        setIsAdmin(user?.user_metadata?.role === 'admin')
       }
     } catch (err) {
       console.error('Error checking admin status:', err)
-      setIsAdmin(false)
+      // Fallback: usar user_metadata si hay error
+      setIsAdmin(user?.user_metadata?.role === 'admin')
     }
   }
 

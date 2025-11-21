@@ -24,10 +24,13 @@ const Layout = ({ children, user }) => {
       if (!error && data) {
         const currentUser = data.find(u => u.id === user?.id)
         setIsAdmin(currentUser?.role === 'admin')
+      } else {
+        // Fallback: usar user_metadata si la consulta falla
+        setIsAdmin(user?.user_metadata?.role === 'admin')
       }
     } catch (err) {
       console.error('Error checking user role:', err)
-      // Fallback a user_metadata si falla la consulta
+      // Fallback: usar user_metadata si hay error
       setIsAdmin(user?.user_metadata?.role === 'admin')
     }
   }
