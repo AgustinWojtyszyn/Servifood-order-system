@@ -75,6 +75,28 @@ const DailyOrders = ({ user }) => {
 
   const locations = ['Los Berros', 'La Laja', 'Padre Bueno']
 
+  // Función robusta para detectar y extraer guarniciones personalizadas
+  const getCustomSideFromResponses = (responses = []) => {
+    if (!Array.isArray(responses) || responses.length === 0) return null;
+    for (const r of responses) {
+      if (r?.title?.toLowerCase().includes('guarn')) {
+        return r?.answer ?? r?.response ?? null;
+      }
+    }
+    return null;
+  }
+
+  // Función helper para obtener otras opciones (sin guarniciones)
+  const getOtherCustomResponses = (customResponses) => {
+    if (!customResponses || !Array.isArray(customResponses)) return []
+
+    return customResponses.filter(r =>
+      r.response &&
+      !r.title?.toLowerCase().includes('guarnición') &&
+      !r.title?.toLowerCase().includes('guarnicion')
+    )
+  }
+
   useEffect(() => {
     checkIfAdmin()
   }, [user])
@@ -343,27 +365,7 @@ const DailyOrders = ({ user }) => {
     })
   }
 
-  // Función robusta para detectar y extraer guarniciones personalizadas
-  const getCustomSideFromResponses = (responses = []) => {
-    if (!Array.isArray(responses) || responses.length === 0) return null;
-    for (const r of responses) {
-      if (r?.title?.toLowerCase().includes('guarn')) {
-        return r?.answer ?? r?.response ?? null;
-      }
-    }
-    return null;
-  }
 
-  // Función helper para obtener otras opciones (sin guarniciones)
-  const getOtherCustomResponses = (customResponses) => {
-    if (!customResponses || !Array.isArray(customResponses)) return []
-    
-    return customResponses.filter(r => 
-      r.response && 
-      !r.title?.toLowerCase().includes('guarnición') && 
-      !r.title?.toLowerCase().includes('guarnicion')
-    )
-  }
 
   const exportToExcel = () => {
     if (sortedOrders.length === 0) {
