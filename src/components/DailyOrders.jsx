@@ -737,19 +737,6 @@ const DailyOrders = ({ user }) => {
               <span className="hidden sm:inline">WhatsApp</span>
               <span className="sm:hidden">Share</span>
             </button>
-            {/* Botón de exportar por Email */}
-            <button
-              onClick={exportViaEmail}
-              disabled={sortedOrders.length === 0}
-              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
-              sortedOrders.length === 0
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-            >
-              <Mail className="h-4 w-4 md:h-5 md:w-5" />
-              <span>Email</span>
-            </button>
           </div>
 
           {/* Filtros - Grid responsive */}
