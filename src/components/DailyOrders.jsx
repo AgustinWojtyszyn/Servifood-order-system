@@ -813,11 +813,18 @@ const DailyOrders = ({ user }) => {
                 className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
               >
                 <option value="all">Todas</option>
-                {[...new Set(orders
-                  .map(order => Array.isArray(order.custom_responses) ? getCustomSideFromResponses(order.custom_responses) : null)
-                  .filter(Boolean))].map(side => (
-                  <option key={side} value={side}>{side}</option>
-                ))}
+                {(() => {
+                  const sides = orders.map(order => {
+                    if (order && Array.isArray(order.custom_responses)) {
+                      return getCustomSideFromResponses(order.custom_responses)
+                    }
+                    return null
+                  }).filter(Boolean)
+                  const uniqueSides = [...new Set(sides)]
+                  return uniqueSides.map(side => (
+                    <option key={side} value={side}>{side}</option>
+                  ))
+                })()}
               </select>
             </div>
 
