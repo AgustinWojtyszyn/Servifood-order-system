@@ -436,10 +436,10 @@ const AdminPanel = ({ user }) => {
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-6 sm:space-y-8">
+    <div className="min-h-screen pt-16 pb-24 overflow-y-auto p-3 sm:p-6 space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2">Panel de Administración</h1>
-        <p className="text-base sm:text-lg md:text-xl text-white/90 drop-shadow-lg mt-2">Gestiona usuarios y el menú de opciones</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-2xl mb-2">Panel de Administración</h1>
+        <p className="text-sm sm:text-base md:text-lg text-white/90 drop-shadow-lg mt-2">Gestiona usuarios y el menú de opciones</p>
       </div>
 
       {/* Tabs - Scroll horizontal completo en mobile */}
@@ -448,35 +448,35 @@ const AdminPanel = ({ user }) => {
           <nav className="-mb-0.5 flex space-x-2 sm:space-x-4 md:space-x-8 min-w-max px-3 sm:px-6 md:px-0">
             <button
               onClick={() => setActiveTab('users')}
-              className={`py-4 px-4 sm:px-5 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap flex items-center gap-2 ${
+              className={`py-3 px-3 sm:px-4 border-b-4 font-bold text-xs sm:text-sm transition-colors whitespace-nowrap flex items-center gap-1 sm:gap-2 ${
                 activeTab === 'users'
                   ? 'border-secondary-500 text-white drop-shadow'
                   : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
               }`}
             >
-              <Users className="h-5 w-5 flex-shrink-0" />
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               <span>Usuarios</span>
             </button>
             <button
               onClick={() => setActiveTab('menu')}
-              className={`py-4 px-4 sm:px-5 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap flex items-center gap-2 ${
+              className={`py-3 px-3 sm:px-4 border-b-4 font-bold text-xs sm:text-sm transition-colors whitespace-nowrap flex items-center gap-1 sm:gap-2 ${
                 activeTab === 'menu'
                   ? 'border-secondary-500 text-white drop-shadow'
                   : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
               }`}
             >
-              <ChefHat className="h-5 w-5 flex-shrink-0" />
+              <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               <span>Menú</span>
             </button>
             <button
               onClick={() => setActiveTab('options')}
-              className={`py-4 px-4 sm:px-5 border-b-4 font-bold text-sm sm:text-base transition-colors whitespace-nowrap flex items-center gap-2 ${
+              className={`py-3 px-3 sm:px-4 border-b-4 font-bold text-xs sm:text-sm transition-colors whitespace-nowrap flex items-center gap-1 sm:gap-2 ${
                 activeTab === 'options'
                   ? 'border-secondary-500 text-white drop-shadow'
                   : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
               }`}
             >
-              <Settings className="h-5 w-5 flex-shrink-0" />
+              <Settings className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               <span>Opciones</span>
             </button>
           </nav>
@@ -557,7 +557,7 @@ const AdminPanel = ({ user }) => {
           {/* Vista Mobile - Cards */}
           <div className="block md:hidden space-y-4">
             {getFilteredUsers().map((user) => (
-              <div key={user.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-primary-300 transition-all">
+              <div key={user.id} className="border-2 border-gray-200 rounded-xl p-3 bg-white hover:border-primary-300 transition-all">
                 {/* Nombre y Badge de Rol */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
@@ -827,7 +827,7 @@ const AdminPanel = ({ user }) => {
 
           {/* Lista de opciones existentes - Con scroll adaptativo */}
           {!editingOptions && customOptions.length > 0 && (
-            <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="space-y-4 max-h-[calc(100vh-400px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {customOptions.map((option, index) => (
                 <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-primary-300 transition-all min-w-0">
                   {/* Header con título y badges */}
