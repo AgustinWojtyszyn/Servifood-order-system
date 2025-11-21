@@ -1,7 +1,6 @@
 // ...existing imports...
 // Nueva función para exportar por email usando el backend
 import { useRef } from 'react'
-const emailLoadingRef = useRef(false)
 const exportViaEmail = async () => {
   if (emailLoadingRef.current) return
   if (sortedOrders.length === 0) {
@@ -53,6 +52,7 @@ import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filt
 import * as XLSX from 'xlsx'
 
 const DailyOrders = ({ user }) => {
+  const emailLoadingRef = useRef(false)
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
