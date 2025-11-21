@@ -307,12 +307,12 @@ const DailyOrders = ({ user }) => {
         return order.items?.some(item => item.name === selectedDish)
       })
 
-  // Aplicar filtro por guarnición
+  // Filtro robusto por guarnición
   if (selectedSide !== 'all') {
     dishFilteredOrders = dishFilteredOrders.filter(order => {
-      // Evitar error si custom_responses no está inicializado
-      if (!order || !order.custom_responses) return false;
-      const customSide = getCustomSideFromResponses(order.custom_responses);
+      // Siempre pasar array, nunca undefined
+      const customResponses = Array.isArray(order?.custom_responses) ? order.custom_responses : [];
+      const customSide = getCustomSideFromResponses(customResponses);
       return customSide === selectedSide;
     });
   }
