@@ -548,7 +548,7 @@ const DailyOrders = ({ user }) => {
 
       // GUARNICIONES PERSONALIZADAS
       const customSides = sortedOrders
-        .map(order => getCustomSideFromResponses(order.custom_responses))
+        .map(order => getCustomSideFromResponses(order?.custom_responses ?? []))
         .filter(side => side !== null)
       
       if (customSides.length > 0) {
