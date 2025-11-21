@@ -74,7 +74,7 @@ const Layout = ({ children, user }) => {
                 alt="Servifood Logo" 
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded object-cover"
               />
-              <span className="ml-2 sm:ml-4 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span>
+              {/* <span className="ml-2 sm:ml-4 text-lg sm:text-2xl font-bold text-white drop-shadow-lg whitespace-nowrap">ServiFood Catering</span> */}
             </div>
             <div className="flex-grow"></div>
             <div className="flex items-center gap-2">
