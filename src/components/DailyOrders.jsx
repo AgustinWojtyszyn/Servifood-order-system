@@ -133,30 +133,31 @@ const DailyOrders = ({ user }) => {
           orderDate.setHours(0, 0, 0, 0)
           return orderDate.getTime() === today.getTime()
         }).map(order => {
+          // Evitar destructuración directa y acceso antes de inicialización
           const orderUser = Array.isArray(usersData) ? usersData.find(u => u && u.id === order.user_id) : null;
-          let userName = 'Usuario'
+          let userName = 'Usuario';
           if (orderUser) {
-            userName = orderUser.full_name || 
-                      (orderUser.user_metadata && orderUser.user_metadata.full_name) || 
-                      (orderUser.email ? orderUser.email.split('@')[0] : null) || 
-                      order.customer_name ||
-                      'Usuario'
-          } else if (order.customer_name) {
-            userName = order.customer_name
+            userName = (orderUser.full_name !== undefined ? orderUser.full_name : null)
+              || (orderUser.user_metadata && orderUser.user_metadata.full_name ? orderUser.user_metadata.full_name : null)
+              || (orderUser.email ? orderUser.email.split('@')[0] : null)
+              || (order.customer_name !== undefined ? order.customer_name : null)
+              || 'Usuario';
+          } else if (order.customer_name !== undefined) {
+            userName = order.customer_name;
           }
           // Recopilar platillos únicos
           if (Array.isArray(order.items)) {
             order.items.forEach(item => {
-              if (item && item.name) {
-                dishesSet.add(item.name)
+              if (item && typeof item === 'object' && item.name !== undefined) {
+                dishesSet.add(item.name);
               }
-            })
+            });
           }
           return {
             ...order,
             user_name: userName,
-            user_email: orderUser && orderUser.email ? orderUser.email : (order.customer_email || '')
-          }
+            user_email: (orderUser && orderUser.email ? orderUser.email : (order.customer_email !== undefined ? order.customer_email : ''))
+          };
         }) : [];
         
         setOrders(todayOrders)
@@ -305,7 +306,8 @@ const DailyOrders = ({ user }) => {
     ? Array.isArray(statusFilteredOrders) ? statusFilteredOrders : []
     : Array.isArray(statusFilteredOrders) ? statusFilteredOrders.filter(order => {
         if (!order || !Array.isArray(order.items)) return false;
-        return order.items.some(item => item && item.name === selectedDish)
+        // Evitar destructuración directa y acceso antes de inicialización
+        return order.items.some(item => item && typeof item === 'object' && item.name !== undefined && item.name === selectedDish)
       }) : []
 
   // Filtro robusto por guarnición
@@ -972,7 +974,7 @@ const DailyOrders = ({ user }) => {
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
                     {Array.isArray(order.items) && order.items.map((item, index) => (
-                      item ? (
+                      item && typeof item === 'object' && item.name !== undefined ? (
                         <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-gray-200">
                           <div className="flex items-center justify-between">
                             <span style={{ fontWeight: '900' }} className="text-sm md:text-base text-gray-900 flex-1 truncate mr-2">{item.name}</span>
