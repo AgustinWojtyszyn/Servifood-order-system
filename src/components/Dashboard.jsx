@@ -401,7 +401,7 @@ const Dashboard = ({ user }) => {
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-6 space-y-8" style={{ overflowY: 'auto', minHeight: '100vh', WebkitOverflowScrolling: 'touch', paddingBottom: '120px' }}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
