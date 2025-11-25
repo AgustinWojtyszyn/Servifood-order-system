@@ -309,34 +309,3 @@ Generá los cambios necesarios en el archivo automáticamente.
     font-size: 14px; /* Reducir ligeramente en landscape */
   }
 }
-
-/* Ajuste específico para móviles 360x740 (Galaxy S9, etc) */
-@media screen and (max-width: 370px) {
-  html, body, #root {
-    min-width: 100vw;
-    width: 100vw;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow-x: hidden !important;
-  }
-  .card, .container, .max-w-7xl, .space-y-4, .w-full, .px-1, .px-4, .sm\:px-0 {
-    box-sizing: border-box;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    min-width: 0 !important;
-    margin: 0 auto !important;
-  }
-  .flex, .flex-row, .flex-col, .flex-1 {
-    min-width: 0 !important;
-    width: 100vw !important;
-    box-sizing: border-box;
-  }
-  .overflow-x-auto, .overflow-x-hidden {
-    overflow-x: hidden !important;
-  }
-  .overflow-y-auto {
-    overflow-y: auto !important;
-  }
-}
