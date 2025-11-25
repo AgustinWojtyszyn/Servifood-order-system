@@ -248,7 +248,7 @@ const OrderForm = ({ user }) => {
       const orderData = {
         user_id: user.id,
         location: formData.location,
-        customer_name: userName, // Usar el nombre del usuario autenticado
+        customer_name: formData.name || user?.user_metadata?.full_name || user?.email || '',
         customer_email: formData.email || user?.email,
         customer_phone: formData.phone,
         items: selectedItemsList.map(item => ({
