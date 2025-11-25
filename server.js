@@ -52,15 +52,16 @@ if (cluster.isMaster) {
   // Middleware de compresión gzip
   app.use(compression());
 
-  // Servir archivos estáticos con cache
-  app.use(express.static(path.join(__dirname, 'public'), {
+
+  // Servir archivos estáticos de la app (build de Vite)
+  app.use(express.static(path.join(__dirname, 'dist'), {
     maxAge: '1y',
     etag: false
   }));
 
-  // Endpoint básico
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  // Fallback SPA: cualquier ruta que no sea API responde con dist/index.html
+  app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   });
 
   // Manejo global de errores
