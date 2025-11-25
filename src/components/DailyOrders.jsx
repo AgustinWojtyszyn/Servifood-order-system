@@ -855,8 +855,8 @@ const DailyOrders = ({ user }) => {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 w-full">
+        <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
           <div className="text-center">
             <Package className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mx-auto mb-2" />
             <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Pedidos</p>
@@ -864,7 +864,7 @@ const DailyOrders = ({ user }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-purple-200">
+        <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-purple-200 w-full">
           <div className="text-center">
             <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-purple-600 mx-auto mb-2" />
             <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Items</p>
@@ -872,7 +872,7 @@ const DailyOrders = ({ user }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-yellow-200">
+        <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-yellow-200 w-full">
           <div className="text-center">
             <Clock className="h-6 w-6 md:h-8 md:w-8 text-yellow-600 mx-auto mb-2" />
             <p className="text-xs md:text-sm text-gray-600 font-semibold">Pendientes</p>
@@ -880,7 +880,7 @@ const DailyOrders = ({ user }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-green-200">
+        <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-green-200 w-full">
           <div className="text-center">
             <CheckCircle className="h-6 w-6 md:h-8 md:w-8 text-green-600 mx-auto mb-2" />
             <p className="text-xs md:text-sm text-gray-600 font-semibold">Completados</p>
@@ -888,7 +888,7 @@ const DailyOrders = ({ user }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-red-200">
+        <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-red-200 w-full">
           <div className="text-center">
             <XCircle className="h-6 w-6 md:h-8 md:w-8 text-red-600 mx-auto mb-2" />
             <p className="text-xs md:text-sm text-gray-600 font-semibold">Cancelados</p>
