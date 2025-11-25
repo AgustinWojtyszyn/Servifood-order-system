@@ -1,9 +1,58 @@
+/*
+✅ Prompt Efectivo Para GitHub Copilot
+
+GitHub Copilot: Corrige este problema de UI.
+
+La vista móvil de mi app aparece cortada en Chrome DevTools y en teléfonos reales. El contenido no permite hacer scroll hasta el final y se muestra como si estuviera recortado. Necesito que generes los cambios CSS adecuados para evitar este recorte.
+
+Requisitos:
+1. Eliminar cualquier uso de `height: 100vh` en contenedores principales. Reemplazar por:
+  - `min-height: 100vh` o `height: auto`
+  - También aceptar `100dvh` o `100svh` para móviles modernos.
+
+2. Asegurar que `html`, `body` y `#root` NO tengan `overflow: hidden`.  
+  Deben quedar así:
+  ```css
+  html, body, #root {
+     height: auto;
+     min-height: 100%;
+     overflow-x: hidden;
+     overflow-y: auto;
+  }
+  ```
+
+Si algún componente principal del layout (main, container, wrapper, page) tiene:
+
+height: 100vh
+
+overflow: hidden
+
+position: fixed
+→ reemplazar por un sistema que permita scroll natural.
+
+Asegurar que ningún contenedor padre tenga:
+
+max-height: 100vh;
+
+o cualquier otra propiedad que limite el alto.
+
+Reescribir cualquier layout de página que use display: flex con:
+
+flex-direction: column;
+min-height: 100vh;
+
+Tu objetivo es que toda la página pueda scrollear completa, sin recortes y sin bugs de viewport móvil.
+
+Generá los cambios necesarios en el archivo automáticamente.
+*/
 @import "tailwindcss";
 
 @layer base {
   /* Base responsive - Mobile First */
-  html, body {
-    height: 100%;
+
+  html, body, #root {
+    height: auto;
+    min-height: 100%;
     width: 100%;
     overflow-x: hidden;
     overflow-y: auto;
@@ -14,16 +63,6 @@
     margin: 0;
     padding: 0;
     -webkit-overflow-scrolling: touch;
-    min-height: 100vh;
-    background: #f3f4f6;
-  }
-
-  #root {
-    min-height: 100dvh;
-    width: 100%;
-    position: relative;
-    overflow-y: auto;
-    min-height: 100vh;
     background: #f3f4f6;
   }
   
