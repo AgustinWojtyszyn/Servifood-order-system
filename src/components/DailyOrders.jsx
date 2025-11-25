@@ -912,7 +912,7 @@ const DailyOrders = ({ user }) => {
           <p className="text-gray-400 mt-2 text-sm">Intenta cambiar los filtros para ver más resultados</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full px-1 sm:px-0" style={{overflowX: 'hidden'}}>
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               <Package className="h-6 w-6" />
@@ -932,7 +932,8 @@ const DailyOrders = ({ user }) => {
           {sortedOrders.map((order) => (
             <div
               key={order.id}
-              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-gray-200 overflow-hidden"
+              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-gray-200 overflow-hidden w-full"
+              style={{overflowX: 'hidden'}}
             >
               {/* Header del pedido - Mobile optimized */}
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 md:px-6 py-3 md:py-4 border-b-2 border-gray-200">
