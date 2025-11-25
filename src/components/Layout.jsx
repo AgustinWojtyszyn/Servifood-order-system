@@ -61,46 +61,43 @@ const Layout = ({ children, user }) => {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-row items-center h-16 py-0 overflow-hidden">
-            <div className="flex items-center gap-3 sm:gap-6 h-full">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-              <img 
-                src={servifoodLogo} 
-                alt="Servifood Logo" 
-                className="max-h-14 sm:max-h-16 w-auto rounded object-cover"
-                style={{height: '56px', maxHeight: '100%', display: 'block'}}
-              />
-            </div>
+          <div className="flex flex-row items-center h-16 py-0 overflow-hidden w-full">
+            <img 
+              src={servifoodLogo} 
+              alt="Servifood Logo" 
+              className="max-h-14 sm:max-h-16 w-auto rounded object-cover ml-2"
+              style={{height: '48px', maxHeight: '100%', display: 'block'}}
+            />
+            <span
+              className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate ml-2"
+              style={{
+                maxWidth: '60px', // aún más corto en mobile
+                display: 'inline-block',
+                textAlign: 'left',
+                fontSize: '11px',
+                lineHeight: '1.1',
+                verticalAlign: 'middle',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+            </span>
             <div className="flex-grow"></div>
-            <div className="flex items-center gap-2">
-              <span
-                className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate"
-                style={{
-                  maxWidth: '80px', // más corto en mobile
-                  display: 'inline-block',
-                  textAlign: 'right',
-                  fontSize: '13px',
-                  lineHeight: '1.1',
-                  verticalAlign: 'middle',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </div>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden mr-1"
+              style={{marginLeft: 'auto'}}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </header>
