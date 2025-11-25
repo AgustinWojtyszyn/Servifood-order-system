@@ -266,12 +266,14 @@ const OrderForm = ({ user }) => {
       const { error } = await db.createOrder(orderData)
 
       if (error) {
+        // Mostrar el mensaje real de error de Supabase para depuración
+        let msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
         // Verificar si es error de política de base de datos
-        if (error.message.includes('violates row-level security policy') || 
-            error.message.includes('new row violates row-level security')) {
+        if (msg.includes('violates row-level security policy') || 
+            msg.includes('new row violates row-level security')) {
           setError('Ya tienes un pedido pendiente. Espera a que se complete para crear uno nuevo.')
         } else {
-          setError('Error al crear el pedido: ' + error.message)
+          setError('Error al crear el pedido: ' + msg)
         }
       } else {
         setSuccess(true)
@@ -280,7 +282,8 @@ const OrderForm = ({ user }) => {
         }, 2000)
       }
     } catch (err) {
-      setError('Error al crear el pedido')
+      // Mostrar el error real si ocurre una excepción
+      setError('Error al crear el pedido: ' + (err?.message || JSON.stringify(err)))
     } finally {
       setLoading(false)
     }
