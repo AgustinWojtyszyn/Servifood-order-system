@@ -671,7 +671,16 @@ const DailyOrders = ({ user }) => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6" style={{ overflowY: 'auto', minHeight: '100vh', WebkitOverflowScrolling: 'touch', paddingBottom: '120px' }}>
+    <div
+      className="max-w-7xl mx-auto space-y-6 w-full px-2 sm:px-4 md:px-6"
+      style={{
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        minHeight: '100vh',
+        WebkitOverflowScrolling: 'touch',
+        paddingBottom: '120px'
+      }}
+    >
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl">
         <div className="flex flex-col gap-4">
