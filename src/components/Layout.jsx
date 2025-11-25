@@ -78,7 +78,20 @@ const Layout = ({ children, user }) => {
             </div>
             <div className="flex-grow"></div>
             <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate max-w-[120px] sm:max-w-none text-right">
+              <span
+                className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate"
+                style={{
+                  maxWidth: '80px', // más corto en mobile
+                  display: 'inline-block',
+                  textAlign: 'right',
+                  fontSize: '13px',
+                  lineHeight: '1.1',
+                  verticalAlign: 'middle',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
                 {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </span>
               <button
