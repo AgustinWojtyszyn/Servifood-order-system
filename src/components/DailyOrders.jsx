@@ -672,7 +672,7 @@ const DailyOrders = ({ user }) => {
 
   return (
     <div
-      className="max-w-7xl mx-auto space-y-6 w-full px-2 sm:px-4 md:px-6"
+      className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto"
       style={{
         overflowY: 'auto',
         overflowX: 'hidden',
