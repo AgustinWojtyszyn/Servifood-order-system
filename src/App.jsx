@@ -77,7 +77,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+      <div className="bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 min-h-[100dvh]" style={{ minHeight: '100dvh', height: 'auto', overflowX: 'hidden', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <Suspense fallback={<InternalLoader />}>
           <Routes>
             <Route path="/" element={
