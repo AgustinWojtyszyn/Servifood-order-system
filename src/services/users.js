@@ -322,7 +322,7 @@ class UsersService {
       const updates = dbUsers
         .filter(dbUser => {
           const authUser = authUserMap.get(dbUser.id)
-          return authUser && authUser.full_name && authUser.full_name !== dbUser.full_name
+          return authUser?.full_name && authUser.full_name !== dbUser.full_name
         })
         .map(dbUser => ({
           id: dbUser.id,
