@@ -34,36 +34,36 @@ const features = [
 const LandingPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
-      <div className="flex flex-col items-center justify-center w-full pt-20 pb-10">
+      <div className="flex flex-col items-center justify-center w-full pt-8 pb-4">
         <img
           src={servifoodLogo}
           alt="Servifood Catering Logo"
           className="mx-auto rounded-xl shadow-2xl"
-          style={{ width: '180px', height: '180px', objectFit: 'contain' }}
+          style={{ width: '120px', height: '120px', objectFit: 'contain' }}
         />
-        <h1 className="mt-8 text-5xl sm:text-6xl font-extrabold text-white text-center drop-shadow-lg tracking-wide">
+        <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold text-white text-center drop-shadow-lg tracking-wide">
           SERVIFOOD CATERING
         </h1>
-      </div>
-      <div className="flex flex-col items-center justify-center gap-4 mt-6">
-        <div className="flex gap-4">
-          <Link
-            to="/login"
-            className="px-6 py-3 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl bg-[#283593] hover:bg-[#3949ab] transition-colors"
-          >
-            Iniciar Sesión
-          </Link>
-          <Link
-            to="/register"
-            className="px-6 py-3 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl bg-gradient-to-r from-[#ff9800] to-[#fb8c00] hover:from-[#fb8c00] hover:to-[#f57c00] transition-all duration-200"
-          >
-            Registrarse
-          </Link>
+        <div className="flex flex-col items-center justify-center gap-2 mt-2">
+          <div className="flex gap-2">
+            <Link
+              to="/login"
+              className="px-4 py-2 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl bg-[#283593] hover:bg-[#3949ab] transition-colors"
+            >
+              Iniciar Sesión
+            </Link>
+            <Link
+              to="/register"
+              className="px-4 py-2 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl bg-gradient-to-r from-[#ff9800] to-[#fb8c00] hover:from-[#fb8c00] hover:to-[#f57c00] transition-all duration-200"
+            >
+              Registrarse
+            </Link>
+          </div>
         </div>
       </div>
 
       {/* Features Section */}
-      <div className="backdrop-blur-sm py-16 sm:py-20 mt-12" style={{backgroundColor: 'rgba(255, 255, 255, 0.05)'}}>
+      <div className="backdrop-blur-sm py-8 sm:py-12 mt-4" style={{backgroundColor: 'rgba(255, 255, 255, 0.05)'}}>
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg">
@@ -105,9 +105,9 @@ const LandingPage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="py-16 sm:py-20">
+      <div className="py-8 sm:py-12">
         <div className="container mx-auto px-4 sm:px-6">
-          <div className="rounded-3xl p-8 sm:p-12 shadow-2xl text-center" style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}>
+          <div className="rounded-3xl p-5 sm:p-8 shadow-2xl text-center" style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6">
               🚀 ¿Listo para comenzar?
             </h2>
