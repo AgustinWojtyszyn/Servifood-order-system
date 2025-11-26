@@ -102,7 +102,7 @@ const Layout = ({ children, user }) => {
         </div>
       </header>
 
-      <div className="flex" style={{ minHeight: 'unset', height: 'auto', flex: 1 }}>
+      <div className="flex flex-col" style={{ minHeight: 'auto', height: 'auto' }}>
         {/* Sidebar */}
         <aside className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
