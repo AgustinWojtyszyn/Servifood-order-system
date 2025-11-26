@@ -65,7 +65,7 @@ const Register = () => {
           setError(error.message || 'Error al crear la cuenta')
         }
       } else {
-        console.log('Usuario registrado exitosamente:', data)
+        
         setUserEmail(formData.email)
         setSuccess(true)
       }
