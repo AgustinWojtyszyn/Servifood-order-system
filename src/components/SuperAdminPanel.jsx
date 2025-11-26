@@ -83,7 +83,7 @@ const SuperAdminPanel = ({ user }) => {
         if (error) {
           alert('Error al actualizar el rol: ' + error.message)
         } else {
-          alert(`✓ Rol actualizado exitosamente`)
+          alert("✓ Rol actualizado exitosamente")
           fetchUsers()
           fetchStats()
         }
@@ -101,14 +101,14 @@ const SuperAdminPanel = ({ user }) => {
     }
 
     if (confirm(`¿Estás ABSOLUTAMENTE seguro de eliminar a ${userEmail}?\n\nEsto eliminará:\n- El usuario\n- Todos sus pedidos\n- Todas sus notificaciones\n\nEsta acción NO se puede deshacer.`)) {
-      const confirmation = prompt(`Escribe "ELIMINAR" para confirmar:`)
+      const confirmation = prompt('Escribe "ELIMINAR" para confirmar:')
       if (confirmation === 'ELIMINAR') {
         try {
           const { error } = await db.deleteUser(userId)
           if (error) {
             alert('Error al eliminar usuario: ' + error.message)
           } else {
-            alert(`✓ Usuario eliminado exitosamente`)
+            alert("✓ Usuario eliminado exitosamente")
             fetchUsers()
             fetchStats()
           }
@@ -124,14 +124,14 @@ const SuperAdminPanel = ({ user }) => {
 
   const handleClearAllOrders = async () => {
     if (confirm(`¿Estás ABSOLUTAMENTE seguro de eliminar TODOS los pedidos?\n\nEsto eliminará ${stats.totalOrders} pedidos de TODOS los usuarios.\n\nEsta acción NO se puede deshacer.`)) {
-      const confirmation = prompt(`Escribe "LIMPIAR PEDIDOS" para confirmar:`)
+      const confirmation = prompt('Escribe "LIMPIAR PEDIDOS" para confirmar:')
       if (confirmation === 'LIMPIAR PEDIDOS') {
         try {
           const { error } = await db.deleteAllOrders()
           if (error) {
             alert('Error al eliminar pedidos: ' + error.message)
           } else {
-            alert(`✓ Todos los pedidos han sido eliminados`)
+            alert("✓ Todos los pedidos han sido eliminados")
             fetchStats()
           }
         } catch (err) {
@@ -145,13 +145,13 @@ const SuperAdminPanel = ({ user }) => {
   }
 
   const handleClearAllNotifications = async () => {
-    if (confirm(`¿Estás seguro de eliminar TODAS las notificaciones del sistema?`)) {
+    if (confirm("¿Estás seguro de eliminar TODAS las notificaciones del sistema?")) {
       try {
         const { error } = await db.deleteAllNotifications()
         if (error) {
           alert('Error al eliminar notificaciones: ' + error.message)
         } else {
-          alert(`✓ Todas las notificaciones han sido eliminadas`)
+          alert("✓ Todas las notificaciones han sido eliminadas")
           fetchStats()
         }
       } catch (err) {

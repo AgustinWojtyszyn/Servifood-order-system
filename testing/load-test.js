@@ -270,7 +270,7 @@ async function runLoadTest() {
     }
   }
   
-  console.log(`\n⏳ Todos los usuarios lanzados. Esperando finalizacion...\n`);
+  console.log("\n⏳ Todos los usuarios lanzados. Esperando finalizacion...\n");
   
   // Esperar a que todos terminen
   const results = await Promise.all(users.map(u => u.run()));

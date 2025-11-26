@@ -465,13 +465,13 @@ const DailyOrders = ({ user }) => {
         month: 'long'
       })
 
-      let message = `📋 *PEDIDOS SERVIFOOD*\n`
+      let message = "📋 *PEDIDOS SERVIFOOD*\n"
       message += `📅 Fecha de pedido: ${today}\n`
       message += `🚚 Fecha de entrega: ${tomorrowDate}\n`
       message += `${'='.repeat(40)}\n\n`
 
       // RESUMEN GENERAL
-      message += `📊 *RESUMEN GENERAL*\n`
+      message += "📊 *RESUMEN GENERAL*\n"
       message += `• Total de pedidos: ${stats.total}\n`
       message += `• Completados: ${stats.completed} ✅\n`
       message += `• Pendientes: ${stats.pending} ⏳\n`
@@ -479,7 +479,7 @@ const DailyOrders = ({ user }) => {
       message += `• Total de items: ${stats.totalItems}\n\n`
 
       // DESGLOSE POR UBICACIÓN
-      message += `📍 *DESGLOSE POR UBICACIÓN*\n`
+      message += "📍 *DESGLOSE POR UBICACIÓN*\n"
       Object.entries(stats.byLocation)
         .sort(([, a], [, b]) => b - a)
         .forEach(([location, count]) => {
@@ -492,7 +492,7 @@ const DailyOrders = ({ user }) => {
         })
 
       // DETALLE DE PLATILLOS
-      message += `\n\n🍽️ *DETALLE DE PLATILLOS*\n`
+      message += "\n\n🍽️ *DETALLE DE PLATILLOS*\n"
       const sortedDishes = Object.entries(stats.byDish)
         .sort(([, a], [, b]) => b - a)
       
@@ -509,7 +509,7 @@ const DailyOrders = ({ user }) => {
         .filter(side => side !== null)
       
       if (customSides.length > 0) {
-        message += `\n🔸 *GUARNICIONES PERSONALIZADAS*\n`
+        message += "\n🔸 *GUARNICIONES PERSONALIZADAS*\n"
         const uniqueSides = [...new Set(customSides)]
         uniqueSides.forEach(side => {
           const count = customSides.filter(s => s === side).length
@@ -523,7 +523,7 @@ const DailyOrders = ({ user }) => {
         .filter(resp => resp.response)
 
       if (allCustomResponses.length > 0) {
-        message += `\n⚙️ *OPCIONES ADICIONALES*\n`
+        message += "\n⚙️ *OPCIONES ADICIONALES*\n"
         
         // Agrupar opciones por título
         const optionsByTitle = {}
@@ -555,7 +555,7 @@ const DailyOrders = ({ user }) => {
       }
 
       // DETALLE POR UBICACIÓN Y PLATILLO
-      message += `\n\n📋 *DETALLE POR UBICACIÓN*\n`
+      message += "\n\n📋 *DETALLE POR UBICACIÓN*\n"
       Object.entries(stats.byLocation)
         .sort(([, a], [, b]) => b - a)
         .forEach(([location]) => {
@@ -584,8 +584,8 @@ const DailyOrders = ({ user }) => {
         })
 
       message += `\n${'='.repeat(40)}\n`
-      message += `\n✅ *Resumen listo para preparar*\n`
-      message += `_Para detalles individuales, consulta el panel de administración_`
+      message += "\n✅ *Resumen listo para preparar*\n"
+      message += "_Para detalles individuales, consulta el panel de administración_"
 
       // Abrir WhatsApp con el mensaje
       const encodedMessage = encodeURIComponent(message)
