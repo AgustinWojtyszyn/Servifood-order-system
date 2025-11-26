@@ -93,7 +93,7 @@ async function createTestUser(userData, index, total) {
       console.warn(`⚠️  Usuario creado pero no se pudo actualizar el rol: ${userData.email}`);
     }
 
-    console.log(`✅ [${index}/${total}] Usuario creado: ${userData.email} (${userData.role})`);
+    
     return { success: true, user: authData.user };
     
   } catch (error) {
@@ -117,9 +117,9 @@ async function createBatchUsers(startIndex, batchSize, total) {
 }
 
 async function main() {
-  console.log('🚀 Iniciando creación de usuarios de prueba...\n');
-  console.log(`📊 Total a crear: ${NUM_USERS} usuarios`);
-  console.log(`🔑 Password para todos: Test123!@#\n`);
+  
+  
+  
   
   const BATCH_SIZE = 10; // Crear 10 usuarios a la vez
   const totalBatches = Math.ceil(NUM_USERS / BATCH_SIZE);
@@ -129,7 +129,7 @@ async function main() {
   
   for (let batch = 0; batch < totalBatches; batch++) {
     const startIndex = batch * BATCH_SIZE + 1;
-    console.log(`\n📦 Procesando lote ${batch + 1}/${totalBatches}...`);
+    
     
     const results = await createBatchUsers(startIndex, BATCH_SIZE, NUM_USERS);
     
@@ -142,14 +142,14 @@ async function main() {
     }
   }
   
-  console.log('\n' + '='.repeat(50));
-  console.log('✨ RESUMEN DE CREACIÓN DE USUARIOS');
-  console.log('='.repeat(50));
-  console.log(`✅ Exitosos: ${successCount}`);
-  console.log(`❌ Fallidos: ${errorCount}`);
-  console.log(`📧 Email pattern: test.user[1-${NUM_USERS}]@servifood.test`);
-  console.log(`🔑 Password: Test123!@#`);
-  console.log('='.repeat(50) + '\n');
+  
+  
+  
+  
+  
+  
+  
+  
   
   // Verificar usuarios creados
   const { count } = await supabase
@@ -157,7 +157,7 @@ async function main() {
     .select('*', { count: 'exact', head: true })
     .like('email', '%@servifood.test');
   
-  console.log(`📊 Total de usuarios de prueba en la BD: ${count}\n`);
+  
 }
 
 // Ejecutar

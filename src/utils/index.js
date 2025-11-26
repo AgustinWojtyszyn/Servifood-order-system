@@ -235,7 +235,7 @@ export const measurePerformance = async (label, asyncFn) => {
   try {
     const result = await asyncFn()
     const end = performance.now()
-    console.log(`${label} tomó ${roundTo(end - start, 2)}ms`)
+    
     return result
   } catch (error) {
     const end = performance.now()

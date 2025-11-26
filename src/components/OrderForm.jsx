@@ -64,9 +64,7 @@ const OrderForm = ({ user }) => {
         setHasOrderToday(hasPendingOrder)
         
         if (hasPendingOrder) {
-          console.log('Usuario ya tiene un pedido pendiente:', data.filter(o => 
-            o.status === 'pending' || o.status === 'preparing' || o.status === 'ready'
-          ))
+          
         }
       }
     } catch (err) {
