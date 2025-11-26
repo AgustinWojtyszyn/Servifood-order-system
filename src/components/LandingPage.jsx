@@ -33,7 +33,7 @@ const features = [
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f] overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f] overflow-x-hidden" style={{minHeight: '100vh', height: '100dvh'}}>
       <div className="flex flex-col items-center justify-center w-full pt-20 pb-10">
         <img
           src={servifoodLogo}
@@ -127,7 +127,7 @@ const LandingPage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="backdrop-blur-sm py-8 border-t w-full mt-auto" style={{backgroundColor: 'rgba(26, 35, 126, 0.5)', borderColor: 'rgba(255, 255, 255, 0.1)'}}>
+      <footer className="backdrop-blur-sm py-8 border-t w-full mt-auto" style={{backgroundColor: 'rgba(26, 35, 126, 0.5)', borderColor: 'rgba(255, 255, 255, 0.1)', flexShrink: 0}}>
         <div className="container mx-auto px-4 sm:px-6 text-center font-medium" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
           <p className="truncate" style={{maxWidth: '100%', margin: '0 auto'}}>
             © 2025 ServiFood Catering. Todos los derechos reservados.
