@@ -10,12 +10,12 @@ const PORT = process.env.PORT || 3000;
 const numCPUs = os.cpus().length;
 
 if (cluster.isMaster) {
-  console.log(`Master PID ${process.pid} - lanzando ${numCPUs} workers`);
+  
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`Worker ${worker.process.pid} murió. Lanzando uno nuevo...`);
+    
     cluster.fork();
   });
 } else {
@@ -57,6 +57,6 @@ if (cluster.isMaster) {
   });
 
   app.listen(PORT, () => {
-    console.log(`Worker PID ${process.pid} - Servidor Express corriendo en puerto ${PORT}`);
+    
   });
 }

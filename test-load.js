@@ -97,7 +97,7 @@ async function createTestUser(index) {
   const password = 'Test123456!'
   const fullName = generateRandomName()
 
-  console.log(`   Creando usuario ${index + 1}/${NUM_USERS}: ${email}`)
+  
 
   try {
     // Registrar usuario
@@ -192,7 +192,7 @@ async function createRandomOrder(user, orderIndex) {
 
 // Simular actividad de usuario
 async function simulateUserActivity(user, userIndex) {
-  console.log(`\n   👤 Usuario ${userIndex + 1} (${user.email}):`)
+  
   
   const orders = []
   
@@ -200,7 +200,7 @@ async function simulateUserActivity(user, userIndex) {
     const order = await createRandomOrder(user, i)
     if (order) {
       orders.push(order)
-      console.log(`      ✅ Pedido ${i + 1}/${ORDERS_PER_USER} creado - ${order.location}`)
+      
     }
     
     // Pequeño delay para simular comportamiento real
@@ -216,14 +216,14 @@ async function simulateUserActivity(user, userIndex) {
 
 // Limpiar datos de prueba
 async function cleanup() {
-  console.log('\n🧹 Limpiando datos de prueba...\n')
+  
 
   let deletedOrders = 0
   let deletedUsers = 0
 
   // Eliminar pedidos en lotes de 100
   if (testOrderIds.length > 0) {
-    console.log(`   Eliminando ${testOrderIds.length} pedidos de prueba...`)
+    
     
     for (let i = 0; i < testOrderIds.length; i += 100) {
       const batch = testOrderIds.slice(i, i + 100)
@@ -239,12 +239,12 @@ async function cleanup() {
       }
     }
     
-    console.log(`   ✅ ${deletedOrders} pedidos eliminados`)
+    
   }
 
   // Eliminar usuarios en lotes de 50
   if (testUserIds.length > 0) {
-    console.log(`   Eliminando ${testUserIds.length} usuarios de prueba...`)
+    
     
     for (let i = 0; i < testUserIds.length; i += 50) {
       const batch = testUserIds.slice(i, i + 50)
@@ -262,7 +262,7 @@ async function cleanup() {
       }
     }
     
-    console.log(`   ✅ ${deletedUsers} usuarios eliminados`)
+    
   }
 
   return { deletedOrders, deletedUsers }
@@ -275,39 +275,39 @@ function generateReport(results, startTime, endTime) {
   const avgOrdersPerUser = (totalOrders / results.length).toFixed(2)
   const ordersPerSecond = (totalOrders / duration).toFixed(2)
 
-  console.log('\n' + '='.repeat(60))
-  console.log('📊 REPORTE DE PRUEBA DE CARGA')
-  console.log('='.repeat(60))
-  console.log(`\n⏱️  Duración: ${duration} segundos`)
-  console.log(`\n👥 Usuarios:`)
-  console.log(`   - Total creados: ${results.length}`)
-  console.log(`   - Exitosos: ${results.filter(r => r.orders.length > 0).length}`)
-  console.log(`\n📦 Pedidos:`)
-  console.log(`   - Total creados: ${totalOrders}`)
-  console.log(`   - Promedio por usuario: ${avgOrdersPerUser}`)
-  console.log(`   - Pedidos por segundo: ${ordersPerSecond}`)
-  console.log(`\n🎯 Rendimiento:`)
-  console.log(`   - Tiempo promedio por pedido: ${(duration / totalOrders).toFixed(3)}s`)
-  console.log(`   - Throughput: ${ordersPerSecond} pedidos/seg`)
-  console.log('\n' + '='.repeat(60) + '\n')
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 }
 
 // Función principal
 async function main() {
-  console.log('\n' + '='.repeat(60))
-  console.log('🚀 INICIANDO PRUEBA DE CARGA - SERVIFOOD')
-  console.log('='.repeat(60))
-  console.log(`\n📋 Configuración:`)
-  console.log(`   - Usuarios a simular: ${NUM_USERS}`)
-  console.log(`   - Pedidos por usuario: ${ORDERS_PER_USER}`)
-  console.log(`   - Total de pedidos esperados: ${NUM_USERS * ORDERS_PER_USER}`)
-  console.log(`\n⚠️  NOTA: Todos los datos se eliminarán al finalizar\n`)
+  
+  
+  
+  
+  
+  
+  
+  
 
   const startTime = Date.now()
 
   try {
     // FASE 1: Crear usuarios
-    console.log('📝 FASE 1: Creando usuarios de prueba...\n')
+    
     const users = []
     
     for (let i = 0; i < NUM_USERS; i++) {
@@ -320,10 +320,10 @@ async function main() {
       await sleep(100)
     }
 
-    console.log(`\n✅ ${users.length} usuarios creados exitosamente\n`)
+    
 
     // FASE 2: Simular actividad simultánea
-    console.log('🔄 FASE 2: Simulando actividad de usuarios...')
+    
     
     // Ejecutar actividades en paralelo
     const results = await Promise.all(
@@ -338,11 +338,11 @@ async function main() {
     // FASE 3: Limpieza
     const { deletedOrders, deletedUsers } = await cleanup()
 
-    console.log('\n✅ PRUEBA COMPLETADA EXITOSAMENTE')
-    console.log(`\n📊 Resumen de limpieza:`)
-    console.log(`   - Pedidos eliminados: ${deletedOrders}`)
-    console.log(`   - Usuarios eliminados: ${deletedUsers}`)
-    console.log('\n💾 La base de datos volvió a su estado original\n')
+    
+    
+    
+    
+    
 
   } catch (error) {
     console.error('\n❌ ERROR DURANTE LA PRUEBA:', error)
