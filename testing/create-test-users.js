@@ -119,7 +119,7 @@ async function createBatchUsers(startIndex, batchSize, total) {
 async function main() {
   console.log('🚀 Iniciando creación de usuarios de prueba...\n');
   console.log(`📊 Total a crear: ${NUM_USERS} usuarios`);
-  console.log(`🔑 Password para todos: Test123!@#\n`);
+  console.log("🔑 Password para todos: Test123!@#\n");
   
   const BATCH_SIZE = 10; // Crear 10 usuarios a la vez
   const totalBatches = Math.ceil(NUM_USERS / BATCH_SIZE);
@@ -148,7 +148,7 @@ async function main() {
   console.log(`✅ Exitosos: ${successCount}`);
   console.log(`❌ Fallidos: ${errorCount}`);
   console.log(`📧 Email pattern: test.user[1-${NUM_USERS}]@servifood.test`);
-  console.log(`🔑 Password: Test123!@#`);
+  console.log("🔑 Password: Test123!@#");
   console.log('='.repeat(50) + '\n');
   
   // Verificar usuarios creados
