@@ -309,8 +309,8 @@ const OrderForm = ({ user }) => {
   }
 
   return (
-    <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen overflow-y-auto">
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4">
+    <div className="p-3 sm:p-6 min-h-[100dvh] flex flex-col" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
         <div className="text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
         <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
@@ -637,16 +637,14 @@ const OrderForm = ({ user }) => {
           </div>
         )}
 
-        {/* Botón de confirmación - Sticky solo en desktop, fijo en mobile solo si hay suficiente espacio */}
+        {/* Botón de confirmación - SIEMPRE visible al fondo, nunca fijo en mobile */}
         <div className="w-full sm:w-auto bg-gradient-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-40"
           style={{
-            position: 'static',
+            position: 'relative',
             bottom: 'auto',
             left: 'auto',
             right: 'auto',
-            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-            // En desktop, sticky abajo
-            ...(window.innerWidth >= 768 ? { position: 'sticky', bottom: 0 } : {})
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)'
           }}>
           <button
             type="submit"
