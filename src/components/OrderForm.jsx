@@ -309,11 +309,8 @@ const OrderForm = ({ user }) => {
   }
 
   return (
-    <div
-      className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-auto overflow-y-visible"
-      style={{ minHeight: 'auto', height: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}
-    >
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4" style={{ minHeight: 'unset' }}>
+    <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen overflow-y-auto">
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4">
         <div className="text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
         <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>

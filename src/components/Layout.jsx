@@ -57,7 +57,7 @@ const Layout = ({ children, user }) => {
   menuItems.push({ name: 'Mi Perfil', path: '/profile', icon: UserCircle })
 
   return (
-    <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800" style={{ minHeight: '100vh', height: 'auto', overflowX: 'hidden', overflowY: 'visible', WebkitOverflowScrolling: 'touch' }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
@@ -102,7 +102,7 @@ const Layout = ({ children, user }) => {
         </div>
       </header>
 
-      <div className="flex flex-col" style={{ minHeight: 'auto', height: 'auto' }}>
+      <div className="flex min-h-[calc(100vh-4rem)]">
         {/* Sidebar */}
         <aside className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -207,7 +207,7 @@ const Layout = ({ children, user }) => {
         )}
 
         {/* Main content */}
-        <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800" style={{ minHeight: 'auto', height: 'auto', overflow: 'visible', WebkitOverflowScrolling: 'touch' }}>
+        <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 min-h-screen">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
