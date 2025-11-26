@@ -637,8 +637,17 @@ const OrderForm = ({ user }) => {
           </div>
         )}
 
-        {/* Botón de confirmación - Sticky en mobile con safe area */}
-        <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto bg-gradient-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))', position: 'sticky', bottom: 0 }}>
+        {/* Botón de confirmación - Sticky solo en desktop, fijo en mobile solo si hay suficiente espacio */}
+        <div className="w-full sm:w-auto bg-gradient-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-40"
+          style={{
+            position: 'static',
+            bottom: 'auto',
+            left: 'auto',
+            right: 'auto',
+            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+            // En desktop, sticky abajo
+            ...(window.innerWidth >= 768 ? { position: 'sticky', bottom: 0 } : {})
+          }}>
           <button
             type="submit"
             disabled={loading || getSelectedItemsList().length === 0 || hasOrderToday || isPastDeadline}
