@@ -68,10 +68,13 @@
     <style>
       /* Prevenir scroll horizontal en móviles */
       html, body {
-        overflow-x: hidden;
         width: 100%;
         margin: 0;
         padding: 0;
+        height: auto;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto !important;
         background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 50%, #1e3a8a 100%);
       }
       

@@ -57,7 +57,7 @@ const Layout = ({ children, user }) => {
   menuItems.push({ name: 'Mi Perfil', path: '/profile', icon: UserCircle })
 
   return (
-    <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800" style={{ minHeight: '100%', height: 'auto', overflowX: 'hidden', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+    <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800" style={{ minHeight: '100vh', height: 'auto', overflowX: 'hidden', overflowY: 'visible', WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
@@ -207,7 +207,7 @@ const Layout = ({ children, user }) => {
         )}
 
         {/* Main content */}
-        <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800" style={{ minHeight: '100%', height: 'auto', overflowX: 'hidden', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800" style={{ minHeight: 'auto', height: 'auto', overflow: 'visible', WebkitOverflowScrolling: 'touch' }}>
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
