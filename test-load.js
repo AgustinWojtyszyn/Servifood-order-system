@@ -179,7 +179,7 @@ async function createRandomOrder(user, orderIndex) {
 
     if (error) throw error
 
-    if (data && data[0]) {
+    if (data?.[0]) {
       testOrderIds.push(data[0].id)
     }
 

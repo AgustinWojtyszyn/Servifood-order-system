@@ -339,7 +339,7 @@ const Dashboard = ({ user }) => {
                 Platillos Ordenados
               </h3>
               <div className="space-y-2">
-                {order.items && order.items.map((item, index) => (
+                {order.items?.map((item, index) => (
                   <div key={index} className="flex justify-between items-center bg-white p-3 rounded-lg">
                     <span className="font-medium text-gray-900">{item.name}</span>
                     <span className="text-gray-600 bg-gray-100 px-3 py-1 rounded-full text-sm font-semibold">

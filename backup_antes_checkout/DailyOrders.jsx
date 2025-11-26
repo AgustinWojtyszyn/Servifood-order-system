@@ -299,7 +299,7 @@ const DailyOrders = ({ user }) => {
       r.title?.toLowerCase().includes('guarnicion')
     )
     
-    if (sideOption && sideOption.response) {
+    if (sideOption?.response) {
       return Array.isArray(sideOption.response) 
         ? sideOption.response.join(', ') 
         : sideOption.response
@@ -920,7 +920,7 @@ const DailyOrders = ({ user }) => {
                     Platillos Solicitados
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
-                    {order.items && order.items.map((item, index) => (
+                    {order.items?.map((item, index) => (
                       <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-gray-200">
                         <div className="flex items-center justify-between">
                           <span style={{ fontWeight: '900' }} className="text-sm md:text-base text-gray-900 flex-1 truncate mr-2">{item.name}</span>

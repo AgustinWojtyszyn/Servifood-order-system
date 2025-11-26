@@ -160,7 +160,7 @@ const DailyOrders = ({ user }) => {
           let userName = 'Usuario';
           if (orderUser) {
             userName = (orderUser.full_name !== undefined ? orderUser.full_name : null)
-              || (orderUser.user_metadata && orderUser.user_metadata.full_name ? orderUser.user_metadata.full_name : null)
+              || (orderUser.user_metadata?.full_name ? orderUser.user_metadata.full_name : null)
               || (orderUser.email ? orderUser.email.split('@')[0] : null)
               || (order.customer_name !== undefined ? order.customer_name : null)
               || 'Usuario';
@@ -178,7 +178,7 @@ const DailyOrders = ({ user }) => {
           return {
             ...order,
             user_name: userName,
-            user_email: (orderUser && orderUser.email ? orderUser.email : (order.customer_email !== undefined ? order.customer_email : ''))
+            user_email: (orderUser?.email ? orderUser.email : (order.customer_email !== undefined ? order.customer_email : ''))
           };
         }) : [];
         
@@ -227,7 +227,7 @@ const DailyOrders = ({ user }) => {
       // Contar por platillo (con normalización de nombres)
       if (order.items && Array.isArray(order.items)) {
         order.items.forEach(item => {
-          if (item && item.name) {
+          if (item?.name) {
             const normalizedName = normalizeDishName(item.name)
             if (!byDish[normalizedName]) {
               byDish[normalizedName] = 0
