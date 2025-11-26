@@ -185,7 +185,7 @@ async function createRandomOrder(user, orderIndex) {
 
     return data[0]
   } catch (error) {
-    console.error(`      ❌ Error creando pedido:`, error.message)
+    console.error("      ❌ Error creando pedido:", error.message)
     return null
   }
 }
@@ -235,7 +235,7 @@ async function cleanup() {
       if (!error) {
         deletedOrders += batch.length
       } else {
-        console.error(`   ❌ Error eliminando lote de pedidos:`, error.message)
+        console.error("   ❌ Error eliminando lote de pedidos:", error.message)
       }
     }
     
@@ -258,7 +258,7 @@ async function cleanup() {
       if (!dbError) {
         deletedUsers += batch.length
       } else {
-        console.error(`   ❌ Error eliminando lote de usuarios:`, error.message)
+        console.error("   ❌ Error eliminando lote de usuarios:", error.message)
       }
     }
     
@@ -279,14 +279,14 @@ function generateReport(results, startTime, endTime) {
   console.log('📊 REPORTE DE PRUEBA DE CARGA')
   console.log('='.repeat(60))
   console.log(`\n⏱️  Duración: ${duration} segundos`)
-  console.log(`\n👥 Usuarios:`)
+  console.log("\n👥 Usuarios:")
   console.log(`   - Total creados: ${results.length}`)
   console.log(`   - Exitosos: ${results.filter(r => r.orders.length > 0).length}`)
-  console.log(`\n📦 Pedidos:`)
+  console.log("\n📦 Pedidos:")
   console.log(`   - Total creados: ${totalOrders}`)
   console.log(`   - Promedio por usuario: ${avgOrdersPerUser}`)
   console.log(`   - Pedidos por segundo: ${ordersPerSecond}`)
-  console.log(`\n🎯 Rendimiento:`)
+  console.log("\n🎯 Rendimiento:")
   console.log(`   - Tiempo promedio por pedido: ${(duration / totalOrders).toFixed(3)}s`)
   console.log(`   - Throughput: ${ordersPerSecond} pedidos/seg`)
   console.log('\n' + '='.repeat(60) + '\n')
@@ -297,11 +297,11 @@ async function main() {
   console.log('\n' + '='.repeat(60))
   console.log('🚀 INICIANDO PRUEBA DE CARGA - SERVIFOOD')
   console.log('='.repeat(60))
-  console.log(`\n📋 Configuración:`)
+  console.log("\n📋 Configuración:")
   console.log(`   - Usuarios a simular: ${NUM_USERS}`)
   console.log(`   - Pedidos por usuario: ${ORDERS_PER_USER}`)
   console.log(`   - Total de pedidos esperados: ${NUM_USERS * ORDERS_PER_USER}`)
-  console.log(`\n⚠️  NOTA: Todos los datos se eliminarán al finalizar\n`)
+  console.log("\n⚠️  NOTA: Todos los datos se eliminarán al finalizar\n")
 
   const startTime = Date.now()
 
@@ -339,7 +339,7 @@ async function main() {
     const { deletedOrders, deletedUsers } = await cleanup()
 
     console.log('\n✅ PRUEBA COMPLETADA EXITOSAMENTE')
-    console.log(`\n📊 Resumen de limpieza:`)
+    console.log("\n📊 Resumen de limpieza:")
     console.log(`   - Pedidos eliminados: ${deletedOrders}`)
     console.log(`   - Usuarios eliminados: ${deletedUsers}`)
     console.log('\n💾 La base de datos volvió a su estado original\n')
