@@ -66,7 +66,7 @@ const AdminChat = ({ user }) => {
   }
 
   const subscribeToMessages = () => {
-    console.log('Setting up realtime subscription...')
+    
     
     const channel = supabase
       .channel('admin-chat-changes')
@@ -78,42 +78,42 @@ const AdminChat = ({ user }) => {
           table: 'admin_chat'
         },
         (payload) => {
-          console.log('🔔 Realtime event:', payload)
+          
           
           if (payload.eventType === 'INSERT') {
             setMessages(prev => {
               // Evitar duplicados
               const exists = prev.some(msg => msg.id === payload.new.id)
               if (exists) {
-                console.log('Message already exists, skipping')
+                
                 return prev
               }
-              console.log('Adding new message to state')
+              
               return [...prev, payload.new]
             })
           } else if (payload.eventType === 'UPDATE') {
-            console.log('Updating message in state')
+            
             setMessages(prev =>
               prev.map(msg => msg.id === payload.new.id ? payload.new : msg)
             )
           } else if (payload.eventType === 'DELETE') {
-            console.log('Removing message from state')
+            
             setMessages(prev => prev.filter(msg => msg.id !== payload.old.id))
           }
         }
       )
       .subscribe((status, err) => {
-        console.log('📡 Subscription status:', status)
+        
         if (err) {
           console.error('❌ Subscription error:', err)
         }
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Successfully subscribed to admin_chat realtime')
+          
         }
       })
 
     return () => {
-      console.log('🧹 Cleaning up subscription')
+      
       channel.unsubscribe()
     }
   }
@@ -213,7 +213,7 @@ const AdminChat = ({ user }) => {
         setEditingId(msgId)
         setEditingText(originalMessage.message)
       } else {
-        console.log('✏️ Message edited successfully')
+        
       }
     } catch (err) {
       console.error('Error editing message:', err)
@@ -233,7 +233,7 @@ const AdminChat = ({ user }) => {
 
     // Actualización optimista - eliminar inmediatamente de la UI
     setMessages(prev => prev.filter(msg => msg.id !== msgId))
-    console.log('🗑️ Deleting message optimistically')
+    
 
     try {
       const { error } = await supabase
@@ -259,7 +259,7 @@ const AdminChat = ({ user }) => {
           ]
         })
       } else {
-        console.log('✅ Message deleted successfully')
+        
       }
     } catch (err) {
       console.error('Error deleting message:', err)

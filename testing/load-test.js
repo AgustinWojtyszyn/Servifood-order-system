@@ -154,7 +154,7 @@ class VirtualUser {
       this.stats.loginSuccess = true;
       
       const elapsed = Date.now() - startTime;
-      console.log(`✅ [Usuario ${this.userIndex}] Login exitoso (${elapsed}ms)`);
+      
       
       return true;
     } catch (error) {
@@ -196,7 +196,7 @@ class VirtualUser {
       this.stats.ordersCreated++;
       
       const elapsed = Date.now() - startTime;
-      console.log(`📦 [Usuario ${this.userIndex}] Pedido creado (${elapsed}ms) - Total items: ${orderData.total_items}`);
+      
       
       return true;
     } catch (error) {
@@ -238,14 +238,14 @@ class VirtualUser {
 
 // Función principal
 async function runLoadTest() {
-  console.log('\n' + '='.repeat(60));
-  console.log('🚀 INICIANDO PRUEBA DE CARGA');
-  console.log('='.repeat(60));
-  console.log(`👥 Usuarios concurrentes: ${CONFIG.numUsers}`);
-  console.log(`📦 Pedidos por usuario: ${CONFIG.ordersPerUser}`);
-  console.log(`⏱️  Delay entre pedidos: ${CONFIG.delayBetweenOrders}ms`);
-  console.log(`⏱️  Delay inicio usuarios: ${CONFIG.userStartDelay}ms`);
-  console.log('='.repeat(60) + '\n');
+  
+  
+  
+  
+  
+  
+  
+  
   
   const testStartTime = Date.now();
   const users = [];
@@ -270,7 +270,7 @@ async function runLoadTest() {
     }
   }
   
-  console.log(`\n⏳ Todos los usuarios lanzados. Esperando finalizacion...\n`);
+  
   
   // Esperar a que todos terminen
   const results = await Promise.all(users.map(u => u.run()));
@@ -285,32 +285,32 @@ async function runLoadTest() {
   const totalErrors = results.reduce((sum, s) => sum + s.errors.length, 0);
   
   // Mostrar resultados
-  console.log('\n' + '='.repeat(60));
-  console.log('📊 RESULTADOS DE LA PRUEBA DE CARGA');
-  console.log('='.repeat(60));
-  console.log(`⏱️  Tiempo total: ${(totalTime / 1000).toFixed(2)}s`);
-  console.log(`⏱️  Tiempo promedio por usuario: ${(avgUserTime / 1000).toFixed(2)}s`);
-  console.log(`✅ Logins exitosos: ${successLogins}/${CONFIG.numUsers} (${(successLogins/CONFIG.numUsers*100).toFixed(1)}%)`);
-  console.log(`📦 Pedidos creados: ${totalOrders}`);
-  console.log(`❌ Pedidos fallidos: ${totalOrdersFailed}`);
-  console.log(`⚠️  Total errores: ${totalErrors}`);
-  console.log(`📈 Throughput: ${(totalOrders / (totalTime / 1000)).toFixed(2)} pedidos/segundo`);
-  console.log('='.repeat(60));
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   // Mostrar errores si los hay
   if (totalErrors > 0) {
-    console.log('\n❌ ERRORES ENCONTRADOS:');
+    
     results.forEach((stats, index) => {
       if (stats.errors.length > 0) {
-        console.log(`\nUsuario ${index + 1}:`);
+        
         stats.errors.forEach(err => {
-          console.log(`  - ${err.action}: ${err.error}`);
+          
         });
       }
     });
   }
   
-  console.log('\n✨ Prueba completada!\n');
+  
 }
 
 // Ejecutar

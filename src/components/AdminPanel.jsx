@@ -97,7 +97,7 @@ const AdminPanel = ({ user }) => {
       if (optionsResult.error) {
         console.error('Error fetching custom options:', optionsResult.error)
       } else {
-        console.log('📋 Opciones personalizadas recuperadas:', optionsResult.data)
+        
         setCustomOptions(optionsResult.data || [])
       }
     } catch (err) {
@@ -302,7 +302,7 @@ const AdminPanel = ({ user }) => {
         active: true // Asegurar que siempre esté activa
       }
 
-      console.log('🔧 Creando opción:', optionData)
+      
 
       const { data, error } = await db.createCustomOption(optionData)
       
@@ -310,14 +310,14 @@ const AdminPanel = ({ user }) => {
         console.error('❌ Error al crear opción:', error)
         alert('Error al crear la opción: ' + error.message)
       } else {
-        console.log('✅ Opción creada exitosamente:', data)
+        
         setNewOption(null)
         setEditingOptions(false)
         
         // Forzar refresh completo esperando que termine
         setTimeout(async () => {
           await fetchData()
-          console.log('🔄 Datos refrescados, opciones actuales:', customOptions.length)
+          
         }, 500)
         
         alert('Opción creada exitosamente. Refrescando...')
