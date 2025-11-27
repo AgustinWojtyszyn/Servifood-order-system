@@ -199,8 +199,18 @@ const Layout = ({ children, user }) => {
 
         {/* Main content */}
         <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 min-h-screen">
-          <div className="max-w-7xl mx-auto">
-            {children}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="absolute left-4 top-4 z-10 flex items-center space-x-1 drop-shadow-xl">
+              <span className="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-primary-400 via-primary-500 to-primary-700">
+                Servi
+              </span>
+              <span className="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-secondary-400 via-secondary-500 to-secondary-700">
+                Food
+              </span>
+            </div>
+            <div className="pt-14 sm:pt-16">
+              {children}
+            </div>
           </div>
         </main>
       </div>
