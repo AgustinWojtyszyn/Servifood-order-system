@@ -1,3 +1,22 @@
+  // Eliminar pedidos pendientes de días anteriores
+  const [deletingOldPending, setDeletingOldPending] = useState(false)
+  const handleDeleteOldPendingOrders = async () => {
+    if (!window.confirm('¿Eliminar TODOS los pedidos pendientes de días anteriores? Esta acción no se puede deshacer.')) return;
+    setDeletingOldPending(true)
+    try {
+      const { error } = await db.deleteOldPendingOrders()
+      if (error) {
+        alert('Error al eliminar pedidos pendientes antiguos: ' + error.message)
+      } else {
+        alert('✓ Pedidos pendientes antiguos eliminados correctamente')
+        fetchData()
+      }
+    } catch (err) {
+      alert('Error al eliminar pedidos pendientes antiguos')
+    } finally {
+      setDeletingOldPending(false)
+    }
+  }
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
@@ -1077,7 +1096,7 @@ const AdminPanel = ({ user }) => {
             </div>
           </div>
 
-          {/* Panel de limpieza de pedidos completados */}
+          {/* Panel de limpieza de pedidos completados y pendientes antiguos */}
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
@@ -1129,6 +1148,30 @@ const AdminPanel = ({ user }) => {
             </div>
 
             {/* Información y controles */}
+            <div className="mb-6">
+              <button
+                onClick={handleDeleteOldPendingOrders}
+                disabled={deletingOldPending}
+                className={`w-full py-3 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3 mb-2
+                  ${deletingOldPending
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'}
+                `}
+              >
+                {deletingOldPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
+                    Eliminando pendientes antiguos...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-5 w-5" />
+                    Eliminar pedidos pendientes de días anteriores
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-yellow-700 text-center">Esta acción elimina todos los pedidos pendientes creados antes de hoy.</p>
+            </div>
             {completedOrdersCount > 0 ? (
               <div className="space-y-4">
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">

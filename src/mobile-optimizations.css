@@ -35,17 +35,19 @@ html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+  min-height: 100dvh;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
 
 #root {
   width: 100%;
-  min-height: inherit;
-  overflow: visible;
+  min-height: 100dvh;
+  height: auto !important;
+  overflow: visible !important;
 }
 
 /* ============================================

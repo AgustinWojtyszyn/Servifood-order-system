@@ -51,11 +51,11 @@ Generá los cambios necesarios en el archivo automáticamente.
   /* Base responsive - Mobile First */
 
   html, body, #root {
-    height: auto;
-    min-height: 100%;
+    height: auto !important;
+    min-height: 100% !important;
     width: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     position: relative;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 16px;
@@ -64,6 +64,7 @@ Generá los cambios necesarios en el archivo automáticamente.
     padding: 0;
     -webkit-overflow-scrolling: touch;
     background: #f3f4f6;
+    overscroll-behavior-y: contain;
   }
   
   /* Asegurar contraste en todos los inputs - Mobile First */
@@ -115,6 +116,7 @@ Generá los cambios necesarios en el archivo automáticamente.
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
   }
 }
 
@@ -223,9 +225,17 @@ Generá los cambios necesarios en el archivo automáticamente.
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  /* Forzar scroll natural en todos los contenedores principales */
+  .main, .container, .wrapper, .page {
+    min-height: 100dvh !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    position: static !important;
   }
   
   /* Scrollbar personalizado - Delgado y elegante */
