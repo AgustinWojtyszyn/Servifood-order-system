@@ -1,117 +1,74 @@
-/*
-✅ Prompt Efectivo Para GitHub Copilot
-
-GitHub Copilot: Corrige este problema de UI.
-
-La vista móvil de mi app aparece cortada en Chrome DevTools y en teléfonos reales. El contenido no permite hacer scroll hasta el final y se muestra como si estuviera recortado. Necesito que generes los cambios CSS adecuados para evitar este recorte.
-
-Requisitos:
-1. Eliminar cualquier uso de `height: 100vh` en contenedores principales. Reemplazar por:
-  - `min-height: 100vh` o `height: auto`
-  - También aceptar `100dvh` o `100svh` para móviles modernos.
-
-2. Asegurar que `html`, `body` y `#root` NO tengan `overflow: hidden`.  
-  Deben quedar así:
-  ```css
-  html, body, #root {
-     height: auto;
-     min-height: 100%;
-     overflow-x: hidden;
-     overflow-y: auto;
-  }
-  ```
-
-Si algún componente principal del layout (main, container, wrapper, page) tiene:
-
-height: 100vh
-
-overflow: hidden
-
-position: fixed
-→ reemplazar por un sistema que permita scroll natural.
-
-Asegurar que ningún contenedor padre tenga:
-
-max-height: 100vh;
-
-o cualquier otra propiedad que limite el alto.
-
-Reescribir cualquier layout de página que use display: flex con:
-
-flex-direction: column;
-min-height: 100vh;
-
-Tu objetivo es que toda la página pueda scrollear completa, sin recortes y sin bugs de viewport móvil.
-
-Generá los cambios necesarios en el archivo automáticamente.
-*/
 @import "tailwindcss";
 
+/* ===========================
+   BASE GLOBAL - MOBILE FIRST
+   =========================== */
 @layer base {
-  /* Base responsive - Mobile First */
-
   html, body, #root {
     height: auto !important;
     min-height: 100% !important;
     width: 100%;
+    margin: 0;
+    padding: 0;
+
     overflow-x: hidden !important;
     overflow-y: auto !important;
+
     position: relative;
+
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
-    margin: 0;
-    padding: 0;
     -webkit-overflow-scrolling: touch;
-    background: #f3f4f6;
     overscroll-behavior-y: contain;
+
+    background: #f3f4f6;
   }
-  
-  /* Asegurar contraste en todos los inputs - Mobile First */
+
+  /* Inputs */
   input,
   textarea,
   select {
-    background-color: rgb(255 255 255);
-    color: rgb(17 24 39);
-    font-size: 1rem; /* 16px para evitar zoom en iOS */
-    min-height: 48px; /* Área táctil aumentada */
-    padding: 0.75rem; /* Más espacio interno */
+    background-color: #fff;
+    color: #111827;
+    font-size: 1rem;
+    min-height: 48px;
+    padding: 0.75rem;
   }
-  
+
   input::placeholder,
   textarea::placeholder {
-    color: rgb(156 163 175);
+    color: #9ca3af;
   }
-  
-  /* Asegurar contraste en opciones de select */
+
   option {
-    background-color: rgb(255 255 255);
-    color: rgb(17 24 39);
+    background-color: #fff;
+    color: #111827;
   }
-  
-  /* Botones con área táctil óptima */
+
+  /* Buttons */
   button {
-    min-height: 48px; /* Aumentado para mejor touch */
+    min-height: 48px;
     min-width: 48px;
-    touch-action: manipulation; /* Mejora respuesta táctil */
-    padding: 0.75rem 1.5rem; /* Más espacio interno */
+    padding: 0.75rem 1.5rem;
+    touch-action: manipulation;
   }
-  
-  /* Imágenes y media responsivos */
+
+  /* Media responsive */
   img, video, iframe {
     max-width: 100%;
     height: auto;
     display: block;
   }
-  
-  /* Links con área táctil adecuada */
+
+  /* Links */
   a {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
   }
-  
-  /* Mejorar rendimiento de scroll en móviles */
+
+  /* Global optimizations */
   * {
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
@@ -120,107 +77,114 @@ Generá los cambios necesarios en el archivo automáticamente.
   }
 }
 
+/* ===========================
+   COMPONENTS
+   =========================== */
 @layer components {
+  /* Botón primario */
   .btn-primary {
-    background: linear-gradient(to right, rgb(249 115 22), rgb(234 88 12));
+    background: linear-gradient(to right, #f97316, #ea580c);
     color: white;
     font-weight: 700;
     padding: 0.75rem 1.5rem;
     border-radius: 0.75rem;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+                0 4px 6px -4px rgb(0 0 0 / 0.1);
     transition: all 0.2s;
-    min-height: 48px; /* Touch target óptimo */
     display: inline-flex;
     align-items: center;
     justify-content: center;
-  }
-  
-  .btn-primary:hover {
-    background: linear-gradient(to right, rgb(234 88 12), rgb(194 65 12));
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  }
-  
-  .btn-primary:active {
-    transform: scale(0.98); /* Feedback táctil */
   }
 
+  .btn-primary:hover {
+    background: linear-gradient(to right, #ea580c, #c2410c);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  /* Botón secundario */
   .btn-secondary {
-    background: linear-gradient(to right, rgb(34 197 94), rgb(22 163 74));
+    background: linear-gradient(to right, #22c55e, #16a34a);
     color: white;
     font-weight: 700;
     padding: 0.75rem 1.5rem;
     border-radius: 0.75rem;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+                0 4px 6px -4px rgb(0 0 0 / 0.1);
     transition: all 0.2s;
-    min-height: 48px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-  
+
   .btn-secondary:hover {
-    background: linear-gradient(to right, rgb(22 163 74), rgb(21 128 61));
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    background: linear-gradient(to right, #16a34a, #15803d);
   }
-  
+
   .btn-secondary:active {
     transform: scale(0.98);
   }
 
+  /* Inputs */
   .input-field {
     width: 100%;
-    padding: 0.875rem 1rem; /* Más padding */
-    border: 2px solid rgb(209 213 219);
+    padding: 0.875rem 1rem;
+    border: 2px solid #d1d5db;
     border-radius: 0.75rem;
     outline: none;
-    font-size: 1rem; /* 16px - evita zoom en iOS */
-    font-weight: 600; /* Más peso para mejor lectura */
+    font-size: 1rem;
+    font-weight: 600;
+    background-color: #fff;
+    color: #111827;
+    min-height: 50px;
     transition: all 0.2s;
-    background-color: rgb(255 255 255);
-    color: rgb(17 24 39);
-    min-height: 50px; /* Más altura para mejor touch */
   }
-  
+
   .input-field:focus {
-    border-color: rgb(79 70 229);
-    box-shadow: 0 0 0 4px rgb(199 210 254 / 0.5); /* Shadow más visible */
-    background-color: rgb(255 255 255);
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(199, 210, 254, 0.5);
   }
-  
+
   .input-field::placeholder {
-    color: rgb(156 163 175);
-    font-weight: 400;
+    color: #9ca3af;
   }
 
+  /* Card */
   .card {
-    background-color: rgb(255 255 255 / 0.95);
-    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.95);
     border-radius: 1rem;
-    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    padding: 1.25rem; /* Más padding en mobile */
-    border: 2px solid rgb(255 255 255 / 0.2);
-    margin-bottom: 1rem; /* Espaciado entre cards */
-  }
-  
-  /* Responsive: Tablet y Desktop */
-  @media screen and (min-width: 768px) {
-    .card {
-      padding: 2rem; /* Más padding en pantallas grandes */
-      margin-bottom: 1.5rem;
-    }
-  }
-  
-  @media screen and (min-width: 1024px) {
-    .card {
-      padding: 2.5rem; /* Aún más en desktop */
-    }
+    backdrop-filter: blur(12px);
+    padding: 1.25rem;
+    border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+    margin-bottom: 1rem;
   }
 
-  .animate-pulse-slow {
-    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  /* Scrollbar thin */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6;
   }
 
-  /* Ocultar scrollbar pero mantener funcionalidad */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #f3f4f6;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+
+  /* Hide scrollbar */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -228,94 +192,41 @@ Generá los cambios necesarios en el archivo automáticamente.
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  /* Forzar scroll natural en todos los contenedores principales */
-  .main, .container, .wrapper, .page {
-    min-height: 100dvh !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow-y: visible !important;
-    overflow-x: hidden !important;
-    position: static !important;
-  }
-  
-  /* Scrollbar personalizado - Delgado y elegante */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(209 213 219) rgb(243 244 246);
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: rgb(243 244 246);
-    border-radius: 10px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: rgb(209 213 219);
-    border-radius: 10px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: rgb(156 163 175);
-  }
-  
-  /* Mejorar scroll horizontal en mobile */
-  .overflow-x-auto {
-    -webkit-overflow-scrolling: touch; /* Smooth scroll en iOS */
-    scroll-behavior: smooth;
-  }
-
-  @keyframes pulse-slow {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.9;
-    }
-  }
 }
 
-/* Media Queries para responsive - Mobile First */
-
-/* Tablets y superiores (768px+) */
-@media screen and (min-width: 768px) {
+/* ===========================
+   MEDIA QUERIES
+   =========================== */
+@media (min-width: 768px) {
   html {
     font-size: 16px;
   }
-  
-  .btn-primary,
-  .btn-secondary {
-    min-height: 48px;
-    padding: 0.875rem 1.75rem;
+
+  .card {
+    padding: 2rem;
+    margin-bottom: 1.5rem;
   }
 }
 
-/* Desktop y superiores (1024px+) */
-@media screen and (min-width: 1024px) {
+@media (min-width: 1024px) {
   html {
     font-size: 16px;
   }
 }
 
-/* Pantallas grandes (1280px+) */
-@media screen and (min-width: 1280px) {
+@media (min-width: 1280px) {
   .container {
     max-width: 1280px;
     margin: 0 auto;
   }
 }
 
-/* Optimizaciones para landscape en móviles */
-@media screen and (max-height: 500px) and (orientation: landscape) {
+/* Landscape móvil */
+@media (max-height: 500px) and (orientation: landscape) {
   .card {
     padding: 0.75rem;
   }
-  
   html {
-    font-size: 14px; /* Reducir ligeramente en landscape */
+    font-size: 14px;
   }
 }
