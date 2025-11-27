@@ -34,7 +34,8 @@ const features = [
 const LandingPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
-      <div className="flex flex-col items-center justify-center w-full pt-8 pb-4">
+      <main className="flex flex-col flex-grow items-center justify-center w-full">
+        <div className="flex flex-col items-center justify-center w-full pt-8 pb-4">
         <img
           src={servifoodLogo}
           alt="Servifood Catering Logo"
@@ -62,50 +63,52 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* Features Section */}
-      <div className="backdrop-blur-sm py-8 sm:py-12" style={{backgroundColor: 'rgba(255, 255, 255, 0.05)'}}>
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg">
-              💡 ¿Por qué ServiFood?
-            </h2>
-            <p className="text-lg sm:text-xl font-semibold" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
-              La mejor plataforma para gestionar tus pedidos de comida
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="backdrop-blur-sm p-8 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl text-center"
-                style={{backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.2)'}}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'
-                  e.currentTarget.style.borderColor = '#ffa726'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
-                }}
-              >
-                <div className="text-white p-4 rounded-xl w-fit mx-auto mb-4" style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}>
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">
-                  {feature.title}
-                </h3>
-                <p className="font-medium" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
-                  {feature.description}
+        {/* Features Section */}
+        <div className="flex-grow flex flex-col justify-center w-full">
+          <div className="backdrop-blur-sm py-8 sm:py-12" style={{backgroundColor: 'rgba(255, 255, 255, 0.05)'}}>
+            <div className="container mx-auto px-4 sm:px-6">
+              <div className="text-center mb-12 sm:mb-16">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6 drop-shadow-lg">
+                  💡 ¿Por qué ServiFood?
+                </h2>
+                <p className="text-lg sm:text-xl font-semibold" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
+                  La mejor plataforma para gestionar tus pedidos de comida
                 </p>
               </div>
-            ))}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+                {features.map((feature, index) => (
+                  <div
+                    key={index}
+                    className="backdrop-blur-sm p-8 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl text-center"
+                    style={{backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.2)'}}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'
+                      e.currentTarget.style.borderColor = '#ffa726'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                    }}
+                  >
+                    <div className="text-white p-4 rounded-xl w-fit mx-auto mb-4" style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}>
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3">
+                      {feature.title}
+                    </h3>
+                    <p className="font-medium" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
+                      {feature.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* CTA Section */}
-      <div className="py-8 sm:py-12">
+      <div className="py-8 sm:py-12 flex-shrink-0">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="rounded-3xl p-5 sm:p-8 shadow-2xl text-center" style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6">
