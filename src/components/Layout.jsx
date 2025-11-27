@@ -142,3 +142,5 @@ const Layout = ({ children, user }) => {
     </div>
   )
 }
+
+export default Layout
