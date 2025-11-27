@@ -65,8 +65,8 @@ const Layout = ({ children, user }) => {
             <img 
               src={servifoodLogo} 
               alt="Servifood Logo" 
-              className="max-h-32 sm:max-h-36 w-auto rounded object-cover"
-              style={{height: '90px', maxHeight: '120px', display: 'block'}}
+              className="max-h-40 sm:max-h-48 w-auto rounded object-cover"
+              style={{height: '120px', maxHeight: '160px', display: 'block'}}
             />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
