@@ -123,7 +123,7 @@ export const db = {
       const isoToday = today.toISOString()
       const { data, error } = await supabase
         .from('orders')
-        .delete()
+        .update({ status: 'completed' })
         .eq('status', 'pending')
         .lt('created_at', isoToday)
       return { data, error }
