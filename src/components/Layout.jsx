@@ -193,8 +193,8 @@ const Layout = ({ children, user }) => {
     </div>
 
     {/* Tutorial Modals */}
-    <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
-    <AdminTutorial open={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
+    <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+    <AdminTutorial isOpen={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
 
     {/* Support Button */}
     <SupportButton />
