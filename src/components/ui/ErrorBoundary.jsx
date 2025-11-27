@@ -4,6 +4,9 @@ import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import Button from './Button'
 
 class ErrorFallback extends Component {
+    handleGoHome = () => {
+      window.location.href = '/'
+    }
   constructor(props) {
     super(props)
     this.state = { errorId: Date.now() }
@@ -64,7 +67,7 @@ class ErrorFallback extends Component {
               </Button>
 
               <Button
-                onClick={() => window.location.href = '/'}
+                onClick={this.handleGoHome}
                 variant="outline"
                 className="flex-1"
               >
