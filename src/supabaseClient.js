@@ -116,8 +116,8 @@ export const auth = {
 
 // Funciones de base de datos
 export const db = {
-    // Eliminar todos los pedidos pendientes de días anteriores
-    deleteOldPendingOrders: async () => {
+    // Marcar todos los pedidos pendientes de días anteriores como completados
+    completeAllOldPendingOrders: async () => {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const isoToday = today.toISOString()
@@ -126,6 +126,19 @@ export const db = {
         .update({ status: 'completed' })
         .eq('status', 'pending')
         .lt('created_at', isoToday)
+      return { data, error }
+    },
+
+    // Marcar todos los pedidos pendientes de HOY como completados
+    completeAllTodayOrders: async () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const isoToday = today.toISOString()
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'completed' })
+        .eq('status', 'pending')
+        .gte('created_at', isoToday)
       return { data, error }
     },
   // Usuarios
