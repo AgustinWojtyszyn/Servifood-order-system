@@ -61,12 +61,12 @@ const Layout = ({ children, user }) => {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-row items-center h-20 py-2 overflow-hidden w-full justify-center relative">
+          <div className="flex flex-row items-center h-32 py-4 overflow-hidden w-full justify-center relative">
             <img 
               src={servifoodLogo} 
               alt="Servifood Logo" 
-              className="max-h-20 sm:max-h-24 w-auto rounded object-cover"
-              style={{height: '60px', maxHeight: '80px', display: 'block'}}
+              className="max-h-32 sm:max-h-36 w-auto rounded object-cover"
+              style={{height: '90px', maxHeight: '120px', display: 'block'}}
             />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
