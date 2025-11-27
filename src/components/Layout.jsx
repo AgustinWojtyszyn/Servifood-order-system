@@ -141,7 +141,6 @@ const Layout = ({ children, user }) => {
                         
                         return classes
                       }}
-                      onClick={() => setSidebarOpen(false)}
                     >
                       <Icon className="h-6 w-6 mr-3 flex-shrink-0" />
                       <span className="flex-1">{item.name}</span>
@@ -151,44 +150,27 @@ const Layout = ({ children, user }) => {
                 )
               })}
             </ul>
-
-            {/* Logout Button */}
-            <div className="mt-auto mb-6 space-y-3">
-              {isAdmin && (
-                <button
-                  onClick={() => {
-                    setAdminTutorialOpen(true)
-                    setSidebarOpen(false)
-                  }}
-                  className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-700"
-                >
-                  <Settings className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
-                  <span className="group-hover:text-white transition-colors">Tutorial Admin 👨‍💼</span>
-                </button>
-              )}
-              
-              <button
-                onClick={() => {
-                  setTutorialOpen(true)
-                  setSidebarOpen(false)
-                }}
-                className="group flex items-center w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
-              >
-                <HelpCircle className="h-6 w-6 mr-3 flex-shrink-0 text-white" />
-                <span className="text-white">Ver Tutorial</span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  handleLogout()
-                  setSidebarOpen(false)
-                }}
-                className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
-              >
-                <LogOut className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
-                <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                setTutorialOpen(true)
+                setSidebarOpen(false)
+              }}
+              className="group flex items-center w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
+            >
+              <HelpCircle className="h-6 w-6 mr-3 flex-shrink-0 text-white" />
+              <span className="text-white">Ver Tutorial</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                handleLogout()
+                setSidebarOpen(false)
+              }}
+              className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
+            >
+              <LogOut className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+              <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
+            </button>
           </nav>
 
           {/* Botón cerrar en móvil */}
