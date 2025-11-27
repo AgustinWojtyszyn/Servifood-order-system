@@ -104,7 +104,7 @@ const Layout = ({ children, user }) => {
           {/* Botón cerrar solo en mobile */}
           <div className="flex items-center justify-between h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
             <span className="text-4xl font-extrabold drop-shadow-lg font-montserrat">
-              <span style={{ color: '#2563eb' }}>Servi</span><span style={{ color: '#fb923c' }}>Food</span>
+              <span style={{ color: '#2563eb', fontSize: '2.8rem', lineHeight: 1 }}>Servi</span><span style={{ color: '#fb923c', fontSize: '2.8rem', lineHeight: 1 }}>Food</span>
             </span>
             <button
               className="md:hidden p-2 rounded hover:bg-primary-700/10 text-primary-100"
