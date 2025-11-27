@@ -12,16 +12,21 @@ const exportViaEmail = async () => {
   emailLoadingRef.current = true
   try {
     // Adaptar los datos para el backend
-    const ordersForEmail = Array.isArray(sortedOrders) ? sortedOrders.map(order => ({
-      fecha: formatDate(order.created_at),
-      usuario: order.user_name || 'Sin nombre',
-      email: order.customer_email || order.user_email || 'Sin email',
-      telefono: order.customer_phone || 'Sin teléfono',
-      ubicacion: order.location || 'Sin ubicación',
-      platillos: (Array.isArray(order.items) ? order.items.map(item => `${normalizeDishName(item.name)} (x${item.quantity})`) : []).join('; ') || 'Sin items',
-      estado: getStatusText(order.status),
-      comentarios: order.comments || 'Sin comentarios'
-    })) : [];
+    // Solo exportar pedidos que NO estén completos ni entregados
+    const ordersForEmail = Array.isArray(sortedOrders)
+      ? sortedOrders
+          .filter(order => order.status !== 'completed' && order.status !== 'delivered')
+          .map(order => ({
+            fecha: formatDate(order.created_at),
+            usuario: order.user_name || 'Sin nombre',
+            email: order.customer_email || order.user_email || 'Sin email',
+            telefono: order.customer_phone || 'Sin teléfono',
+            ubicacion: order.location || 'Sin ubicación',
+            platillos: (Array.isArray(order.items) ? order.items.map(item => `${normalizeDishName(item.name)} (x${item.quantity})`) : []).join('; ') || 'Sin items',
+            estado: getStatusText(order.status),
+            comentarios: order.comments || 'Sin comentarios'
+          }))
+      : [];
     alert('Enviando pedidos por email...');
     const response = await fetch('/api/send-daily-orders-email', {
       method: 'POST',
