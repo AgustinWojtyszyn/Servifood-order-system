@@ -34,7 +34,7 @@ const features = [
 const LandingPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
-      <div className="flex flex-col items-center justify-center w-full pt-6 pb-2">
+      <div className="flex flex-col items-center justify-center w-full pt-8 pb-4">
         <img
           src={servifoodLogo}
           alt="Servifood Catering Logo"
@@ -63,9 +63,9 @@ const LandingPage = () => {
       </div>
 
       {/* Features Section */}
-      <div className="backdrop-blur-sm py-4 sm:py-6" style={{backgroundColor: 'rgba(255, 255, 255, 0.05)'}}>
-        <div className="w-full px-0 sm:px-2 max-w-none">
-          <div className="text-center mb-6 sm:mb-8">
+      <div className="backdrop-blur-sm py-8 sm:py-12" style={{backgroundColor: 'rgba(255, 255, 255, 0.05)'}}>
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg">
               💡 ¿Por qué ServiFood?
             </h2>
@@ -74,7 +74,7 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {features.map((feature, index) => (
               <div
                 key={index}
@@ -105,13 +105,13 @@ const LandingPage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="py-4 sm:py-6">
-        <div className="w-full px-0 sm:px-2 max-w-none">
-          <div className="rounded-3xl p-4 sm:p-6 shadow-2xl text-center w-full" style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4">
+      <div className="py-8 sm:py-12">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="rounded-3xl p-5 sm:p-8 shadow-2xl text-center" style={{background: 'linear-gradient(to right, #ff9800, #fb8c00)'}}>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6">
               🚀 ¿Listo para comenzar?
             </h2>
-            <p className="text-lg sm:text-xl mb-4 max-w-2xl mx-auto font-semibold" style={{color: 'rgba(255, 255, 255, 0.95)'}}>
+            <p className="text-lg sm:text-xl mb-8 max-w-2xl mx-auto font-semibold" style={{color: 'rgba(255, 255, 255, 0.95)'}}>
               Únete a ServiFood hoy y lleva la gestión de tus pedidos al siguiente nivel
             </p>
             <Link
@@ -127,7 +127,7 @@ const LandingPage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="backdrop-blur-sm py-4 border-t w-full mt-auto" style={{backgroundColor: 'rgba(26, 35, 126, 0.5)', borderColor: 'rgba(255, 255, 255, 0.1)', flexShrink: 0}}>
+      <footer className="backdrop-blur-sm py-8 border-t w-full mt-auto" style={{backgroundColor: 'rgba(26, 35, 126, 0.5)', borderColor: 'rgba(255, 255, 255, 0.1)', flexShrink: 0}}>
         <div className="container mx-auto px-4 sm:px-6 text-center font-medium" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
           <p className="truncate" style={{maxWidth: '100%', margin: '0 auto'}}>
             © 2025 ServiFood Catering. Todos los derechos reservados.
