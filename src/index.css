@@ -1,8 +1,8 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Rosarivo:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
 
-.font-rosean {
-  font-family: 'Rosarivo', serif;
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* ===========================

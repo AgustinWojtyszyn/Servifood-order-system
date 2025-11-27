@@ -108,7 +108,7 @@ const Layout = ({ children, user }) => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500`}>
           <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
-            <span className="text-4xl font-extrabold drop-shadow-lg font-rosean">
+            <span className="text-4xl font-extrabold drop-shadow-lg font-montserrat">
               <span style={{ color: '#2563eb' }}>Servi</span><span style={{ color: '#fb923c' }}>Food</span>
             </span>
           </div>
