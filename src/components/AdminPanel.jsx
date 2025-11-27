@@ -1,28 +1,28 @@
-  // Eliminar pedidos pendientes de días anteriores
-  const [deletingOldPending, setDeletingOldPending] = useState(false)
-  const handleDeleteOldPendingOrders = async () => {
-    if (!window.confirm('¿Eliminar TODOS los pedidos pendientes de días anteriores? Esta acción no se puede deshacer.')) return;
-    setDeletingOldPending(true)
-    try {
-      const { error } = await db.deleteOldPendingOrders()
-      if (error) {
-        alert('Error al eliminar pedidos pendientes antiguos: ' + error.message)
-      } else {
-        alert('✓ Pedidos pendientes antiguos eliminados correctamente')
-        fetchData()
-      }
-    } catch (err) {
-      alert('Error al eliminar pedidos pendientes antiguos')
-    } finally {
-      setDeletingOldPending(false)
-    }
-  }
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle } from 'lucide-react'
 
 const AdminPanel = ({ user }) => {
+  // Eliminar pedidos pendientes de días anteriores
+  const [deletingOldPending, setDeletingOldPending] = useState(false)
+  const handleDeleteOldPendingOrders = async () => {
+    if (!window.confirm('¿Eliminar TODOS los pedidos pendientes de días anteriores? Esta acción no se puede deshacer.')) return;
+    setDeletingOldPending(true)
+    try {
+      const { error } = await db.completeAllOldPendingOrders()
+      if (error) {
+        alert('Error al limpiar pedidos pendientes antiguos: ' + error.message)
+      } else {
+        alert('✓ Pedidos pendientes antiguos marcados como completados')
+        fetchData()
+      }
+    } catch (err) {
+      alert('Error al limpiar pedidos pendientes antiguos')
+    } finally {
+      setDeletingOldPending(false)
+    }
+  }
   const [activeTab, setActiveTab] = useState('users')
   const [users, setUsers] = useState([])
   const [menuItems, setMenuItems] = useState([])
