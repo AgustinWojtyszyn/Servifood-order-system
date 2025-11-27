@@ -74,12 +74,25 @@ const Layout = ({ children, user }) => {
             >
               <Menu className="h-6 w-6" />
             </button>
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors absolute right-2 top-1/2 transform -translate-y-1/2"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
+            {/* Botones tutorial y logout al final del nav superior */}
+            <div className="flex gap-3 absolute right-2 top-1/2 transform -translate-y-1/2">
+              <button
+                onClick={() => setTutorialOpen(true)}
+                className="group flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 hover:scale-105 shadow-md border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
+                style={{ minWidth: 120 }}
+              >
+                <HelpCircle className="h-5 w-5 mr-2 flex-shrink-0 text-white" />
+                <span className="text-white">Tutorial</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="group flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base transition-all duration-200 hover:scale-105 shadow-md border-2 border-red-500 hover:border-red-400 hover:from-red-500 hover:to-red-600"
+                style={{ minWidth: 120 }}
+              >
+                <LogOut className="h-5 w-5 mr-2 flex-shrink-0 text-white" />
+                <span className="text-white">Cerrar Sesión</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -91,7 +104,7 @@ const Layout = ({ children, user }) => {
         } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500`}>
           <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
             <span className="text-4xl font-extrabold drop-shadow-lg font-montserrat">
-              <span style={{ color: '#2563eb' }}>Servi</span><span style={{ color: '#fb923c' }}>Food</span>
+              <span style={{ color: '#2563eb' }}>Servi</span><span style={{ color: '#fb923c', fontSize: '2.8rem', lineHeight: '1' }}>Food</span>
             </span>
           </div>
           <nav className="mt-8 px-4 bg-white min-h-full flex flex-col">
