@@ -61,41 +61,23 @@ const Layout = ({ children, user }) => {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-row items-center h-20 py-2 overflow-hidden w-full">
+          <div className="flex flex-row items-center h-20 py-2 overflow-hidden w-full justify-center relative">
             <img 
               src={servifoodLogo} 
               alt="Servifood Logo" 
-              className="max-h-20 sm:max-h-24 w-auto rounded object-cover ml-2"
+              className="max-h-20 sm:max-h-24 w-auto rounded object-cover"
               style={{height: '60px', maxHeight: '80px', display: 'block'}}
             />
-            <span
-              className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate ml-2"
-              style={{
-                maxWidth: '80px',
-                display: 'inline-block',
-                textAlign: 'left',
-                fontSize: '13px',
-                lineHeight: '1.2',
-                verticalAlign: 'middle',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                marginTop: '8px'
-              }}
-            >
-              {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-            </span>
-            <div className="flex-grow" style={{marginTop: '8px'}}></div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden mr-1"
-              style={{marginLeft: 'auto', marginTop: '8px'}}>
+              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden mr-1 absolute left-2 top-1/2 transform -translate-y-1/2"
+            >
               <Menu className="h-6 w-6" />
             </button>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              style={{marginTop: '8px'}}>
+              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors absolute right-2 top-1/2 transform -translate-y-1/2"
+            >
               <LogOut className="h-5 w-5" />
             </button>
           </div>
