@@ -1,3 +1,5 @@
+// Eliminar todos los pedidos pendientes de días anteriores
+// Se agrega como método a db más abajo
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'your-supabase-url'
@@ -114,6 +116,18 @@ export const auth = {
 
 // Funciones de base de datos
 export const db = {
+    // Eliminar todos los pedidos pendientes de días anteriores
+    deleteOldPendingOrders: async () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const isoToday = today.toISOString()
+      const { data, error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('status', 'pending')
+        .lt('created_at', isoToday)
+      return { data, error }
+    },
   // Usuarios
   getUsers: async () => {
     // Usar cache para reducir consultas repetidas
