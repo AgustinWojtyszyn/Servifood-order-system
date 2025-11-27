@@ -86,13 +86,33 @@ const Layout = ({ children, user }) => {
 
       <div className="flex min-h-[calc(100vh-4rem)]">
         {/* Sidebar */}
-        <aside className={`$
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500`}>
-          <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
+        {/* Overlay para mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <aside
+          className={`
+            fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500
+          `}
+          style={{ pointerEvents: sidebarOpen || window.innerWidth >= 768 ? 'auto' : 'none' }}
+        >
+          {/* Botón cerrar solo en mobile */}
+          <div className="flex items-center justify-between h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
             <span className="text-4xl font-extrabold drop-shadow-lg font-montserrat">
               <span style={{ color: '#2563eb' }}>Servi</span><span style={{ color: '#fb923c' }}>Food</span>
             </span>
+            <button
+              className="md:hidden p-2 rounded hover:bg-primary-700/10 text-primary-100"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Cerrar menú"
+            >
+              <X className="h-7 w-7" />
+            </button>
           </div>
           <nav className="mt-8 px-4 bg-white min-h-full flex flex-col">
             <ul className="space-y-2 flex-1 bg-white">
