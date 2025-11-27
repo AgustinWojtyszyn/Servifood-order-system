@@ -86,7 +86,7 @@ const Layout = ({ children, user }) => {
 
       <div className="flex min-h-[calc(100vh-4rem)]">
         {/* Sidebar */}
-        <aside className={`${
+        <aside className={`$
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500`}>
           <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
@@ -94,104 +94,51 @@ const Layout = ({ children, user }) => {
               <span style={{ color: '#2563eb' }}>Servi</span><span style={{ color: '#fb923c' }}>Food</span>
             </span>
           </div>
-
           <nav className="mt-8 px-4 bg-white min-h-full flex flex-col">
             <ul className="space-y-2 flex-1 bg-white">
               {menuItems.map((item) => {
                 const Icon = item.icon
-                
                 return (
                   <li key={item.path}>
                     <NavLink
                       to={item.path}
                       className={({ isActive }) => {
-                        // Clase base para todos
                         let classes = "flex items-center px-4 py-3 rounded-xl font-bold text-base transition-all duration-200 shadow-sm"
-                        
-                        // Si está activo - fondo azul sólido con texto blanco
                         if (isActive) {
                           classes += " bg-blue-600 text-white shadow-lg"
-                        }
-                        // Si es destacado pero no activo
-                        else if (item.highlighted) {
+                        } else if (item.highlighted) {
                           classes += " bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md animate-pulse-slow"
-                        }
-                        // Normal
-                        else {
+                        } else {
                           classes += " text-gray-800 hover:bg-blue-50"
                         }
-                        
                         return classes
                       }}
+                      onClick={() => setSidebarOpen(false)}
                     >
                       <Icon className="h-6 w-6 mr-3 flex-shrink-0" />
                       <span className="flex-1">{item.name}</span>
-                      {/* Eliminado cartel NUEVO */}
                     </NavLink>
                   </li>
                 )
               })}
             </ul>
-            <button
-              onClick={() => {
-                setTutorialOpen(true)
-                setSidebarOpen(false)
-              }}
-              className="group flex items-center w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
-            >
-              <HelpCircle className="h-6 w-6 mr-3 flex-shrink-0 text-white" />
-              <span className="text-white">Ver Tutorial</span>
-            </button>
-            
-            <button
-              onClick={() => {
-                handleLogout()
-                setSidebarOpen(false)
-              }}
-              className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
-            >
-              <LogOut className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
-              <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
-            </button>
           </nav>
-
-          {/* Botón cerrar en móvil */}
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="absolute top-4 right-4 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 md:hidden"
-          >
-            <X className="h-6 w-6" />
-          </button>
         </aside>
 
-        {/* Overlay para móvil */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col">
+        <div className="flex-1 p-4 md:p-8">
+          {children}
+        </div>
+      </main>
+    </div>
 
-        {/* Main content */}
-        <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 min-h-screen">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
-      </div>
-      
-      {/* Support Button */}
-      <SupportButton />
-      
-      {/* Tutorial Modal */}
-      <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
-      
-      {/* Admin Tutorial Modal */}
-      {isAdmin && (
-        <AdminTutorial isOpen={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
-      )}
+    {/* Tutorial Modals */}
+    <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+    <AdminTutorial open={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
+
+    {/* Support Button */}
+    <SupportButton />
     </div>
   )
 }
-
-export default Layout
