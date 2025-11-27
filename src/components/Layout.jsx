@@ -68,21 +68,9 @@ const Layout = ({ children, user }) => {
               className="max-h-14 sm:max-h-16 w-auto rounded object-cover ml-2"
               style={{height: '48px', maxHeight: '100%', display: 'block'}}
             />
-            <span
-              className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate ml-2"
-              style={{
-                maxWidth: '60px', // aún más corto en mobile
-                display: 'inline-block',
-                textAlign: 'left',
-                fontSize: '11px',
-                lineHeight: '1.1',
-                verticalAlign: 'middle',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+            <span className="ml-4 text-3xl font-extrabold select-none flex items-center drop-shadow-lg">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-primary-700">Servi</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-secondary-400 to-secondary-700 ml-1">Food</span>
             </span>
             <div className="flex-grow"></div>
             <button
@@ -108,7 +96,10 @@ const Layout = ({ children, user }) => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500`}>
           <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
-            <span className="text-2xl font-extrabold text-white drop-shadow-lg">ServiFood</span>
+            <span className="text-2xl font-extrabold select-none flex items-center drop-shadow-lg">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-primary-700">Servi</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-secondary-400 to-secondary-700 ml-1">Food</span>
+            </span>
           </div>
 
           <nav className="mt-8 px-4 bg-white min-h-full flex flex-col">
