@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle } from 'lucide-react'
-import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
@@ -62,15 +61,9 @@ const Layout = ({ children, user }) => {
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex flex-row items-center h-16 py-0 overflow-hidden w-full">
-            <img 
-              src={servifoodLogo} 
-              alt="Servifood Logo" 
-              className="max-h-14 sm:max-h-16 w-auto rounded object-cover ml-2"
-              style={{height: '48px', maxHeight: '100%', display: 'block'}}
-            />
-            <span className="ml-4 text-3xl font-extrabold select-none flex items-center drop-shadow-lg">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-primary-700">Servi</span>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-secondary-400 to-secondary-700 ml-1">Food</span>
+            <span className="ml-2 text-3xl font-extrabold select-none flex items-center drop-shadow-lg" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.35), 0 0 12px rgba(255,255,255,0.45)' }}>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-300 via-primary-500 to-primary-700">Servi</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-secondary-300 via-secondary-500 to-secondary-700 ml-1">Food</span>
             </span>
             <div className="flex-grow"></div>
             <button
@@ -199,18 +192,8 @@ const Layout = ({ children, user }) => {
 
         {/* Main content */}
         <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 min-h-screen">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <div className="absolute left-4 top-4 z-10 flex items-center space-x-1 drop-shadow-xl">
-              <span className="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-primary-400 via-primary-500 to-primary-700">
-                Servi
-              </span>
-              <span className="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-secondary-400 via-secondary-500 to-secondary-700">
-                Food
-              </span>
-            </div>
-            <div className="pt-14 sm:pt-16">
-              {children}
-            </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {children}
           </div>
         </main>
       </div>
