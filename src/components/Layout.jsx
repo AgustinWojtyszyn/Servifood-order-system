@@ -141,6 +141,45 @@ const Layout = ({ children, user }) => {
                   </li>
                 )
               })}
+              {/* Botones de tutorial y cerrar sesión en la barra lateral */}
+              {isAdmin && (
+                <li>
+                  <button
+                    onClick={() => {
+                      setAdminTutorialOpen(true)
+                      setSidebarOpen(false)
+                    }}
+                    className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-700 mt-4"
+                  >
+                    <Settings className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                    <span className="group-hover:text-white transition-colors">Tutorial Admin 👨‍💼</span>
+                  </button>
+                </li>
+              )}
+              <li>
+                <button
+                  onClick={() => {
+                    setTutorialOpen(true)
+                    setSidebarOpen(false)
+                  }}
+                  className="group flex items-center w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
+                >
+                  <HelpCircle className="h-6 w-6 mr-3 flex-shrink-0 text-white" />
+                  <span className="text-white">Ver Tutorial</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    handleLogout()
+                    setSidebarOpen(false)
+                  }}
+                  className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
+                >
+                  <LogOut className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                  <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
+                </button>
+              </li>
             </ul>
           </nav>
         </aside>
