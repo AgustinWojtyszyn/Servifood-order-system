@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle } from 'lucide-react'
+import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
@@ -61,9 +62,27 @@ const Layout = ({ children, user }) => {
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex flex-row items-center h-16 py-0 overflow-hidden w-full">
-            <span className="ml-2 text-3xl font-extrabold select-none flex items-center drop-shadow-lg" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.35), 0 0 12px rgba(255,255,255,0.45)' }}>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-300 via-primary-500 to-primary-700">Servi</span>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-secondary-300 via-secondary-500 to-secondary-700 ml-1">Food</span>
+            <img 
+              src={servifoodLogo} 
+              alt="Servifood Logo" 
+              className="max-h-14 sm:max-h-16 w-auto rounded object-cover ml-2"
+              style={{height: '48px', maxHeight: '100%', display: 'block'}}
+            />
+            <span
+              className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate ml-2"
+              style={{
+                maxWidth: '60px', // aún más corto en mobile
+                display: 'inline-block',
+                textAlign: 'left',
+                fontSize: '11px',
+                lineHeight: '1.1',
+                verticalAlign: 'middle',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
             </span>
             <div className="flex-grow"></div>
             <button
@@ -89,10 +108,7 @@ const Layout = ({ children, user }) => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500`}>
           <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
-            <span className="text-2xl font-extrabold select-none flex items-center drop-shadow-lg">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-primary-700">Servi</span>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-secondary-400 to-secondary-700 ml-1">Food</span>
-            </span>
+            <span className="text-2xl font-extrabold text-white drop-shadow-lg">ServiFood</span>
           </div>
 
           <nav className="mt-8 px-4 bg-white min-h-full flex flex-col">
@@ -192,20 +208,8 @@ const Layout = ({ children, user }) => {
 
         {/* Main content */}
         <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 min-h-screen">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-white rounded-b-3xl shadow-md px-4 sm:px-6 lg:px-8 py-3 -mx-4 sm:-mx-6 lg:-mx-8">
-              <div className="flex items-center">
-                <span className="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-primary-400 via-primary-500 to-primary-700 drop-shadow-sm">
-                  Servi
-                </span>
-                <span className="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-secondary-400 via-secondary-500 to-secondary-700 ml-1 drop-shadow-sm">
-                  Food
-                </span>
-              </div>
-            </div>
-            <div className="pt-6">
-              {children}
-            </div>
+          <div className="max-w-7xl mx-auto">
+            {children}
           </div>
         </main>
       </div>
