@@ -24,6 +24,23 @@ if (cluster.isMaster) {
   });
 } else {
   const app = express();
+
+  // --- Seguridad: Headers recomendados ---
+  app.use((req, res, next) => {
+    // Fuerza HTTPS en navegadores compatibles
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    // Política de contenido restrictiva (ajusta si usas recursos externos)
+    res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'self';");
+    // Previene clickjacking
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    // Previene sniffing de tipo de contenido
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Controla la información del referer
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Limita permisos de APIs del navegador
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()');
+    next();
+  });
   app.use(bodyParser.json());
   // Endpoint para enviar pedidos diarios por email
   app.post('/api/send-daily-orders-email', async (req, res) => {
