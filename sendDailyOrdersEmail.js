@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'agustinwojtyszyn99@gmail.com', // tu email
-    pass: 'TU_CONTRASEÑA_O_APP_PASSWORD'  // usa app password si tienes 2FA
+    pass: process.env.GMAIL_APP_PASSWORD  // usa app password si tienes 2FA
   }
 });
 

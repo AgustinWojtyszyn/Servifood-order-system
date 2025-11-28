@@ -12,7 +12,8 @@ class ServiFoodUser(HttpUser):
         """Se ejecuta cuando un usuario simulado comienza"""
         # Datos de prueba para registro/login
         self.email = f"test_user_{random.randint(1000, 9999)}@example.com"
-        self.password = "Test123456"
+        import os
+        self.password = os.environ.get("TEST_USER_PASSWORD", "Test123456")
         self.auth_token = None
     
     @task(5)

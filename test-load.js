@@ -94,7 +94,7 @@ function generatePhone() {
 // Crear usuario de prueba
 async function createTestUser(index) {
   const email = generateTestEmail(index)
-  const password = 'Test123456!'
+  const password = process.env.TEST_USER_PASSWORD || 'Test123456!'
   const fullName = generateRandomName()
 
   console.log(`   Creando usuario ${index + 1}/${NUM_USERS}: ${email}`)
