@@ -628,21 +628,23 @@ const Dashboard = ({ user }) => {
 
           <div className="space-y-4">
             {orders.filter(o => o.status === 'delivered' || o.status === 'completed').slice(0, 10).map((order) => (
-              <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-green-200 bg-green-50 rounded-xl">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                  <div className="p-2 rounded-full bg-green-100 flex-shrink-0">
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                      {isAdmin ? `${order.user_name} - ` : ''}Pedido #{order.id.slice(-8)}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">
-                      {order.location} • {formatDate(order.created_at)}
-                    </p>
+              <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-3 sm:p-4 border-2 border-green-200 bg-green-50 rounded-xl transition-all">
+                <div className="flex flex-col sm:flex-row sm:items-center flex-1 min-w-0 gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-full bg-green-100 flex-shrink-0">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                        {isAdmin ? `${order.user_name} - ` : ''}Pedido #{order.id.slice(-8)}
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">
+                        {order.location} • {formatDate(order.created_at)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 justify-end sm:justify-start">
+                <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 justify-end sm:justify-start mt-2 sm:mt-0">
                   {isAdmin && (
                     <button
                       onClick={() => setSelectedOrder(order)}
