@@ -68,13 +68,13 @@ const Profile = ({ user }) => {
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-6 sm:space-y-8">
-      <div>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2">Mi Perfil</h1>
-        <p className="text-base sm:text-lg md:text-xl text-white/90 drop-shadow-lg mt-2">Actualiza tu información personal</p>
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-white p-0 sm:p-0">
+      <div className="w-full max-w-2xl mx-auto px-2 sm:px-0 pt-8 sm:pt-12">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-orange-900 drop-shadow-2xl mb-2 text-center">Mi Perfil</h1>
+        <p className="text-base sm:text-lg md:text-xl text-orange-800/90 drop-shadow-lg mt-2 text-center">Actualiza tu información personal</p>
       </div>
 
-      <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20 max-w-2xl">
+      <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20 w-full max-w-2xl mx-auto p-6 sm:p-10 mt-6 flex flex-col justify-center" style={{minHeight: '60vh'}}>
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {message.text && (
             <div className={`border-2 px-4 sm:px-5 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex items-center gap-2 sm:gap-3 ${
