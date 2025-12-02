@@ -32,7 +32,7 @@ const features = [
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
+    <div className="flex flex-col min-h-screen w-full min-w-0 overflow-x-hidden overflow-y-auto bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
 
       {/* HEADER */}
       <div className="flex flex-col items-center justify-center pt-8 pb-2">
