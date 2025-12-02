@@ -82,6 +82,7 @@
    =========================== */
 @layer components {
   /* Botón primario */
+
   .btn-primary {
     background: linear-gradient(to right, #f97316, #ea580c);
     color: white;
@@ -94,6 +95,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Forzar texto negro solo para el botón Crear Pedido con fondo secundario */
+  .bg-gradient-to-r.from-secondary-500.to-secondary-600.btn-primary,
+  .btn-primary.bg-gradient-to-r.from-secondary-500.to-secondary-600 {
+    color: #111 !important;
+    text-shadow: none !important;
   }
 
   .btn-primary:hover {
