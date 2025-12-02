@@ -95,6 +95,11 @@
 
   <body>
     <div id="root"></div>
-    <script type="module" src="/assets/index-_8PrVl2U.js"></script>
+    <!--
+      NOTA IMPORTANTE:
+      - Para desarrollo y build de Vite, el script debe apuntar a /src/main.jsx
+      - SOLO para deploy en producción, reemplaza esta línea por el bundle generado (ej: /assets/index-xxxx.js)
+    -->
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
