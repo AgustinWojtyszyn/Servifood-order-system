@@ -57,24 +57,24 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen h-screen w-screen overflow-y-auto overflow-x-hidden flex flex-col justify-center py-6 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
-      <div className="max-w-md w-full mx-auto flex flex-col flex-1 justify-center space-y-8" style={{minHeight: '80vh', paddingBottom: '4rem'}}>
-        <div className="text-center pt-4 pb-2">
-          <div className="flex justify-center mb-6">
+    <div className="min-h-0 sm:min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden flex flex-col justify-center py-4 px-2 sm:py-8 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+      <div className="w-full max-w-md mx-4 sm:mx-auto flex flex-col flex-1 justify-center space-y-6 sm:space-y-8" style={{minHeight: '60vh', paddingBottom: '2rem'}}>
+        <div className="text-center pt-2 pb-2">
+          <div className="flex justify-center mb-4 sm:mb-6">
             <img 
               src={servifoodLogo} 
               alt="Servifood Catering Logo" 
-              className="max-h-32 w-auto object-contain"
+              className="max-h-20 sm:max-h-28 md:max-h-32 w-auto object-contain"
               style={{maxWidth: '90vw'}}
             />
           </div>
-          <h2 className="mt-8 text-5xl font-extrabold text-white drop-shadow-2xl">
+          <h2 className="mt-4 sm:mt-8 text-3xl sm:text-4xl md:text-5xl font-extrabold text-white drop-shadow-2xl">
             Bienvenido
           </h2>
-          <p className="mt-4 text-xl font-semibold text-white drop-shadow-lg">
+          <p className="mt-2 sm:mt-4 text-lg sm:text-xl font-semibold text-white drop-shadow-lg">
             Inicia sesión para continuar
           </p>
-          <p className="mt-2 text-sm" style={{color: 'rgba(255, 255, 255, 0.8)'}}>
+          <p className="mt-2 text-xs sm:text-sm" style={{color: 'rgba(255, 255, 255, 0.8)'}}>
             ¿No tienes cuenta?{' '}
             <Link to="/register" className="font-semibold hover:underline" style={{color: '#ffa726'}}>
               Regístrate aquí
@@ -82,7 +82,7 @@ const Login = () => {
           </p>
         </div>
 
-        <div className="card bg-white/95 backdrop-blur-sm shadow-2xl border-2 border-white/20">
+        <div className="card bg-white/95 backdrop-blur-sm shadow-2xl border-2 border-white/20 px-2 sm:px-0">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-xl font-medium">
