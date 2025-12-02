@@ -235,16 +235,21 @@ const OrderForm = ({ user }) => {
       
       // Preparar respuestas personalizadas (solo las activas con respuesta válida)
       const customResponsesArray = customOptions
-      .filter(opt => {
-        if (!opt.active) return false
-        const response = customResponses[opt.id]
-        // Verificar que la respuesta existe y no está vacía
-        if (!response) return false
-        if (Array.isArray(response) && response.length === 0) return false
-        if (typeof response === 'string' && response.trim() === '') return false
-        return true
-      })
-      
+        .filter(opt => {
+          if (!opt.active) return false
+          const response = customResponses[opt.id]
+          // Verificar que la respuesta existe y no está vacía
+          if (!response) return false
+          if (Array.isArray(response) && response.length === 0) return false
+          if (typeof response === 'string' && response.trim() === '') return false
+          return true
+        })
+        .map(opt => ({
+          id: opt.id,
+          title: opt.title,
+          response: customResponses[opt.id]
+        }))
+
       const orderData = {
         user_id: user.id,
         location: formData.location,
