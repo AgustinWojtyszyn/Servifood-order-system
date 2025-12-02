@@ -57,7 +57,7 @@ const Layout = ({ children, user }) => {
   menuItems.push({ name: 'Mi Perfil', path: '/profile', icon: UserCircle })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
@@ -84,7 +84,7 @@ const Layout = ({ children, user }) => {
         </div>
       </header>
 
-      <div className="flex min-h-[calc(100vh-4rem)]">
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
         {/* Overlay para mobile */}
         {sidebarOpen && (
@@ -185,7 +185,7 @@ const Layout = ({ children, user }) => {
         </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 min-h-0 overflow-y-auto flex flex-col">
         <div className="flex-1 p-4 md:p-8">
           {children}
         </div>

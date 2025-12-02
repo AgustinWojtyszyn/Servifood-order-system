@@ -77,7 +77,7 @@ function App() {
 
   return (
     <Router>
-      <div className="bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 min-h-screen">
+      <div className="bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 h-screen overflow-hidden">
         <Suspense fallback={<InternalLoader />}>
           <Routes>
             <Route path="/" element={
