@@ -79,7 +79,7 @@ const Register = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
         <div className="max-w-md w-full">
           <div className="text-center bg-white rounded-3xl shadow-2xl p-10 border-4 border-white/20">
             <div className="flex justify-center mb-6">
@@ -150,7 +150,7 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+    <div className="min-h-screen flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
       <div className="max-w-md w-full">
         <div className="text-center mb-6 sm:mb-10">
           <div className="flex justify-center mb-4 sm:mb-8">
