@@ -79,9 +79,9 @@ const Register = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
-        <div className="max-w-md w-full">
-          <div className="text-center bg-white rounded-3xl shadow-2xl p-10 border-4 border-white/20">
+      <div className="min-h-screen flex flex-col justify-center py-6 px-4 sm:px-6 lg:px-8 overflow-y-auto" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+        <div className="max-w-md w-full mx-auto flex flex-col flex-1 justify-center">
+          <div className="text-center bg-white rounded-3xl shadow-2xl p-10 border-4 border-white/20 mt-4 mb-4">
             <div className="flex justify-center mb-6">
               <div className="bg-blue-100 rounded-full p-4">
                 <Mail className="h-20 w-20 text-blue-600" />
@@ -150,14 +150,15 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
-      <div className="max-w-md w-full">
-        <div className="text-center mb-6 sm:mb-10">
+    <div className="min-h-screen flex flex-col justify-center py-6 px-4 sm:px-6 lg:px-8 overflow-y-auto" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+      <div className="max-w-md w-full mx-auto flex flex-col flex-1 justify-center">
+        <div className="text-center mb-6 sm:mb-10 pt-4 pb-2">
           <div className="flex justify-center mb-4 sm:mb-8">
             <img 
               src={servifoodLogo} 
               alt="Servifood Catering Logo" 
-              className="h-24 sm:h-32 md:h-40 w-auto"
+              className="max-h-24 sm:max-h-32 md:max-h-40 w-auto object-contain"
+              style={{maxWidth: '90vw'}}
             />
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white drop-shadow-2xl mb-2 sm:mb-3">

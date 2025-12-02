@@ -57,14 +57,15 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
+    <div className="min-h-screen flex flex-col justify-center py-6 px-4 sm:px-6 lg:px-8 overflow-y-auto" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+      <div className="max-w-md w-full mx-auto flex flex-col flex-1 justify-center space-y-8" style={{minHeight: '80vh'}}>
+        <div className="text-center pt-4 pb-2">
           <div className="flex justify-center mb-6">
             <img 
               src={servifoodLogo} 
               alt="Servifood Catering Logo" 
-              className="h-40 w-auto"
+              className="max-h-32 w-auto object-contain"
+              style={{maxWidth: '90vw'}}
             />
           </div>
           <h2 className="mt-8 text-5xl font-extrabold text-white drop-shadow-2xl">
