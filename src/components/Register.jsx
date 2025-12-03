@@ -121,8 +121,8 @@ const Register = () => {
                     ⚠️ Importante:
                   </p>
                   <p className="text-sm text-yellow-700">
-                    Debes confirmar tu correo electrónico antes de poder iniciar sesión. 
-                    Revisa tu bandeja de entrada y haz clic en el enlace de verificación.
+                    Debés confirmar tu correo electrónico antes de poder iniciar sesión. 
+                    Revisá tu bandeja de entrada y haz clic en el enlace de verificación.
                   </p>
                 </div>
               </div>
@@ -135,8 +135,8 @@ const Register = () => {
               <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside">
                 <li>Abre tu correo electrónico</li>
                 <li>Busca el email de ServiFood / Supabase</li>
-                <li>Haz clic en el enlace de confirmación</li>
-                <li>Regresa aquí e inicia sesión</li>
+                <li>Hacé clic en el enlace de confirmación</li>
+                <li>Regresá acá e inicia sesión</li>
               </ol>
             </div>
 
@@ -181,7 +181,7 @@ const Register = () => {
             Crear Cuenta
           </h2>
           <p className="text-sm sm:text-lg md:text-xl font-bold text-white drop-shadow-lg mb-1 sm:mb-2">
-            ¡Únete a ServiFood!
+            ¡Unite a ServiFood!
           </p>
           <p className="text-xs sm:text-base md:text-lg drop-shadow" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
             ¿Ya tienes cuenta?{' '}

@@ -29,7 +29,7 @@ const SupportButton = () => {
             <Phone className="h-4 w-4" />
             WhatsApp: +54 264 440 5294
           </p>
-          <p className="text-xs text-gray-300 mt-1">¡Hablemos! Estamos aquí para ayudarte 😊</p>
+          <p className="text-xs text-gray-300 mt-1">¡Hablanos! Estamos para ayudarte 😊</p>
         </div>
       </div>
     </div>

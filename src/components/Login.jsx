@@ -75,9 +75,9 @@ const Login = () => {
             Inicia sesión para continuar
           </p>
           <p className="mt-1 text-xs sm:text-sm" style={{color: 'rgba(255, 255, 255, 0.8)'}}>
-            ¿No tienes cuenta?{' '}
+            ¿No tenés cuenta?{' '}
             <Link to="/register" className="font-semibold hover:underline" style={{color: '#ffa726'}}>
-              Regístrate aquí
+              Regístrate acá
             </Link>
           </p>
         </div>

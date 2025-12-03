@@ -129,7 +129,7 @@ const Profile = ({ user }) => {
             </div>
             {formData.email !== user?.email && (
               <p className="mt-2 text-xs sm:text-sm text-amber-600 font-semibold">
-                Si cambias tu email, deberás verificar la nueva dirección.
+                Si cambiás tu email, deberás verificar la nueva dirección.
               </p>
             )}
           </div>
