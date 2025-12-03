@@ -150,21 +150,21 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen w-full min-w-0 overflow-x-hidden flex flex-col justify-center py-4 px-2 sm:py-8 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
-      <div className="w-full max-w-md mx-4 sm:mx-auto flex flex-col flex-1 justify-center" style={{paddingBottom: '2rem'}}>
-        <div className="text-center mb-4 sm:mb-10 pt-2 pb-2">
-          <div className="flex justify-center mb-2 sm:mb-6">
+    <div className="w-full min-h-screen flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+      <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center" style={{maxHeight: '95vh'}}>
+        <div className="text-center mb-2 sm:mb-6 pt-1 pb-1">
+          <div className="flex justify-center mb-2 sm:mb-4">
             <img 
               src={servifoodLogo} 
               alt="Servifood Catering Logo" 
-              className="max-h-16 sm:max-h-24 md:max-h-32 w-auto object-contain"
-              style={{maxWidth: '90vw'}}
+              className="max-h-12 sm:max-h-20 md:max-h-24 w-auto object-contain"
+              style={{maxWidth: '80vw'}}
             />
           </div>
-          <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white drop-shadow-2xl mb-1 sm:mb-3">
+          <h2 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white drop-shadow-2xl mb-1 sm:mb-2">
             Crear Cuenta
           </h2>
-          <p className="text-base sm:text-xl md:text-2xl font-bold text-white drop-shadow-lg mb-1 sm:mb-3">
+          <p className="text-sm sm:text-lg md:text-xl font-bold text-white drop-shadow-lg mb-1 sm:mb-2">
             ¡Únete a ServiFood!
           </p>
           <p className="text-xs sm:text-base md:text-lg drop-shadow" style={{color: 'rgba(255, 255, 255, 0.9)'}}>
@@ -175,7 +175,7 @@ const Register = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-8 border-4 border-white/20">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-8 border-4 border-white/20" style={{maxHeight: '70vh', overflow: 'auto'}}>
           <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border-2 border-red-400 text-red-800 px-5 py-4 rounded-xl font-bold text-base">
