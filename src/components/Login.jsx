@@ -57,7 +57,7 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-0 sm:min-h-screen w-full min-w-0 overflow-y-auto overflow-x-hidden flex flex-col justify-center py-4 px-2 sm:py-8 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+    <div className="min-h-screen w-full min-w-0 overflow-x-hidden flex flex-col justify-center py-4 px-2 sm:py-8 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
       <div className="w-full max-w-md mx-4 sm:mx-auto flex flex-col flex-1 justify-center space-y-6 sm:space-y-8" style={{minHeight: '60vh', paddingBottom: '2rem'}}>
         <div className="text-center pt-2 pb-2">
           <div className="flex justify-center mb-4 sm:mb-6">

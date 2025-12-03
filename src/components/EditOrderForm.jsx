@@ -302,7 +302,7 @@ const EditOrderForm = ({ user }) => {
   }
 
   return (
-    <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen overflow-y-auto">
+    <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4">
         <div className="text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Editar Pedido</h1>

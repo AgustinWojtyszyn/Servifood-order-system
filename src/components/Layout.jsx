@@ -57,7 +57,7 @@ const Layout = ({ children, user }) => {
   menuItems.push({ name: 'Mi Perfil', path: '/profile', icon: UserCircle })
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+    <div className="flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
@@ -184,20 +184,20 @@ const Layout = ({ children, user }) => {
           </nav>
         </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-        <div className="flex-1 p-4 md:p-8">
-          {children}
-        </div>
-      </main>
-    </div>
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 p-4 md:p-8 min-h-0">
+            {children}
+          </div>
+        </main>
+      </div>
 
-    {/* Tutorial Modals */}
-    <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
-    <AdminTutorial isOpen={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
+      {/* Tutorial Modals */}
+      <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+      <AdminTutorial isOpen={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
 
-    {/* Support Button */}
-    <SupportButton />
+      {/* Support Button */}
+      <SupportButton />
     </div>
   )
 }
