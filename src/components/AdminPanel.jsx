@@ -775,7 +775,7 @@ const AdminPanel = ({ user }) => {
             <div className="space-y-4">
               <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-4">
                 <p className="text-blue-800 font-semibold text-center text-sm leading-relaxed">
-                  Puedes agregar, editar o eliminar opciones del menú. Debe haber al menos un plato.
+                  Podés agregar, editar o eliminar opciones del menú. Debe haber al menos un plato.
                 </p>
               </div>
               
@@ -943,7 +943,7 @@ const AdminPanel = ({ user }) => {
             <div className="text-center py-12">
               <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-900 mb-2">No hay opciones personalizadas</h3>
-              <p className="text-gray-600 mb-6">Crea opciones adicionales para tus pedidos</p>
+              <p className="text-gray-600 mb-6">Creá opciones adicionales para tus pedidos</p>
             </div>
           )}
 
@@ -1083,13 +1083,13 @@ const AdminPanel = ({ user }) => {
                 <h3 className="text-xl font-bold text-yellow-900 mb-2">⚠️ Recordatorio Importante</h3>
                 <div className="text-yellow-800 space-y-2 leading-relaxed">
                   <p className="font-semibold">
-                    Recuerda limpiar regularmente los pedidos completados para ahorrar recursos en Supabase.
+                    Recordá limpiar regularmente los pedidos completados para ahorrar recursos en Supabase.
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-2">
                     <li>Los pedidos completados ocupan espacio en la base de datos</li>
                     <li>Se recomienda limpiar al final de cada día o semana</li>
                     <li>Esta acción es <strong>irreversible</strong> - los datos no se pueden recuperar</li>
-                    <li>Solo se eliminan pedidos con estado "Completado"</li>
+                    <li>Solo se eliminan pedidos con estado "Completado" o "Pendiente"</li>
                   </ul>
                 </div>
               </div>

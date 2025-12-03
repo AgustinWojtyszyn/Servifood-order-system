@@ -306,7 +306,7 @@ const OrderForm = ({ user }) => {
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
             <p className="text-base sm:text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
-            <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
+            <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al panel principal...</p>
           </div>
         </div>
       </div>
@@ -318,7 +318,7 @@ const OrderForm = ({ user }) => {
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
         <div className="text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
-        <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
+        <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Seleccioná tu menú y completa tus datos</p>
         <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
       </div>
 
@@ -446,9 +446,9 @@ const OrderForm = ({ user }) => {
       <ChefHat className="h-6 w-6" />
     </div>
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Selecciona tu Menú</h2>
+      <h2 className="text-2xl font-bold text-gray-900">Seleccioná tu Menú</h2>
       <p className="text-sm text-gray-600 font-semibold mt-1">
-        Elige uno o más platos disponibles
+        Elegí uno o más platos disponibles
       </p>
     </div>
   </div>
