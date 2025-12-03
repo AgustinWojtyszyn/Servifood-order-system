@@ -58,14 +58,14 @@ const Login = () => {
 
   return (
     <div className="w-full min-h-screen flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
-      <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center" style={{maxHeight: '95vh'}}>
+      <div className="w-full max-w-lg mx-auto flex flex-col justify-center items-center" style={{maxHeight: '98vh'}}>
         <div className="text-center pt-1 pb-1">
           <div className="flex justify-center mb-2 sm:mb-4">
             <img 
               src={servifoodLogo} 
               alt="Servifood Catering Logo" 
-              className="max-h-14 sm:max-h-20 md:max-h-24 w-auto object-contain"
-              style={{maxWidth: '80vw'}}
+              className="max-h-20 sm:max-h-32 md:max-h-40 w-auto object-contain"
+              style={{maxWidth: '90vw'}}
             />
           </div>
           <h2 className="mt-2 sm:mt-4 text-2xl sm:text-3xl md:text-4xl font-extrabold text-white drop-shadow-2xl">
@@ -82,7 +82,7 @@ const Login = () => {
           </p>
         </div>
 
-        <div className="card bg-white/95 backdrop-blur-sm shadow-2xl border-2 border-white/20 px-2 sm:px-0" style={{maxHeight: '70vh', overflow: 'auto'}}>
+        <div className="card bg-white/95 backdrop-blur-sm shadow-2xl border-2 border-white/20 px-2 sm:px-0" style={{maxHeight: 'none', overflow: 'visible', minWidth: '320px', width: '100%'}}>
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-xl font-medium">
