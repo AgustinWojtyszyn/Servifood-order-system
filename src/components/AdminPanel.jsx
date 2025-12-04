@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useAuthContext } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle } from 'lucide-react'
 
-const AdminPanel = ({ user }) => {
+const AdminPanel = () => {
   // Eliminar pedidos pendientes de días anteriores
   const [deletingOldPending, setDeletingOldPending] = useState(false)
   const handleDeleteOldPendingOrders = async () => {
@@ -27,12 +28,12 @@ const AdminPanel = ({ user }) => {
   const [users, setUsers] = useState([])
   const [menuItems, setMenuItems] = useState([])
   const [customOptions, setCustomOptions] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [dataLoading, setDataLoading] = useState(true)
   const [editingMenu, setEditingMenu] = useState(false)
   const [newMenuItems, setNewMenuItems] = useState([])
   const [editingOptions, setEditingOptions] = useState(false)
   const [newOption, setNewOption] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const { isAdmin, user, refreshSession, loading } = useAuthContext()
   
   // Estados para búsqueda y filtrado de usuarios
   const [searchTerm, setSearchTerm] = useState('')
@@ -43,37 +44,20 @@ const AdminPanel = ({ user }) => {
   const [deletingOrders, setDeletingOrders] = useState(false)
 
   useEffect(() => {
-    checkIfAdmin()
-  }, [user])
-
-  useEffect(() => {
-    if (isAdmin === true) {
+    if (isAdmin) {
       fetchData()
       fetchCompletedOrdersCount()
     }
   }, [isAdmin])
 
   useEffect(() => {
-    if (isAdmin === true && activeTab === 'cleanup') {
+    if (isAdmin && activeTab === 'cleanup') {
       fetchCompletedOrdersCount()
     }
   }, [activeTab, isAdmin])
 
-  const checkIfAdmin = async () => {
-    try {
-      const { data, error } = await db.getUsers()
-      if (!error && data) {
-        const currentUser = data.find(u => u.id === user.id)
-        setIsAdmin(currentUser?.role === 'admin')
-      }
-    } catch (err) {
-      console.error('Error checking admin status:', err)
-      setIsAdmin(false)
-    }
-  }
-
   const fetchData = async () => {
-    setLoading(true)
+    setDataLoading(true)
     try {
       const [usersResult, menuResult, optionsResult] = await Promise.all([
         db.getUsers(),
@@ -122,7 +106,7 @@ const AdminPanel = ({ user }) => {
     } catch (err) {
       console.error('Error:', err)
     } finally {
-      setLoading(false)
+      setDataLoading(false)
     }
   }
 
@@ -202,14 +186,16 @@ const AdminPanel = ({ user }) => {
       const { error } = await db.updateUserRole(userId, newRole)
       if (error) {
         console.error('Error updating role:', error)
-        alert('Error al actualizar el rol del usuario: ' + error.message)
+        alert('Error al actualizar el rol: ' + error.message)
       } else {
-        // Refrescar datos para obtener el cambio actualizado
-        await fetchData()
-        alert('Rol actualizado exitosamente')
+        alert('Rol actualizado correctamente')
+        fetchData()
+        // Si el usuario actual cambia su propio rol, refrescar sesión
+        if (user && user.id === userId) {
+          await refreshSession()
+        }
       }
     } catch (err) {
-      console.error('Error:', err)
       alert('Error al actualizar el rol')
     }
   }
@@ -446,7 +432,7 @@ const AdminPanel = ({ user }) => {
     )
   }
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
