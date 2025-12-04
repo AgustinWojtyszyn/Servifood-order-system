@@ -182,6 +182,7 @@ const AdminPanel = () => {
   }
 
   const handleRoleChange = async (userId, newRole) => {
+    console.log('[ROLE CHANGE] userId:', userId, 'newRole:', newRole)
     try {
       // Forzar minúsculas para el valor de rol
       const roleValue = newRole.toLowerCase()
