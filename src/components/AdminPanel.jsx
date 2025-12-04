@@ -193,7 +193,11 @@ const AdminPanel = () => {
         if (data && Array.isArray(users)) {
           setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
         }
-        fetchData()
+        // Forzar fetchData sin cache
+        if (db.getUsers) {
+          const { data: freshUsers, error } = await db.getUsers(true)
+          if (!error && freshUsers) setUsers(freshUsers)
+        }
         // Si el usuario actual cambia su propio rol, refrescar sesión
         if (user && user.id === userId) {
           await refreshSession()
