@@ -142,21 +142,20 @@ export const db = {
       return { data, error }
     },
   // Usuarios
-  getUsers: async () => {
+  getUsers: async (force = false) => {
     // Usar cache para reducir consultas repetidas
     const cacheKey = 'users-list'
-    const cached = cache.get(cacheKey)
-    if (cached) return { data: cached, error: null }
-    
+    if (!force) {
+      const cached = cache.get(cacheKey)
+      if (cached) return { data: cached, error: null }
+    }
     const { data, error } = await supabase
       .from('users')
       .select('id, email, full_name, role, created_at') // Solo campos necesarios
       .order('created_at', { ascending: false })
-    
     if (!error && data) {
       cache.set(cacheKey, data, 60000) // Cache por 1 minuto
     }
-    
     return { data, error }
   },
 

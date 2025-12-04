@@ -183,25 +183,25 @@ const AdminPanel = () => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      const { error } = await db.updateUserRole(userId, newRole)
+      const { data, error } = await db.updateUserRole(userId, newRole)
       if (error) {
         console.error('[SUPABASE ERROR] updateUserRole:', error)
         alert('Error al actualizar el rol: ' + error.message)
-      } else {
-        alert('Rol actualizado correctamente')
-        // Actualizar el usuario en la lista local
-        if (data && Array.isArray(users)) {
-          setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
-        }
-        // Forzar fetchData sin cache
-        if (db.getUsers) {
-          const { data: freshUsers, error } = await db.getUsers(true)
-          if (!error && freshUsers) setUsers(freshUsers)
-        }
-        // Si el usuario actual cambia su propio rol, refrescar sesión
-        if (user && user.id === userId) {
-          await refreshSession()
-        }
+        return
+      }
+      alert('Rol actualizado correctamente')
+      // Actualizar el usuario en la lista local
+      if (data && Array.isArray(users)) {
+        setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
+      }
+      // Forzar fetchData sin cache
+      if (db.getUsers) {
+        const { data: freshUsers, error: fetchError } = await db.getUsers(true)
+        if (!fetchError && freshUsers) setUsers(freshUsers)
+      }
+      // Si el usuario actual cambia su propio rol, refrescar sesión
+      if (user && user.id === userId) {
+        await refreshSession()
       }
     } catch (err) {
       alert('Error al actualizar el rol')
