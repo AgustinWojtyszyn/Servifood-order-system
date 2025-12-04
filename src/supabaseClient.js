@@ -167,8 +167,8 @@ export const db = {
       .update({ role })
       .eq('id', userId)
       .select()
-      .single()
-    return { data, error }
+    // data es array, tomar el primero si existe
+    return { data: Array.isArray(data) ? data[0] : data, error }
   },
 
   deleteUser: async (userId) => {
