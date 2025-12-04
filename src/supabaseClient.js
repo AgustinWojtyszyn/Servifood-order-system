@@ -166,6 +166,8 @@ export const db = {
       .from('users')
       .update({ role })
       .eq('id', userId)
+      .select()
+      .single()
     return { data, error }
   },
 

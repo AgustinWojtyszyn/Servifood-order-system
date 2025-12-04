@@ -189,6 +189,10 @@ const AdminPanel = () => {
         alert('Error al actualizar el rol: ' + error.message)
       } else {
         alert('Rol actualizado correctamente')
+        // Actualizar el usuario en la lista local
+        if (data && Array.isArray(users)) {
+          setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
+        }
         fetchData()
         // Si el usuario actual cambia su propio rol, refrescar sesión
         if (user && user.id === userId) {
