@@ -1,4 +1,5 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { lazy, Suspense } from 'react'
+import { useAuthContext } from './contexts/AuthContext'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase, auth } from './supabaseClient'
 import SplashScreen from './components/SplashScreen'
@@ -33,45 +34,9 @@ const InternalLoader = () => (
 )
 
 function App() {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [initialCheckDone, setInitialCheckDone] = useState(false)
-  const [showSplash, setShowSplash] = useState(() => {
-    // Solo mostrar splash en primera carga (no en recargas)
-    const hasLoadedBefore = sessionStorage.getItem('hasLoadedApp')
-    return !hasLoadedBefore
-  })
+  const { user, loading } = useAuthContext()
 
-  useEffect(() => {
-    // Verificar sesión existente rápidamente
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
-      }
-      setLoading(false)
-      setInitialCheckDone(true)
-      sessionStorage.setItem('hasLoadedApp', 'true')
-    }
-
-    checkSession()
-
-    // Escuchar cambios de autenticación
-    const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null)
-      if (loading) setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  // Mostrar splash screen solo en primera carga
-  if (showSplash && !initialCheckDone) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />
-  }
-
-  // Mostrar loader discreto mientras verifica autenticación
-  if (loading || !initialCheckDone) {
+  if (loading) {
     return <InternalLoader />
   }
 
@@ -106,7 +71,7 @@ function App() {
               user ? <Layout user={user}><Profile user={user} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/admin" element={
-              user ? <Layout user={user}><AdminPanel user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><AdminPanel /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/superadmin" element={
               user ? <Layout user={user}><SuperAdminPanel user={user} /></Layout> : <Navigate to="/login" />

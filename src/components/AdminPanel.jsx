@@ -185,7 +185,7 @@ const AdminPanel = () => {
     try {
       const { error } = await db.updateUserRole(userId, newRole)
       if (error) {
-        console.error('Error updating role:', error)
+        console.error('[SUPABASE ERROR] updateUserRole:', error)
         alert('Error al actualizar el rol: ' + error.message)
       } else {
         alert('Rol actualizado correctamente')
