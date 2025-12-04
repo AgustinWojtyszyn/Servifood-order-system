@@ -183,16 +183,23 @@ const AdminPanel = () => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      const { data, error } = await db.updateUserRole(userId, newRole)
+      // Forzar minúsculas para el valor de rol
+      const roleValue = newRole.toLowerCase()
+      const { data, error } = await db.updateUserRole(userId, roleValue)
+      console.log('[SUPABASE UPDATE RESULT]', { data, error })
       if (error) {
         console.error('[SUPABASE ERROR] updateUserRole:', error)
         alert('Error al actualizar el rol: ' + error.message)
         return
       }
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        alert('No se pudo actualizar el rol. Verifica las políticas de seguridad o el valor enviado.')
+        return
+      }
       alert('Rol actualizado correctamente')
       // Actualizar el usuario en la lista local
       if (data && Array.isArray(users)) {
-        setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
+        setUsers(users.map(u => u.id === userId ? { ...u, role: roleValue } : u))
       }
       // Forzar fetchData sin cache
       if (db.getUsers) {
