@@ -4,7 +4,16 @@ import { usersService } from '../services/users'
 import { safeLocalStorage } from '../utils'
 
 export const useAuth = () => {
-  const [user, setUser] = useState(null)
+  // Persistencia local
+  const LOCAL_KEY = 'servifood_user'
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem(LOCAL_KEY)
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  })
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
@@ -24,8 +33,21 @@ export const useAuth = () => {
           console.log('[Auth] Sesión encontrada tras refresh:', session.user)
           await loadUserData(session.user)
         } else {
-          console.warn('[Auth] No hay sesión activa tras refresh. Mostrando landing/login.')
-          setLoading(false)
+          // Fallback: intentar recuperar usuario de localStorage
+          const stored = window.localStorage.getItem(LOCAL_KEY)
+          if (stored) {
+            try {
+              const localUser = JSON.parse(stored)
+              console.log('[Auth] Usuario recuperado de localStorage:', localUser)
+              await loadUserData(localUser)
+            } catch (e) {
+              console.warn('[Auth] Error parseando usuario localStorage:', e)
+              setLoading(false)
+            }
+          } else {
+            console.warn('[Auth] No hay sesión activa tras refresh ni usuario en localStorage. Mostrando landing/login.')
+            setLoading(false)
+          }
         }
       } catch (error) {
         console.error('[Auth] Error inicializando sesión:', error)
@@ -44,6 +66,7 @@ export const useAuth = () => {
       } else if (event === 'SIGNED_OUT') {
         console.log('[Auth] Usuario ha cerrado sesión.')
         setUser(null)
+        window.localStorage.removeItem(LOCAL_KEY)
         setIsAdmin(false)
         setIsSuperAdmin(false)
         setLoading(false)
@@ -58,34 +81,36 @@ export const useAuth = () => {
       // Obtener datos adicionales del usuario desde la tabla users
       const { data: userData } = await usersService.getUserById(authUser.id)
 
+      let fullUser
       if (userData) {
-        const fullUser = {
+        fullUser = {
           ...authUser,
           ...userData,
-          // Combinar metadata
           user_metadata: {
             ...authUser.user_metadata,
             ...userData
           }
         }
-
-        setUser(fullUser)
-
-        // Verificar roles
-        const adminStatus = await usersService.isUserAdmin(authUser.id)
-        const superAdminStatus = await usersService.isUserSuperAdmin(authUser.id)
-
-        setIsAdmin(adminStatus)
-        setIsSuperAdmin(superAdminStatus)
       } else {
-        // Usuario no encontrado en tabla users, usar solo datos de auth
-        setUser(authUser)
-        setIsAdmin(false)
-        setIsSuperAdmin(false)
+        fullUser = authUser
       }
+      setUser(fullUser)
+      // Guardar en localStorage para persistencia
+      try {
+        window.localStorage.setItem(LOCAL_KEY, JSON.stringify(fullUser))
+      } catch {}
+
+      // Verificar roles
+      const adminStatus = await usersService.isUserAdmin(authUser.id)
+      const superAdminStatus = await usersService.isUserSuperAdmin(authUser.id)
+      setIsAdmin(adminStatus)
+      setIsSuperAdmin(superAdminStatus)
     } catch (error) {
       console.error('Error loading user data:', error)
       setUser(authUser)
+      try {
+        window.localStorage.setItem(LOCAL_KEY, JSON.stringify(authUser))
+      } catch {}
       setIsAdmin(false)
       setIsSuperAdmin(false)
     } finally {
