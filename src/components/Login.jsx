@@ -51,6 +51,12 @@ const Login = () => {
             try {
               window.localStorage.setItem('servifood_user', JSON.stringify(data.user))
               console.log('[Login] Usuario guardado en localStorage para persistencia:', data.user)
+              // Diagnóstico: mostrar claves de localStorage y Supabase
+              Object.keys(window.localStorage).forEach(k => {
+                if (k.startsWith('sb-')) {
+                  console.log('[Login] Clave Supabase en localStorage:', k, window.localStorage.getItem(k))
+                }
+              })
             } catch (e) {
               console.warn('[Login] Error guardando usuario en localStorage:', e)
             }

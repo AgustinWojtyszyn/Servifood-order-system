@@ -22,6 +22,12 @@ export const useAuth = () => {
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('[Auth] Inicializando recuperación de sesión...')
+      // Diagnóstico: mostrar claves de localStorage y Supabase antes de recuperar sesión
+      Object.keys(window.localStorage).forEach(k => {
+        if (k.startsWith('sb-')) {
+          console.log('[Auth] Clave Supabase en localStorage (antes de recuperar sesión):', k, window.localStorage.getItem(k))
+        }
+      })
       try {
         let result = await authService.getSession()
         let session = result?.data?.session || result?.session
