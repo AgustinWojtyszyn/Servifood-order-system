@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../services/supabase'
 import { Send, Trash2, Edit2, X, MessageCircle, Users } from 'lucide-react'
 
 const AdminChat = ({ user }) => {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { auth } from '../supabaseClient'
+import { auth } from '../services/supabase'
 import { Eye, EyeOff } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 

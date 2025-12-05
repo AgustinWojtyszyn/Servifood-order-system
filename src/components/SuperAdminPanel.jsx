@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { db } from '../supabaseClient'
+import { db } from '../services/supabase'
 import { Shield, UserX, Trash2, AlertTriangle, Crown, Users, Database, CheckCircle, X } from 'lucide-react'
 
 const SuperAdminPanel = ({ user }) => {

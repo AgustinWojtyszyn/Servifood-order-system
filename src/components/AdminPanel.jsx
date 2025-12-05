@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
-import { db } from '../supabaseClient'
+import { db } from '../services/supabase'
 import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle } from 'lucide-react'
 
 const AdminPanel = () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { auth } from '../supabaseClient'
+import { auth } from '../services/supabase'
 import { User, Mail, Save, CheckCircle, AlertCircle } from 'lucide-react'
 
 const Profile = ({ user }) => {

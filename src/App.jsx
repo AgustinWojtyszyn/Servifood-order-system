@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { useAuthContext } from './contexts/AuthContext'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { supabase, auth } from './supabaseClient'
+import { supabase, auth } from './services/supabase'
 import SplashScreen from './components/SplashScreen'
 import './App.css'
 
