@@ -1,11 +1,10 @@
-import { StrictMode } from 'react'
+// import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './mobile-optimizations.css'
 
 import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext'
-import AppErrorBoundary from './components/ui/ErrorBoundary'
 
 // Limpiar cache local y sessionStorage al cargar la app
 try {
@@ -18,11 +17,7 @@ try {
 const rootElement = document.getElementById('root');
 console.log('[main.jsx] Inicializando render React en #root:', rootElement);
 createRoot(rootElement).render(
-  <StrictMode>
-    <AppErrorBoundary>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </AppErrorBoundary>
-  </StrictMode>
+  <AuthProvider>
+    <App />
+  </AuthProvider>
 )

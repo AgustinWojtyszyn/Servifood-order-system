@@ -34,6 +34,7 @@ const InternalLoader = () => (
 )
 
 function App() {
+    console.log('[App] Render inicial ejecutado');
   const { user, loading } = useAuthContext()
 
   const [timeoutReached, setTimeoutReached] = useState(false);
