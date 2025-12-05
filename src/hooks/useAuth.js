@@ -9,19 +9,24 @@ export const useAuth = () => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
-  // Cargar usuario inicial
+  // Cargar usuario inicial y reforzar recuperación de sesión
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('[Auth] Inicializando recuperación de sesión...')
       try {
-        const { data: { session } } = await authService.getSession()
-
+        const { data: { session }, error } = await authService.getSession()
+        if (error) {
+          console.error('[Auth] Error al obtener sesión:', error)
+        }
         if (session?.user) {
+          console.log('[Auth] Sesión encontrada tras refresh:', session.user)
           await loadUserData(session.user)
         } else {
+          console.log('[Auth] No hay sesión activa tras refresh.')
           setLoading(false)
         }
       } catch (error) {
-        console.error('Error initializing auth:', error)
+        console.error('[Auth] Error inicializando sesión:', error)
         setLoading(false)
       }
     }
@@ -30,9 +35,12 @@ export const useAuth = () => {
 
     // Listener para cambios de autenticación
     const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] Evento de sesión: ${event}`)
       if (event === 'SIGNED_IN' && session?.user) {
+        console.log('[Auth] Usuario autenticado:', session.user)
         await loadUserData(session.user)
       } else if (event === 'SIGNED_OUT') {
+        console.log('[Auth] Usuario ha cerrado sesión.')
         setUser(null)
         setIsAdmin(false)
         setIsSuperAdmin(false)
