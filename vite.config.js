@@ -7,15 +7,8 @@ export default defineConfig({
   
   // Optimizaciones de rendimiento
   build: {
-    // Habilitar minificación avanzada
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Eliminar console.log en producción
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug']
-      }
-    },
+    // Desactivar minificación para diagnóstico
+    minify: false,
     
     // Optimizar chunks
     rollupOptions: {
