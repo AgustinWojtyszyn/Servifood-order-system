@@ -23,9 +23,9 @@ export const useAuth = () => {
     const initializeAuth = async () => {
       console.log('[Auth] Inicializando recuperación de sesión...')
       try {
-        const result = await authService.getSession()
-        const session = result?.data?.session || result?.session
-        const error = result?.error
+        let result = await authService.getSession()
+        let session = result?.data?.session || result?.session
+        let error = result?.error
         if (error) {
           console.error('[Auth] Error al obtener sesión:', error)
         }
@@ -33,19 +33,33 @@ export const useAuth = () => {
           console.log('[Auth] Sesión encontrada tras refresh:', session.user)
           await loadUserData(session.user)
         } else {
-          // Fallback: intentar recuperar usuario de localStorage
+          // Intentar refresh manual del token de sesión
+          console.log('[Auth] Intentando refresh manual de sesión Supabase...')
+          try {
+            const refreshResult = await authService.refreshSession()
+            if (refreshResult?.data?.user) {
+              console.log('[Auth] Sesión recuperada tras refresh manual:', refreshResult.data.user)
+              await loadUserData(refreshResult.data.user)
+              return
+            }
+          } catch (refreshError) {
+            console.warn('[Auth] Error en refresh manual:', refreshError)
+          }
+          // Fallback: intentar recuperar usuario de localStorage y re-loguear
           const stored = window.localStorage.getItem(LOCAL_KEY)
           if (stored) {
             try {
               const localUser = JSON.parse(stored)
               console.log('[Auth] Usuario recuperado de localStorage:', localUser)
+              // Si tienes email y password guardados, podrías intentar signIn automático aquí
+              // await signIn(localUser.email, localUser.password, true)
               await loadUserData(localUser)
             } catch (e) {
               console.warn('[Auth] Error parseando usuario localStorage:', e)
               setLoading(false)
             }
           } else {
-            console.warn('[Auth] No hay sesión activa tras refresh ni usuario en localStorage. Mostrando landing/login.')
+            console.warn('[Auth] No hay sesión activa tras refresh, ni tras refresh manual, ni usuario en localStorage. Mostrando landing/login.')
             setLoading(false)
           }
         }
