@@ -22,7 +22,7 @@ export const useAuth = () => {
           console.log('[Auth] Sesión encontrada tras refresh:', session.user)
           await loadUserData(session.user)
         } else {
-          console.log('[Auth] No hay sesión activa tras refresh.')
+          console.warn('[Auth] No hay sesión activa tras refresh. Mostrando landing/login.')
           setLoading(false)
         }
       } catch (error) {

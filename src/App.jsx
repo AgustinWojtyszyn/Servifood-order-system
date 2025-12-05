@@ -36,17 +36,41 @@ const InternalLoader = () => (
 function App() {
   const { user, loading } = useAuthContext()
 
-  if (loading) {
-    console.log('[App] Mostrando loader inicial, esperando recuperación de sesión...')
+  const [timeoutReached, setTimeoutReached] = useState(false);
+  // Timeout de 7 segundos para mostrar fallback si loading no termina
+  useEffect(() => {
+    let timer;
+    if (loading) {
+      timer = setTimeout(() => {
+        setTimeoutReached(true);
+        console.error('[App] Timeout: la sesión no se recuperó en 7 segundos. Verifica conexión o Supabase.');
+      }, 7000);
+    }
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  if (loading && !timeoutReached) {
+    console.log('[App] Mostrando loader inicial, esperando recuperación de sesión...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
           <p className="text-white text-base font-medium">Cargando sesión...</p>
-          <p className="text-white/70 text-xs mt-2">Si ves esto más de 5 segundos, revisa los logs de consola.</p>
+          <p className="text-white/70 text-xs mt-2">Si ves esto más de 7 segundos, revisa los logs de consola.</p>
         </div>
       </div>
-    )
+    );
+  }
+  if (loading && timeoutReached) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-700 via-red-800 to-red-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+          <p className="text-white text-base font-bold">Error al recuperar sesión</p>
+          <p className="text-white/70 text-xs mt-2">No se pudo recuperar la sesión. Intenta recargar o revisa tu conexión.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
