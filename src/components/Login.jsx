@@ -30,7 +30,7 @@ const Login = () => {
 
     try {
       const { data, error } = await auth.signIn(formData.email, formData.password, formData.rememberMe)
-
+      console.log('[Login] Resultado signIn:', { data, error })
       if (error) {
         // Mensajes de error más específicos
         if (error.message.includes('Email not confirmed')) {
@@ -46,11 +46,21 @@ const Login = () => {
           setError('📧 Tu correo electrónico aún no ha sido verificado. Por favor, revisa tu bandeja de entrada y confirma tu email antes de iniciar sesión.')
           await auth.signOut()
         } else {
+          // Persistencia explícita en localStorage si el usuario lo pidió
+          if (formData.rememberMe && data?.user) {
+            try {
+              window.localStorage.setItem('servifood_user', JSON.stringify(data.user))
+              console.log('[Login] Usuario guardado en localStorage para persistencia:', data.user)
+            } catch (e) {
+              console.warn('[Login] Error guardando usuario en localStorage:', e)
+            }
+          }
           navigate('/dashboard')
         }
       }
     } catch (err) {
       setError('Error al iniciar sesión. Por favor, intenta nuevamente.')
+      console.error('[Login] Error en signIn:', err)
     } finally {
       setLoading(false)
     }
