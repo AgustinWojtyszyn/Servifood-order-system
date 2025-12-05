@@ -14,7 +14,9 @@ export const useAuth = () => {
     const initializeAuth = async () => {
       console.log('[Auth] Inicializando recuperación de sesión...')
       try {
-        const { data: { session }, error } = await authService.getSession()
+        const result = await authService.getSession()
+        const session = result?.data?.session || result?.session
+        const error = result?.error
         if (error) {
           console.error('[Auth] Error al obtener sesión:', error)
         }
