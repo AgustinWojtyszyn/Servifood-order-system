@@ -5,6 +5,7 @@ import './mobile-optimizations.css'
 
 import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext'
+import AppErrorBoundary from './components/ui/ErrorBoundary'
 
 // Limpiar cache local y sessionStorage al cargar la app
 try {
@@ -14,10 +15,14 @@ try {
   // Ignorar errores de limpieza
 }
 
-createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root');
+console.log('[main.jsx] Inicializando render React en #root:', rootElement);
+createRoot(rootElement).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </StrictMode>,
+    <AppErrorBoundary>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </AppErrorBoundary>
+  </StrictMode>
 )
