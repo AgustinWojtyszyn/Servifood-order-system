@@ -46,7 +46,7 @@ const Login = () => {
           setError('📧 Tu correo electrónico aún no ha sido verificado. Por favor, revisa tu bandeja de entrada y confirma tu email antes de iniciar sesión.')
           await auth.signOut()
         } else {
-          navigate('/')
+          navigate('/dashboard')
         }
       }
     } catch (err) {
