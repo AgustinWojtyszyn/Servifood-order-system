@@ -1,3 +1,7 @@
+// Utilidad para concatenar clases (classNames)
+export function cn(...args) {
+  return args.filter(Boolean).join(' ')
+}
 import DOMPurify from 'dompurify'
 
 // Utilidades de validación y sanitización

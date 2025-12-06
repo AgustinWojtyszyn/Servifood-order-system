@@ -1,3 +1,281 @@
+// --- AUTH API migrada desde supabaseClient.js ---
+export const auth = {
+  signUp: async (email, password, metadata = {}) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata,
+        emailRedirectTo: `${window.location.origin}/dashboard`
+      }
+    })
+    return { data, error }
+  },
+  signIn: async (email, password, rememberMe = false) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: {
+        persistSession: true,
+        ...(rememberMe && { storageOptions: { type: 'local' } })
+      }
+    })
+    return { data, error }
+  },
+  signOut: async () => {
+    const { error } = await supabase.auth.signOut()
+    return { error }
+  },
+  resetPassword: async (email) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    })
+    return { data, error }
+  },
+  updatePassword: async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+    return { data, error }
+  },
+  updateProfile: async (updates) => {
+    const { data, error } = await supabase.auth.updateUser({
+      email: updates.email,
+      data: {
+        full_name: updates.full_name
+      }
+    })
+    return { data, error }
+  },
+  getUser: async () => {
+    const { data: { user }, error } = await supabase.auth.getUser()
+    return { user, error }
+  },
+  onAuthStateChange: (callback) => {
+    return supabase.auth.onAuthStateChange(callback)
+  }
+}
+// --- DB API migrada desde supabaseClient.js ---
+export const db = {
+  // Marcar todos los pedidos pendientes de días anteriores como completados
+  completeAllOldPendingOrders: async () => {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .lt('created_at', new Date().toISOString().slice(0, 10))
+      .eq('status', 'pending')
+    return { data, error }
+  },
+
+  // Usuarios
+  getUsers: async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+    return { data, error }
+  },
+  updateUserRole: async (userId, role) => {
+    cache.clear()
+    const { data, error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', userId)
+      .select()
+    return { data: Array.isArray(data) ? data[0] : data, error }
+  },
+  deleteUser: async (userId) => {
+    const { error: ordersError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('user_id', userId)
+    if (ordersError) return { error: ordersError }
+    const { data, error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId)
+    return { data, error }
+  },
+
+  // Pedidos
+  createOrder: async (orderData) => {
+    cache.clear()
+    const { data, error } = await supabase
+      .from('orders')
+      .insert([orderData])
+      .select()
+    return { data, error }
+  },
+  getOrders: async (userId = null) => {
+    let query = supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (userId) {
+      query = query.eq('user_id', userId)
+    }
+    const { data, error } = await query
+    return { data, error }
+  },
+  updateOrderStatus: async (orderId, status) => {
+    cache.clear()
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', orderId)
+      .select()
+    return { data, error }
+  },
+  deleteOrder: async (orderId) => {
+    cache.clear()
+    const { data, error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId)
+    return { data, error }
+  },
+  deleteCompletedOrders: async () => {
+    cache.clear()
+    const { data, error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('status', 'completed')
+    return { data, error }
+  },
+  getCompletedOrdersCount: async () => {
+    const { count, error } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'completed')
+    return { count, error }
+  },
+
+  // Menú
+  getMenuItems: async () => {
+    const cacheKey = 'menu-items'
+    const cached = cache.get(cacheKey)
+    if (cached) return { data: cached, error: null }
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('id, name, description, created_at')
+      .order('created_at', { ascending: false })
+    if (!error && data) {
+      cache.set(cacheKey, data, 300000)
+    }
+    return { data, error }
+  },
+  updateMenuItems: async (menuItems) => {
+    try {
+      cache.clear()
+      const { data: existingItems, error: fetchError } = await supabase
+        .from('menu_items')
+        .select('id')
+      if (fetchError) {
+        console.error('Error fetching existing items:', fetchError)
+        return { error: fetchError }
+      }
+      const existingIds = existingItems?.map(item => item.id) || []
+      const itemsToUpdate = menuItems.filter(item => item.id && existingIds.includes(item.id))
+      const itemsToInsert = menuItems.filter(item => !item.id || !existingIds.includes(item.id))
+      const idsToKeep = menuItems.filter(item => item.id).map(item => item.id)
+      const itemsToDelete = existingIds.filter(id => !idsToKeep.includes(id))
+      if (itemsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('menu_items')
+          .delete()
+          .in('id', itemsToDelete)
+        if (deleteError) {
+          console.error('Error deleting items:', deleteError)
+          return { error: deleteError }
+        }
+      }
+      for (const item of itemsToUpdate) {
+        const { error: updateError } = await supabase
+          .from('menu_items')
+          .update({
+            name: item.name,
+            description: item.description
+          })
+          .eq('id', item.id)
+        if (updateError) {
+          console.error('Error updating item:', updateError)
+          return { error: updateError }
+        }
+      }
+      if (itemsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('menu_items')
+          .insert(itemsToInsert.map(item => ({
+            name: item.name,
+            description: item.description
+          })))
+        if (insertError) {
+          console.error('Error inserting items:', insertError)
+          return { error: insertError }
+        }
+      }
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('id, name, description, created_at')
+        .order('created_at', { ascending: true })
+      return { data, error }
+    } catch (err) {
+      console.error('Unexpected error in updateMenuItems:', err)
+      return { error: err }
+    }
+  },
+
+  // Opciones personalizables
+  getCustomOptions: async () => {
+    const cacheKey = 'custom-options'
+    const cached = cache.get(cacheKey)
+    if (cached) return { data: cached, error: null }
+    const { data, error } = await supabase
+      .from('custom_options')
+      .select('*')
+      .order('order_position', { ascending: true })
+    if (!error && data) {
+      cache.set(cacheKey, data, 120000)
+    }
+    return { data, error }
+  },
+  createCustomOption: async (option) => {
+    cache.clear()
+    const { data, error } = await supabase
+      .from('custom_options')
+      .insert([option])
+      .select()
+    return { data, error }
+  },
+  updateCustomOption: async (id, updates) => {
+    cache.clear()
+    const { data, error } = await supabase
+      .from('custom_options')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+    return { data, error }
+  },
+  deleteCustomOption: async (id) => {
+    cache.clear()
+    const { data, error } = await supabase
+      .from('custom_options')
+      .delete()
+      .eq('id', id)
+    return { data, error }
+  },
+  updateCustomOptionsOrder: async (options) => {
+    cache.clear()
+    const promises = options.map((option, index) =>
+      supabase
+        .from('custom_options')
+        .update({ order_position: index })
+        .eq('id', option.id)
+    )
+    const results = await Promise.all(promises)
+    const error = results.find(r => r.error)?.error
+    return { error }
+  }
+}
 import { createClient } from '@supabase/supabase-js'
 import { sanitizeInput } from '../utils'
 

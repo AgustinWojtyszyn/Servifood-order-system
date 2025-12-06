@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { auth, db } from '../supabaseClient'
+import { supabase, auth, db } from '../services/supabase'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'

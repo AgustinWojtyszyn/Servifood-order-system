@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { db } from '../supabaseClient'
+import { db } from '../services/supabase'
 import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2 } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import { isOrderEditable } from '../utils'

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { db } from '../supabaseClient'
+import { db } from '../services/supabase'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle } from 'lucide-react'
 
 const OrderForm = ({ user }) => {

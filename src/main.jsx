@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+// import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './mobile-optimizations.css'
@@ -14,10 +14,10 @@ try {
   // Ignorar errores de limpieza
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </StrictMode>,
+const rootElement = document.getElementById('root');
+console.log('[main.jsx] Inicializando render React en #root:', rootElement);
+createRoot(rootElement).render(
+  <AuthProvider>
+    <App />
+  </AuthProvider>
 )

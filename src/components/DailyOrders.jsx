@@ -52,7 +52,7 @@ const exportViaEmail = async () => {
   emailLoadingRef.current = false
 }
 import { useState, useEffect } from 'react'
-import { db } from '../supabaseClient'
+import { db } from '../services/supabase'
 import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw } from 'lucide-react'
 import * as XLSX from 'xlsx'
 

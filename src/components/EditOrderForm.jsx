@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { db } from '../supabaseClient'
+import { db } from '../services/supabase'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle, Save } from 'lucide-react'
 import { isOrderEditable } from '../utils'
 

@@ -1,7 +1,7 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import { useAuthContext } from './contexts/AuthContext'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { supabase, auth } from './supabaseClient'
+import { supabase, auth } from './services/supabase'
 import SplashScreen from './components/SplashScreen'
 import './App.css'
 
@@ -34,10 +34,44 @@ const InternalLoader = () => (
 )
 
 function App() {
+    console.log('[App] Render inicial ejecutado');
   const { user, loading } = useAuthContext()
 
-  if (loading) {
-    return <InternalLoader />
+  const [timeoutReached, setTimeoutReached] = useState(false);
+  // Timeout de 7 segundos para mostrar fallback si loading no termina
+  useEffect(() => {
+    let timer;
+    if (loading) {
+      timer = setTimeout(() => {
+        setTimeoutReached(true);
+        console.error('[App] Timeout: la sesión no se recuperó en 7 segundos. Verifica conexión o Supabase.');
+      }, 7000);
+    }
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  if (loading && !timeoutReached) {
+    console.log('[App] Mostrando loader inicial, esperando recuperación de sesión...');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+          <p className="text-white text-base font-medium">Cargando sesión...</p>
+          <p className="text-white/70 text-xs mt-2">Si ves esto más de 7 segundos, revisa los logs de consola.</p>
+        </div>
+      </div>
+    );
+  }
+  if (loading && timeoutReached) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-700 via-red-800 to-red-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+          <p className="text-white text-base font-bold">Error al recuperar sesión</p>
+          <p className="text-white/70 text-xs mt-2">No se pudo recuperar la sesión. Intenta recargar o revisa tu conexión.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -46,41 +80,41 @@ function App() {
         <Suspense fallback={<InternalLoader />}>
           <Routes>
             <Route path="/" element={
-              user ? <Navigate to="/dashboard" /> : <LandingPage />
+              user ? <Layout user={user}><Dashboard user={user} /></Layout> : <LandingPage />
             } />
             <Route path="/dashboard" element={
-              user ? <Layout user={user}><Dashboard user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><Dashboard user={user} /></Layout> : <InternalLoader />
             } />
             <Route path="/login" element={
-              user ? <Navigate to="/dashboard" /> : <Login />
+              user ? <Layout user={user}><Dashboard user={user} /></Layout> : <Login />
             } />
             <Route path="/register" element={
-              user ? <Navigate to="/dashboard" /> : <Register />
+              user ? <Layout user={user}><Dashboard user={user} /></Layout> : <Register />
             } />
             <Route path="/forgot-password" element={
-              user ? <Navigate to="/dashboard" /> : <ForgotPassword />
+              user ? <Layout user={user}><Dashboard user={user} /></Layout> : <ForgotPassword />
             } />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/order" element={
-              user ? <Layout user={user}><OrderForm user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><OrderForm user={user} /></Layout> : <InternalLoader />
             } />
             <Route path="/edit-order" element={
-              user ? <Layout user={user}><EditOrderForm user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><EditOrderForm user={user} /></Layout> : <InternalLoader />
             } />
             <Route path="/profile" element={
-              user ? <Layout user={user}><Profile user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><Profile user={user} /></Layout> : <InternalLoader />
             } />
             <Route path="/admin" element={
-              user ? <Layout user={user}><AdminPanel /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><AdminPanel /></Layout> : <InternalLoader />
             } />
             <Route path="/superadmin" element={
-              user ? <Layout user={user}><SuperAdminPanel user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><SuperAdminPanel user={user} /></Layout> : <InternalLoader />
             } />
             <Route path="/daily-orders" element={
-              user ? <Layout user={user}><DailyOrders user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><DailyOrders user={user} /></Layout> : <InternalLoader />
             } />
             <Route path="/admin-chat" element={
-              user ? <Layout user={user}><AdminChat user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user}><AdminChat user={user} /></Layout> : <InternalLoader />
             } />
             <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>

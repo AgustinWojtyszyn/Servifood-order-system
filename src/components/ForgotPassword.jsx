@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { auth } from '../supabaseClient'
+import { auth } from '../services/supabase'
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 
