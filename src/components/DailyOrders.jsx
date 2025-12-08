@@ -528,8 +528,15 @@ const DailyOrders = ({ user }) => {
       // Formatear mensaje por ubicación
       Object.entries(ubicaciones).forEach(([ubicacion, datos]) => {
         message += `*${ubicacion}*\n`;
-        // Menús
-        Object.entries(datos.menues).forEach(([menu, cantidad]) => {
+        // Menús ordenados por número
+        const sortedMenus = Object.entries(datos.menues).sort((a, b) => {
+          const extractNumber = (name) => {
+            const match = name.match(/(\d+)/)
+            return match ? parseInt(match[1], 10) : Infinity
+          }
+          return extractNumber(a[0]) - extractNumber(b[0])
+        })
+        sortedMenus.forEach(([menu, cantidad]) => {
           message += `  • ${menu}: ${cantidad}\n`;
         });
         // Guarniciones

@@ -71,29 +71,36 @@ const AdminPanel = () => {
         setUsers(usersResult.data || [])
       }
 
+      const extractNumber = (name) => {
+        const match = name?.match(/(\d+)/)
+        return match ? parseInt(match[1], 10) : Infinity
+      }
+      const sortMenuItems = (items) => {
+        return [...items].sort((a, b) => extractNumber(a.name) - extractNumber(b.name))
+      }
       if (menuResult.error) {
         console.error('Error fetching menu:', menuResult.error)
         // Set default menu items
-        setNewMenuItems([
+        setNewMenuItems(sortMenuItems([
           { name: 'Plato Principal 1', description: 'Delicioso plato principal' },
           { name: 'Plato Principal 2', description: 'Otro plato delicioso' },
           { name: 'Ensalada César', description: 'Fresca ensalada' }
-        ])
+        ]))
       } else {
-        setMenuItems(menuResult.data || [])
+        setMenuItems(sortMenuItems(menuResult.data || []))
         if (menuResult.data && menuResult.data.length > 0) {
-          setNewMenuItems(menuResult.data.map(item => ({
+          setNewMenuItems(sortMenuItems(menuResult.data.map(item => ({
             id: item.id,
             name: item.name,
             description: item.description || ''
-          })))
+          }))))
         } else {
           // Menú por defecto si no hay items
-          setNewMenuItems([
+          setNewMenuItems(sortMenuItems([
             { name: 'Plato Principal 1', description: 'Delicioso plato principal' },
             { name: 'Plato Principal 2', description: 'Otro plato delicioso' },
             { name: 'Ensalada César', description: 'Fresca ensalada' }
-          ])
+          ]))
         }
       }
 

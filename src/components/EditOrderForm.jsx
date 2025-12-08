@@ -75,6 +75,15 @@ const EditOrderForm = ({ user }) => {
     setCustomResponses(responses)
   }
 
+  const extractNumber = (name) => {
+    const match = name?.match(/(\d+)/)
+    return match ? parseInt(match[1], 10) : Infinity
+  }
+
+  const sortMenuItems = (items) => {
+    return [...items].sort((a, b) => extractNumber(a.name) - extractNumber(b.name))
+  }
+
   const fetchMenuItems = async () => {
     try {
       const { data, error } = await db.getMenuItems()
@@ -82,16 +91,16 @@ const EditOrderForm = ({ user }) => {
       if (error) {
         console.error('Error fetching menu:', error)
         // Set default menu items if none exist
-        setMenuItems([
+        setMenuItems(sortMenuItems([
           { id: 1, name: 'Plato Principal 1', description: 'Delicioso plato principal' },
           { id: 2, name: 'Plato Principal 2', description: 'Otro plato delicioso' },
           { id: 3, name: 'Plato Principal 3', description: 'Plato especial del día' },
           { id: 4, name: 'Plato Principal 4', description: 'Plato vegetariano' },
           { id: 5, name: 'Plato Principal 5', description: 'Plato de la casa' },
           { id: 6, name: 'Plato Principal 6', description: 'Plato recomendado' }
-        ])
+        ]))
       } else {
-        setMenuItems(data || [])
+        setMenuItems(sortMenuItems(data || []))
       }
     } catch (err) {
       console.error('Error:', err)
