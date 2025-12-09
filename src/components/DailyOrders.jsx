@@ -618,10 +618,10 @@ const DailyOrders = ({ user }) => {
                       </button>
                       <button
                         onClick={async () => {
-                          if (window.confirm('¿Eliminar TODOS los pedidos de 2 días o más de antigüedad? Esta acción no se puede deshacer.')) {
-                            const { error } = await db.deleteOldOrders()
+                          if (window.confirm('¿Eliminar TODOS los pedidos del día actual después de las 6 AM? Esta acción no se puede deshacer.')) {
+                            const { error } = await db.deleteTodayOrdersAfterOpening()
                             if (!error) {
-                              alert('Pedidos antiguos eliminados correctamente.')
+                              alert('Pedidos del día actual eliminados correctamente.')
                               handleRefresh()
                             } else {
                               alert('Error al eliminar pedidos: ' + error.message)

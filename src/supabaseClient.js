@@ -129,16 +129,22 @@ export const db = {
       return { data, error }
     },
 
-      // Eliminar pedidos de 2 días o más de antigüedad
-      deleteOldOrders: async () => {
-        const cutoffDate = new Date()
-        cutoffDate.setDate(cutoffDate.getDate() - 2)
-        cutoffDate.setHours(0, 0, 0, 0)
-        const isoCutoff = cutoffDate.toISOString()
+      // Eliminar pedidos del día actual después de las 6 AM
+      deleteTodayOrdersAfterOpening: async () => {
+        const now = new Date();
+        const opening = new Date();
+        opening.setHours(6, 0, 0, 0); // 6 AM hoy
+        opening.setMinutes(0, 0, 0);
+        opening.setSeconds(0, 0);
+        opening.setMilliseconds(0);
+        // Solo pedidos creados hoy después de las 6 AM
+        const isoOpening = opening.toISOString();
+        const isoTomorrow = new Date(opening.getTime() + 24 * 60 * 60 * 1000).toISOString();
         const { data, error } = await supabase
           .from('orders')
           .delete()
-          .lt('created_at', isoCutoff)
+          .gte('created_at', isoOpening)
+          .lt('created_at', isoTomorrow)
         return { data, error }
       },
 
