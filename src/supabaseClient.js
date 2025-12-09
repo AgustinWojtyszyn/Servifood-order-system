@@ -129,22 +129,21 @@ export const db = {
       return { data, error }
     },
 
-      // Eliminar pedidos del día actual después de las 6 AM
-      deleteTodayOrdersAfterOpening: async () => {
-        const now = new Date();
+      // Eliminar pedidos pendientes del día actual previos a las 6 AM
+      deleteTodayPendingOrdersBeforeOpening: async () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // inicio del día actual
         const opening = new Date();
         opening.setHours(6, 0, 0, 0); // 6 AM hoy
-        opening.setMinutes(0, 0, 0);
-        opening.setSeconds(0, 0);
-        opening.setMilliseconds(0);
-        // Solo pedidos creados hoy después de las 6 AM
+        // Solo pedidos pendientes creados hoy antes de las 6 AM
+        const isoToday = today.toISOString();
         const isoOpening = opening.toISOString();
-        const isoTomorrow = new Date(opening.getTime() + 24 * 60 * 60 * 1000).toISOString();
         const { data, error } = await supabase
           .from('orders')
           .delete()
-          .gte('created_at', isoOpening)
-          .lt('created_at', isoTomorrow)
+          .eq('status', 'pending')
+          .gte('created_at', isoToday)
+          .lt('created_at', isoOpening)
         return { data, error }
       },
 
