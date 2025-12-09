@@ -129,6 +129,19 @@ export const db = {
       return { data, error }
     },
 
+      // Eliminar pedidos de 2 días o más de antigüedad
+      deleteOldOrders: async () => {
+        const cutoffDate = new Date()
+        cutoffDate.setDate(cutoffDate.getDate() - 2)
+        cutoffDate.setHours(0, 0, 0, 0)
+        const isoCutoff = cutoffDate.toISOString()
+        const { data, error } = await supabase
+          .from('orders')
+          .delete()
+          .lt('created_at', isoCutoff)
+        return { data, error }
+      },
+
     // Marcar todos los pedidos pendientes de HOY como completados
     completeAllTodayOrders: async () => {
       const today = new Date()

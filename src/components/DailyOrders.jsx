@@ -618,13 +618,13 @@ const DailyOrders = ({ user }) => {
                       </button>
                       <button
                         onClick={async () => {
-                          if (window.confirm('¿Marcar TODOS los pedidos PENDIENTES de días anteriores como COMPLETOS?')) {
-                            const { error } = await db.completeAllOldPendingOrders()
+                          if (window.confirm('¿Eliminar TODOS los pedidos de 2 días o más de antigüedad? Esta acción no se puede deshacer.')) {
+                            const { error } = await db.deleteOldOrders()
                             if (!error) {
-                              alert('Todos los pedidos pendientes de días previos marcados como completos.')
+                              alert('Pedidos antiguos eliminados correctamente.')
                               handleRefresh()
                             } else {
-                              alert('Error al marcar pedidos: ' + error.message)
+                              alert('Error al eliminar pedidos: ' + error.message)
                             }
                           }
                         }}

@@ -11,11 +11,11 @@
 @layer base {
   html, body, #root {
     min-height: 100vh;
+    height: auto;
     width: 100%;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    /* No overflow-y aquí, solo el scroll externo */
     position: relative;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 16px;
@@ -23,6 +23,15 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
     background: #f3f4f6;
+  }
+
+  body {
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+
+  #root {
+    overflow: visible;
   }
 
   /* Inputs */
@@ -199,6 +208,15 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Contenedor raíz de la app: sin scroll propio, usa el del body */
+  .app-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 }
 
