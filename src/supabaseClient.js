@@ -116,6 +116,14 @@ export const auth = {
 
 // Funciones de base de datos
 export const db = {
+        // Eliminar todos los pedidos pendientes sin importar la fecha
+        deleteAllPendingOrders: async () => {
+          const { data, error } = await supabase
+            .from('orders')
+            .delete()
+            .eq('status', 'pending')
+          return { data, error }
+        },
     // Marcar todos los pedidos pendientes de días anteriores como completados
     completeAllOldPendingOrders: async () => {
       const today = new Date()

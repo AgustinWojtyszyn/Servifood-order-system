@@ -633,6 +633,23 @@ const DailyOrders = ({ user }) => {
                         <CheckCircle className="h-4 w-4" />
                         Limpiar pendientes previos
                       </button>
+                      <button
+                        onClick={async () => {
+                          if (window.confirm('¿Eliminar TODOS los pedidos pendientes sin importar la fecha? Esta acción no se puede deshacer.')) {
+                            const { error } = await db.deleteAllPendingOrders()
+                            if (!error) {
+                              alert('Todos los pedidos pendientes eliminados correctamente.')
+                              handleRefresh()
+                            } else {
+                              alert('Error al eliminar pedidos: ' + error.message)
+                            }
+                          }
+                        }}
+                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-red-500 hover:bg-red-600 text-white"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Eliminar TODOS los pendientes
+                      </button>
                     </div>
                   )}
           {/* Título y fecha */}
