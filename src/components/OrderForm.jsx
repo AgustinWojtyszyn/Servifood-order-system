@@ -22,7 +22,7 @@ const OrderForm = ({ user }) => {
   const [isPastDeadline, setIsPastDeadline] = useState(false)
   const navigate = useNavigate()
 
-  const locations = ['Los Berros', 'La Laja', 'Padre Bueno']
+  const locations = ['La Laja']
 
   useEffect(() => {
     checkOrderDeadline()
