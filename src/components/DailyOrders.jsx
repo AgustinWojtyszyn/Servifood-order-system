@@ -957,18 +957,23 @@ const DailyOrders = ({ user }) => {
                     Platillos Solicitados
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
-                    {Array.isArray(order.items) && order.items.map((item, index) => (
-                      item && typeof item === 'object' && item.name !== undefined ? (
-                        <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <span style={{ fontWeight: '900' }} className="text-sm md:text-base text-gray-900 flex-1 truncate mr-2">{item.name}</span>
-                            <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-bold flex-shrink-0">
-                              x{item.quantity}
-                            </span>
+                    {Array.isArray(order.items) && (() => {
+                      // Separar Menú Principal y otros
+                      const principal = order.items.filter(item => item && item.name && item.name.toLowerCase().includes('menú principal'));
+                      const others = order.items.filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'));
+                      return [...principal, ...others].map((item, index) => (
+                        item && typeof item === 'object' && item.name !== undefined ? (
+                          <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <span style={{ fontWeight: '900' }} className="text-sm md:text-base text-gray-900 flex-1 truncate mr-2">{item.name}</span>
+                              <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-bold flex-shrink-0">
+                                x{item.quantity}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ) : null
-                    ))}
+                        ) : null
+                      ))
+                    })()}
 
                     {/* Guarnición personalizada si existe */}
                     {(() => {
