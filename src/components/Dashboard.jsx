@@ -447,8 +447,9 @@ const Dashboard = ({ user }) => {
           <div className="flex items-center">
             <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg">
               <div className="relative">
-                <ShoppingCart className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                <ChefHat className="absolute -top-3 -right-3 h-7 w-7 text-yellow-400 bg-white rounded-full border border-gray-200 shadow" title="Chef" />
+                <div className="flex items-center justify-center">
+                  <ChefHat className="h-14 w-14 sm:h-20 sm:w-20 text-yellow-400 bg-white rounded-full border-4 border-yellow-300 shadow-lg mx-auto" title="Chef" />
+                </div>
               </div>
             </div>
             <div className="ml-4 sm:ml-5">
