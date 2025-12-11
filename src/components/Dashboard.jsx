@@ -448,7 +448,7 @@ const Dashboard = ({ user }) => {
             <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg">
               <div className="relative">
                 <div className="flex items-center justify-center">
-                  <ChefHat className="h-24 w-24 sm:h-32 sm:w-32 text-yellow-400 bg-white rounded-full border-4 border-yellow-300 shadow-2xl mx-auto flex-shrink-0" style={{ display: 'block', margin: '0 auto' }} title="Chef" />
+                  <ChefHat className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400 bg-white rounded-full border-2 border-yellow-300 shadow-lg mx-auto flex-shrink-0" style={{ display: 'block', margin: '0 auto' }} title="Chef" />
                 </div>
               </div>
             </div>
