@@ -11,16 +11,6 @@ const AdminTutorial = ({ isOpen, onClose }) => {
 
   const steps = [
     {
-      title: 'Cerrar tutorial',
-      icon: X,
-      content: (
-        <div className="flex items-center justify-center my-4">
-          <X className="h-5 w-5 text-gray-500" />
-          <span className="ml-2 text-gray-700">Puedes cerrar el tutorial en cualquier momento.</span>
-        </div>
-      )
-    },
-    {
       title: '¡Bienvenido al Panel de Administración! 👨‍💼',
       icon: Users,
       content: (
