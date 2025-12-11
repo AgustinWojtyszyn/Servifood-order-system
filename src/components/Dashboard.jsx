@@ -445,7 +445,10 @@ const Dashboard = ({ user }) => {
         <div className="card bg-gradient-to-br from-white to-blue-50 shadow-2xl border-2 border-primary-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
             <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg">
-              <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              <div className="relative">
+                <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                <ChefHat className="absolute -top-2 -right-2 h-4 w-4 text-yellow-400 bg-white rounded-full border border-gray-200 shadow" title="Chef" />
+              </div>
             </div>
             <div className="ml-4 sm:ml-5">
               <p className="text-xs sm:text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-1">PEDIDOS HOY</p>

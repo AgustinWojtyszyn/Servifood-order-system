@@ -377,9 +377,13 @@ const DailyOrders = ({ user }) => {
       // Preparar datos para el Excel
       const excelData = sortedOrders.map(order => {
         // Procesar items del menú (con normalización de nombres)
-        const menuItems = order.items?.map(item => 
-          `${normalizeDishName(item.name)} (x${item.quantity})`
-        ) || []
+        let menuItems = [];
+        if (Array.isArray(order.items)) {
+          // Separar Menú Principal y otros
+          const principal = order.items.filter(item => item && item.name && item.name.toLowerCase().includes('menú principal'));
+          const others = order.items.filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'));
+          menuItems = [...principal, ...others].map(item => `${normalizeDishName(item.name)} (x${item.quantity})`);
+        }
 
         // Detectar guarnición personalizada
         const customSide = getCustomSideFromResponses(order.custom_responses)
