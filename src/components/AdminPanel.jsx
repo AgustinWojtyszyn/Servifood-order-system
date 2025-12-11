@@ -1,19 +1,39 @@
 import { useState, useEffect } from 'react'
+import { useAuthContext } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle } from 'lucide-react'
 
-const AdminPanel = ({ user }) => {
+const AdminPanel = () => {
+  // Eliminar pedidos pendientes de días anteriores
+  const [deletingOldPending, setDeletingOldPending] = useState(false)
+  const handleDeleteOldPendingOrders = async () => {
+    if (!window.confirm('¿Eliminar TODOS los pedidos pendientes de días anteriores? Esta acción no se puede deshacer.')) return;
+    setDeletingOldPending(true)
+    try {
+      const { error } = await db.completeAllOldPendingOrders()
+      if (error) {
+        alert('Error al limpiar pedidos pendientes antiguos: ' + error.message)
+      } else {
+        alert('✓ Pedidos pendientes antiguos marcados como completados')
+        fetchData()
+      }
+    } catch (err) {
+      alert('Error al limpiar pedidos pendientes antiguos')
+    } finally {
+      setDeletingOldPending(false)
+    }
+  }
   const [activeTab, setActiveTab] = useState('users')
   const [users, setUsers] = useState([])
   const [menuItems, setMenuItems] = useState([])
   const [customOptions, setCustomOptions] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [dataLoading, setDataLoading] = useState(true)
   const [editingMenu, setEditingMenu] = useState(false)
   const [newMenuItems, setNewMenuItems] = useState([])
   const [editingOptions, setEditingOptions] = useState(false)
   const [newOption, setNewOption] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const { isAdmin, user, refreshSession, loading } = useAuthContext()
   
   // Estados para búsqueda y filtrado de usuarios
   const [searchTerm, setSearchTerm] = useState('')
@@ -24,37 +44,20 @@ const AdminPanel = ({ user }) => {
   const [deletingOrders, setDeletingOrders] = useState(false)
 
   useEffect(() => {
-    checkIfAdmin()
-  }, [user])
-
-  useEffect(() => {
-    if (isAdmin === true) {
+    if (isAdmin) {
       fetchData()
       fetchCompletedOrdersCount()
     }
   }, [isAdmin])
 
   useEffect(() => {
-    if (isAdmin === true && activeTab === 'cleanup') {
+    if (isAdmin && activeTab === 'cleanup') {
       fetchCompletedOrdersCount()
     }
   }, [activeTab, isAdmin])
 
-  const checkIfAdmin = async () => {
-    try {
-      const { data, error } = await db.getUsers()
-      if (!error && data) {
-        const currentUser = data.find(u => u.id === user.id)
-        setIsAdmin(currentUser?.role === 'admin')
-      }
-    } catch (err) {
-      console.error('Error checking admin status:', err)
-      setIsAdmin(false)
-    }
-  }
-
   const fetchData = async () => {
-    setLoading(true)
+    setDataLoading(true)
     try {
       const [usersResult, menuResult, optionsResult] = await Promise.all([
         db.getUsers(),
@@ -68,29 +71,36 @@ const AdminPanel = ({ user }) => {
         setUsers(usersResult.data || [])
       }
 
+      const extractNumber = (name) => {
+        const match = name?.match(/(\d+)/)
+        return match ? parseInt(match[1], 10) : Infinity
+      }
+      const sortMenuItems = (items) => {
+        return [...items].sort((a, b) => extractNumber(a.name) - extractNumber(b.name))
+      }
       if (menuResult.error) {
         console.error('Error fetching menu:', menuResult.error)
         // Set default menu items
-        setNewMenuItems([
+        setNewMenuItems(sortMenuItems([
           { name: 'Plato Principal 1', description: 'Delicioso plato principal' },
           { name: 'Plato Principal 2', description: 'Otro plato delicioso' },
           { name: 'Ensalada César', description: 'Fresca ensalada' }
-        ])
+        ]))
       } else {
-        setMenuItems(menuResult.data || [])
+        setMenuItems(sortMenuItems(menuResult.data || []))
         if (menuResult.data && menuResult.data.length > 0) {
-          setNewMenuItems(menuResult.data.map(item => ({
+          setNewMenuItems(sortMenuItems(menuResult.data.map(item => ({
             id: item.id,
             name: item.name,
             description: item.description || ''
-          })))
+          }))))
         } else {
           // Menú por defecto si no hay items
-          setNewMenuItems([
+          setNewMenuItems(sortMenuItems([
             { name: 'Plato Principal 1', description: 'Delicioso plato principal' },
             { name: 'Plato Principal 2', description: 'Otro plato delicioso' },
             { name: 'Ensalada César', description: 'Fresca ensalada' }
-          ])
+          ]))
         }
       }
 
@@ -103,7 +113,7 @@ const AdminPanel = ({ user }) => {
     } catch (err) {
       console.error('Error:', err)
     } finally {
-      setLoading(false)
+      setDataLoading(false)
     }
   }
 
@@ -180,17 +190,34 @@ const AdminPanel = ({ user }) => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      const { error } = await db.updateUserRole(userId, newRole)
+      // Forzar minúsculas para el valor de rol
+      const roleValue = newRole.toLowerCase()
+      const { data, error } = await db.updateUserRole(userId, roleValue)
+      console.log('[SUPABASE UPDATE RESULT]', { data, error })
       if (error) {
-        console.error('Error updating role:', error)
-        alert('Error al actualizar el rol del usuario: ' + error.message)
-      } else {
-        // Refrescar datos para obtener el cambio actualizado
-        await fetchData()
-        alert('Rol actualizado exitosamente')
+        console.error('[SUPABASE ERROR] updateUserRole:', error)
+        alert('Error al actualizar el rol: ' + error.message)
+        return
+      }
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        alert('No se pudo actualizar el rol. Verifica las políticas de seguridad o el valor enviado.')
+        return
+      }
+      alert('Rol actualizado correctamente')
+      // Actualizar el usuario en la lista local
+      if (data && Array.isArray(users)) {
+        setUsers(users.map(u => u.id === userId ? { ...u, role: roleValue } : u))
+      }
+      // Forzar fetchData sin cache
+      if (db.getUsers) {
+        const { data: freshUsers, error: fetchError } = await db.getUsers(true)
+        if (!fetchError && freshUsers) setUsers(freshUsers)
+      }
+      // Si el usuario actual cambia su propio rol, refrescar sesión
+      if (user && user.id === userId) {
+        await refreshSession()
       }
     } catch (err) {
-      console.error('Error:', err)
       alert('Error al actualizar el rol')
     }
   }
@@ -427,7 +454,7 @@ const AdminPanel = ({ user }) => {
     )
   }
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -436,7 +463,7 @@ const AdminPanel = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-24 overflow-y-auto p-3 sm:p-6 space-y-6 sm:space-y-8" style={{ overflowY: 'auto', minHeight: '100vh', WebkitOverflowScrolling: 'touch', paddingBottom: '120px' }}>
+    <div className="min-h-screen pt-16 pb-24 p-3 sm:p-6 space-y-6 sm:space-y-8" style={{ paddingBottom: '120px' }}>
       <div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-2xl mb-2">Panel de Administración</h1>
         <p className="text-sm sm:text-base md:text-lg text-white/90 drop-shadow-lg mt-2">Gestiona usuarios y el menú de opciones</p>
@@ -756,7 +783,7 @@ const AdminPanel = ({ user }) => {
             <div className="space-y-4">
               <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-4">
                 <p className="text-blue-800 font-semibold text-center text-sm leading-relaxed">
-                  Puedes agregar, editar o eliminar opciones del menú. Debe haber al menos un plato.
+                  Podés agregar, editar o eliminar opciones del menú. Debe haber al menos un plato.
                 </p>
               </div>
               
@@ -924,7 +951,7 @@ const AdminPanel = ({ user }) => {
             <div className="text-center py-12">
               <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-900 mb-2">No hay opciones personalizadas</h3>
-              <p className="text-gray-600 mb-6">Crea opciones adicionales para tus pedidos</p>
+              <p className="text-gray-600 mb-6">Creá opciones adicionales para tus pedidos</p>
             </div>
           )}
 
@@ -1064,20 +1091,20 @@ const AdminPanel = ({ user }) => {
                 <h3 className="text-xl font-bold text-yellow-900 mb-2">⚠️ Recordatorio Importante</h3>
                 <div className="text-yellow-800 space-y-2 leading-relaxed">
                   <p className="font-semibold">
-                    Recuerda limpiar regularmente los pedidos completados para ahorrar recursos en Supabase.
+                    Recordá limpiar regularmente los pedidos completados para ahorrar recursos en Supabase.
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-2">
                     <li>Los pedidos completados ocupan espacio en la base de datos</li>
                     <li>Se recomienda limpiar al final de cada día o semana</li>
                     <li>Esta acción es <strong>irreversible</strong> - los datos no se pueden recuperar</li>
-                    <li>Solo se eliminan pedidos con estado "Completado"</li>
+                    <li>Solo se eliminan pedidos con estado "Completado" o "Pendiente"</li>
                   </ul>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Panel de limpieza de pedidos completados */}
+          {/* Panel de limpieza de pedidos completados y pendientes antiguos */}
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
@@ -1129,6 +1156,30 @@ const AdminPanel = ({ user }) => {
             </div>
 
             {/* Información y controles */}
+            <div className="mb-6">
+              <button
+                onClick={handleDeleteOldPendingOrders}
+                disabled={deletingOldPending}
+                className={`w-full py-3 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3 mb-2
+                  ${deletingOldPending
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'}
+                `}
+              >
+                {deletingOldPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
+                    Eliminando pendientes antiguos...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-5 w-5" />
+                    Eliminar pedidos pendientes de días anteriores
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-yellow-700 text-center">Esta acción elimina todos los pedidos pendientes creados antes de hoy.</p>
+            </div>
             {completedOrdersCount > 0 ? (
               <div className="space-y-4">
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">

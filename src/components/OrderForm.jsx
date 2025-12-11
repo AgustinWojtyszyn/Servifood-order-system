@@ -22,7 +22,7 @@ const OrderForm = ({ user }) => {
   const [isPastDeadline, setIsPastDeadline] = useState(false)
   const navigate = useNavigate()
 
-  const locations = ['Los Berros', 'La Laja', 'Padre Bueno']
+  const locations = ['La Laja']
 
   useEffect(() => {
     checkOrderDeadline()
@@ -39,11 +39,12 @@ const OrderForm = ({ user }) => {
 
   const checkOrderDeadline = () => {
     const now = new Date()
-    const currentHour = now.getHours()
-    
-    // Pedidos permitidos entre las 6:00 y 22:00 del día anterior
-    // Fuera de ese horario, no se pueden hacer pedidos
-    if (currentHour < 6 || currentHour >= 22) {
+    // Convertir a horario Argentina GMT-3
+    const utcHour = now.getUTCHours()
+    // Argentina GMT-3
+    const argHour = (utcHour + 21) % 24
+    // Pedidos permitidos entre las 9:00 y 22:00 del día anterior
+    if (argHour < 9 || argHour >= 22) {
       setIsPastDeadline(true)
     } else {
       setIsPastDeadline(false)
@@ -74,6 +75,15 @@ const OrderForm = ({ user }) => {
     }
   }
 
+  const extractNumber = (name) => {
+    const match = name?.match(/(\d+)/)
+    return match ? parseInt(match[1], 10) : Infinity
+  }
+
+  const sortMenuItems = (items) => {
+    return [...items].sort((a, b) => extractNumber(a.name) - extractNumber(b.name))
+  }
+
   const fetchMenuItems = async () => {
     try {
       const { data, error } = await db.getMenuItems()
@@ -81,16 +91,16 @@ const OrderForm = ({ user }) => {
       if (error) {
         console.error('Error fetching menu:', error)
         // Set default menu items if none exist
-        setMenuItems([
+        setMenuItems(sortMenuItems([
           { id: 1, name: 'Plato Principal 1', description: 'Delicioso plato principal' },
           { id: 2, name: 'Plato Principal 2', description: 'Otro plato delicioso' },
           { id: 3, name: 'Plato Principal 3', description: 'Plato especial del día' },
           { id: 4, name: 'Plato Principal 4', description: 'Plato vegetariano' },
           { id: 5, name: 'Plato Principal 5', description: 'Plato de la casa' },
           { id: 6, name: 'Plato Principal 6', description: 'Plato recomendado' }
-        ])
+        ]))
       } else {
-        setMenuItems(data || [])
+        setMenuItems(sortMenuItems(data || []))
       }
     } catch (err) {
       console.error('Error:', err)
@@ -188,8 +198,10 @@ const OrderForm = ({ user }) => {
 
     // Verificar horario límite
     const now = new Date()
-    if (now.getHours() >= 22) {
-      setError('Los pedidos deben realizarse antes de las 22:00 horas')
+    const utcHour = now.getUTCHours()
+    const argHour = (utcHour + 21) % 24
+    if (argHour < 9 || argHour >= 22) {
+      setError('Los pedidos solo pueden realizarse entre las 9:00 y las 22:00 (horario Argentina, GMT-3) el día previo a la entrega.')
       setLoading(false)
       setIsPastDeadline(true)
       return
@@ -235,16 +247,21 @@ const OrderForm = ({ user }) => {
       
       // Preparar respuestas personalizadas (solo las activas con respuesta válida)
       const customResponsesArray = customOptions
-      .filter(opt => {
-        if (!opt.active) return false
-        const response = customResponses[opt.id]
-        // Verificar que la respuesta existe y no está vacía
-        if (!response) return false
-        if (Array.isArray(response) && response.length === 0) return false
-        if (typeof response === 'string' && response.trim() === '') return false
-        return true
-      })
-      
+        .filter(opt => {
+          if (!opt.active) return false
+          const response = customResponses[opt.id]
+          // Verificar que la respuesta existe y no está vacía
+          if (!response) return false
+          if (Array.isArray(response) && response.length === 0) return false
+          if (typeof response === 'string' && response.trim() === '') return false
+          return true
+        })
+        .map(opt => ({
+          id: opt.id,
+          title: opt.title,
+          response: customResponses[opt.id]
+        }))
+
       const orderData = {
         user_id: user.id,
         location: formData.location,
@@ -301,7 +318,7 @@ const OrderForm = ({ user }) => {
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
             <p className="text-base sm:text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
-            <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
+            <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al panel principal...</p>
           </div>
         </div>
       </div>
@@ -313,8 +330,13 @@ const OrderForm = ({ user }) => {
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
         <div className="text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
-        <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Selecciona tu menú y completa tus datos</p>
+        <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Seleccioná tu menú y completa tus datos</p>
         <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
+        <div className="mt-4 mx-auto max-w-2xl">
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded-lg shadow text-yellow-900 text-sm sm:text-base">
+            <strong>Importante:</strong> No realices <b>pedidos de prueba</b>. Todos los pedidos se contabilizan para el día siguiente y serán preparados. Si necesitas cancelar un pedido, hazlo desde la aplicación o comunícate por WhatsApp dentro de los <b>15 minutos</b> posteriores a haberlo realizado.
+          </div>
+        </div>
       </div>
 
       {!isPastDeadline && !hasOrderToday && (
@@ -323,7 +345,7 @@ const OrderForm = ({ user }) => {
             <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div>
               <p className="text-sm sm:text-base text-blue-800 font-medium">
-                Horario de pedidos: <strong>6:00 a 22:00 horas</strong> del día anterior a la entrega
+                Horario de pedidos: <strong>9:00 a 22:00 horas</strong> (horario Argentina, GMT-3) del día anterior a la entrega
               </p>
               <p className="text-xs sm:text-sm text-blue-700 mt-1">
                 Si necesitas realizar cambios, presiona el botón <strong>"¿Necesitas ayuda?"</strong>
@@ -342,7 +364,7 @@ const OrderForm = ({ user }) => {
             <div>
               <h3 className="text-lg font-bold text-red-900 mb-1">Horario de pedidos cerrado</h3>
               <p className="text-red-800 mb-3">
-                Los pedidos deben realizarse <strong>entre las 6:00 y las 22:00 horas del día anterior</strong> a la entrega.
+                Los pedidos deben realizarse <strong>entre las 9:00 y las 22:00 horas (horario Argentina, GMT-3) del día anterior</strong> a la entrega.
               </p>
               <p className="text-red-700 text-sm">
                 Si necesitas realizar cambios urgentes, presiona el botón <strong>"¿Necesitas ayuda?"</strong> en la parte inferior de la pantalla.
@@ -441,9 +463,9 @@ const OrderForm = ({ user }) => {
       <ChefHat className="h-6 w-6" />
     </div>
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Selecciona tu Menú</h2>
+      <h2 className="text-2xl font-bold text-gray-900">Seleccioná tu Menú</h2>
       <p className="text-sm text-gray-600 font-semibold mt-1">
-        Elige uno o más platos disponibles
+        Elegí uno o más platos disponibles
       </p>
     </div>
   </div>

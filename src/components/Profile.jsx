@@ -74,7 +74,7 @@ const Profile = ({ user }) => {
         <p className="text-base sm:text-lg md:text-xl text-white/90 drop-shadow-lg mt-2">Actualiza tu información personal</p>
       </div>
 
-      <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20 max-w-2xl">
+      <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20 max-w-4xl w-full mx-auto p-8 sm:p-10">
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {message.text && (
             <div className={`border-2 px-4 sm:px-5 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex items-center gap-2 sm:gap-3 ${
@@ -129,7 +129,7 @@ const Profile = ({ user }) => {
             </div>
             {formData.email !== user?.email && (
               <p className="mt-2 text-xs sm:text-sm text-amber-600 font-semibold">
-                Si cambias tu email, deberás verificar la nueva dirección.
+                Si cambiás tu email, deberás verificar la nueva dirección.
               </p>
             )}
           </div>

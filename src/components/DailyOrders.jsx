@@ -12,16 +12,21 @@ const exportViaEmail = async () => {
   emailLoadingRef.current = true
   try {
     // Adaptar los datos para el backend
-    const ordersForEmail = Array.isArray(sortedOrders) ? sortedOrders.map(order => ({
-      fecha: formatDate(order.created_at),
-      usuario: order.user_name || 'Sin nombre',
-      email: order.customer_email || order.user_email || 'Sin email',
-      telefono: order.customer_phone || 'Sin teléfono',
-      ubicacion: order.location || 'Sin ubicación',
-      platillos: (Array.isArray(order.items) ? order.items.map(item => `${normalizeDishName(item.name)} (x${item.quantity})`) : []).join('; ') || 'Sin items',
-      estado: getStatusText(order.status),
-      comentarios: order.comments || 'Sin comentarios'
-    })) : [];
+    // Solo exportar pedidos que NO estén completos ni entregados
+    const ordersForEmail = Array.isArray(sortedOrders)
+      ? sortedOrders
+          .filter(order => order.status !== 'completed' && order.status !== 'delivered')
+          .map(order => ({
+            fecha: formatDate(order.created_at),
+            usuario: order.user_name || 'Sin nombre',
+            email: order.customer_email || order.user_email || 'Sin email',
+            telefono: order.customer_phone || 'Sin teléfono',
+            ubicacion: order.location || 'Sin ubicación',
+            platillos: (Array.isArray(order.items) ? order.items.map(item => `${normalizeDishName(item.name)} (x${item.quantity})`) : []).join('; ') || 'Sin items',
+            estado: getStatusText(order.status),
+            comentarios: order.comments || 'Sin comentarios'
+          }))
+      : [];
     alert('Enviando pedidos por email...');
     const response = await fetch('/api/send-daily-orders-email', {
       method: 'POST',
@@ -501,151 +506,58 @@ const DailyOrders = ({ user }) => {
     }
 
     try {
-      // Crear resumen de texto para WhatsApp
-      const today = new Date().toLocaleDateString('es-ES', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-      
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const tomorrowDate = tomorrow.toLocaleDateString('es-ES', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long'
-      })
-
-      let message = `📋 *PEDIDOS SERVIFOOD*\n`
-      message += `📅 Fecha de pedido: ${today}\n`
-      message += `🚚 Fecha de entrega: ${tomorrowDate}\n`
-      message += `${'='.repeat(40)}\n\n`
-
-      // RESUMEN GENERAL
-      message += `📊 *RESUMEN GENERAL*\n`
-      message += `• Total de pedidos: ${stats.total}\n`
-      message += `• Completados: ${stats.completed} ✅\n`
-      message += `• Pendientes: ${stats.pending} ⏳\n`
-      message += `• Cancelados: ${stats.cancelled} ❌\n`
-      message += `• Total de items: ${stats.totalItems}\n\n`
-
-      // DESGLOSE POR UBICACIÓN
-      message += `📍 *DESGLOSE POR UBICACIÓN*\n`
-      Object.entries(stats.byLocation)
-        .sort(([, a], [, b]) => b - a)
-        .forEach(([location, count]) => {
-          // Calcular items por ubicación
-          const locationOrders = sortedOrders.filter(o => o.location === location)
-          const locationItems = locationOrders.reduce((sum, o) => sum + (o.total_items || 0), 0)
-          message += `\n*${location}*\n`
-          message += `  • Pedidos: ${count}\n`
-          message += `  • Menús: ${locationItems}\n`
-        })
-
-      // DETALLE DE PLATILLOS
-      message += `\n\n🍽️ *DETALLE DE PLATILLOS*\n`
-      const sortedDishes = Object.entries(stats.byDish)
-        .sort(([, a], [, b]) => b - a)
-      
-      let totalMenus = 0
-      sortedDishes.forEach(([dish, count]) => {
-        totalMenus += count
-        message += `• ${dish}: ${count} unidad${count > 1 ? 'es' : ''}\n`
-      })
-      message += `\n*Total menús del día: ${totalMenus}*\n`
-
-      // GUARNICIONES PERSONALIZADAS
-      const customSides = sortedOrders
-        .map(order => getCustomSideFromResponses(order?.custom_responses ?? []))
-        .filter(side => side !== null)
-      
-      if (customSides.length > 0) {
-        message += `\n🔸 *GUARNICIONES PERSONALIZADAS*\n`
-        const uniqueSides = [...new Set(customSides)]
-        uniqueSides.forEach(side => {
-          const count = customSides.filter(s => s === side).length
-          message += `• ${side}: ${count} pedido${count > 1 ? 's' : ''}\n`
-        })
-      }
-
-      // OPCIONES ADICIONALES
-      const allCustomResponses = sortedOrders
-        .flatMap(order => getOtherCustomResponses(order.custom_responses))
-        .filter(resp => resp.response)
-
-      if (allCustomResponses.length > 0) {
-        message += `\n⚙️ *OPCIONES ADICIONALES*\n`
-        
-        // Agrupar opciones por título
-        const optionsByTitle = {}
-        allCustomResponses.forEach(resp => {
-          if (!optionsByTitle[resp.title]) {
-            optionsByTitle[resp.title] = []
+      // Crear resumen filtrado por ubicación, menú y guarnición
+      let message = `📋 *PEDIDOS SERVIFOOD*\n`;
+      message += `${'='.repeat(40)}\n\n`;
+      // Agrupar por ubicación
+      const ubicaciones = {};
+      sortedOrders.forEach(order => {
+        const ubicacion = order.location || 'Sin ubicación';
+        if (!ubicaciones[ubicacion]) {
+          ubicaciones[ubicacion] = { menues: {}, guarniciones: {} };
+        }
+        // Menús
+        if (order.items && Array.isArray(order.items)) {
+          order.items.forEach(item => {
+            const nombre = normalizeDishName(item.name);
+            ubicaciones[ubicacion].menues[nombre] = (ubicaciones[ubicacion].menues[nombre] || 0) + (item.quantity || 1);
+          });
+        }
+        // Guarniciones
+        const guarnicion = getCustomSideFromResponses(order.custom_responses || []);
+        if (guarnicion) {
+          ubicaciones[ubicacion].guarniciones[guarnicion] = (ubicaciones[ubicacion].guarniciones[guarnicion] || 0) + 1;
+        }
+      });
+      // Formatear mensaje por ubicación
+      Object.entries(ubicaciones).forEach(([ubicacion, datos]) => {
+        message += `*${ubicacion}*\n`;
+        // Menús ordenados por número
+        const sortedMenus = Object.entries(datos.menues).sort((a, b) => {
+          const extractNumber = (name) => {
+            const match = name.match(/(\d+)/)
+            return match ? parseInt(match[1], 10) : Infinity
           }
-          const response = Array.isArray(resp.response) 
-            ? resp.response.join(', ') 
-            : resp.response
-          optionsByTitle[resp.title].push(response)
+          return extractNumber(a[0]) - extractNumber(b[0])
         })
-
-        Object.entries(optionsByTitle).forEach(([title, responses]) => {
-          message += `\n*${title}*\n`
-          
-          // Contar respuestas únicas
-          const responseCounts = {}
-          responses.forEach(resp => {
-            responseCounts[resp] = (responseCounts[resp] || 0) + 1
-          })
-          
-          Object.entries(responseCounts)
-            .sort(([, a], [, b]) => b - a)
-            .forEach(([resp, count]) => {
-              message += `  • ${resp}: ${count}\n`
-            })
-        })
-      }
-
-      // DETALLE POR UBICACIÓN Y PLATILLO
-      message += `\n\n📋 *DETALLE POR UBICACIÓN*\n`
-      Object.entries(stats.byLocation)
-        .sort(([, a], [, b]) => b - a)
-        .forEach(([location]) => {
-          const locationOrders = sortedOrders.filter(o => o.location === location)
-          
-          message += `\n*${location}:*\n`
-          
-          // Platillos en esta ubicación (con normalización)
-          const dishesInLocation = {}
-          locationOrders.forEach(order => {
-            if (order.items && Array.isArray(order.items)) {
-              order.items.forEach(item => {
-                if (item.name) {
-                  const normalizedName = normalizeDishName(item.name)
-                  dishesInLocation[normalizedName] = (dishesInLocation[normalizedName] || 0) + (item.quantity || 1)
-                }
-              })
-            }
-          })
-          
-          Object.entries(dishesInLocation)
-            .sort(([, a], [, b]) => b - a)
-            .forEach(([dish, count]) => {
-              message += `  • ${dish}: ${count}\n`
-            })
-        })
-
-      message += `\n${'='.repeat(40)}\n`
-      message += `\n✅ *Resumen listo para preparar*\n`
-      message += `_Para detalles individuales, consulta el panel de administración_`
-
+        sortedMenus.forEach(([menu, cantidad]) => {
+          message += `  • ${menu}: ${cantidad}\n`;
+        });
+        // Guarniciones
+        Object.entries(datos.guarniciones).forEach(([guarnicion, cantidad]) => {
+          message += `  • Guarnición: ${guarnicion} (${cantidad})\n`;
+        });
+        message += `\n`;
+      });
+      message += `${'='.repeat(40)}\n`;
+      message += `\n✅ *Resumen listo para enviar por WhatsApp*\n`;
       // Abrir WhatsApp con el mensaje
-      const encodedMessage = encodeURIComponent(message)
-      const whatsappUrl = `https://wa.me/?text=${encodedMessage}`
-      window.open(whatsappUrl, '_blank')
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
     } catch (error) {
-      console.error('Error al compartir:', error)
-      alert('Error al compartir por WhatsApp')
+      console.error('Error al compartir:', error);
+      alert('Error al compartir por WhatsApp');
     }
   }
 
@@ -688,6 +600,62 @@ const DailyOrders = ({ user }) => {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl">
         <div className="flex flex-col gap-4">
+                  {/* Botones de acción admin: completar todos hoy y limpiar previos */}
+                  {isAdmin && (
+                    <div className="flex flex-col sm:flex-row gap-3 mb-4 justify-center items-center">
+                      <button
+                        onClick={async () => {
+                          if (window.confirm('¿Marcar TODOS los pedidos del día como COMPLETOS?')) {
+                            const { error } = await db.completeAllTodayOrders()
+                            if (!error) {
+                              alert('Todos los pedidos del día marcados como completos.')
+                              handleRefresh()
+                            } else {
+                              alert('Error al marcar pedidos: ' + error.message)
+                            }
+                          }
+                        }}
+                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-white"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Completar todos HOY
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (window.confirm('¿Eliminar TODOS los pedidos pendientes del día actual previos a las 6 AM? Esta acción no se puede deshacer.')) {
+                            const { error } = await db.deleteTodayPendingOrdersBeforeOpening()
+                            if (!error) {
+                              alert('Pedidos pendientes previos a las 6 AM eliminados correctamente.')
+                              handleRefresh()
+                            } else {
+                              alert('Error al eliminar pedidos: ' + error.message)
+                            }
+                          }
+                        }}
+                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-orange-500 hover:bg-orange-600 text-white"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Limpiar pendientes previos
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (window.confirm('¿Eliminar TODOS los pedidos pendientes sin importar la fecha? Esta acción no se puede deshacer.')) {
+                            const { error } = await db.deleteAllPendingOrders()
+                            if (!error) {
+                              alert('Todos los pedidos pendientes eliminados correctamente.')
+                              handleRefresh()
+                            } else {
+                              alert('Error al eliminar pedidos: ' + error.message)
+                            }
+                          }
+                        }}
+                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-red-500 hover:bg-red-600 text-white"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Eliminar TODOS los pendientes
+                      </button>
+                    </div>
+                  )}
           {/* Título y fecha */}
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-3 mb-2">

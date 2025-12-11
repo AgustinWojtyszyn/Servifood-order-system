@@ -4,52 +4,61 @@
     <meta charset="UTF-8" />
 
     <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://connect.facebook.net https://jsdelivr.net https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://connect.facebook.net https://jsdelivr.net https://cdn.jsdelivr.net;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: https: blob:;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com;
+      frame-src 'none';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+    " />
 
     <link rel="icon" type="image/jpeg" href="/src/assets/servifood logo.jpg" />
-    
-    <!-- Viewport optimizado para móviles con safe-area y sin zoom/corte -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-    
-    <!-- Optimización para iOS -->
+
+    <!-- Viewport optimizado (sin cortes de pantalla) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <!-- iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ServiFood" />
     <link rel="apple-touch-icon" href="/src/assets/servifood logo.jpg" />
-    
-    <!-- Optimización para Android/Chrome -->
+
+    <!-- Android -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#1e3a8a" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#1e3a8a" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e3a8a" />
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="ServiFood Catering - Sistema de gestión de pedidos de comida para empresas. Pide tu menú del día fácil y rápido." />
-    <meta name="keywords" content="servifood, catering, pedidos comida, menú del día, gestión pedidos, comida empresas" />
+
+    <!-- SEO -->
+    <meta name="description" content="ServiFood Catering - Sistema de gestión de pedidos de comida para empresas." />
+    <meta name="keywords" content="servifood, catering, pedidos, comida, empresas, menú del día" />
     <meta name="author" content="ServiFood" />
-    <meta name="robots" content="index, follow" />
-    
-    <!-- Open Graph / Facebook -->
+    <meta name="robots" content="noindex, follow" />
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://food-order-app-3avy.onrender.com/" />
     <meta property="og:title" content="ServiFood Catering - Gestión de Pedidos" />
-    <meta property="og:description" content="Sistema de gestión de pedidos de comida para empresas. Pide tu menú del día fácil y rápido." />
+    <meta property="og:description" content="Sistema de gestión de pedidos para empresas." />
     <meta property="og:image" content="https://food-order-app-3avy.onrender.com/src/assets/servifood%20logo.jpg" />
-    
+
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://food-order-app-3avy.onrender.com/" />
     <meta property="twitter:title" content="ServiFood Catering - Gestión de Pedidos" />
-    <meta property="twitter:description" content="Sistema de gestión de pedidos de comida para empresas. Pide tu menú del día fácil y rápido." />
+    <meta property="twitter:description" content="Sistema de gestión de pedidos para empresas." />
     <meta property="twitter:image" content="https://food-order-app-3avy.onrender.com/src/assets/servifood%20logo.jpg" />
-    
-    <!-- Canonical URL -->
+
+    <!-- Canonical -->
     <link rel="canonical" href="https://food-order-app-3avy.onrender.com/" />
-    
-    <!-- PWA Manifest -->
+
+    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    
-    <!-- Preconnect para performance - Optimizado -->
+
+    <!-- Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://jsdelivr.net" />
@@ -57,49 +66,42 @@
 
     <!-- Preload recursos críticos -->
     <link rel="preload" href="/src/assets/servifood logo.jpg" as="image" type="image/jpeg" />
-    
-    <!-- Formato de detección de teléfonos -->
-    <meta name="format-detection" content="telephone=yes" />
-    <meta name="format-detection" content="address=no" />
-    
+
+    <!-- Evitar detección automática de teléfonos -->
+    <meta name="format-detection" content="telephone=no" />
+
     <title>ServiFood Catering - Gestión de Pedidos</title>
 
-    <!-- Estilos inline críticos para móviles -->
+    <!-- Estilos base mínimos (NO interfieren con Tailwind) -->
     <style>
-      /* Prevenir scroll horizontal en móviles */
-      html, body {
-        width: 100%;
+      html, body, #root {
         margin: 0;
         padding: 0;
-        height: auto;
+        width: 100%;
         min-height: 100%;
+        height: auto;
         overflow-x: hidden;
-        overflow-y: auto !important;
-        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 50%, #1e3a8a 100%);
+        overflow-y: auto;
+        background: #ffffff;
       }
-      
-      /* Mejorar rendimiento en móviles */
+
       * {
-        -webkit-tap-highlight-color: rgba(0,0,0,0);
-        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
       }
-      
-      /* Scroll suave */
+
       html {
         scroll-behavior: smooth;
       }
-      
-      /* Loading state optimizado para móviles */
-      #root {
-        min-height: 100%;
-        height: auto;
-        width: 100%;
-        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 50%, #1e3a8a 100%);
-      }
     </style>
   </head>
+
   <body>
     <div id="root"></div>
+    <!--
+      NOTA IMPORTANTE:
+      - Para desarrollo y build de Vite, el script debe apuntar a /src/main.jsx
+      - SOLO para deploy en producción, reemplaza esta línea por el bundle generado (ej: /assets/index-xxxx.js)
+    -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

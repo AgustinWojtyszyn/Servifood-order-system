@@ -76,37 +76,30 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
 
--- 4. ELIMINAR POLÍTICAS EXISTENTES (si las hay)
--- ============================================
 
+
+-- Limpieza de políticas redundantes en public.users
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.users;
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can insert their profile" ON public.users;
 DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
 DROP POLICY IF EXISTS "Admins can update user roles" ON public.users;
 DROP POLICY IF EXISTS "Admins can delete users" ON public.users;
-DROP POLICY IF EXISTS "Users can insert their profile" ON public.users;
 
+-- Limpieza de políticas en public.orders y public.menu_items (sin cambios en lógica)
 DROP POLICY IF EXISTS "Users can view their own orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can create their own orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can delete their own orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can update status of their own orders" ON public.orders;
 DROP POLICY IF EXISTS "Admins can view all orders" ON public.orders;
-
 DROP POLICY IF EXISTS "Everyone can view menu items" ON public.menu_items;
 DROP POLICY IF EXISTS "Only admins can modify menu items" ON public.menu_items;
 
--- 5. CREAR POLÍTICAS DE SEGURIDAD (RLS)
--- ============================================
 
--- Políticas para users
+
+-- Políticas mínimas y seguras para users
 CREATE POLICY "Users can view their own profile" ON public.users
   FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update their own profile" ON public.users
-  FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert their profile" ON public.users
-  FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Admins can view all users" ON public.users
   FOR SELECT USING (
@@ -116,6 +109,9 @@ CREATE POLICY "Admins can view all users" ON public.users
     )
   );
 
+CREATE POLICY "Users can update their own profile" ON public.users
+  FOR UPDATE USING (auth.uid() = id);
+
 CREATE POLICY "Admins can update user roles" ON public.users
   FOR UPDATE USING (
     EXISTS (
@@ -123,6 +119,9 @@ CREATE POLICY "Admins can update user roles" ON public.users
       WHERE id = auth.uid() AND role = 'admin'
     )
   );
+
+CREATE POLICY "Users can insert their profile" ON public.users
+  FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Admins can delete users" ON public.users
   FOR DELETE USING (

@@ -254,7 +254,7 @@ async function runLoadTest() {
   // Crear y lanzar usuarios de forma escalonada
   for (let i = 1; i <= CONFIG.numUsers; i++) {
     const email = `test.user${i}@servifood.test`;
-    const password = 'Test123!@#';
+    const password = process.env.TEST_USER_PASSWORD || 'Test123!@#';
     
     const virtualUser = new VirtualUser(i, email, password);
     users.push(virtualUser);

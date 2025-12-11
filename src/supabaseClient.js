@@ -1,3 +1,5 @@
+// Eliminar todos los pedidos pendientes de días anteriores
+// Se agrega como método a db más abajo
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'your-supabase-url'
@@ -114,22 +116,72 @@ export const auth = {
 
 // Funciones de base de datos
 export const db = {
+        // Eliminar todos los pedidos pendientes sin importar la fecha
+        deleteAllPendingOrders: async () => {
+          const { data, error } = await supabase
+            .from('orders')
+            .delete()
+            .eq('status', 'pending')
+          return { data, error }
+        },
+    // Marcar todos los pedidos pendientes de días anteriores como completados
+    completeAllOldPendingOrders: async () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const isoToday = today.toISOString()
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'completed' })
+        .eq('status', 'pending')
+        .lt('created_at', isoToday)
+      return { data, error }
+    },
+
+      // Eliminar pedidos pendientes del día actual previos a las 6 AM
+      deleteTodayPendingOrdersBeforeOpening: async () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // inicio del día actual
+        const opening = new Date();
+        opening.setHours(6, 0, 0, 0); // 6 AM hoy
+        // Solo pedidos pendientes creados hoy antes de las 6 AM
+        const isoToday = today.toISOString();
+        const isoOpening = opening.toISOString();
+        const { data, error } = await supabase
+          .from('orders')
+          .delete()
+          .eq('status', 'pending')
+          .gte('created_at', isoToday)
+          .lt('created_at', isoOpening)
+        return { data, error }
+      },
+
+    // Marcar todos los pedidos pendientes de HOY como completados
+    completeAllTodayOrders: async () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const isoToday = today.toISOString()
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'completed' })
+        .eq('status', 'pending')
+        .gte('created_at', isoToday)
+      return { data, error }
+    },
   // Usuarios
-  getUsers: async () => {
+  getUsers: async (force = false) => {
     // Usar cache para reducir consultas repetidas
     const cacheKey = 'users-list'
-    const cached = cache.get(cacheKey)
-    if (cached) return { data: cached, error: null }
-    
+    if (!force) {
+      const cached = cache.get(cacheKey)
+      if (cached) return { data: cached, error: null }
+    }
     const { data, error } = await supabase
       .from('users')
       .select('id, email, full_name, role, created_at') // Solo campos necesarios
       .order('created_at', { ascending: false })
-    
     if (!error && data) {
       cache.set(cacheKey, data, 60000) // Cache por 1 minuto
     }
-    
     return { data, error }
   },
 
@@ -139,7 +191,9 @@ export const db = {
       .from('users')
       .update({ role })
       .eq('id', userId)
-    return { data, error }
+      .select()
+    // data es array, tomar el primero si existe
+    return { data: Array.isArray(data) ? data[0] : data, error }
   },
 
   deleteUser: async (userId) => {

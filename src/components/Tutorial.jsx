@@ -22,22 +22,22 @@ const Tutorial = ({ isOpen, onClose }) => {
     },
     {
       title: 'Crear Nuevo Pedido',
-      content: 'Haz clic en "Nuevo Pedido" para crear un pedido. Selecciona los platos del menú, completa tus datos y elige la fecha de entrega. Recuerda: solo 1 menú principal y 1 ensalada por pedido.',
+      content: 'Hacé clic en "Nuevo Pedido" para crear un pedido. Seleccioná los platos del menú, completá tus datos y elegí la fecha de entrega. Recordá: solo 1 menú principal y 1 ensalada por pedido.',
       image: '📝'
     },
     {
       title: 'Gestionar Pedidos',
-      content: 'Puedes marcar pedidos como entregados haciendo clic en el botón verde de verificación. Los pedidos completados aparecerán en su propia sección.',
+      content: 'Podés marcar pedidos como entregados haciendo clic en el botón verde de verificación. Los pedidos completados aparecerán en su propia sección.',
       image: '⚙️'
     },
     {
       title: 'Panel de Administrador (Solo Admin)',
-      content: 'Si eres administrador, puedes gestionar usuarios, cambiar roles y editar el menú de platos disponibles. También puedes agregar o eliminar opciones del menú.',
+      content: 'Si sos administrador, podés gestionar usuarios, cambiar roles y editar el menú de platos disponibles. También podés agregar o eliminar opciones del menú.',
       image: '🔐'
     },
     {
       title: '¡Listo para comenzar!',
-      content: 'Ya conoces las funciones básicas. Puedes volver a ver este tutorial en cualquier momento desde el menú de ayuda.',
+      content: 'Ya conocés las funciones básicas. Podés volver a ver este tutorial en cualquier momento desde el menú de ayuda.',
       image: '🚀'
     }
   ]

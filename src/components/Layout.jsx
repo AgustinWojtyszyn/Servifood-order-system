@@ -57,44 +57,26 @@ const Layout = ({ children, user }) => {
   menuItems.push({ name: 'Mi Perfil', path: '/profile', icon: UserCircle })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+    <div className="flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-row items-center h-16 py-0 overflow-hidden w-full">
+          <div className="flex flex-row items-center h-32 py-4 overflow-hidden w-full justify-center relative">
             <img 
               src={servifoodLogo} 
               alt="Servifood Logo" 
-              className="max-h-14 sm:max-h-16 w-auto rounded object-cover ml-2"
-              style={{height: '48px', maxHeight: '100%', display: 'block'}}
+              className="max-h-40 sm:max-h-48 w-auto rounded object-cover"
+              style={{height: '120px', maxHeight: '160px', display: 'block'}}
             />
-            <span
-              className="text-xs sm:text-base font-bold text-white drop-shadow-lg truncate ml-2"
-              style={{
-                maxWidth: '60px', // aún más corto en mobile
-                display: 'inline-block',
-                textAlign: 'left',
-                fontSize: '11px',
-                lineHeight: '1.1',
-                verticalAlign: 'middle',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-            </span>
-            <div className="flex-grow"></div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden mr-1"
-              style={{marginLeft: 'auto'}}
+              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden mr-1 absolute left-2 top-1/2 transform -translate-y-1/2"
             >
               <Menu className="h-6 w-6" />
             </button>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors absolute right-2 top-1/2 transform -translate-y-1/2"
             >
               <LogOut className="h-5 w-5" />
             </button>
@@ -102,128 +84,120 @@ const Layout = ({ children, user }) => {
         </div>
       </header>
 
-      <div className="flex min-h-[calc(100vh-4rem)]">
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
-        <aside className={`${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500`}>
-          <div className="flex items-center justify-center h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
-            <span className="text-2xl font-extrabold text-white drop-shadow-lg">ServiFood</span>
+        {/* Overlay para mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <aside
+          className={`
+            fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500
+          `}
+          style={{ pointerEvents: sidebarOpen || window.innerWidth >= 768 ? 'auto' : 'none' }}
+        >
+          {/* Botón cerrar solo en mobile */}
+          <div className="flex items-center justify-between h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
+            <span className="text-4xl font-extrabold drop-shadow-lg font-montserrat">
+              <span style={{ color: '#2563eb', fontSize: '2.8rem', lineHeight: 1 }}>Servi</span><span style={{ color: '#fb923c', fontSize: '2.8rem', lineHeight: 1 }}>Food</span>
+            </span>
+            <button
+              className="md:hidden p-2 rounded hover:bg-primary-700/10 text-primary-100"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Cerrar menú"
+            >
+              <X className="h-7 w-7" />
+            </button>
           </div>
-
           <nav className="mt-8 px-4 bg-white min-h-full flex flex-col">
             <ul className="space-y-2 flex-1 bg-white">
               {menuItems.map((item) => {
                 const Icon = item.icon
-                
                 return (
                   <li key={item.path}>
                     <NavLink
                       to={item.path}
                       className={({ isActive }) => {
-                        // Clase base para todos
                         let classes = "flex items-center px-4 py-3 rounded-xl font-bold text-base transition-all duration-200 shadow-sm"
-                        
-                        // Si está activo - fondo azul sólido con texto blanco
                         if (isActive) {
                           classes += " bg-blue-600 text-white shadow-lg"
-                        }
-                        // Si es destacado pero no activo
-                        else if (item.highlighted) {
+                        } else if (item.highlighted) {
                           classes += " bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md animate-pulse-slow"
-                        }
-                        // Normal
-                        else {
+                        } else {
                           classes += " text-gray-800 hover:bg-blue-50"
                         }
-                        
                         return classes
                       }}
                       onClick={() => setSidebarOpen(false)}
                     >
                       <Icon className="h-6 w-6 mr-3 flex-shrink-0" />
                       <span className="flex-1">{item.name}</span>
-                      {/* Eliminado cartel NUEVO */}
                     </NavLink>
                   </li>
                 )
               })}
-            </ul>
-
-            {/* Logout Button */}
-            <div className="mt-auto mb-6 space-y-3">
+              {/* Botones de tutorial y cerrar sesión en la barra lateral */}
               {isAdmin && (
+                <li>
+                  <button
+                    onClick={() => {
+                      setAdminTutorialOpen(true)
+                      setSidebarOpen(false)
+                    }}
+                    className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-700 mt-4"
+                  >
+                    <Settings className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                    <span className="group-hover:text-white transition-colors">Tutorial Admin 👨‍💼</span>
+                  </button>
+                </li>
+              )}
+              <li>
                 <button
                   onClick={() => {
-                    setAdminTutorialOpen(true)
+                    setTutorialOpen(true)
                     setSidebarOpen(false)
                   }}
-                  className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-700"
+                  className="group flex items-center w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
                 >
-                  <Settings className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
-                  <span className="group-hover:text-white transition-colors">Tutorial Admin 👨‍💼</span>
+                  <HelpCircle className="h-6 w-6 mr-3 flex-shrink-0 text-white" />
+                  <span className="text-white">Ver Tutorial</span>
                 </button>
-              )}
-              
-              <button
-                onClick={() => {
-                  setTutorialOpen(true)
-                  setSidebarOpen(false)
-                }}
-                className="group flex items-center w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
-              >
-                <HelpCircle className="h-6 w-6 mr-3 flex-shrink-0 text-white" />
-                <span className="text-white">Ver Tutorial</span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  handleLogout()
-                  setSidebarOpen(false)
-                }}
-                className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
-              >
-                <LogOut className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
-                <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
-              </button>
-            </div>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    handleLogout()
+                    setSidebarOpen(false)
+                  }}
+                  className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
+                >
+                  <LogOut className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                  <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
+                </button>
+              </li>
+            </ul>
           </nav>
-
-          {/* Botón cerrar en móvil */}
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="absolute top-4 right-4 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 md:hidden"
-          >
-            <X className="h-6 w-6" />
-          </button>
         </aside>
 
-        {/* Overlay para móvil */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Main content */}
-        <main className="flex-1 md:ml-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 min-h-screen">
-          <div className="max-w-7xl mx-auto">
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 p-4 md:p-8 min-h-0">
             {children}
           </div>
         </main>
       </div>
-      
+
+      {/* Tutorial Modals */}
+      <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+      <AdminTutorial isOpen={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
+
       {/* Support Button */}
       <SupportButton />
-      
-      {/* Tutorial Modal */}
-      <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
-      
-      {/* Admin Tutorial Modal */}
-      {isAdmin && (
-        <AdminTutorial isOpen={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
-      )}
     </div>
   )
 }
