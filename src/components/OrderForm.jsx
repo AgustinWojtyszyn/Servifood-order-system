@@ -184,7 +184,11 @@ const OrderForm = ({ user }) => {
   }
 
   const getSelectedItemsList = () => {
-    return menuItems.filter(item => selectedItems[item.id] === true)
+    // Unificar filtro para menú principal
+    const selected = menuItems.filter(item => selectedItems[item.id] === true)
+    const principal = selected.filter(item => item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal')))
+    const others = selected.filter(item => !(item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))))
+    return [...principal, ...others]
   }
 
   const calculateTotal = () => {
@@ -471,7 +475,8 @@ const OrderForm = ({ user }) => {
   </div>
 
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    {menuItems.map((item) => (
+    {[...menuItems.filter(item => item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))),
+      ...menuItems.filter(item => !(item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))))].map((item) => (
       <div
         key={item.id}
         className="card bg-white border-2 border-gray-200 rounded-2xl p-5
