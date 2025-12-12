@@ -150,12 +150,15 @@ const MonthlyPanel = ({ user }) => {
       {error && <div className="mt-4 text-red-600">{error}</div>}
       {metrics && (
         <div className="mt-6">
+          <div className="mb-2 font-semibold">
+            Mostrando los pedidos del <span className="font-bold">{dateRange.start || '...'}</span> al <span className="font-bold">{dateRange.end || '...'}</span>
+          </div>
           <div className="mb-4 font-semibold">Total de pedidos: {metrics.totalPedidos}</div>
           {metrics.empresas.length === 0 ? (
             <div className="text-gray-600">No hay datos para el rango seleccionado.</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded shadow">
+              <table className="min-w-full bg-white rounded shadow text-black">
                 <thead>
                   <tr>
                     <th className="px-4 py-2">Empresa</th>
