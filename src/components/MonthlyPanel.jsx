@@ -55,9 +55,13 @@ const MonthlyPanel = ({ user }) => {
         .lte('delivery_date', dateRange.end)
       if (ordersError) throw ordersError
 
+      // Filtrar pedidos para excluir fechas futuras
+      const today = new Date().toISOString().slice(0, 10)
+      const filteredOrders = orders.filter(order => order.delivery_date <= today)
+
       // Agrupar por ubicación (location)
       const grouped = {}
-      for (const order of orders) {
+      for (const order of filteredOrders) {
         const empresa = order.location || 'Sin ubicación'
         if (!grouped[empresa]) grouped[empresa] = []
         grouped[empresa].push(order)
@@ -126,7 +130,7 @@ const MonthlyPanel = ({ user }) => {
       })
 
       setMetrics({
-        totalPedidos: orders.length,
+        totalPedidos: filteredOrders.length,
         empresas
       })
     } catch (err) {
@@ -147,41 +151,64 @@ const MonthlyPanel = ({ user }) => {
       {metrics && (
         <div className="mt-6">
           <div className="mb-4 font-semibold">Total de pedidos: {metrics.totalPedidos}</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {metrics.empresas.map(e => (
-              <div key={e.empresa} className="bg-white rounded shadow p-4">
-                <div className="font-bold text-lg mb-2">{e.empresa}</div>
-                <div>Pedidos: {e.cantidadPedidos}</div>
-                <div>Menús principales: {e.totalMenus}</div>
-                <div>Opciones: {e.totalOpciones}</div>
-                <div>Guarniciones: {e.totalGuarniciones}</div>
-                <div className="mt-2">
-                  <div className="font-semibold">Tipos de menú:</div>
-                  <ul className="list-disc ml-6">
-                    {Object.entries(e.tiposMenus).map(([tipo, cant]) => (
-                      <li key={tipo}>{tipo}: {cant}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="mt-2">
-                  <div className="font-semibold">Tipos de opciones:</div>
-                  <ul className="list-disc ml-6">
-                    {Object.entries(e.tiposOpciones).map(([tipo, cant]) => (
-                      <li key={tipo}>{tipo}: {cant}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="mt-2">
-                  <div className="font-semibold">Tipos de guarniciones:</div>
-                  <ul className="list-disc ml-6">
-                    {Object.entries(e.tiposGuarniciones).map(([tipo, cant]) => (
-                      <li key={tipo}>{tipo}: {cant}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
+          {metrics.empresas.length === 0 ? (
+            <div className="text-gray-600">No hay datos para el rango seleccionado.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded shadow">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2">Empresa</th>
+                    <th className="px-4 py-2">Pedidos</th>
+                    <th className="px-4 py-2">Menús</th>
+                    <th className="px-4 py-2">Opciones</th>
+                    <th className="px-4 py-2">Guarniciones</th>
+                    <th className="px-4 py-2">Tipos de menú</th>
+                    <th className="px-4 py-2">Tipos de opciones</th>
+                    <th className="px-4 py-2">Tipos de guarniciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.empresas.map(e => (
+                    <tr key={e.empresa} className="border-t">
+                      <td className="px-4 py-2 font-bold">{e.empresa}</td>
+                      <td className="px-4 py-2">{e.cantidadPedidos}</td>
+                      <td className="px-4 py-2">{e.totalMenus}</td>
+                      <td className="px-4 py-2">{e.totalOpciones}</td>
+                      <td className="px-4 py-2">{e.totalGuarniciones}</td>
+                      <td className="px-4 py-2">
+                        {Object.entries(e.tiposMenus).length === 0 ? '—' : (
+                          <ul>
+                            {Object.entries(e.tiposMenus).map(([tipo, cant]) => (
+                              <li key={tipo}>{tipo}: {cant}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                      <td className="px-4 py-2">
+                        {Object.entries(e.tiposOpciones).length === 0 ? '—' : (
+                          <ul>
+                            {Object.entries(e.tiposOpciones).map(([tipo, cant]) => (
+                              <li key={tipo}>{tipo}: {cant}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                      <td className="px-4 py-2">
+                        {Object.entries(e.tiposGuarniciones).length === 0 ? '—' : (
+                          <ul>
+                            {Object.entries(e.tiposGuarniciones).map(([tipo, cant]) => (
+                              <li key={tipo}>{tipo}: {cant}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
