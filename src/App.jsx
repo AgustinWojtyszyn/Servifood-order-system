@@ -22,6 +22,7 @@ const AdminChat = lazy(() => import('./components/AdminChat'))
 const OrderForm = lazy(() => import('./components/OrderForm'))
 const EditOrderForm = lazy(() => import('./components/EditOrderForm'))
 const Profile = lazy(() => import('./components/Profile'))
+const MonthlyPanel = lazy(() => import('./components/MonthlyPanel'))
 
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
@@ -81,6 +82,9 @@ function App() {
             } />
             <Route path="/admin-chat" element={
               user ? <Layout user={user}><AdminChat user={user} /></Layout> : <Navigate to="/login" />
+            } />
+            <Route path="/monthly-panel" element={
+              user ? <Layout user={user}><MonthlyPanel user={user} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>

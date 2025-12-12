@@ -49,6 +49,7 @@ const Layout = ({ children, user }) => {
       icon: Calendar,
       highlighted: true  // Marcar como destacado
     })
+    menuItems.push({ name: 'Panel Mensual', path: '/monthly-panel', icon: Calendar })
     menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
     menuItems.push({ name: 'Chat Admins', path: '/admin-chat', icon: MessageCircle })
   }
