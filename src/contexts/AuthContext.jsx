@@ -45,22 +45,22 @@ export const withAuth = (Component) => {
     }
 
     if (!isAuthenticated) {
-      // Redirigir a login o mostrar mensaje
+      // Intentar refrescar la sesión y recargar la página actual
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Acceso requerido
+              Sesión expirada o no detectada
             </h2>
             <p className="text-gray-600 mb-6">
-              Debes iniciar sesión para acceder a esta página.
+              Por favor, recarga la página para intentar restaurar tu sesión.
             </p>
-            <a
-              href="/login"
+            <button
               className="btn-primary"
+              onClick={() => window.location.reload()}
             >
-              Iniciar sesión
-            </a>
+              Recargar página
+            </button>
           </div>
         </div>
       )
@@ -89,21 +89,22 @@ export const withAdmin = (Component) => {
     }
 
     if (!isAuthenticated) {
+      // Intentar refrescar la sesión y recargar la página actual
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Acceso requerido
+              Sesión expirada o no detectada
             </h2>
             <p className="text-gray-600 mb-6">
-              Debes iniciar sesión para acceder a esta página.
+              Por favor, recarga la página para intentar restaurar tu sesión.
             </p>
-            <a
-              href="/login"
+            <button
               className="btn-primary"
+              onClick={() => window.location.reload()}
             >
-              Iniciar sesión
-            </a>
+              Recargar página
+            </button>
           </div>
         </div>
       )
