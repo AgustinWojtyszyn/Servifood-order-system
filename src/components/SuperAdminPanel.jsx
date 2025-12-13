@@ -2,9 +2,20 @@ import { useState, useEffect } from 'react'
 import { db } from '../supabaseClient'
 import { Shield, UserX, Trash2, AlertTriangle, Crown, Users, Database, CheckCircle, X } from 'lucide-react'
 
-const SuperAdminPanel = ({ user }) => {
+const InternalLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+      <p className="text-white text-base font-medium">Cargando...</p>
+    </div>
+  </div>
+)
+
+export default function SuperAdminPanel({ user, loading }) {
+  if (loading || !user) return <InternalLoader />
+
   const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [localLoading, setLocalLoading] = useState(true)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -394,5 +405,3 @@ const SuperAdminPanel = ({ user }) => {
     </div>
   )
 }
-
-export default SuperAdminPanel

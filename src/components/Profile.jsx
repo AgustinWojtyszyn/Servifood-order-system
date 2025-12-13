@@ -2,12 +2,22 @@ import { useState, useEffect } from 'react'
 import { auth } from '../supabaseClient'
 import { User, Mail, Save, CheckCircle, AlertCircle } from 'lucide-react'
 
-const Profile = ({ user }) => {
+const InternalLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+      <p className="text-white text-base font-medium">Cargando...</p>
+    </div>
+  </div>
+)
+
+const Profile = ({ user, loading }) => {
+  if (loading || !user) return <InternalLoader />
+  // ...existing code...
   const [formData, setFormData] = useState({
     fullName: '',
     email: ''
   })
-  const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
   useEffect(() => {

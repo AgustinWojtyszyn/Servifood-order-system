@@ -21,15 +21,29 @@ function DateRangePicker({ value, onChange }) {
   )
 }
 
-const MonthlyPanel = ({ user }) => {
+
+const InternalLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+      <p className="text-white text-base font-medium">Cargando...</p>
+    </div>
+  </div>
+)
+
+const MonthlyPanel = ({ user, loading }) => {
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
-  const [loading, setLoading] = useState(false)
+  const [metricsLoading, setMetricsLoading] = useState(false)
   const [metrics, setMetrics] = useState(null)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
+  // Loader global: si no hay user o loading global, mostrar loader
+  if (loading || !user) {
+    return <InternalLoader />
+  }
+
   useEffect(() => {
-    if (!user) return
     // Control de acceso: solo admin
     if (user.role !== 'admin' && user.user_metadata?.role !== 'admin') {
       navigate('/dashboard')
@@ -44,7 +58,7 @@ const MonthlyPanel = ({ user }) => {
   }, [dateRange])
 
   async function fetchMetrics() {
-    setLoading(true)
+    setMetricsLoading(true)
     setError(null)
     try {
       // Consulta principal: pedidos en rango
@@ -136,7 +150,7 @@ const MonthlyPanel = ({ user }) => {
     } catch (err) {
       setError('Error al obtener métricas')
     } finally {
-      setLoading(false)
+      setMetricsLoading(false)
     }
   }
 
@@ -146,7 +160,7 @@ const MonthlyPanel = ({ user }) => {
         <Calendar className="inline-block" /> Panel Mensual
       </h2>
       <DateRangePicker value={dateRange} onChange={setDateRange} />
-      {loading && <div className="mt-4">Cargando...</div>}
+      {metricsLoading && <div className="mt-4">Cargando métricas...</div>}
       {error && <div className="mt-4 text-red-600">{error}</div>}
       {metrics && (
         <div className="mt-6">

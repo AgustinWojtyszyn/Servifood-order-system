@@ -7,12 +7,27 @@ import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
 
-const Layout = ({ children, user }) => {
+
+const InternalLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+      <p className="text-white text-base font-medium">Cargando...</p>
+    </div>
+  </div>
+)
+
+const Layout = ({ children, user, loading }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [tutorialOpen, setTutorialOpen] = useState(false)
   const [adminTutorialOpen, setAdminTutorialOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const navigate = useNavigate()
+
+  // Loader global: si no hay user o loading global, mostrar loader
+  if (loading || !user) {
+    return <InternalLoader />
+  }
 
   useEffect(() => {
     checkUserRole()

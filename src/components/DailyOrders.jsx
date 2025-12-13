@@ -1,57 +1,14 @@
-// ...existing imports...
-// Nueva función para exportar por email usando el backend
-import { useRef } from 'react'
-const exportViaEmail = async () => {
-  if (emailLoadingRef.current) return
-  if (sortedOrders.length === 0) {
-    alert('No hay pedidos para exportar')
-    return
-  }
-  const toEmail = prompt('Ingresa el email de destino:')
-  if (!toEmail) return
-  emailLoadingRef.current = true
-  try {
-    // Adaptar los datos para el backend
-    // Solo exportar pedidos que NO estén completos ni entregados
-    const ordersForEmail = Array.isArray(sortedOrders)
-      ? sortedOrders
-          .filter(order => order.status !== 'completed' && order.status !== 'delivered')
-          .map(order => ({
-            fecha: formatDate(order.created_at),
-            usuario: order.user_name || 'Sin nombre',
-            email: order.customer_email || order.user_email || 'Sin email',
-            telefono: order.customer_phone || 'Sin teléfono',
-            ubicacion: order.location || 'Sin ubicación',
-            platillos: (Array.isArray(order.items) ? order.items.map(item => `${normalizeDishName(item.name)} (x${item.quantity})`) : []).join('; ') || 'Sin items',
-            estado: getStatusText(order.status),
-            comentarios: order.comments || 'Sin comentarios'
-          }))
-      : [];
-    alert('Enviando pedidos por email...');
-    const response = await fetch('/api/send-daily-orders-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        toEmail,
-        orders: ordersForEmail
-      })
-    })
-    const result = await response.json()
-    if (response.ok) {
-      alert('✓ Pedidos enviados por email correctamente')
-    } else {
-      console.error('Error backend:', result)
-      alert('Error al exportar por email: ' + (result.error || 'Error desconocido'))
-    }
-  } catch (error) {
-    console.error('Error al exportar por email:', error)
-    alert('Error al exportar por email. Por favor, revisa la configuración.')
-  }
-  emailLoadingRef.current = false
-}
-import { useState, useEffect } from 'react'
+const InternalLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+      <p className="text-white text-base font-medium">Cargando...</p>
+    </div>
+  </div>
+)
+
+// import { useRef } from 'react' // Ya está importado arriba
+import { useState, useEffect, useRef } from 'react'
 import { db } from '../supabaseClient'
 import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw } from 'lucide-react'
 import * as XLSX from 'xlsx'

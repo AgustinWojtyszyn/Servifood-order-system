@@ -50,7 +50,7 @@ function App() {
               user ? <Navigate to="/dashboard" /> : <LandingPage />
             } />
             <Route path="/dashboard" element={
-              user ? <Layout user={user}><Dashboard user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><Dashboard user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/login" element={
               user ? <Navigate to="/dashboard" /> : <Login />
@@ -63,28 +63,28 @@ function App() {
             } />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/order" element={
-              user ? <Layout user={user}><OrderForm user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/edit-order" element={
-              user ? <Layout user={user}><EditOrderForm user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/profile" element={
-              user ? <Layout user={user}><Profile user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><Profile user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/admin" element={
-              user ? <Layout user={user}><AdminPanel /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><AdminPanel loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/superadmin" element={
-              user ? <Layout user={user}><SuperAdminPanel user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><SuperAdminPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/daily-orders" element={
-              user ? <Layout user={user}><DailyOrders user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><DailyOrders user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/admin-chat" element={
-              user ? <Layout user={user}><AdminChat user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><AdminChat user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/monthly-panel" element={
-              user ? <Layout user={user}><MonthlyPanel user={user} /></Layout> : <Navigate to="/login" />
+              user ? <Layout user={user} loading={loading}><MonthlyPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>

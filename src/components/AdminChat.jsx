@@ -1,13 +1,25 @@
+
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import { Send, Trash2, Edit2, X, MessageCircle, Users } from 'lucide-react'
 
-const AdminChat = ({ user }) => {
+const InternalLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+      <p className="text-white text-base font-medium">Cargando...</p>
+    </div>
+  </div>
+)
+
+const AdminChat = ({ user, loading }) => {
+  if (loading || !user) return <InternalLoader />
+
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editingText, setEditingText] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [localLoading, setLocalLoading] = useState(false)
   const [admins, setAdmins] = useState({})
   const messagesEndRef = useRef(null)
 

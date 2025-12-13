@@ -3,7 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle } from 'lucide-react'
 
-const OrderForm = ({ user }) => {
+const InternalLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
+      <p className="text-white text-base font-medium">Cargando...</p>
+    </div>
+  </div>
+)
+
+const OrderForm = ({ user, loading }) => {
+  if (loading || !user) return <InternalLoader />
   const [menuItems, setMenuItems] = useState([])
   const [customOptions, setCustomOptions] = useState([])
   const [customResponses, setCustomResponses] = useState({})
@@ -15,7 +25,7 @@ const OrderForm = ({ user }) => {
     phone: '',
     comments: ''
   })
-  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [hasOrderToday, setHasOrderToday] = useState(false)
