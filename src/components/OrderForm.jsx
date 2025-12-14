@@ -207,7 +207,7 @@ const OrderForm = ({ user, loading }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    setSubmitting(true)
     setError('')
 
     // Verificar horario límite
@@ -216,7 +216,7 @@ const OrderForm = ({ user, loading }) => {
     const argHour = (utcHour + 21) % 24
     if (argHour < 9 || argHour >= 22) {
       setError('Los pedidos solo pueden realizarse entre las 9:00 y las 22:00 (horario Argentina, GMT-3) el día previo a la entrega.')
-      setLoading(false)
+      setSubmitting(false)
       setIsPastDeadline(true)
       return
     }
@@ -224,7 +224,7 @@ const OrderForm = ({ user, loading }) => {
     // Verificar si ya tiene un pedido pendiente
     if (hasOrderToday) {
       setError('Ya tienes un pedido pendiente. Espera a que se complete para crear uno nuevo.')
-      setLoading(false)
+      setSubmitting(false)
       return
     }
 
@@ -232,13 +232,13 @@ const OrderForm = ({ user, loading }) => {
 
     if (!formData.location) {
       setError('Por favor selecciona un lugar de trabajo')
-      setLoading(false)
+      setSubmitting(false)
       return
     }
 
     if (selectedItemsList.length === 0) {
       setError('Por favor selecciona al menos un plato del menú')
-      setLoading(false)
+      setSubmitting(false)
       return
     }
 
