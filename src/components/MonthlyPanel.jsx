@@ -116,8 +116,6 @@ const MonthlyPanel = ({ user, loading }) => {
         .gte('delivery_date', dateRange.start)
         .lte('delivery_date', dateRange.end)
       if (ordersError) throw ordersError
-      // Filtrar solo pedidos que sean completed o cancelled (no pending ni borrados)
-      orders = orders.filter(o => o.status === 'completed' || o.status === 'cancelled')
 
       // Agrupar por ubicación (location) usando todos los pedidos del rango
       const grouped = {}
