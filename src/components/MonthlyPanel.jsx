@@ -162,18 +162,36 @@ const MonthlyPanel = ({ user, loading }) => {
   // Exportar a Excel
   const handleExportExcel = () => {
     if (!metrics || !metrics.empresas) return
-    // Armar datos planos para Excel
+    // Armar datos planos para Excel, separando menús principales de opciones
     const rows = []
     metrics.empresas.forEach(e => {
+      // Menús principales (excluyendo los que son opciones)
+      const tiposMenusPrincipales = Object.entries(e.tiposMenus)
+        .filter(([nombre]) => !/^OPC(ION|IÓN)\s*\d+/i.test(nombre))
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+
+      // Opciones (solo los que son opciones)
+      const tiposSoloOpciones = Object.entries(e.tiposMenus)
+        .filter(([nombre]) => /^OPC(ION|IÓN)\s*\d+/i.test(nombre))
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+
+      // Opciones detalladas (de la estructura tiposOpciones, por si hay alguna diferencia)
+      const tiposOpcionesDetalladas = Object.entries(e.tiposOpciones)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+
       rows.push({
         Empresa: e.empresa,
         Pedidos: e.cantidadPedidos,
-        Menus: e.totalMenus,
-        Opciones: e.totalOpciones,
+        'Menús principales': e.totalMenus - e.totalOpciones, // solo menús principales
+        'Opciones (cantidad)': e.totalOpciones,
         Guarniciones: e.totalGuarniciones,
-        'Tipos de menú': Object.entries(e.tiposMenus).map(([k, v]) => `${k}: ${v}`).join('; '),
-        'Tipos de opciones': Object.entries(e.tiposOpciones).map(([k, v]) => `${k}: ${v}`).join('; '),
-        'Tipos de guarniciones': Object.entries(e.tiposGuarniciones).map(([k, v]) => `${k}: ${v}`).join('; ')
+        'Detalle menús principales': tiposMenusPrincipales || '—',
+        'Opciones': tiposSoloOpciones || '—',
+        'Detalle opciones': tiposOpcionesDetalladas || '—',
+        'Tipos de guarniciones': Object.entries(e.tiposGuarniciones).map(([k, v]) => `${k}: ${v}`).join('; ') || '—'
       })
     })
     const ws = XLSX.utils.json_to_sheet(rows)
