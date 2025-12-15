@@ -274,18 +274,6 @@ const MonthlyPanel = ({ user, loading }) => {
           </ul>
         </div>
       </div>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
-        <div className="flex flex-col gap-4">
-          <div className="text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-              <Calendar className="h-8 w-8 md:h-10 md:w-10" />
-              <h1 className="text-2xl md:text-4xl font-bold">Panel Mensual</h1>
-            </div>
-            <p className="text-blue-100 text-base md:text-lg">Resumen y métricas de pedidos mensuales</p>
-          </div>
-        </div>
-      </div>
 
       {/* Selector de fechas */}
       <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full mb-4">
