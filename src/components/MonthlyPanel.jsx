@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Download } from 'lucide-react'
+import { Calendar, Download, Package } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../supabaseClient'
 
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
 function DateRangePicker({ value, onChange }) {
   // value: { start: string, end: string }
-  const startDate = value.start ? new Date(value.start) : null
-  const endDate = value.end ? new Date(value.end) : null
+  // Corregir desfase de zona horaria: usar fechas UTC
+  const parseDate = (str) => str ? new Date(str + 'T00:00:00Z') : null
+  const startDate = parseDate(value.start)
+  const endDate = parseDate(value.end)
   return (
     <div className="flex flex-col gap-2 md:flex-row md:gap-6">
       <div className="flex flex-col">
@@ -29,7 +31,7 @@ function DateRangePicker({ value, onChange }) {
           dateFormat="yyyy-MM-dd"
           className="border rounded px-3 py-2 text-base"
           placeholderText="Desde"
-          maxDate={new Date()}
+          // Permitir cualquier fecha (pasada, presente o futura)
           isClearable
         />
       </div>
@@ -49,8 +51,8 @@ function DateRangePicker({ value, onChange }) {
           dateFormat="yyyy-MM-dd"
           className="border rounded px-3 py-2 text-base"
           placeholderText="Hasta"
-          minDate={startDate}
-          maxDate={new Date()}
+          minDate={null}
+          maxDate={null}
           isClearable
         />
       </div>
