@@ -9,28 +9,51 @@ import { supabase } from '../supabaseClient'
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
 function DateRangePicker({ value, onChange }) {
   // value: { start: string, end: string }
-  // Usar react-datepicker para rango
   const startDate = value.start ? new Date(value.start) : null
   const endDate = value.end ? new Date(value.end) : null
   return (
-    <div className="flex flex-col gap-2">
-      <label className="font-semibold mb-1">Selecciona el rango de fechas:</label>
-      <DatePicker
-        selectsRange
-        startDate={startDate}
-        endDate={endDate}
-        onChange={([start, end]) => {
-          onChange({
-            start: start ? start.toISOString().slice(0, 10) : '',
-            end: end ? end.toISOString().slice(0, 10) : ''
-          })
-        }}
-        dateFormat="yyyy-MM-dd"
-        className="border rounded px-3 py-2 text-base"
-        isClearable
-        placeholderText="dd/mm/aaaa"
-        maxDate={new Date()}
-      />
+    <div className="flex flex-col gap-2 md:flex-row md:gap-6">
+      <div className="flex flex-col">
+        <label className="font-semibold mb-1">Desde:</label>
+        <DatePicker
+          selected={startDate}
+          onChange={date => {
+            const iso = date ? date.toISOString().slice(0, 10) : ''
+            // Si la fecha de fin es menor, ajusta
+            if (endDate && date && date > endDate) {
+              onChange({ start: iso, end: iso })
+            } else {
+              onChange({ ...value, start: iso })
+            }
+          }}
+          dateFormat="yyyy-MM-dd"
+          className="border rounded px-3 py-2 text-base"
+          placeholderText="Desde"
+          maxDate={new Date()}
+          isClearable
+        />
+      </div>
+      <div className="flex flex-col">
+        <label className="font-semibold mb-1">Hasta:</label>
+        <DatePicker
+          selected={endDate}
+          onChange={date => {
+            const iso = date ? date.toISOString().slice(0, 10) : ''
+            // Si la fecha de inicio es mayor, ajusta
+            if (startDate && date && date < startDate) {
+              onChange({ start: iso, end: iso })
+            } else {
+              onChange({ ...value, end: iso })
+            }
+          }}
+          dateFormat="yyyy-MM-dd"
+          className="border rounded px-3 py-2 text-base"
+          placeholderText="Hasta"
+          minDate={startDate}
+          maxDate={new Date()}
+          isClearable
+        />
+      </div>
       {startDate && endDate && startDate > endDate && (
         <div className="text-red-600 text-xs mt-1">La fecha de inicio no puede ser mayor que la de fin.</div>
       )}
@@ -219,6 +242,18 @@ const MonthlyPanel = ({ user, loading }) => {
 
   return (
     <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
+      {/* Título arriba de los tips */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
+        <div className="flex flex-col gap-4">
+          <div className="text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+              <Calendar className="h-8 w-8 md:h-10 md:w-10" />
+              <h1 className="text-2xl md:text-4xl font-bold">Panel Mensual</h1>
+            </div>
+            <p className="text-blue-100 text-base md:text-lg">Resumen y métricas de pedidos mensuales</p>
+          </div>
+        </div>
+      </div>
       {/* Tips de uso */}
       <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-4 mb-4 shadow flex items-start gap-3">
         <span className="text-yellow-500 mt-1"><Calendar className="h-5 w-5" /></span>
