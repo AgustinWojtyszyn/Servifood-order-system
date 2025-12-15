@@ -261,17 +261,17 @@ const MonthlyPanel = ({ user, loading }) => {
           </div>
         </div>
       </div>
-      {/* Tips de uso */}
-      <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-4 mb-4 shadow flex items-start gap-3">
-        <span className="text-yellow-500 mt-1"><Calendar className="h-5 w-5" /></span>
+      {/* Modo de uso */}
+      <div className="bg-blue-50 border-l-4 border-blue-400 rounded-xl p-5 mb-6 shadow flex items-start gap-4">
+        <span className="text-blue-600 mt-1"><Calendar className="h-6 w-6" /></span>
         <div>
-          <div className="font-bold text-yellow-800 mb-1">Tips para usar el Panel Mensual</div>
-          <ul className="list-disc pl-5 text-yellow-900 text-sm space-y-1">
-            <li>Selecciona el rango de fechas para ver el resumen de pedidos por empresa.</li>
-            <li>Puedes exportar el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
-            <li>Los menús principales y las opciones aparecen separados y con cantidades claras.</li>
-            <li>Haz click en las filas para ver detalles adicionales (próximamente).</li>
-          </ul>
+          <div className="font-bold text-blue-900 mb-2 text-lg">Modo de uso del Panel Mensual</div>
+          <ol className="list-decimal pl-6 text-blue-900 text-base space-y-1">
+            <li>Selecciona el <b>rango de fechas</b> para ver el resumen de pedidos por empresa.</li>
+            <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
+            <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
+            <li>Próximamente: haz click en las filas para ver detalles adicionales.</li>
+          </ol>
         </div>
       </div>
 
