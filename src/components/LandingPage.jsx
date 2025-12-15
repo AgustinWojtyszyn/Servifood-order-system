@@ -41,6 +41,10 @@ export default function LandingPage() {
           alt="ServiFood Catering Logo"
           className="rounded-xl shadow-xl"
           style={{ width: "150px", height: "150px", objectFit: "contain" }}
+          onError={e => {
+            e.target.onerror = null;
+            e.target.src = 'https://via.placeholder.com/150?text=Logo+no+disponible';
+          }}
         />
 
         <h1 className="mt-4 text-4xl sm:text-5xl font-extrabold text-white text-center tracking-wide">
