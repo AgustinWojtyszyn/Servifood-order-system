@@ -118,9 +118,10 @@ export const auth = {
 export const db = {
         // Eliminar todos los pedidos pendientes sin importar la fecha
         deleteAllPendingOrders: async () => {
+          // En vez de borrar, marcar como 'cancelled'
           const { data, error } = await supabase
             .from('orders')
-            .delete()
+            .update({ status: 'cancelled' })
             .eq('status', 'pending')
           return { data, error }
         },
