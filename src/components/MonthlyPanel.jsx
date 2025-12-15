@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Download } from 'lucide-react'
 import * as XLSX from 'xlsx'
@@ -7,45 +9,29 @@ import { supabase } from '../supabaseClient'
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
 function DateRangePicker({ value, onChange }) {
   // value: { start: string, end: string }
-  // Validación de rango y control de errores
-  const { start, end } = value
-  const isInvalid = start && end && start > end
+  // Usar react-datepicker para rango
+  const startDate = value.start ? new Date(value.start) : null
+  const endDate = value.end ? new Date(value.end) : null
   return (
     <div className="flex flex-col gap-2">
-      <label>
-        Desde:
-        <input
-          type="date"
-          value={start}
-          onChange={e => {
-            const newStart = e.target.value
-            // Si la nueva fecha de inicio es mayor que la de fin, ajusta la de fin
-            if (end && newStart > end) {
-              onChange({ start: newStart, end: newStart })
-            } else {
-              onChange({ ...value, start: newStart })
-            }
-          }}
-        />
-      </label>
-      <label>
-        Hasta:
-        <input
-          type="date"
-          value={end}
-          min={start || ''}
-          onChange={e => {
-            const newEnd = e.target.value
-            // Si la nueva fecha de fin es menor que la de inicio, ajusta la de inicio
-            if (start && newEnd < start) {
-              onChange({ start: newEnd, end: newEnd })
-            } else {
-              onChange({ ...value, end: newEnd })
-            }
-          }}
-        />
-      </label>
-      {isInvalid && (
+      <label className="font-semibold mb-1">Selecciona el rango de fechas:</label>
+      <DatePicker
+        selectsRange
+        startDate={startDate}
+        endDate={endDate}
+        onChange={([start, end]) => {
+          onChange({
+            start: start ? start.toISOString().slice(0, 10) : '',
+            end: end ? end.toISOString().slice(0, 10) : ''
+          })
+        }}
+        dateFormat="yyyy-MM-dd"
+        className="border rounded px-3 py-2 text-base"
+        isClearable
+        placeholderText="dd/mm/aaaa"
+        maxDate={new Date()}
+      />
+      {startDate && endDate && startDate > endDate && (
         <div className="text-red-600 text-xs mt-1">La fecha de inicio no puede ser mayor que la de fin.</div>
       )}
     </div>
