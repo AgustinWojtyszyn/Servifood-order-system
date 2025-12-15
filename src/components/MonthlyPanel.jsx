@@ -9,8 +9,13 @@ import { supabase } from '../supabaseClient'
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
 function DateRangePicker({ value, onChange }) {
   // value: { start: string, end: string }
-  // Corregir desfase de zona horaria: usar fechas UTC
-  const parseDate = (str) => str ? new Date(str + 'T00:00:00Z') : null
+  // Usar fechas locales puras para evitar desfase
+  const parseDate = (str) => {
+    if (!str) return null
+    // str: yyyy-MM-dd
+    const [year, month, day] = str.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
   const startDate = parseDate(value.start)
   const endDate = parseDate(value.end)
   return (
