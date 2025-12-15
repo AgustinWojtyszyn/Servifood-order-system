@@ -6,18 +6,48 @@ import { supabase } from '../supabaseClient'
 
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
 function DateRangePicker({ value, onChange }) {
-  // value: { start: Date, end: Date }
-  // Implementación mínima, reemplazar si ya hay un calendario en el proyecto
+  // value: { start: string, end: string }
+  // Validación de rango y control de errores
+  const { start, end } = value
+  const isInvalid = start && end && start > end
   return (
     <div className="flex flex-col gap-2">
       <label>
         Desde:
-        <input type="date" value={value.start} onChange={e => onChange({ ...value, start: e.target.value })} />
+        <input
+          type="date"
+          value={start}
+          onChange={e => {
+            const newStart = e.target.value
+            // Si la nueva fecha de inicio es mayor que la de fin, ajusta la de fin
+            if (end && newStart > end) {
+              onChange({ start: newStart, end: newStart })
+            } else {
+              onChange({ ...value, start: newStart })
+            }
+          }}
+        />
       </label>
       <label>
         Hasta:
-        <input type="date" value={value.end} onChange={e => onChange({ ...value, end: e.target.value })} />
+        <input
+          type="date"
+          value={end}
+          min={start || ''}
+          onChange={e => {
+            const newEnd = e.target.value
+            // Si la nueva fecha de fin es menor que la de inicio, ajusta la de inicio
+            if (start && newEnd < start) {
+              onChange({ start: newEnd, end: newEnd })
+            } else {
+              onChange({ ...value, end: newEnd })
+            }
+          }}
+        />
       </label>
+      {isInvalid && (
+        <div className="text-red-600 text-xs mt-1">La fecha de inicio no puede ser mayor que la de fin.</div>
+      )}
     </div>
   )
 }
@@ -52,7 +82,8 @@ const MonthlyPanel = ({ user, loading }) => {
   }, [user, navigate])
 
   useEffect(() => {
-    if (dateRange.start && dateRange.end) {
+    // Solo buscar si el rango es válido
+    if (dateRange.start && dateRange.end && dateRange.start <= dateRange.end) {
       fetchMetrics()
     }
     // eslint-disable-next-line
