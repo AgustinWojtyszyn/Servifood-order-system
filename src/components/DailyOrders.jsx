@@ -597,20 +597,21 @@ const DailyOrders = ({ user }) => {
                       </button>
                       <button
                         onClick={async () => {
-                          if (window.confirm('¿Eliminar TODOS los pedidos pendientes sin importar la fecha? Esta acción no se puede deshacer.')) {
-                            const { error } = await db.deleteAllPendingOrders()
+                          if (window.confirm('¿Cancelar TODOS los pedidos pendientes sin importar la fecha? Esta acción no se puede deshacer.')) {
+                            const { data, error } = await db.deleteAllPendingOrders()
                             if (!error) {
-                              alert('Todos los pedidos pendientes eliminados correctamente.')
+                              const updated = Array.isArray(data) ? data.length : 0
+                              alert(`Todos los pedidos pendientes fueron cancelados correctamente. Total afectados: ${updated}.`)
                               handleRefresh()
                             } else {
-                              alert('Error al eliminar pedidos: ' + error.message)
+                              alert('Error al cancelar pedidos: ' + error.message)
                             }
                           }
                         }}
                         className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-red-500 hover:bg-red-600 text-white"
                       >
                         <XCircle className="h-4 w-4" />
-                        Eliminar TODOS los pendientes
+                        Cancelar TODOS los pendientes
                       </button>
                     </div>
                   )}

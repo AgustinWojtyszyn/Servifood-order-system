@@ -116,13 +116,13 @@ export const auth = {
 
 // Funciones de base de datos
 export const db = {
-        // Eliminar todos los pedidos pendientes sin importar la fecha
+        // "Eliminar" pendientes: se cancelan para conservarlos en el histórico (panel mensual)
         deleteAllPendingOrders: async () => {
-          // En vez de borrar, marcar como 'cancelled'
           const { data, error } = await supabase
             .from('orders')
-            .update({ status: 'cancelled' })
+            .update({ status: 'cancelled', updated_at: new Date().toISOString() })
             .eq('status', 'pending')
+            .select('id')
           return { data, error }
         },
     // Marcar todos los pedidos pendientes de días anteriores como completados
@@ -145,7 +145,7 @@ export const db = {
         const isoToday = today.toISOString()
         const { data, error } = await supabase
           .from('orders')
-          .update({ status: 'cancelled' })
+          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
           .eq('status', 'pending')
           .lt('created_at', isoToday)
           .select('id') // devuelve ids para confirmar que se actualizaron
