@@ -219,26 +219,40 @@ const MonthlyPanel = ({ user, loading }) => {
         .join('; ')
 
       // Opciones (solo los que son opciones)
-      const tiposSoloOpciones = Object.entries(e.tiposMenus)
+      const opciones = Object.entries(e.tiposMenus)
         .filter(([nombre]) => /^OPC(ION|IÓN)\s*\d+/i.test(nombre))
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
 
       // Guarniciones
       const tiposGuarniciones = Object.entries(e.tiposGuarniciones)
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
 
-      rows.push({
-        Empresa: e.empresa,
-        'Pedidos': e.cantidadPedidos,
-        'Menús principales': tiposMenusPrincipales || '—',
-        'Opciones': tiposSoloOpciones || '—',
-        'Guarniciones': tiposGuarniciones || '—',
-        'Total menús': e.totalMenus - e.totalOpciones,
-        'Total opciones': e.totalOpciones,
-        'Total guarniciones': e.totalGuarniciones
-      })
+      // Si hay varias opciones, crear una fila por cada una debajo de la empresa
+      if (opciones.length > 0) {
+        opciones.forEach(([opcion, cantidad], idx) => {
+          rows.push({
+            Empresa: idx === 0 ? e.empresa : '',
+            'Pedidos': idx === 0 ? e.cantidadPedidos : '',
+            'Menús principales': idx === 0 ? (tiposMenusPrincipales || '—') : '',
+            'Opciones': `${opcion}: ${cantidad}`,
+            'Guarniciones': idx === 0 ? (tiposGuarniciones || '—') : '',
+            'Total menús': idx === 0 ? (e.totalMenus - e.totalOpciones) : '',
+            'Total opciones': idx === 0 ? e.totalOpciones : '',
+            'Total guarniciones': idx === 0 ? e.totalGuarniciones : ''
+          })
+        })
+      } else {
+        rows.push({
+          Empresa: e.empresa,
+          'Pedidos': e.cantidadPedidos,
+          'Menús principales': tiposMenusPrincipales || '—',
+          'Opciones': '—',
+          'Guarniciones': tiposGuarniciones || '—',
+          'Total menús': e.totalMenus - e.totalOpciones,
+          'Total opciones': e.totalOpciones,
+          'Total guarniciones': e.totalGuarniciones
+        })
+      }
     })
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
