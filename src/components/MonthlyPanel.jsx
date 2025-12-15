@@ -215,44 +215,43 @@ const MonthlyPanel = ({ user, loading }) => {
       // Menús principales (excluyendo los que son opciones)
       const tiposMenusPrincipales = Object.entries(e.tiposMenus)
         .filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '')
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
+        .reduce((acc, [k, v]) => acc + v, 0)
 
       // Opciones (solo los que son opciones)
-      const opciones = Object.entries(e.tiposMenus)
-        .filter(([nombre]) => /^OPC(ION|IÓN)\s*\d+/i.test(nombre))
+      const opciones = {};
+      for (let i = 1; i <= 6; i++) {
+        const key = `OPCIÓN ${i}`;
+        // Buscar tanto 'OPCIÓN X' como 'OPCION X' (sin tilde)
+        const cantidad = Object.entries(e.tiposMenus).reduce((acc, [nombre, v]) => {
+          if (new RegExp(`^OPC(ION|IÓN)\\s*${i}$`, 'i').test(nombre)) {
+            return acc + v;
+          }
+          return acc;
+        }, 0);
+        opciones[key] = cantidad;
+      }
 
       // Guarniciones
       const tiposGuarniciones = Object.entries(e.tiposGuarniciones)
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
 
-      // Si hay varias opciones, crear una fila por cada una debajo de la empresa
-      if (opciones.length > 0) {
-        opciones.forEach(([opcion, cantidad], idx) => {
-          rows.push({
-            Empresa: idx === 0 ? e.empresa : '',
-            'Pedidos': idx === 0 ? e.cantidadPedidos : '',
-            'Menús principales': idx === 0 ? (tiposMenusPrincipales || '—') : '',
-            'Opciones': `${opcion}: ${cantidad}`,
-            'Guarniciones': idx === 0 ? (tiposGuarniciones || '—') : '',
-            'Total menús': idx === 0 ? (e.totalMenus - e.totalOpciones) : '',
-            'Total opciones': idx === 0 ? e.totalOpciones : '',
-            'Total guarniciones': idx === 0 ? e.totalGuarniciones : ''
-          })
-        })
-      } else {
-        rows.push({
-          Empresa: e.empresa,
-          'Pedidos': e.cantidadPedidos,
-          'Menús principales': tiposMenusPrincipales || '—',
-          'Opciones': '—',
-          'Guarniciones': tiposGuarniciones || '—',
-          'Total menús': e.totalMenus - e.totalOpciones,
-          'Total opciones': e.totalOpciones,
-          'Total guarniciones': e.totalGuarniciones
-        })
-      }
+      // Exportar una sola fila por empresa, cada opción en su columna
+      rows.push({
+        Empresa: e.empresa,
+        'Pedidos': e.cantidadPedidos,
+        'Menús principales': tiposMenusPrincipales || 0,
+        'OPCIÓN 1': opciones['OPCIÓN 1'] || 0,
+        'OPCIÓN 2': opciones['OPCIÓN 2'] || 0,
+        'OPCIÓN 3': opciones['OPCIÓN 3'] || 0,
+        'OPCIÓN 4': opciones['OPCIÓN 4'] || 0,
+        'OPCIÓN 5': opciones['OPCIÓN 5'] || 0,
+        'OPCIÓN 6': opciones['OPCIÓN 6'] || 0,
+        'Guarniciones': tiposGuarniciones || '—',
+        'Total menús': e.totalMenus - e.totalOpciones,
+        'Total opciones': e.totalOpciones,
+        'Total guarniciones': e.totalGuarniciones
+      })
     })
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
