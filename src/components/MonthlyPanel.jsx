@@ -162,12 +162,12 @@ const MonthlyPanel = ({ user, loading }) => {
   // Exportar a Excel
   const handleExportExcel = () => {
     if (!metrics || !metrics.empresas) return
-    // Armar datos planos para Excel, separando menús principales de opciones
+    // Exportación robusta: separar menús principales y opciones, y mostrar cantidades claras
     const rows = []
     metrics.empresas.forEach(e => {
       // Menús principales (excluyendo los que son opciones)
       const tiposMenusPrincipales = Object.entries(e.tiposMenus)
-        .filter(([nombre]) => !/^OPC(ION|IÓN)\s*\d+/i.test(nombre))
+        .filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '')
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
 
@@ -177,21 +177,20 @@ const MonthlyPanel = ({ user, loading }) => {
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
 
-      // Opciones detalladas (de la estructura tiposOpciones, por si hay alguna diferencia)
-      const tiposOpcionesDetalladas = Object.entries(e.tiposOpciones)
+      // Guarniciones
+      const tiposGuarniciones = Object.entries(e.tiposGuarniciones)
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
 
       rows.push({
         Empresa: e.empresa,
-        Pedidos: e.cantidadPedidos,
-        'Menús principales': e.totalMenus - e.totalOpciones, // solo menús principales
-        'Opciones (cantidad)': e.totalOpciones,
-        Guarniciones: e.totalGuarniciones,
-        'Detalle menús principales': tiposMenusPrincipales || '—',
+        'Pedidos': e.cantidadPedidos,
+        'Menús principales': tiposMenusPrincipales || '—',
         'Opciones': tiposSoloOpciones || '—',
-        'Detalle opciones': tiposOpcionesDetalladas || '—',
-        'Tipos de guarniciones': Object.entries(e.tiposGuarniciones).map(([k, v]) => `${k}: ${v}`).join('; ') || '—'
+        'Guarniciones': tiposGuarniciones || '—',
+        'Total menús': e.totalMenus - e.totalOpciones,
+        'Total opciones': e.totalOpciones,
+        'Total guarniciones': e.totalGuarniciones
       })
     })
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -203,6 +202,19 @@ const MonthlyPanel = ({ user, loading }) => {
 
   return (
     <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
+      {/* Tips de uso */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-4 mb-4 shadow flex items-start gap-3">
+        <span className="text-yellow-500 mt-1"><Calendar className="h-5 w-5" /></span>
+        <div>
+          <div className="font-bold text-yellow-800 mb-1">Tips para usar el Panel Mensual</div>
+          <ul className="list-disc pl-5 text-yellow-900 text-sm space-y-1">
+            <li>Selecciona el rango de fechas para ver el resumen de pedidos por empresa.</li>
+            <li>Puedes exportar el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
+            <li>Los menús principales y las opciones aparecen separados y con cantidades claras.</li>
+            <li>Haz click en las filas para ver detalles adicionales (próximamente).</li>
+          </ul>
+        </div>
+      </div>
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
         <div className="flex flex-col gap-4">
@@ -238,6 +250,7 @@ const MonthlyPanel = ({ user, loading }) => {
       {error && <div className="mt-4 text-center text-red-600 font-bold">{error}</div>}
       {metrics && (
         <div className="space-y-6">
+          {/* Tarjetas de métricas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full">
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
               <div className="text-center">
@@ -246,7 +259,27 @@ const MonthlyPanel = ({ user, loading }) => {
                 <p className="text-2xl md:text-3xl font-bold text-blue-600">{metrics.totalPedidos}</p>
               </div>
             </div>
-            {/* Puedes agregar más tarjetas de métricas aquí si lo deseas */}
+            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-green-200 w-full">
+              <div className="text-center">
+                <Package className="h-6 w-6 md:h-8 md:w-8 text-green-600 mx-auto mb-2" />
+                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Menús</p>
+                <p className="text-2xl md:text-3xl font-bold text-green-600">{metrics.empresas.reduce((acc, e) => acc + (e.totalMenus - e.totalOpciones), 0)}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-yellow-200 w-full">
+              <div className="text-center">
+                <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-yellow-600 mx-auto mb-2" />
+                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Opciones</p>
+                <p className="text-2xl md:text-3xl font-bold text-yellow-600">{metrics.empresas.reduce((acc, e) => acc + e.totalOpciones, 0)}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-purple-200 w-full">
+              <div className="text-center">
+                <User className="h-6 w-6 md:h-8 md:w-8 text-purple-600 mx-auto mb-2" />
+                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Guarniciones</p>
+                <p className="text-2xl md:text-3xl font-bold text-purple-600">{metrics.empresas.reduce((acc, e) => acc + e.totalGuarniciones, 0)}</p>
+              </div>
+            </div>
           </div>
           <div className="mb-2 font-semibold text-center">
             Mostrando los pedidos del <span className="font-bold">{dateRange.start || '...'}</span> al <span className="font-bold">{dateRange.end || '...'}</span>
@@ -255,54 +288,30 @@ const MonthlyPanel = ({ user, loading }) => {
             <div className="text-gray-600 text-center">No hay datos para el rango seleccionado.</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-gray-200">
+              <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
                 <thead className="bg-blue-50">
                   <tr>
                     <th className="px-4 py-2">Empresa</th>
                     <th className="px-4 py-2">Pedidos</th>
-                    <th className="px-4 py-2">Menús</th>
+                    <th className="px-4 py-2">Menús principales</th>
                     <th className="px-4 py-2">Opciones</th>
                     <th className="px-4 py-2">Guarniciones</th>
-                    <th className="px-4 py-2">Tipos de menú</th>
-                    <th className="px-4 py-2">Tipos de opciones</th>
-                    <th className="px-4 py-2">Tipos de guarniciones</th>
+                    <th className="px-4 py-2">Total menús</th>
+                    <th className="px-4 py-2">Total opciones</th>
+                    <th className="px-4 py-2">Total guarniciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {metrics.empresas.map(e => (
-                    <tr key={e.empresa} className="border-t">
+                    <tr key={e.empresa} className="border-t hover:bg-blue-50 transition-all">
                       <td className="px-4 py-2 font-bold">{e.empresa}</td>
                       <td className="px-4 py-2">{e.cantidadPedidos}</td>
-                      <td className="px-4 py-2">{e.totalMenus}</td>
-                      <td className="px-4 py-2">{e.totalOpciones}</td>
-                      <td className="px-4 py-2">{e.totalGuarniciones}</td>
-                      <td className="px-4 py-2">
-                        {Object.entries(e.tiposMenus).length === 0 ? '—' : (
-                          <ul>
-                            {Object.entries(e.tiposMenus).map(([tipo, cant]) => (
-                              <li key={tipo}>{tipo}: {cant}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </td>
-                      <td className="px-4 py-2">
-                        {Object.entries(e.tiposOpciones).length === 0 ? '—' : (
-                          <ul>
-                            {Object.entries(e.tiposOpciones).map(([tipo, cant]) => (
-                              <li key={tipo}>{tipo}: {cant}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </td>
-                      <td className="px-4 py-2">
-                        {Object.entries(e.tiposGuarniciones).length === 0 ? '—' : (
-                          <ul>
-                            {Object.entries(e.tiposGuarniciones).map(([tipo, cant]) => (
-                              <li key={tipo}>{tipo}: {cant}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </td>
+                      <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '').map(([k, v]) => (<span key={k} className="inline-block bg-blue-100 text-blue-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                      <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => /^OPC(ION|IÓN)\s*\d+/i.test(nombre)).map(([k, v]) => (<span key={k} className="inline-block bg-yellow-100 text-yellow-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                      <td className="px-4 py-2">{Object.entries(e.tiposGuarniciones).map(([k, v]) => (<span key={k} className="inline-block bg-purple-100 text-purple-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                      <td className="px-4 py-2 text-center">{e.totalMenus - e.totalOpciones}</td>
+                      <td className="px-4 py-2 text-center">{e.totalOpciones}</td>
+                      <td className="px-4 py-2 text-center">{e.totalGuarniciones}</td>
                     </tr>
                   ))}
                 </tbody>
