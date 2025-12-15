@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar } from 'lucide-react'
+import { Calendar, Download } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import { supabase } from '../supabaseClient'
 
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
@@ -158,6 +159,30 @@ const MonthlyPanel = ({ user, loading }) => {
     }
   }
 
+  // Exportar a Excel
+  const handleExportExcel = () => {
+    if (!metrics || !metrics.empresas) return
+    // Armar datos planos para Excel
+    const rows = []
+    metrics.empresas.forEach(e => {
+      rows.push({
+        Empresa: e.empresa,
+        Pedidos: e.cantidadPedidos,
+        Menus: e.totalMenus,
+        Opciones: e.totalOpciones,
+        Guarniciones: e.totalGuarniciones,
+        'Tipos de menú': Object.entries(e.tiposMenus).map(([k, v]) => `${k}: ${v}`).join('; '),
+        'Tipos de opciones': Object.entries(e.tiposOpciones).map(([k, v]) => `${k}: ${v}`).join('; '),
+        'Tipos de guarniciones': Object.entries(e.tiposGuarniciones).map(([k, v]) => `${k}: ${v}`).join('; ')
+      })
+    })
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Resumen')
+    const fileName = `panel-mensual-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
+    XLSX.writeFile(wb, fileName)
+  }
+
   return (
     <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
       {/* Header */}
@@ -178,6 +203,18 @@ const MonthlyPanel = ({ user, loading }) => {
         <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
+      {/* Exportar a Excel */}
+      {metrics && (
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
+          >
+            <Download className="h-5 w-5" />
+            Exportar Excel
+          </button>
+        </div>
+      )}
       {/* Métricas y tabla */}
       {metricsLoading && <div className="mt-4 text-center text-blue-700 font-bold">Cargando métricas...</div>}
       {error && <div className="mt-4 text-center text-red-600 font-bold">{error}</div>}
