@@ -69,13 +69,9 @@ const MonthlyPanel = ({ user, loading }) => {
         .lte('delivery_date', dateRange.end)
       if (ordersError) throw ordersError
 
-      // Filtrar pedidos para excluir fechas futuras
-      const today = new Date().toISOString().slice(0, 10)
-      const filteredOrders = orders.filter(order => order.delivery_date <= today)
-
-      // Agrupar por ubicación (location)
+      // Agrupar por ubicación (location) usando todos los pedidos del rango
       const grouped = {}
-      for (const order of filteredOrders) {
+      for (const order of orders) {
         const empresa = order.location || 'Sin ubicación'
         if (!grouped[empresa]) grouped[empresa] = []
         grouped[empresa].push(order)
@@ -152,7 +148,7 @@ const MonthlyPanel = ({ user, loading }) => {
       })
 
       setMetrics({
-        totalPedidos: filteredOrders.length,
+        totalPedidos: orders.length,
         empresas
       })
     } catch (err) {
