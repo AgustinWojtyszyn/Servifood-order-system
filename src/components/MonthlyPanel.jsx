@@ -155,25 +155,49 @@ const MonthlyPanel = ({ user, loading }) => {
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-        <Calendar className="inline-block" /> Panel Mensual
-      </h2>
-      <DateRangePicker value={dateRange} onChange={setDateRange} />
-      {metricsLoading && <div className="mt-4">Cargando métricas...</div>}
-      {error && <div className="mt-4 text-red-600">{error}</div>}
+    <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
+        <div className="flex flex-col gap-4">
+          <div className="text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+              <Calendar className="h-8 w-8 md:h-10 md:w-10" />
+              <h1 className="text-2xl md:text-4xl font-bold">Panel Mensual</h1>
+            </div>
+            <p className="text-blue-100 text-base md:text-lg">Resumen y métricas de pedidos mensuales</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Selector de fechas */}
+      <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full mb-4">
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
+      </div>
+
+      {/* Métricas y tabla */}
+      {metricsLoading && <div className="mt-4 text-center text-blue-700 font-bold">Cargando métricas...</div>}
+      {error && <div className="mt-4 text-center text-red-600 font-bold">{error}</div>}
       {metrics && (
-        <div className="mt-6">
-          <div className="mb-2 font-semibold">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full">
+            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
+              <div className="text-center">
+                <Calendar className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mx-auto mb-2" />
+                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Pedidos</p>
+                <p className="text-2xl md:text-3xl font-bold text-blue-600">{metrics.totalPedidos}</p>
+              </div>
+            </div>
+            {/* Puedes agregar más tarjetas de métricas aquí si lo deseas */}
+          </div>
+          <div className="mb-2 font-semibold text-center">
             Mostrando los pedidos del <span className="font-bold">{dateRange.start || '...'}</span> al <span className="font-bold">{dateRange.end || '...'}</span>
           </div>
-          <div className="mb-4 font-semibold">Total de pedidos: {metrics.totalPedidos}</div>
           {metrics.empresas.length === 0 ? (
-            <div className="text-gray-600">No hay datos para el rango seleccionado.</div>
+            <div className="text-gray-600 text-center">No hay datos para el rango seleccionado.</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded shadow text-black">
-                <thead>
+              <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-gray-200">
+                <thead className="bg-blue-50">
                   <tr>
                     <th className="px-4 py-2">Empresa</th>
                     <th className="px-4 py-2">Pedidos</th>
