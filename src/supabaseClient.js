@@ -137,17 +137,17 @@ export const db = {
       return { data, error }
     },
 
-      // Eliminar pedidos pendientes de días anteriores (antes de las 00:00 de hoy)
-      deletePreviousDaysPendingOrders: async () => {
+      // Marcar pedidos pendientes de días anteriores como cancelados (no borrar)
+      cancelPreviousDaysPendingOrders: async () => {
         const today = new Date()
         today.setHours(0, 0, 0, 0)
         const isoToday = today.toISOString()
         const { data, error } = await supabase
           .from('orders')
-          .delete()
+          .update({ status: 'cancelled' })
           .eq('status', 'pending')
           .lt('created_at', isoToday)
-          .select('id') // devuelve ids para confirmar que se eliminaron
+          .select('id') // devuelve ids para confirmar que se actualizaron
         return { data, error }
       },
 

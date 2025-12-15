@@ -579,14 +579,14 @@ const DailyOrders = ({ user }) => {
                       </button>
                       <button
                         onClick={async () => {
-                          if (window.confirm('¿Eliminar TODOS los pedidos pendientes de días anteriores? Esta acción no se puede deshacer.')) {
-                            const { data, error } = await db.deletePreviousDaysPendingOrders()
+                          if (window.confirm('¿Marcar TODOS los pedidos pendientes de días anteriores como cancelados? Esta acción no se puede deshacer.')) {
+                            const { data, error } = await db.cancelPreviousDaysPendingOrders()
                             if (!error) {
-                              const removed = Array.isArray(data) ? data.length : 0
-                              alert(`Pedidos pendientes de días previos eliminados correctamente. Total eliminados: ${removed}.`)
+                              const updated = Array.isArray(data) ? data.length : 0
+                              alert(`Pedidos pendientes de días previos marcados como cancelados correctamente. Total actualizados: ${updated}.`)
                               handleRefresh()
                             } else {
-                              alert('Error al eliminar pedidos: ' + error.message)
+                              alert('Error al cancelar pedidos: ' + error.message)
                             }
                           }
                         }}

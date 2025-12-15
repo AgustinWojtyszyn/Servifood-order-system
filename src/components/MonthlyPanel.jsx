@@ -94,9 +94,13 @@ const MonthlyPanel = ({ user, loading }) => {
         pedidos.forEach(p => {
           // Procesar items (menús principales y opciones)
           let items = []
-          try {
-            items = JSON.parse(p.items)
-          } catch {}
+          if (Array.isArray(p.items)) {
+            items = p.items
+          } else if (typeof p.items === 'string') {
+            try {
+              items = JSON.parse(p.items)
+            } catch {}
+          }
           items.forEach(item => {
             totalMenus += item.quantity || 1
             // Contar por nombre de menú
@@ -111,9 +115,13 @@ const MonthlyPanel = ({ user, loading }) => {
 
           // Procesar guarniciones desde custom_responses
           let customResponses = []
-          try {
-            customResponses = JSON.parse(p.custom_responses)
-          } catch {}
+          if (Array.isArray(p.custom_responses)) {
+            customResponses = p.custom_responses
+          } else if (typeof p.custom_responses === 'string') {
+            try {
+              customResponses = JSON.parse(p.custom_responses)
+            } catch {}
+          }
           customResponses.forEach(resp => {
             // Si hay respuesta de guarnición
             if (resp.response) {
