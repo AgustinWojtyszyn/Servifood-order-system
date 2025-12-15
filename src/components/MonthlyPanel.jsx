@@ -281,6 +281,7 @@ const MonthlyPanel = ({ user, loading }) => {
           <div className="font-bold text-blue-900 mb-2 text-lg">Modo de uso del Panel Mensual</div>
           <ol className="list-decimal pl-6 text-blue-900 text-base space-y-1">
             <li>Selecciona el <b>rango de fechas</b> para ver el resumen de pedidos por empresa.</li>
+            <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
             <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
             <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
             <li>Próximamente: haz click en las filas para ver detalles adicionales.</li>
