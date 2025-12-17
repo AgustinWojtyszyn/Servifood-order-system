@@ -6,16 +6,8 @@ import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
+import RequireUser from './RequireUser'
 
-
-const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white text-base font-medium">Cargando...</p>
-    </div>
-  </div>
-)
 
 const Layout = ({ children, user, loading }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -24,16 +16,16 @@ const Layout = ({ children, user, loading }) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const navigate = useNavigate()
 
-  // Loader global: si no hay user o loading global, mostrar loader
-  if (loading || !user) {
-    return <InternalLoader />
-  }
-
   useEffect(() => {
+    if (!user?.id) return
     checkUserRole()
   }, [user])
 
   const checkUserRole = async () => {
+    if (!user?.id) {
+      setIsAdmin(false)
+      return
+    }
     try {
       const { data, error } = await db.getUsers()
       if (!error && data) {
@@ -73,7 +65,8 @@ const Layout = ({ children, user, loading }) => {
   menuItems.push({ name: 'Mi Perfil', path: '/profile', icon: UserCircle })
 
   return (
-    <div className="flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+    <RequireUser user={user} loading={loading}>
+      <div className="flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
@@ -214,7 +207,8 @@ const Layout = ({ children, user, loading }) => {
 
       {/* Support Button */}
       <SupportButton />
-    </div>
+      </div>
+    </RequireUser>
   )
 }
 

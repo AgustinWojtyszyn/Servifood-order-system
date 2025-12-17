@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { Calendar, Download, Package, TrendingUp, User } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../supabaseClient'
+import RequireUser from './RequireUser'
 
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
 function DateRangePicker({ value, onChange }) {
@@ -69,15 +70,6 @@ function DateRangePicker({ value, onChange }) {
 }
 
 
-const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white text-base font-medium">Cargando...</p>
-    </div>
-  </div>
-)
-
 const MonthlyPanel = ({ user, loading }) => {
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [metricsLoading, setMetricsLoading] = useState(false)
@@ -85,13 +77,9 @@ const MonthlyPanel = ({ user, loading }) => {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
-  // Loader global: si no hay user o loading global, mostrar loader
-  if (loading || !user) {
-    return <InternalLoader />
-  }
-
   useEffect(() => {
     // Control de acceso: solo admin
+    if (!user?.id) return
     if (user.role !== 'admin' && user.user_metadata?.role !== 'admin') {
       navigate('/dashboard')
     }
@@ -261,6 +249,7 @@ const MonthlyPanel = ({ user, loading }) => {
   }
 
   return (
+    <RequireUser user={user} loading={loading}>
     <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
       {/* Título arriba de los tips */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
@@ -382,6 +371,7 @@ const MonthlyPanel = ({ user, loading }) => {
         </div>
       )}
     </div>
+    </RequireUser>
   )
 }
 

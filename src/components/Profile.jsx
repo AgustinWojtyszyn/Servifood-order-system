@@ -1,19 +1,10 @@
 import { useState, useEffect } from 'react'
 import { auth } from '../supabaseClient'
 import { User, Mail, Save, CheckCircle, AlertCircle } from 'lucide-react'
-
-const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white text-base font-medium">Cargando...</p>
-    </div>
-  </div>
-)
+import RequireUser from './RequireUser'
 
 const Profile = ({ user, loading }) => {
-  if (loading || !user) return <InternalLoader />
-  // ...existing code...
+  const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
     email: ''
@@ -21,12 +12,11 @@ const Profile = ({ user, loading }) => {
   const [message, setMessage] = useState({ type: '', text: '' })
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        fullName: user.user_metadata?.full_name || '',
-        email: user.email || ''
-      })
-    }
+    if (!user?.id) return
+    setFormData({
+      fullName: user.user_metadata?.full_name || '',
+      email: user.email || ''
+    })
   }, [user])
 
   const handleChange = (e) => {
@@ -38,8 +28,13 @@ const Profile = ({ user, loading }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    setSubmitting(true)
     setMessage({ type: '', text: '' })
+    if (!user?.id) {
+      setMessage({ type: 'error', text: 'No se pudo validar el usuario. Intenta nuevamente.' })
+      setSubmitting(false)
+      return
+    }
 
     const emailChanged = formData.email !== user.email
 
@@ -73,12 +68,13 @@ const Profile = ({ user, loading }) => {
         text: 'Error al actualizar el perfil'
       })
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-6 sm:space-y-8">
+    <RequireUser user={user} loading={loading}>
+      <div className="p-3 sm:p-6 space-y-6 sm:space-y-8">
       <div>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2">Mi Perfil</h1>
         <p className="text-base sm:text-lg md:text-xl text-white/90 drop-shadow-lg mt-2">Actualiza tu información personal</p>
@@ -147,13 +143,13 @@ const Profile = ({ user, loading }) => {
           <div className="flex gap-3 sm:gap-4 pt-3 sm:pt-4">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || submitting}
               className="flex-1 flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 sm:py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-sm sm:text-base"
-              style={{background: loading ? '#9e9e9e' : 'linear-gradient(to right, #ff9800, #fb8c00)'}}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = 'linear-gradient(to right, #fb8c00, #f57c00)')}
-              onMouseLeave={(e) => !loading && (e.currentTarget.style.background = 'linear-gradient(to right, #ff9800, #fb8c00)')}
+              style={{background: (loading || submitting) ? '#9e9e9e' : 'linear-gradient(to right, #ff9800, #fb8c00)'}}
+              onMouseEnter={(e) => !(loading || submitting) && (e.currentTarget.style.background = 'linear-gradient(to right, #fb8c00, #f57c00)')}
+              onMouseLeave={(e) => !(loading || submitting) && (e.currentTarget.style.background = 'linear-gradient(to right, #ff9800, #fb8c00)')}
             >
-              {loading ? (
+              {submitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
                   Guardando...
@@ -180,7 +176,8 @@ const Profile = ({ user, loading }) => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </RequireUser>
   )
 }
 

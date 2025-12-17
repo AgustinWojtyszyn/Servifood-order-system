@@ -1,18 +1,9 @@
 import { useState, useEffect } from 'react'
 import { db } from '../supabaseClient'
 import { Shield, UserX, Trash2, AlertTriangle, Crown, Users, Database, CheckCircle, X } from 'lucide-react'
-
-const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white text-base font-medium">Cargando...</p>
-    </div>
-  </div>
-)
+import RequireUser from './RequireUser'
 
 export default function SuperAdminPanel({ user, loading }) {
-  if (loading || !user) return <InternalLoader />
 
   const [users, setUsers] = useState([])
   const [localLoading, setLocalLoading] = useState(true)
@@ -25,17 +16,20 @@ export default function SuperAdminPanel({ user, loading }) {
   })
 
   useEffect(() => {
+    if (!user?.id) return
     checkSuperAdminStatus()
   }, [user])
 
   useEffect(() => {
+    if (!user?.id || !isSuperAdmin) return
     if (isSuperAdmin) {
       fetchUsers()
       fetchStats()
     }
-  }, [isSuperAdmin])
+  }, [isSuperAdmin, user])
 
   const checkSuperAdminStatus = async () => {
+    if (!user?.id) return
     try {
       const { data, error } = await db.getUsers()
       if (!error && data) {
@@ -174,30 +168,35 @@ export default function SuperAdminPanel({ user, loading }) {
 
   if (!isSuperAdmin) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-red-100 rounded-full">
-              <Shield className="h-12 w-12 text-red-600" />
+      <RequireUser user={user} loading={loading}>
+        <div className="p-6 max-w-2xl mx-auto">
+          <div className="bg-red-50 border-2 border-red-300 rounded-xl p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-red-100 rounded-full">
+                <Shield className="h-12 w-12 text-red-600" />
+              </div>
             </div>
+            <h2 className="text-2xl font-bold text-red-900 mb-2">Acceso Denegado</h2>
+            <p className="text-red-700">Solo los Superadministradores pueden acceder a este panel.</p>
           </div>
-          <h2 className="text-2xl font-bold text-red-900 mb-2">Acceso Denegado</h2>
-          <p className="text-red-700">Solo los Superadministradores pueden acceder a este panel.</p>
         </div>
-      </div>
+      </RequireUser>
     )
   }
 
   if (loading) {
     return (
-      <div className="p-6 text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
-        <p className="mt-4 text-gray-600">Cargando panel de superadmin...</p>
-      </div>
+      <RequireUser user={user} loading={loading}>
+        <div className="p-6 text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+          <p className="mt-4 text-gray-600">Cargando panel de superadmin...</p>
+        </div>
+      </RequireUser>
     )
   }
 
   return (
+    <RequireUser user={user} loading={loading}>
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-8 text-white shadow-2xl">
@@ -403,5 +402,6 @@ export default function SuperAdminPanel({ user, loading }) {
         </div>
       </div>
     </div>
+    </RequireUser>
   )
 }

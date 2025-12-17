@@ -3,21 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle, Save } from 'lucide-react'
 import { isOrderEditable } from '../utils'
-
-const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white text-base font-medium">Cargando...</p>
-    </div>
-  </div>
-)
+import RequireUser from './RequireUser'
 
 const EDIT_WINDOW_MINUTES = 10
 
 export default function EditOrderForm({ user, loading }) {
-  if (loading || !user) return <InternalLoader />
-
   const [menuItems, setMenuItems] = useState([])
   const [customOptions, setCustomOptions] = useState([])
   const [customResponses, setCustomResponses] = useState({})
@@ -211,20 +201,25 @@ export default function EditOrderForm({ user, loading }) {
       return
     }
 
-    setLoading(true)
+    setLocalLoading(true)
     setError('')
+    if (!user?.id) {
+      setError('No se pudo validar el usuario. Intenta nuevamente.')
+      setLocalLoading(false)
+      return
+    }
 
     const selectedItemsList = getSelectedItemsList()
 
     if (!formData.location) {
       setError('Por favor selecciona un lugar de trabajo')
-      setLoading(false)
+      setLocalLoading(false)
       return
     }
 
     if (selectedItemsList.length === 0) {
       setError('Por favor selecciona al menos un plato del menú')
-      setLoading(false)
+      setLocalLoading(false)
       return
     }
 
@@ -235,7 +230,7 @@ export default function EditOrderForm({ user, loading }) {
 
     if (missingRequiredOptions.length > 0) {
       setError(`Por favor completa: ${missingRequiredOptions.join(', ')}`)
-      setLoading(false)
+      setLocalLoading(false)
       return
     }
 
@@ -290,39 +285,44 @@ export default function EditOrderForm({ user, loading }) {
     } catch (err) {
       setError('Error al actualizar el pedido')
     } finally {
-      setLoading(false)
+      setLocalLoading(false)
     }
   }
 
   if (!order) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <RequireUser user={user} loading={loading}>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        </div>
+      </RequireUser>
     )
   }
 
   if (success) {
     return (
-      <div className="p-3 sm:p-6 flex items-center justify-center min-h-screen">
-        <div className="max-w-2xl mx-auto text-center px-4">
-          <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-6 sm:p-8 shadow-2xl">
-            <div className="flex justify-center mb-3 sm:mb-4">
-              <div className="p-3 sm:p-4 rounded-full bg-green-100">
-                <Save className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" />
+      <RequireUser user={user} loading={loading}>
+        <div className="p-3 sm:p-6 flex items-center justify-center min-h-screen">
+          <div className="max-w-2xl mx-auto text-center px-4">
+            <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-6 sm:p-8 shadow-2xl">
+              <div className="flex justify-center mb-3 sm:mb-4">
+                <div className="p-3 sm:p-4 rounded-full bg-green-100">
+                  <Save className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" />
+                </div>
               </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido actualizado exitosamente!</h2>
+              <p className="text-base sm:text-lg text-green-700">Los cambios han sido guardados.</p>
+              <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido actualizado exitosamente!</h2>
-            <p className="text-base sm:text-lg text-green-700">Los cambios han sido guardados.</p>
-            <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
           </div>
         </div>
-      </div>
+      </RequireUser>
     )
   }
 
   return (
-    <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen">
+    <RequireUser user={user} loading={loading}>
+      <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4">
         <div className="text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Editar Pedido</h1>
@@ -655,7 +655,7 @@ export default function EditOrderForm({ user, loading }) {
           </div>
         </form>
       </div>
-    </div>
+      </div>
+    </RequireUser>
   )
 }
-

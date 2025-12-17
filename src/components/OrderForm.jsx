@@ -2,18 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle } from 'lucide-react'
-
-const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white text-base font-medium">Cargando...</p>
-    </div>
-  </div>
-)
+import RequireUser from './RequireUser'
 
 const OrderForm = ({ user, loading }) => {
-  if (loading || !user) return <InternalLoader />
   const [menuItems, setMenuItems] = useState([])
   const [customOptions, setCustomOptions] = useState([])
   const [customResponses, setCustomResponses] = useState({})
@@ -35,6 +26,7 @@ const OrderForm = ({ user, loading }) => {
   const locations = ['La Laja']
 
   useEffect(() => {
+    if (!user?.id) return
     checkOrderDeadline()
     fetchMenuItems()
     fetchCustomOptions()
@@ -62,6 +54,7 @@ const OrderForm = ({ user, loading }) => {
   }
 
   const checkTodayOrder = async () => {
+    if (!user?.id) return
     try {
       // Obtener solo los pedidos del usuario actual
       const { data, error } = await db.getOrders(user.id)
@@ -209,6 +202,11 @@ const OrderForm = ({ user, loading }) => {
     e.preventDefault()
     setSubmitting(true)
     setError('')
+    if (!user?.id) {
+      setError('No se pudo validar el usuario. Intenta nuevamente.')
+      setSubmitting(false)
+      return
+    }
 
     // Verificar horario límite
     const now = new Date()
@@ -249,7 +247,7 @@ const OrderForm = ({ user, loading }) => {
 
     if (missingRequiredOptions.length > 0) {
       setError(`Por favor completa: ${missingRequiredOptions.join(', ')}`)
-      setLoading(false)
+      setSubmitting(false)
       return
     }
 
@@ -316,31 +314,34 @@ const OrderForm = ({ user, loading }) => {
       // Mostrar el error real si ocurre una excepción
       setError('Error al crear el pedido: ' + (err?.message || JSON.stringify(err)))
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
   if (success) {
     return (
-      <div className="p-3 sm:p-6 flex items-center justify-center min-h-screen">
-        <div className="max-w-2xl mx-auto text-center px-4">
-          <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-6 sm:p-8 shadow-2xl">
-            <div className="flex justify-center mb-3 sm:mb-4">
-              <div className="p-3 sm:p-4 rounded-full bg-green-100">
-                <ChefHat className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" />
+      <RequireUser user={user} loading={loading}>
+        <div className="p-3 sm:p-6 flex items-center justify-center min-h-screen">
+          <div className="max-w-2xl mx-auto text-center px-4">
+            <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-6 sm:p-8 shadow-2xl">
+              <div className="flex justify-center mb-3 sm:mb-4">
+                <div className="p-3 sm:p-4 rounded-full bg-green-100">
+                  <ChefHat className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" />
+                </div>
               </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
+              <p className="text-base sm:text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
+              <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al panel principal...</p>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
-            <p className="text-base sm:text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
-            <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al panel principal...</p>
           </div>
         </div>
-      </div>
+      </RequireUser>
     )
   }
 
   return (
-    <div className="p-3 sm:p-6 min-h-[100dvh] flex flex-col" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
+    <RequireUser user={user} loading={loading}>
+      <div className="p-3 sm:p-6 min-h-[100dvh] flex flex-col" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
         <div className="text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
@@ -713,6 +714,7 @@ const OrderForm = ({ user, loading }) => {
       </form>
     </div>
     </div>
+    </RequireUser>
   )
 }
 

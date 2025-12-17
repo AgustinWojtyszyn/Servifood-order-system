@@ -4,12 +4,13 @@ import { db } from '../supabaseClient'
 import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2 } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import { isOrderEditable } from '../utils'
+import RequireUser from './RequireUser'
 
 const EDIT_WINDOW_MINUTES = 15
 
-const Dashboard = ({ user }) => {
+const Dashboard = ({ user, loading }) => {
   const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -21,10 +22,12 @@ const Dashboard = ({ user }) => {
   const navigate = useNavigate()
 
   useEffect(() => {
+    if (!user?.id) return
     checkIfAdmin()
   }, [user])
 
   useEffect(() => {
+    if (!user?.id || isAdmin === null) return
     if (isAdmin !== null) {
       fetchOrders()
       
@@ -35,9 +38,10 @@ const Dashboard = ({ user }) => {
 
       return () => clearInterval(interval)
     }
-  }, [isAdmin])
+  }, [isAdmin, user])
 
   const checkIfAdmin = async () => {
+    if (!user?.id) return
     try {
       const { data, error } = await db.getUsers()
       if (!error && data) {
@@ -50,9 +54,10 @@ const Dashboard = ({ user }) => {
   }
 
   const fetchOrders = async (silent = false) => {
+    if (!user?.id) return
     try {
       if (!silent) {
-        setLoading(true)
+        setOrdersLoading(true)
       }
       
       // TODOS (admins y usuarios) solo ven sus propios pedidos en el Dashboard
@@ -106,7 +111,7 @@ const Dashboard = ({ user }) => {
       console.error('Error:', err)
     } finally {
       if (!silent) {
-        setLoading(false)
+        setOrdersLoading(false)
       }
     }
   }
@@ -393,16 +398,19 @@ const Dashboard = ({ user }) => {
     )
   }
 
-  if (loading) {
+  if (ordersLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <RequireUser user={user} loading={loading}>
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        </div>
+      </RequireUser>
     )
   }
 
   return (
-    <div className="p-6 space-y-6 pb-8">
+    <RequireUser user={user} loading={loading}>
+      <div className="p-6 space-y-6 pb-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -673,7 +681,8 @@ const Dashboard = ({ user }) => {
       {selectedOrder && (
         <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
       )}
-    </div>
+      </div>
+    </RequireUser>
   )
 }
 

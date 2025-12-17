@@ -70,14 +70,25 @@ if (cluster.isMaster) {
   app.use(compression());
 
 
-  // Servir archivos estáticos de la app (build de Vite)
-  app.use(express.static(path.join(__dirname, 'dist'), {
+
+  // Servir assets estáticos con cache largo
+  app.use('/assets', express.static(path.join(__dirname, 'dist/assets'), {
     maxAge: '1y',
     etag: false
   }));
 
-  // Fallback SPA: cualquier ruta que no sea API responde con dist/index.html
+  // Servir otros archivos estáticos (robots.txt, manifest, etc) con cache corto
+  app.use(express.static(path.join(__dirname, 'dist'), {
+    maxAge: '1h',
+    etag: false,
+    index: false
+  }));
+
+  // Servir index.html SIEMPRE con no-cache para forzar actualización de bundles
   app.get(/^\/(?!api).*/, (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   });
 

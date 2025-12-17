@@ -2,18 +2,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import { Send, Trash2, Edit2, X, MessageCircle, Users } from 'lucide-react'
-
-const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white text-base font-medium">Cargando...</p>
-    </div>
-  </div>
-)
+import RequireUser from './RequireUser'
 
 const AdminChat = ({ user, loading }) => {
-  if (loading || !user) return <InternalLoader />
 
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
@@ -24,6 +15,7 @@ const AdminChat = ({ user, loading }) => {
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
+    if (!user?.id) return
     loadMessages()
     loadAdmins()
     
@@ -32,7 +24,7 @@ const AdminChat = ({ user, loading }) => {
     return () => {
       if (subscription) subscription()
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     scrollToBottom()
@@ -132,11 +124,11 @@ const AdminChat = ({ user, loading }) => {
 
   const sendMessage = async (e) => {
     e.preventDefault()
-    if (!newMessage.trim() || loading) return
+    if (!newMessage.trim() || loading || localLoading || !user?.id) return
 
     const messageText = newMessage.trim()
     setNewMessage('') // Limpiar input inmediatamente
-    setLoading(true)
+    setLocalLoading(true)
 
     // Crear mensaje temporal para mostrar instantáneamente (optimistic update)
     const tempMessage = {
@@ -178,7 +170,7 @@ const AdminChat = ({ user, loading }) => {
       setNewMessage(messageText) // Restaurar el texto
       console.error('Error sending message:', err)
     } finally {
-      setLoading(false)
+      setLocalLoading(false)
     }
   }
 
@@ -318,6 +310,7 @@ const AdminChat = ({ user, loading }) => {
   }
 
   return (
+    <RequireUser user={user} loading={loading}>
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col h-[calc(100vh-12rem)] bg-white rounded-2xl shadow-2xl border-2 border-gray-200">
@@ -448,15 +441,15 @@ const AdminChat = ({ user, loading }) => {
                 placeholder="Escribe un mensaje... (Enter para enviar)"
                 className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm sm:text-base"
                 rows={2}
-                disabled={loading}
+                disabled={loading || localLoading}
               />
               <button
                 type="submit"
-                disabled={loading || !newMessage.trim()}
+                disabled={loading || localLoading || !newMessage.trim()}
                 className="px-4 sm:px-6 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center gap-2"
               >
                 <Send className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="hidden sm:inline">Enviar</span>
+                <span className="hidden sm:inline">{localLoading ? 'Enviando...' : 'Enviar'}</span>
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
@@ -466,6 +459,7 @@ const AdminChat = ({ user, loading }) => {
         </div>
       </div>
     </div>
+    </RequireUser>
   )
 }
 

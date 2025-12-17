@@ -12,11 +12,12 @@ import { useState, useEffect, useRef } from 'react'
 import { db } from '../supabaseClient'
 import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import RequireUser from './RequireUser'
 
-const DailyOrders = ({ user }) => {
+const DailyOrders = ({ user, loading }) => {
   const emailLoadingRef = useRef(false)
   const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
@@ -60,10 +61,12 @@ const DailyOrders = ({ user }) => {
   }
 
   useEffect(() => {
+    if (!user?.id) return
     checkIfAdmin()
   }, [user])
 
   useEffect(() => {
+    if (!user?.id || isAdmin !== true) return
     if (isAdmin === true) {
       fetchDailyOrders()
       
@@ -74,9 +77,13 @@ const DailyOrders = ({ user }) => {
 
       return () => clearInterval(interval)
     }
-  }, [isAdmin])
+  }, [isAdmin, user])
 
   const checkIfAdmin = async () => {
+    if (!user?.id) {
+      setIsAdmin(false)
+      return
+    }
     try {
       const { data, error } = await db.getUsers()
       if (!error && data) {
@@ -90,9 +97,10 @@ const DailyOrders = ({ user }) => {
   }
 
   const fetchDailyOrders = async (silent = false) => {
+    if (!user?.id) return
     try {
       if (!silent) {
-        setLoading(true)
+        setOrdersLoading(true)
       }
       
       const { data: ordersData, error } = await db.getOrders()
@@ -152,7 +160,7 @@ const DailyOrders = ({ user }) => {
       console.error('Error:', err)
     } finally {
       if (!silent) {
-        setLoading(false)
+        setOrdersLoading(false)
       }
     }
   }
@@ -520,31 +528,36 @@ const DailyOrders = ({ user }) => {
 
   if (!isAdmin) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-red-100 rounded-full">
-              <Shield className="h-12 w-12 text-red-600" />
+      <RequireUser user={user} loading={loading}>
+        <div className="p-6 max-w-2xl mx-auto">
+          <div className="bg-red-50 border-2 border-red-300 rounded-xl p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-red-100 rounded-full">
+                <Shield className="h-12 w-12 text-red-600" />
+              </div>
             </div>
+            <h2 className="text-2xl font-bold text-red-900 mb-2">Acceso Restringido</h2>
+            <p className="text-red-700">Solo los administradores pueden ver los pedidos diarios.</p>
           </div>
-          <h2 className="text-2xl font-bold text-red-900 mb-2">Acceso Restringido</h2>
-          <p className="text-red-700">Solo los administradores pueden ver los pedidos diarios.</p>
         </div>
-      </div>
+      </RequireUser>
     )
   }
 
-  if (loading) {
+  if (ordersLoading) {
     return (
-      <div className="p-6 text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
-        <p className="mt-4 text-white text-lg">Cargando pedidos diarios...</p>
-      </div>
+      <RequireUser user={user} loading={loading}>
+        <div className="p-6 text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+          <p className="mt-4 text-white text-lg">Cargando pedidos diarios...</p>
+        </div>
+      </RequireUser>
     )
   }
 
   return (
-    <div
+    <RequireUser user={user} loading={loading}>
+      <div
       className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto"
       style={{
         overflowY: 'visible',
@@ -1046,6 +1059,7 @@ const DailyOrders = ({ user }) => {
         </div>
       )}
     </div>
+  </RequireUser>
   )
 }
 

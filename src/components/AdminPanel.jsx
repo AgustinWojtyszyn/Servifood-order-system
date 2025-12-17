@@ -3,15 +3,7 @@ import { useAuthContext } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle } from 'lucide-react'
-
-const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white text-base font-medium">Cargando...</p>
-    </div>
-  </div>
-)
+import RequireUser from './RequireUser'
 
 const AdminPanel = () => {
   // Eliminar pedidos pendientes de días anteriores
@@ -53,17 +45,17 @@ const AdminPanel = () => {
   const [deletingOrders, setDeletingOrders] = useState(false)
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchData()
-      fetchCompletedOrdersCount()
-    }
-  }, [isAdmin])
+    if (!user?.id || !isAdmin) return
+    fetchData()
+    fetchCompletedOrdersCount()
+  }, [isAdmin, user])
 
   useEffect(() => {
+    if (!user?.id || !isAdmin) return
     if (isAdmin && activeTab === 'cleanup') {
       fetchCompletedOrdersCount()
     }
-  }, [activeTab, isAdmin])
+  }, [activeTab, isAdmin, user])
 
   const fetchData = async () => {
     setDataLoading(true)
@@ -441,37 +433,42 @@ const AdminPanel = () => {
   // Verificación de admin
   if (!isAdmin && !loading) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-red-100 rounded-full">
-              <Shield className="h-12 w-12 text-red-600" />
+      <RequireUser user={user} loading={loading}>
+        <div className="p-6 max-w-2xl mx-auto">
+          <div className="bg-red-50 border-2 border-red-300 rounded-xl p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-red-100 rounded-full">
+                <Shield className="h-12 w-12 text-red-600" />
+              </div>
             </div>
+            <h2 className="text-2xl font-bold text-red-900 mb-2">Acceso Restringido</h2>
+            <p className="text-red-700 mb-4">
+              Solo los administradores pueden acceder a este panel.
+            </p>
+            <Link
+              to="/dashboard"
+              className="inline-block bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+            >
+              Volver al Dashboard
+            </Link>
           </div>
-          <h2 className="text-2xl font-bold text-red-900 mb-2">Acceso Restringido</h2>
-          <p className="text-red-700 mb-4">
-            Solo los administradores pueden acceder a este panel.
-          </p>
-          <Link
-            to="/dashboard"
-            className="inline-block bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
-          >
-            Volver al Dashboard
-          </Link>
         </div>
-      </div>
+      </RequireUser>
     )
   }
 
   if (loading || dataLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <RequireUser user={user} loading={loading}>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        </div>
+      </RequireUser>
     )
   }
 
   return (
+    <RequireUser user={user} loading={loading}>
     <div className="min-h-screen pt-16 pb-24 p-3 sm:p-6 space-y-6 sm:space-y-8" style={{ paddingBottom: '120px' }}>
       <div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-2xl mb-2">Panel de Administración</h1>
@@ -1289,6 +1286,7 @@ const AdminPanel = () => {
         </div>
       )}
     </div>
+    </RequireUser>
   )
 }
 
