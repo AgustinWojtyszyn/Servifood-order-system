@@ -71,20 +71,25 @@ if (cluster.isMaster) {
 
 
 
-  // Servir assets estáticos con cache largo
+  // Servir assets estáticos con cache largo (1 año)
   app.use('/assets', express.static(path.join(__dirname, 'dist/assets'), {
     maxAge: '1y',
-    etag: false
+    immutable: true,
+    etag: true
   }));
 
-  // Servir otros archivos estáticos (robots.txt, manifest, etc) con cache corto
-  app.use(express.static(path.join(__dirname, 'dist'), {
-    maxAge: '1h',
-    etag: false,
-    index: false
-  }));
+  // Servir archivos estáticos sueltos (manifest, robots, etc) con cache corto (1 hora)
+  app.use((req, res, next) => {
+    if (/^\/assets\//.test(req.url)) return next();
+    if (req.url === '/' || req.url.startsWith('/api')) return next();
+    express.static(path.join(__dirname, 'dist'), {
+      maxAge: '1h',
+      etag: true,
+      index: false
+    })(req, res, next);
+  });
 
-  // Servir index.html SIEMPRE con no-cache para forzar actualización de bundles
+  // Servir index.html SIEMPRE con no-store (sin cache)
   app.get(/^\/(?!api).*/, (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
