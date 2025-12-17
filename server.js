@@ -71,26 +71,29 @@ if (cluster.isMaster) {
 
 
 
-  // Servir assets estáticos con cache largo (1 año)
+
+  // Servir assets estáticos con cache largo (1 año) y responder 404 si no existe
   app.use('/assets', express.static(path.join(__dirname, 'dist/assets'), {
     maxAge: '1y',
     immutable: true,
-    etag: true
+    etag: true,
+    fallthrough: false // Si no existe, responde 404
   }));
 
-  // Servir archivos estáticos sueltos (manifest, robots, etc) con cache corto (1 hora)
+  // Servir archivos estáticos sueltos (manifest, robots, etc) con cache corto (1 hora) y responder 404 si no existe
   app.use((req, res, next) => {
     if (/^\/assets\//.test(req.url)) return next();
     if (req.url === '/' || req.url.startsWith('/api')) return next();
     express.static(path.join(__dirname, 'dist'), {
       maxAge: '1h',
       etag: true,
-      index: false
+      index: false,
+      fallthrough: false // Si no existe, responde 404
     })(req, res, next);
   });
 
-  // Servir index.html SIEMPRE con no-store (sin cache)
-  app.get(/^\/(?!api).*/, (req, res) => {
+  // Servir index.html SOLO para rutas que no sean assets ni archivos estáticos
+  app.get(/^\/(?!api|assets\/|manifest\.json$|robots\.txt$|sitemap\.xml$|version\.txt$).*/, (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
