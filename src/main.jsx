@@ -8,6 +8,7 @@ import { AuthProvider } from './contexts/AuthContext'
 
 // No limpiar localStorage ni sessionStorage para mantener la sesión activa
 
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
@@ -15,3 +16,6 @@ createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </StrictMode>,
 )
+
+// Ocultar loader amigable al montar React
+if (window.__servifood_loader_hide) window.__servifood_loader_hide();

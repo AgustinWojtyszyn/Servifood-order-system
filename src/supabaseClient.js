@@ -1,3 +1,12 @@
+// Redirección global si el token expira mucho tiempo (fuera de línea)
+supabase.auth.onAuthStateChange((event, session) => {
+  if ((event === 'SIGNED_OUT' || event === 'TOKEN_REFRESH_FAILED') && !session) {
+    // Si el usuario estaba logueado y el token expiró mucho tiempo
+    if (!window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login';
+    }
+  }
+});
 // Eliminar todos los pedidos pendientes de días anteriores
 // Se agrega como método a db más abajo
 import { createClient } from '@supabase/supabase-js'
