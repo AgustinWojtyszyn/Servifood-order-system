@@ -32,6 +32,36 @@ supabase.auth.onAuthStateChange((event, session) => {
 // Eliminar todos los pedidos pendientes de días anteriores
 // Se agrega como método a db más abajo
 // Cache simple en memoria para reducir consultas repetidas
+// (definido más arriba)
+
+// Configuración de autenticación
+// (definición única de 'auth' más abajo)
+
+
+// ...existing code...
+// Archivar todos los pedidos pendientes (de cualquier día)
+export const archiveAllPendingOrders = async () => {
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status: 'archived', updated_at: new Date().toISOString() })
+    .eq('status', 'pending')
+  return { data, error }
+}
+// ...existing code...
+
+// Redirección global si el token expira mucho tiempo (fuera de línea)
+supabase.auth.onAuthStateChange((event, session) => {
+  if ((event === 'SIGNED_OUT' || event === 'TOKEN_REFRESH_FAILED') && !session) {
+    // Si el usuario estaba logueado y el token expiró mucho tiempo
+    if (!window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login';
+    }
+  }
+})
+
+// Eliminar todos los pedidos pendientes de días anteriores
+// Se agrega como método a db más abajo
+// Cache simple en memoria para reducir consultas repetidas
 const cache = {
   data: new Map(),
   ttl: new Map(),
