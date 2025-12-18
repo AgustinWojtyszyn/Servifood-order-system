@@ -10,7 +10,7 @@ const InternalLoader = () => (
 // import { useRef } from 'react' // Ya está importado arriba
 import { useState, useEffect, useRef } from 'react'
 import { db } from '../supabaseClient'
-import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw, Archive as ArchiveIcon } from 'lucide-react'
+import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import RequireUser from './RequireUser'
 
@@ -572,79 +572,57 @@ const DailyOrders = ({ user, loading }) => {
         <div className="flex flex-col gap-4">
                   {/* Botones de acción admin: completar todos hoy y limpiar previos */}
                   {isAdmin && (
-                    <div className="flex flex-col sm:flex-row gap-3 mb-4 justify-center items-center">
-                      <button
-                        onClick={async () => {
-                          if (window.confirm('¿Marcar TODOS los pedidos del día como COMPLETOS?')) {
-                            const { error } = await db.completeAllTodayOrders()
-                            if (!error) {
-                              alert('Todos los pedidos del día marcados como completos.')
-                              handleRefresh()
-                            } else {
-                              alert('Error al marcar pedidos: ' + error.message)
+                    <>
+                      <div className="flex flex-col sm:flex-row gap-3 mb-4 justify-center items-center">
+                        <button
+                          onClick={async () => {
+                            if (window.confirm('¿Marcar TODOS los pedidos del día como COMPLETOS?')) {
+                              const { error } = await db.completeAllTodayOrders()
+                              if (!error) {
+                                alert('Todos los pedidos del día marcados como completos.')
+                                handleRefresh()
+                              } else {
+                                alert('Error al marcar pedidos: ' + error.message)
+                              }
                             }
-                          }
-                        }}
-                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-white"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Completar todos HOY
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (window.confirm('¿Archivar TODOS los pedidos pendientes? Esta acción no se puede deshacer.')) {
-                            const { data, error } = await db.archiveAllPendingOrders()
-                            if (!error) {
-                              const updated = Array.isArray(data) ? data.length : 0
-                              alert(`Pedidos pendientes archivados correctamente. Total afectados: ${updated}.`)
-                              handleRefresh()
-                            } else {
-                              alert('Error al archivar pedidos: ' + error.message)
+                          }}
+                          className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-white"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Completar todos HOY
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm('¿Archivar TODOS los pedidos pendientes? Esta acción no se puede deshacer.')) {
+                              const { data, error } = await db.archiveAllPendingOrders()
+                              if (!error) {
+                                const updated = Array.isArray(data) ? data.length : 0
+                                alert(`Pedidos pendientes archivados correctamente. Total afectados: ${updated}.`)
+                                handleRefresh()
+                              } else {
+                                alert('Error al archivar pedidos: ' + error.message)
+                              }
                             }
-                          }
-                        }}
-                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-900 text-white"
-                      >
-                        <ArchiveIcon className="h-4 w-4" />
-                        Archivar pendientes
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (window.confirm('¿Marcar TODOS los pedidos pendientes de días anteriores como cancelados? Esta acción no se puede deshacer.')) {
-                            const { data, error } = await db.cancelPreviousDaysPendingOrders()
-                            if (!error) {
-                              const updated = Array.isArray(data) ? data.length : 0
-                              alert(`Pedidos pendientes de días previos marcados como cancelados correctamente. Total actualizados: ${updated}.`)
-                              handleRefresh()
-                            } else {
-                              alert('Error al cancelar pedidos: ' + error.message)
-                            }
-                          }
-                        }}
-                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-orange-500 hover:bg-orange-600 text-white"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Limpiar pendientes previos
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (window.confirm('¿Cancelar TODOS los pedidos pendientes sin importar la fecha? Esta acción no se puede deshacer.')) {
-                            const { data, error } = await db.deleteAllPendingOrders()
-                            if (!error) {
-                              const updated = Array.isArray(data) ? data.length : 0
-                              alert(`Todos los pedidos pendientes fueron cancelados correctamente. Total afectados: ${updated}.`)
-                              handleRefresh()
-                            } else {
-                              alert('Error al cancelar pedidos: ' + error.message)
-                            }
-                          }
-                        }}
-                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-red-500 hover:bg-red-600 text-white"
-                      >
-                        <XCircle className="h-4 w-4" />
-                        Cancelar TODOS los pendientes
-                      </button>
-                    </div>
+                          }}
+                          className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-900 text-white"
+                        >
+                          <ArchiveIcon className="h-4 w-4" />
+                          Archivar pendientes
+                        </button>
+                      </div>
+                      {/* Advertencia amigable para admins */}
+                      <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-4 mb-4 flex items-center gap-3 shadow-md max-w-2xl mx-auto">
+                        <div className="p-2 bg-yellow-100 rounded-full">
+                          <AlertIcon className="h-6 w-6 text-yellow-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-yellow-900 font-semibold text-sm md:text-base">
+                            <span className="font-bold">Recuerda:</span> Exporta los pedidos a Excel y archiva los pedidos pendientes <span className="font-bold">al final de cada día</span>.<br />
+                            Así los pedidos quedan contabilizados y no bloquean nuevos pedidos para el día siguiente.
+                          </p>
+                        </div>
+                      </div>
+                    </>
                   )}
           {/* Título y fecha */}
           <div className="text-center md:text-left">
