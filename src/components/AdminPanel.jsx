@@ -6,23 +6,28 @@ import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowD
 import RequireUser from './RequireUser'
 
 const AdminPanel = () => {
-  // Eliminar pedidos pendientes de días anteriores
-  const [deletingOldPending, setDeletingOldPending] = useState(false)
-  const handleDeleteOldPendingOrders = async () => {
-    if (!window.confirm('¿Eliminar TODOS los pedidos pendientes de días anteriores? Esta acción no se puede deshacer.')) return;
-    setDeletingOldPending(true)
+  // Archivar todos los pedidos pendientes
+  const [archivingPending, setArchivingPending] = useState(false)
+  const handleArchiveAllPendingOrders = async () => {
+    const msg =
+      'Este botón moverá TODOS los pedidos pendientes (de hoy y días anteriores) al estado "Archivado".\n\n' +
+      'Los pedidos archivados NO se eliminan, pero ya no aparecerán como pendientes ni podrán ser modificados.\n' +
+      'Esta acción es útil para limpiar la lista de pendientes y mantener el historial.\n\n' +
+      '¿Deseas archivar todos los pedidos pendientes ahora?';
+    if (!window.confirm(msg)) return;
+    setArchivingPending(true)
     try {
-      const { error } = await db.completeAllOldPendingOrders()
+      const { error } = await db.archiveAllPendingOrders()
       if (error) {
-        alert('Error al limpiar pedidos pendientes antiguos: ' + error.message)
+        alert('❌ Ocurrió un error al archivar los pedidos pendientes. Intenta nuevamente.\n\n' + error.message)
       } else {
-        alert('✓ Pedidos pendientes antiguos marcados como completados')
+        alert('✅ Todos los pedidos pendientes han sido archivados correctamente.\n\nPuedes consultar el historial en la sección de pedidos archivados.')
         fetchData()
       }
     } catch (err) {
-      alert('Error al limpiar pedidos pendientes antiguos')
+      alert('❌ Error inesperado al archivar pedidos pendientes. Intenta nuevamente.')
     } finally {
-      setDeletingOldPending(false)
+      setArchivingPending(false)
     }
   }
   const [activeTab, setActiveTab] = useState('users')
@@ -1164,27 +1169,33 @@ const AdminPanel = () => {
             {/* Información y controles */}
             <div className="mb-6">
               <button
-                onClick={handleDeleteOldPendingOrders}
-                disabled={deletingOldPending}
+                onClick={handleArchiveAllPendingOrders}
+                disabled={archivingPending}
                 className={`w-full py-3 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3 mb-2
-                  ${deletingOldPending
+                  ${archivingPending
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'}
                 `}
+                title="Archivar todos los pedidos pendientes (de hoy y días anteriores)"
               >
-                {deletingOldPending ? (
+                {archivingPending ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
-                    Eliminando pendientes antiguos...
+                    Archivando pedidos pendientes...
                   </>
                 ) : (
                   <>
                     <Trash2 className="h-5 w-5" />
-                    Eliminar pedidos pendientes de días anteriores
+                    Archivar todos los pedidos pendientes
                   </>
                 )}
               </button>
-              <p className="text-xs text-yellow-700 text-center">Esta acción elimina todos los pedidos pendientes creados antes de hoy.</p>
+              <div className="text-xs text-yellow-700 text-center mt-1">
+                <strong>¿Qué hace este botón?</strong><br />
+                Archiva todos los pedidos con estado <b>pendiente</b> (de hoy y días anteriores).<br />
+                Los pedidos archivados no se eliminan, pero ya no aparecerán como pendientes ni podrán ser modificados.<br />
+                Úsalo para limpiar la lista de pendientes y mantener el historial ordenado.
+              </div>
             </div>
             {completedOrdersCount > 0 ? (
               <div className="space-y-4">

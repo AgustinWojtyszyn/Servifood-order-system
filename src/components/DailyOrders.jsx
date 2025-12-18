@@ -592,6 +592,24 @@ const DailyOrders = ({ user, loading }) => {
                       </button>
                       <button
                         onClick={async () => {
+                          if (window.confirm('¿Archivar TODOS los pedidos pendientes? Esta acción no se puede deshacer.')) {
+                            const { data, error } = await db.archiveAllPendingOrders()
+                            if (!error) {
+                              const updated = Array.isArray(data) ? data.length : 0
+                              alert(`Pedidos pendientes archivados correctamente. Total afectados: ${updated}.`)
+                              handleRefresh()
+                            } else {
+                              alert('Error al archivar pedidos: ' + error.message)
+                            }
+                          }
+                        }}
+                        className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-900 text-white"
+                      >
+                        <ArchiveIcon className="h-4 w-4" />
+                        Archivar pendientes
+                      </button>
+                      <button
+                        onClick={async () => {
                           if (window.confirm('¿Marcar TODOS los pedidos pendientes de días anteriores como cancelados? Esta acción no se puede deshacer.')) {
                             const { data, error } = await db.cancelPreviousDaysPendingOrders()
                             if (!error) {

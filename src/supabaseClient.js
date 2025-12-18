@@ -155,7 +155,10 @@ export const auth = {
 }
 
 // Funciones de base de datos
+import { Archive as ArchiveIcon } from 'lucide-react'
+
 export const db = {
+  archiveAllPendingOrders: archiveAllPendingOrders,
         // "Eliminar" pendientes: se cancelan para conservarlos en el histórico (panel mensual)
         deleteAllPendingOrders: async () => {
           const { data, error } = await supabase
