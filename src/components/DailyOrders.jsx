@@ -10,7 +10,7 @@ const InternalLoader = () => (
 // import { useRef } from 'react' // Ya está importado arriba
 import { useState, useEffect, useRef } from 'react'
 import { db } from '../supabaseClient'
-import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw } from 'lucide-react'
+import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw, Archive as ArchiveIcon } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import RequireUser from './RequireUser'
 
