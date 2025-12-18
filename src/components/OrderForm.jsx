@@ -340,145 +340,142 @@ const OrderForm = ({ user, loading }) => {
   }
 
   return (
+
     <RequireUser user={user} loading={loading}>
       <div className="p-3 sm:p-6 min-h-[100dvh] flex flex-col" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
-        <div className="text-center">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
-        <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Seleccioná tu menú y completa tus datos</p>
-        <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
-        <div className="mt-4 mx-auto max-w-2xl">
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded-lg shadow text-yellow-900 text-sm sm:text-base">
-            <strong>Importante:</strong> No realices <b>pedidos de prueba</b>. Todos los pedidos se contabilizan para el día siguiente y serán preparados. Si necesitas cancelar un pedido, hazlo desde la aplicación o comunícate por WhatsApp dentro de los <b>15 minutos</b> posteriores a haberlo realizado.
-          </div>
-        </div>
-      </div>
-
-      {!isPastDeadline && !hasOrderToday && (
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 shadow-lg">
-          <div className="flex items-start gap-3">
-            <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
-            <div>
-              <p className="text-sm sm:text-base text-blue-800 font-medium">
-                Horario de pedidos: <strong>9:00 a 22:00 horas</strong> (horario Argentina, GMT-3) del día anterior a la entrega
-              </p>
-              <p className="text-xs sm:text-sm text-blue-700 mt-1">
-                Si necesitas realizar cambios, presiona el botón <strong>"¿Necesitas ayuda?"</strong>
-              </p>
+        {isPastDeadline ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 sm:p-6 shadow-lg max-w-xl w-full">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 bg-red-100 rounded-full p-2">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-red-900 mb-1">Horario de pedidos cerrado</h3>
+                  <p className="text-red-800 mb-3">
+                    Los pedidos deben realizarse <strong>entre las 9:00 y las 22:00 horas (horario Argentina, GMT-3) del día anterior</strong> a la entrega.
+                  </p>
+                  <p className="text-red-700 text-sm mb-2">
+                    Si necesitas realizar <b>cambios urgentes</b> fuera de horario, comunícate por WhatsApp como <b>última instancia</b> <span className="whitespace-nowrap">(hasta las 7:30)</span>:
+                  </p>
+                  <a
+                    href="https://wa.me/549XXXXXXXXX?text=Hola%2C%20necesito%20realizar%20un%20cambio%20urgente%20en%20mi%20pedido%20de%20ServiFood."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow transition-colors duration-200 text-sm"
+                  >
+                    Contactar por WhatsApp
+                  </a>
+                  <p className="text-xs text-red-500 mt-2">Solo para casos urgentes hasta las 7:30 hs. El resto de los cambios deben gestionarse en horario habitual.</p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
 
-      {isPastDeadline && (
-        <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 sm:p-6 shadow-lg">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 bg-red-100 rounded-full p-2">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
+            <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
+              <div className="text-center">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
+                <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Seleccioná tu menú y completa tus datos</p>
+                <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
+                <div className="mt-4 mx-auto max-w-2xl">
+                  <div className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded-lg shadow text-yellow-900 text-sm sm:text-base">
+                    <strong>Importante:</strong> No realices <b>pedidos de prueba</b>. Todos los pedidos se contabilizan para el día siguiente y serán preparados. Si necesitas cancelar un pedido, hazlo desde la aplicación o comunícate por WhatsApp dentro de los <b>15 minutos</b> posteriores a haberlo realizado.
+                  </div>
+                </div>
+              </div>
+              {!hasOrderToday && (
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 shadow-lg">
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm sm:text-base text-blue-800 font-medium">
+                        Horario de pedidos: <strong>9:00 a 22:00 horas</strong> (horario Argentina, GMT-3) del día anterior a la entrega
+                      </p>
+                      <p className="text-xs sm:text-sm text-blue-700 mt-1">
+                        Si necesitas realizar cambios, presiona el botón <strong>"¿Necesitas ayuda?"</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-red-900 mb-1">Horario de pedidos cerrado</h3>
-              <p className="text-red-800 mb-3">
-                Los pedidos deben realizarse <strong>entre las 9:00 y las 22:00 horas (horario Argentina, GMT-3) del día anterior</strong> a la entrega.
-              </p>
-              <p className="text-red-700 text-sm mb-2">
-                Si necesitas realizar <b>cambios urgentes</b> fuera de horario, comunícate por WhatsApp como <b>última instancia</b> <span className="whitespace-nowrap">(hasta las 7:30)</span>:
-              </p>
-              <a
-                href="https://wa.me/549XXXXXXXXX?text=Hola%2C%20necesito%20realizar%20un%20cambio%20urgente%20en%20mi%20pedido%20de%20ServiFood."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow transition-colors duration-200 text-sm"
-              >
-                Contactar por WhatsApp
-              </a>
-              <p className="text-xs text-red-500 mt-2">Solo para casos urgentes hasta las 7:30 hs. El resto de los cambios deben gestionarse en horario habitual.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-        {/* Información Personal */}
-        <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
-              <User className="h-5 w-5 sm:h-6 sm:w-6" />
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Información Personal</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <div>
-              <label htmlFor="location" className="block text-sm font-bold text-gray-700 mb-2">
-                Lugar de trabajo *
-              </label>
-              <select
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleFormChange}
-                className="input-field"
-                required
-                autoComplete="organization"
-              >
-                <option value="">Seleccionar lugar</option>
-                {locations.map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
-                Nombre completo *
-              </label>
-              <input
-                id="name"
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleFormChange}
-                className="input-field"
-                required
-                autoComplete="name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
-                Correo electrónico *
-              </label>
-              <input
-                id="email"
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleFormChange}
-                className="input-field"
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-bold text-gray-700 mb-2">
-                Teléfono
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleFormChange}
-                className="input-field"
-                autoComplete="tel"
-              />
-            </div>
-          </div>
-        </div>
+                   )}
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+              {/* Información Personal */}
+              <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                  <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
+                    <User className="h-5 w-5 sm:h-6 sm:w-6" />
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Información Personal</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  <div>
+                    <label htmlFor="location" className="block text-sm font-bold text-gray-700 mb-2">
+                      Lugar de trabajo *
+                    </label>
+                    <select
+                      id="location"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleFormChange}
+                      className="input-field"
+                      required
+                      autoComplete="organization"
+                    >
+                      <option value="">Seleccionar lugar</option>
+                      {locations.map(location => (
+                        <option key={location} value={location}>{location}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
+                      Nombre completo *
+                    </label>
+                    <input
+                      id="name"
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleFormChange}
+                      className="input-field"
+                      required
+                      autoComplete="name"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
+                      Correo electrónico *
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleFormChange}
+                      className="input-field"
+                      required
+                      autoComplete="email"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-bold text-gray-700 mb-2">
+                      Teléfono
+                    </label>
+                    <input
+                      id="phone"
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleFormChange}
+                      className="input-field"
+                      autoComplete="tel"
+                    />
+                  </div>
+                </div>
+              </div>
 
 {/* Selección de Menú */}
 <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
@@ -720,9 +717,8 @@ const OrderForm = ({ user, loading }) => {
             )}
           </button>
         </div>
-      </form>
-    </div>
-    </div>
+        </form>
+      </div>
     </RequireUser>
   )
 }
