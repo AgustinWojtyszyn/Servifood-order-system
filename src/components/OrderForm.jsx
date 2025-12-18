@@ -381,9 +381,18 @@ const OrderForm = ({ user, loading }) => {
               <p className="text-red-800 mb-3">
                 Los pedidos deben realizarse <strong>entre las 9:00 y las 22:00 horas (horario Argentina, GMT-3) del día anterior</strong> a la entrega.
               </p>
-              <p className="text-red-700 text-sm">
-                Si necesitas realizar cambios urgentes, presiona el botón <strong>"¿Necesitas ayuda?"</strong> en la parte inferior de la pantalla.
+              <p className="text-red-700 text-sm mb-2">
+                Si necesitas realizar <b>cambios urgentes</b> fuera de horario, comunícate por WhatsApp como <b>última instancia</b> <span className="whitespace-nowrap">(hasta las 7:30)</span>:
               </p>
+              <a
+                href="https://wa.me/549XXXXXXXXX?text=Hola%2C%20necesito%20realizar%20un%20cambio%20urgente%20en%20mi%20pedido%20de%20ServiFood."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow transition-colors duration-200 text-sm"
+              >
+                Contactar por WhatsApp
+              </a>
+              <p className="text-xs text-red-500 mt-2">Solo para casos urgentes hasta las 7:30 hs. El resto de los cambios deben gestionarse en horario habitual.</p>
             </div>
           </div>
         </div>
