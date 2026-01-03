@@ -17,7 +17,7 @@
     "deploy": "npm run build && echo 'Build completado. Listo para deployment'"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.80.0",
+    "@supabase/supabase-js": "^2.84.0",
     "clsx": "^2.1.1",
     "compression": "^1.8.1",
     "dompurify": "^3.3.0",
