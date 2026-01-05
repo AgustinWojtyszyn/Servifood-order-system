@@ -195,18 +195,7 @@ export const db = {
         return { data, error }
       },
 
-    // Marcar todos los pedidos pendientes de HOY como completados
-    completeAllTodayOrders: async () => {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const isoToday = today.toISOString()
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ status: 'completed' })
-        .eq('status', 'pending')
-        .gte('created_at', isoToday)
-      return { data, error }
-    },
+    
   // Usuarios
   getUsers: async (force = false) => {
     // Usar cache para reducir consultas repetidas

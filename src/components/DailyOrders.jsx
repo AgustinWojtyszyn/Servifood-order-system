@@ -570,27 +570,10 @@ const DailyOrders = ({ user, loading }) => {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl">
         <div className="flex flex-col gap-4">
-                  {/* Botones de acción admin: completar todos hoy y limpiar previos */}
+                  {/* Botones de acción admin */}
                   {isAdmin && (
                     <>
                       <div className="flex flex-col sm:flex-row gap-3 mb-4 justify-center items-center">
-                        <button
-                          onClick={async () => {
-                            if (window.confirm('¿Marcar TODOS los pedidos del día como COMPLETOS?')) {
-                              const { error } = await db.completeAllTodayOrders()
-                              if (!error) {
-                                alert('Todos los pedidos del día marcados como completos.')
-                                handleRefresh()
-                              } else {
-                                alert('Error al marcar pedidos: ' + error.message)
-                              }
-                            }
-                          }}
-                          className="font-bold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-white"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          Completar todos HOY
-                        </button>
                         <button
                           onClick={async () => {
                             if (window.confirm('¿Archivar TODOS los pedidos pendientes? Esta acción no se puede deshacer.')) {
