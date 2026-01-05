@@ -901,26 +901,26 @@ const DailyOrders = ({ user, loading }) => {
             <div className="overflow-x-auto">
               <table className="w-full table-auto">
                 <thead>
-                  <tr className="bg-gradient-to-r from-primary-600 to-primary-800 text-left">
-                    <th className="min-w-[220px] px-6 py-5 font-bold text-white text-lg xl:pl-11">
+                  <tr className="bg-white text-left border-b-2 border-gray-200">
+                    <th className="min-w-[220px] px-6 py-5 font-bold text-black text-lg xl:pl-11">
                       👤 Cliente
                     </th>
-                    <th className="min-w-[150px] px-6 py-5 font-bold text-white text-lg">
+                    <th className="min-w-[150px] px-6 py-5 font-bold text-black text-lg">
                       📍 Ubicación
                     </th>
-                    <th className="min-w-[120px] px-6 py-5 font-bold text-white text-lg">
+                    <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
                       📊 Estado
                     </th>
-                    <th className="min-w-[120px] px-6 py-5 font-bold text-white text-lg">
+                    <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
                       📦 Items
                     </th>
-                    <th className="min-w-[150px] px-6 py-5 font-bold text-white text-lg">
+                    <th className="min-w-[150px] px-6 py-5 font-bold text-black text-lg">
                       🍽️ Platillos
                     </th>
-                    <th className="min-w-[120px] px-6 py-5 font-bold text-white text-lg">
+                    <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
                       🕐 Hora
                     </th>
-                    <th className="px-6 py-5 font-bold text-white text-lg xl:pr-11">
+                    <th className="px-6 py-5 font-bold text-black text-lg xl:pr-11">
                       ⚡ Acciones
                     </th>
                   </tr>
