@@ -559,45 +559,45 @@ const DailyOrders = ({ user, loading }) => {
     <RequireUser user={user} loading={loading}>
       <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
         {/* Page Header */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h4 className="text-xl font-semibold text-black dark:text-white">
-              Pedidos Diarios
+            <h4 className="text-3xl font-black text-black dark:text-white">
+              📋 Pedidos Diarios
             </h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-lg text-gray-600 dark:text-gray-400 font-semibold">
               Gestión de pedidos para entrega mañana - {getTomorrowDate()}
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-4">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className={`inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`inline-flex items-center justify-center rounded-xl border-2 border-gray-300 bg-white px-6 py-4 text-lg font-bold text-gray-700 shadow-xl hover:bg-gray-50 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 ${
                 refreshing ? 'animate-pulse' : ''
               }`}
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Actualizando...' : 'Actualizar'}
+              <RefreshCw className={`mr-3 h-6 w-6 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Actualizando...' : '🔄 Actualizar'}
             </button>
 
             <button
               onClick={exportToExcel}
               disabled={sortedOrders.length === 0}
-              className="inline-flex items-center justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-600 hover:to-green-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
             >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Excel ({sortedOrders.length})
+              <FileSpreadsheet className="mr-3 h-6 w-6" />
+              📊 Excel ({sortedOrders.length})
             </button>
 
             <button
               onClick={shareViaWhatsApp}
               disabled={sortedOrders.length === 0}
-              className="inline-flex items-center justify-center rounded-md bg-green-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-700 hover:to-green-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
             >
-              <Send className="mr-2 h-4 w-4" />
-              WhatsApp
+              <Send className="mr-3 h-6 w-6" />
+              📱 WhatsApp
             </button>
 
             {isAdmin && (
@@ -614,10 +614,11 @@ const DailyOrders = ({ user, loading }) => {
                     }
                   }
                 }}
-                className="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-600 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200"
+                title="Archiva todos los pedidos pendientes al final del día para mantener el sistema limpio"
               >
-                <ArchiveIcon className="mr-2 h-4 w-4" />
-                Archivar
+                <ArchiveIcon className="mr-3 h-6 w-6" />
+                📁 Archivar Pedidos
               </button>
             )}
           </div>
@@ -625,16 +626,16 @@ const DailyOrders = ({ user, loading }) => {
 
         {/* Admin Warning */}
         {isAdmin && (
-          <div className="mb-6 rounded-sm border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-800">
-                <AlertIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+          <div className="mb-8 rounded-xl border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 to-yellow-100 p-6 dark:border-yellow-800 dark:bg-yellow-900/20 shadow-xl">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-200 dark:bg-yellow-800 shadow-lg">
+                <AlertIcon className="h-7 w-7 text-yellow-700 dark:text-yellow-400" />
               </div>
               <div>
-                <h5 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                  Recordatorio importante
+                <h5 className="text-xl font-bold text-yellow-800 dark:text-yellow-200 mb-2">
+                  ⚠️ Recordatorio Importante
                 </h5>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                <p className="text-lg text-yellow-700 dark:text-yellow-300 font-semibold leading-relaxed">
                   Exporta los pedidos a Excel y archiva los pedidos pendientes al final de cada día.
                   Esto asegura que los pedidos queden contabilizados y no bloqueen nuevos pedidos.
                 </p>
@@ -828,13 +829,13 @@ const DailyOrders = ({ user, loading }) => {
 
         {/* Orders Table */}
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-          <div className="border-b border-stroke px-4 py-4 dark:border-strokedark sm:px-6 xl:px-7.5">
+          <div className="border-b-2 border-primary-200 px-6 py-6 dark:border-strokedark sm:px-8 xl:px-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-black dark:text-white">
-                  Pedidos del Día ({sortedOrders.length})
+                <h3 className="text-2xl font-black text-black dark:text-white">
+                  📋 Pedidos del Día ({sortedOrders.length})
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-lg text-gray-600 dark:text-gray-400 font-semibold">
                   Ordenado por: {
                     sortBy === 'time' ? 'Más recientes' :
                     sortBy === 'location' ? 'Ubicación' :
@@ -978,36 +979,36 @@ const DailyOrders = ({ user, loading }) => {
         {/* Location Summary */}
         {selectedLocation === 'all' && stats.total > 0 && (
           <div className="rounded-xl bg-gradient-to-br from-white to-gray-50 shadow-2xl border-2 border-primary-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-600 to-primary-800 px-6 py-5">
-              <h3 className="text-2xl font-black text-white flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
-                  <MapPin className="h-6 w-6 text-white" />
+            <div className="bg-gradient-to-r from-primary-600 to-primary-800 px-8 py-6">
+              <h3 className="text-3xl font-black text-white flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 shadow-lg">
+                  <MapPin className="h-7 w-7 text-white" />
                 </div>
                 📊 Resumen por Ubicación
               </h3>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="p-8">
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
                 {locations.map((location, index) => (
-                  <div key={location} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white to-gray-100 p-6 shadow-xl border-2 border-gray-200 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                  <div key={location} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white to-gray-100 p-8 shadow-2xl border-2 border-gray-200 hover:shadow-3xl transition-all duration-300 hover:scale-105">
                     <div className="flex items-center justify-between">
                       <div className="z-10">
-                        <h4 className="text-2xl font-black text-gray-800 mb-2 flex items-center gap-2">
+                        <h4 className="text-3xl font-black text-gray-800 mb-3 flex items-center gap-3">
                           📍 {location}
                         </h4>
-                        <span className="text-lg text-gray-600 font-semibold">Total de Pedidos</span>
+                        <span className="text-xl text-gray-600 font-bold">Total de Pedidos</span>
                       </div>
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-xl border-4 border-white">
-                        <span className="text-2xl font-black text-white">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-2xl border-4 border-white">
+                        <span className="text-3xl font-black text-white">
                           {stats.byLocation[location] || 0}
                         </span>
                       </div>
                     </div>
                     <div className="absolute -right-4 -bottom-4 opacity-5">
-                      <MapPin className={`h-24 w-24 text-primary-600`} />
+                      <MapPin className={`h-28 w-28 text-primary-600`} />
                     </div>
                     <div className="absolute top-4 right-4 opacity-10">
-                      <div className={`w-8 h-8 rounded-full bg-primary-500`}></div>
+                      <div className={`w-10 h-10 rounded-full bg-primary-500`}></div>
                     </div>
                   </div>
                 ))}
