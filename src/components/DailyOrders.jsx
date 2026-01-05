@@ -335,6 +335,32 @@ const DailyOrders = ({ user, loading }) => {
     })
   }
 
+  // Resumen legible de items del pedido
+  const summarizeOrderItems = (items = []) => {
+    if (!Array.isArray(items)) return { principalCount: 0, others: [], remaining: 0, title: '' }
+    const principal = items.filter(
+      item => item && item.name && item.name.toLowerCase().includes('menú principal')
+    )
+    const others = items
+      .filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'))
+      .map(item => ({ name: normalizeDishName(item.name), qty: item.quantity || 1 }))
+
+    const principalCount = principal.reduce((sum, item) => sum + (item.quantity || 1), 0)
+    const displayedOthers = others.slice(0, 3)
+    const remaining = Math.max(others.length - displayedOthers.length, 0)
+
+    const titleParts = []
+    if (principalCount > 0) titleParts.push(`Plato Principal: ${principalCount}`)
+    titleParts.push(...others.map(o => `${o.name} (x${o.qty})`))
+
+    return {
+      principalCount,
+      others: displayedOthers,
+      remaining,
+      title: titleParts.join('; ')
+    }
+  }
+
 
 
   const exportToExcel = () => {
@@ -554,10 +580,7 @@ const DailyOrders = ({ user, loading }) => {
   if (ordersLoading) {
     return (
       <RequireUser user={user} loading={loading}>
-                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-lg font-bold text-black shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
-          <p className="mt-4 text-white text-lg">Cargando pedidos diarios...</p>
-                  <ArchiveIcon className="mr-2 h-4 w-4 text-black" />
+        <InternalLoader />
       </RequireUser>
     )
   }
@@ -918,38 +941,44 @@ const DailyOrders = ({ user, loading }) => {
                         <p className="text-black dark:text-white">{order.location}</p>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-5 dark:border-strokedark">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
-                          order.status === 'completed' || order.status === 'delivered'
-                            ? 'bg-green-100 text-green-800'
-                            : order.status === 'cancelled'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-sm font-bold border ${getStatusColor(order.status)}`} title={getStatusText(order.status)}>
                           {getStatusText(order.status)}
                         </span>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-5 dark:border-strokedark">
-                        <p className="text-black dark:text-white">{order.total_items}</p>
+                        <span className="inline-flex items-center rounded-full border-2 border-gray-300 bg-white px-3 py-1 text-sm font-bold text-black">
+                          {order.total_items}
+                        </span>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-5 dark:border-strokedark">
-                        <div className="max-w-[200px]">
-                          {Array.isArray(order.items) && order.items.slice(0, 2).map((item, idx) => (
-                            <div key={idx} className="text-sm text-black dark:text-white truncate">
-                              {item?.name} (x{item?.quantity})
-                            </div>
-                          ))}
-                          {Array.isArray(order.items) && order.items.length > 2 && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              +{order.items.length - 2} más...
-                            </div>
-                          )}
+                        <div className="max-w-[280px]">
                           {(() => {
+                            const summary = summarizeOrderItems(order.items)
                             const customSide = getCustomSideFromResponses(order.custom_responses)
-                            return customSide ? (
-                              <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                                Guarnición: {customSide}
+                            return (
+                              <div className="space-y-1" title={summary.title}>
+                                {summary.principalCount > 0 && (
+                                  <div className="text-sm font-semibold text-black dark:text-white">
+                                    Plato Principal: {summary.principalCount}
+                                  </div>
+                                )}
+                                {summary.others.map((o, idx) => (
+                                  <div key={idx} className="text-sm text-black dark:text-white truncate">
+                                    {o.name} (x{o.qty})
+                                  </div>
+                                ))}
+                                {summary.remaining > 0 && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    +{summary.remaining} más...
+                                  </div>
+                                )}
+                                {customSide && (
+                                  <div className="text-xs italic text-orange-700 dark:text-orange-400 mt-1">
+                                    🍽️ Guarnición: {customSide}
+                                  </div>
+                                )}
                               </div>
-                            ) : null
+                            )
                           })()}
                         </div>
                       </td>
