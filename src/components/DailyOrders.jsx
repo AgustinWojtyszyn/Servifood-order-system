@@ -739,74 +739,89 @@ const DailyOrders = ({ user, loading }) => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-6">
-          <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-sm font-medium">Total Pedidos</span>
-                <h4 className="text-title-md font-bold text-black dark:text-white">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-8">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-6 shadow-xl border-2 border-primary-300">
+            <div className="flex items-center justify-between">
+              <div className="z-10">
+                <span className="text-base font-semibold text-primary-100">Total Pedidos</span>
+                <h4 className="text-3xl font-black text-white mt-1">
                   {stats.total}
                 </h4>
               </div>
-              <div className="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2">
-                <Package className="h-6 w-6 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
+                <Package className="h-8 w-8 text-white drop-shadow-lg" />
               </div>
+            </div>
+            <div className="absolute -right-4 -bottom-4 opacity-10">
+              <Package className="h-20 w-20 text-white" />
             </div>
           </div>
 
-          <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-sm font-medium">Total Items</span>
-                <h4 className="text-title-md font-bold text-black dark:text-white">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-secondary-500 to-secondary-700 p-6 shadow-xl border-2 border-secondary-300">
+            <div className="flex items-center justify-between">
+              <div className="z-10">
+                <span className="text-base font-semibold text-secondary-100">Total Items</span>
+                <h4 className="text-3xl font-black text-white mt-1">
                   {stats.totalItems}
                 </h4>
               </div>
-              <div className="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-3">
-                <TrendingUp className="h-6 w-6 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
+                <TrendingUp className="h-8 w-8 text-white drop-shadow-lg" />
               </div>
+            </div>
+            <div className="absolute -right-4 -bottom-4 opacity-10">
+              <TrendingUp className="h-20 w-20 text-white" />
             </div>
           </div>
 
-          <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-sm font-medium">Pendientes</span>
-                <h4 className="text-title-md font-bold text-black dark:text-white">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 shadow-xl border-2 border-yellow-300">
+            <div className="flex items-center justify-between">
+              <div className="z-10">
+                <span className="text-base font-semibold text-yellow-100">Pendientes</span>
+                <h4 className="text-3xl font-black text-white mt-1">
                   {stats.pending}
                 </h4>
               </div>
-              <div className="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-4">
-                <Clock className="h-6 w-6 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
+                <Clock className="h-8 w-8 text-white drop-shadow-lg" />
               </div>
+            </div>
+            <div className="absolute -right-4 -bottom-4 opacity-10">
+              <Clock className="h-20 w-20 text-white" />
             </div>
           </div>
 
-          <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-sm font-medium">Completados</span>
-                <h4 className="text-title-md font-bold text-black dark:text-white">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-500 to-green-600 p-6 shadow-xl border-2 border-green-300">
+            <div className="flex items-center justify-between">
+              <div className="z-10">
+                <span className="text-base font-semibold text-green-100">Completados</span>
+                <h4 className="text-3xl font-black text-white mt-1">
                   {stats.completed}
                 </h4>
               </div>
-              <div className="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-5">
-                <CheckCircle className="h-6 w-6 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
+                <CheckCircle className="h-8 w-8 text-white drop-shadow-lg" />
               </div>
+            </div>
+            <div className="absolute -right-4 -bottom-4 opacity-10">
+              <CheckCircle className="h-20 w-20 text-white" />
             </div>
           </div>
 
-          <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-sm font-medium">Cancelados</span>
-                <h4 className="text-title-md font-bold text-black dark:text-white">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-red-600 p-6 shadow-xl border-2 border-red-300">
+            <div className="flex items-center justify-between">
+              <div className="z-10">
+                <span className="text-base font-semibold text-red-100">Cancelados</span>
+                <h4 className="text-3xl font-black text-white mt-1">
                   {stats.cancelled}
                 </h4>
               </div>
-              <div className="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-1">
-                <XCircle className="h-6 w-6 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
+                <XCircle className="h-8 w-8 text-white drop-shadow-lg" />
               </div>
+            </div>
+            <div className="absolute -right-4 -bottom-4 opacity-10">
+              <XCircle className="h-20 w-20 text-white" />
             </div>
           </div>
         </div>
@@ -849,27 +864,27 @@ const DailyOrders = ({ user, loading }) => {
             <div className="overflow-x-auto">
               <table className="w-full table-auto">
                 <thead>
-                  <tr className="bg-gray-2 text-left dark:bg-meta-4">
-                    <th className="min-w-[220px] px-4 py-4 font-medium text-black dark:text-white xl:pl-11">
-                      Cliente
+                  <tr className="bg-gradient-to-r from-primary-600 to-primary-800 text-left">
+                    <th className="min-w-[220px] px-6 py-5 font-bold text-white text-lg xl:pl-11">
+                      👤 Cliente
                     </th>
-                    <th className="min-w-[150px] px-4 py-4 font-medium text-black dark:text-white">
-                      Ubicación
+                    <th className="min-w-[150px] px-6 py-5 font-bold text-white text-lg">
+                      📍 Ubicación
                     </th>
-                    <th className="min-w-[120px] px-4 py-4 font-medium text-black dark:text-white">
-                      Estado
+                    <th className="min-w-[120px] px-6 py-5 font-bold text-white text-lg">
+                      📊 Estado
                     </th>
-                    <th className="min-w-[120px] px-4 py-4 font-medium text-black dark:text-white">
-                      Items
+                    <th className="min-w-[120px] px-6 py-5 font-bold text-white text-lg">
+                      📦 Items
                     </th>
-                    <th className="min-w-[150px] px-4 py-4 font-medium text-black dark:text-white">
-                      Platillos
+                    <th className="min-w-[150px] px-6 py-5 font-bold text-white text-lg">
+                      🍽️ Platillos
                     </th>
-                    <th className="min-w-[120px] px-4 py-4 font-medium text-black dark:text-white">
-                      Hora
+                    <th className="min-w-[120px] px-6 py-5 font-bold text-white text-lg">
+                      🕐 Hora
                     </th>
-                    <th className="px-4 py-4 font-medium text-black dark:text-white xl:pr-11">
-                      Acciones
+                    <th className="px-6 py-5 font-bold text-white text-lg xl:pr-11">
+                      ⚡ Acciones
                     </th>
                   </tr>
                 </thead>
@@ -962,29 +977,37 @@ const DailyOrders = ({ user, loading }) => {
 
         {/* Location Summary */}
         {selectedLocation === 'all' && stats.total > 0 && (
-          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div className="border-b border-stroke px-4 py-4 dark:border-strokedark sm:px-6 xl:px-7.5">
-              <h3 className="text-lg font-semibold text-black dark:text-white flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                Resumen por Ubicación
+          <div className="rounded-xl bg-gradient-to-br from-white to-gray-50 shadow-2xl border-2 border-primary-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-primary-600 to-primary-800 px-6 py-5">
+              <h3 className="text-2xl font-black text-white flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+                  <MapPin className="h-6 w-6 text-white" />
+                </div>
+                📊 Resumen por Ubicación
               </h3>
             </div>
-            <div className="p-4 sm:p-6 xl:p-7.5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {locations.map(location => (
-                  <div key={location} className="rounded-sm border border-stroke bg-gray-50 p-4 dark:border-strokedark dark:bg-gray-800">
+            <div className="p-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {locations.map((location, index) => (
+                  <div key={location} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white to-gray-100 p-6 shadow-xl border-2 border-gray-200 hover:shadow-2xl transition-all duration-300 hover:scale-105">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-lg font-semibold text-black dark:text-white mb-1">
-                          {location}
+                      <div className="z-10">
+                        <h4 className="text-2xl font-black text-gray-800 mb-2 flex items-center gap-2">
+                          📍 {location}
                         </h4>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Pedidos</span>
+                        <span className="text-lg text-gray-600 font-semibold">Total de Pedidos</span>
                       </div>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                        <span className="text-lg font-bold text-primary">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-xl border-4 border-white">
+                        <span className="text-2xl font-black text-white">
                           {stats.byLocation[location] || 0}
                         </span>
                       </div>
+                    </div>
+                    <div className="absolute -right-4 -bottom-4 opacity-5">
+                      <MapPin className={`h-24 w-24 text-primary-600`} />
+                    </div>
+                    <div className="absolute top-4 right-4 opacity-10">
+                      <div className={`w-8 h-8 rounded-full bg-primary-500`}></div>
                     </div>
                   </div>
                 ))}
