@@ -1043,8 +1043,8 @@ const DailyOrders = ({ user, loading }) => {
                         </h4>
                         <span className="text-xl text-gray-600 font-bold">Total de Pedidos</span>
                       </div>
-                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-2xl border-4 border-white">
-                        <span className="text-3xl font-black text-white">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-2xl border-4 border-gray-300">
+                        <span className="text-3xl font-black text-black">
                           {stats.byLocation[location] || 0}
                         </span>
                       </div>
