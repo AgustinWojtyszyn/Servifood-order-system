@@ -935,17 +935,17 @@ const DailyOrders = ({ user, loading }) => {
                 </thead>
                 <tbody>
                   {sortedOrders.map((order, index) => (
-                    <tr key={order.id} className={index % 2 === 0 ? '' : 'bg-gray-50 dark:bg-gray-800'}>
+                    <tr key={order.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 dark:bg-gray-800'}>
                       <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark xl:pl-11">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                             <User className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h5 className="text-xl font-extrabold text-black dark:text-white tracking-wide">
+                            <h5 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-wide">
                               {order.user_name}
                             </h5>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                            <p className="text-sm text-gray-900 dark:text-gray-200">
                               {order.user_email}
                             </p>
                           </div>
@@ -975,12 +975,12 @@ const DailyOrders = ({ user, loading }) => {
                             return (
                               <div className="space-y-1" title={summary.title}>
                                 {summary.principalCount > 0 && (
-                                  <div className="text-base font-extrabold text-black dark:text-white">
+                                  <div className="text-base font-extrabold text-gray-900 dark:text-white">
                                     Plato Principal: {summary.principalCount}
                                   </div>
                                 )}
                                 {summary.others.map((o, idx) => (
-                                  <div key={idx} className="text-base text-black dark:text-white break-words">
+                                  <div key={idx} className="text-base text-gray-900 dark:text-white break-words">
                                     {o.name} (x{o.qty})
                                   </div>
                                 ))}
