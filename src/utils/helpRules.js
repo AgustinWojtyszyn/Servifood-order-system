@@ -90,7 +90,7 @@ export const getErrorResponse = (errorCode, { screenContext, SUPPORT_PHONE, TUTO
         title: 'Horario de pedidos cerrado',
         message: 'Los pedidos se realizan de 9:00 a 22:00 del día anterior.',
         steps: ['Intentá nuevamente dentro del horario habilitado'],
-        tutorialUrl: TUTORIAL_URL,
+        tutorialUrl: null,
         contact: SUPPORT_PHONE,
         requiredPhrase: MANUAL_ORDER_TEXT,
       }
@@ -118,7 +118,7 @@ export const getErrorResponse = (errorCode, { screenContext, SUPPORT_PHONE, TUTO
         title: 'No podés realizar el pedido en este momento',
         message: 'Por reglas del sistema o tu perfil, el pedido no puede completarse ahora.',
         steps: ['Revisá tu estado en el perfil', 'Intentá nuevamente más tarde'],
-        tutorialUrl: TUTORIAL_URL,
+        tutorialUrl: null,
         contact: SUPPORT_PHONE,
         requiredPhrase: MANUAL_ORDER_TEXT,
       }
