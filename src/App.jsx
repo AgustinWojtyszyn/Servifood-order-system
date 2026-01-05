@@ -1,9 +1,11 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useAuthContext } from './contexts/AuthContext'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase, auth } from './supabaseClient'
 import SplashScreen from './components/SplashScreen'
 import './App.css'
+import { HelpCenterProvider } from './contexts/HelpCenterProvider'
+import HelpWidget from './components/HelpWidget'
 
 // Importaciones inmediatas (críticas para la carga inicial)
 import Layout from './components/Layout'
@@ -41,10 +43,11 @@ function App() {
     loading ? (
       <InternalLoader />
     ) : (
-      <Router>
-        <div className="app-shell bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 min-h-screen min-w-0 w-full h-auto overflow-x-hidden">
-          <Suspense fallback={<InternalLoader />}>
-            <Routes>
+      <HelpCenterProvider>
+        <Router>
+          <div className="app-shell bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 min-h-screen min-w-0 w-full h-auto overflow-x-hidden">
+            <Suspense fallback={<InternalLoader />}>
+              <Routes>
               <Route path="/" element={
                 !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
               } />
@@ -86,10 +89,13 @@ function App() {
                 !loading && (user ? <Layout user={user} loading={loading}><MonthlyPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
               } />
               <Route path="/auth/callback" element={<AuthCallback />} />
-            </Routes>
-          </Suspense>
-        </div>
-      </Router>
+              </Routes>
+            </Suspense>
+            {/* Widget global de ayuda */}
+            <HelpWidget />
+          </div>
+        </Router>
+      </HelpCenterProvider>
     )
   )
 }
