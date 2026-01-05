@@ -344,27 +344,34 @@ const DailyOrders = ({ user, loading }) => {
     }
 
     try {
-      // Preparar datos para el Excel
       const excelData = sortedOrders.map(order => {
-        // Procesar items del menú (con normalización de nombres)
-        let menuItems = [];
+        let menuItems = []
         if (Array.isArray(order.items)) {
-          // Separar Menú Principal y otros
-          const principal = order.items.filter(item => item && item.name && item.name.toLowerCase().includes('menú principal'));
-          const others = order.items.filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'));
-          menuItems = [...principal, ...others].map(item => `${normalizeDishName(item.name)} (x${item.quantity})`);
+          const principal = order.items.filter(
+            item => item && item.name && item.name.toLowerCase().includes('menú principal')
+          )
+          const others = order.items.filter(
+            item => item && item.name && !item.name.toLowerCase().includes('menú principal')
+          )
+
+          if (principal.length > 0) {
+            const totalPrincipal = principal.reduce((sum, item) => sum + (item.quantity || 1), 0)
+            menuItems.push(`Plato Principal: ${totalPrincipal}`)
+          }
+
+          others.forEach(item => {
+            menuItems.push(`${normalizeDishName(item.name)} (x${item.quantity || 1})`)
+          })
         }
 
-        // Detectar guarnición personalizada
-        const customSide = getCustomSideFromResponses(order.custom_responses)
+        const customSide = getCustomSideFromResponses(order.custom_responses || [])
         if (customSide) {
           menuItems.push(`🔸 Guarnición: ${customSide}`)
         }
 
         const items = menuItems.join('; ') || 'Sin items'
 
-        // Otras opciones personalizadas (excluyendo guarniciones)
-        const otherResponses = getOtherCustomResponses(order.custom_responses)
+        const otherResponses = getOtherCustomResponses(order.custom_responses || [])
         const customResponses = otherResponses
           .map(r => {
             const response = Array.isArray(r.response) ? r.response.join(', ') : r.response
@@ -547,10 +554,10 @@ const DailyOrders = ({ user, loading }) => {
   if (ordersLoading) {
     return (
       <RequireUser user={user} loading={loading}>
-        <div className="p-6 text-center">
+                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-lg font-bold text-black shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
           <p className="mt-4 text-white text-lg">Cargando pedidos diarios...</p>
-        </div>
+                  <ArchiveIcon className="mr-2 h-4 w-4 text-black" />
       </RequireUser>
     )
   }
