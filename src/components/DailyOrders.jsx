@@ -280,16 +280,8 @@ const DailyOrders = ({ user, loading }) => {
 
   // Colores distintivos por ubicación para mejorar legibilidad
   const getLocationBadgeColor = (location) => {
-    switch(location) {
-      case 'Los Berros':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
-      case 'La Laja':
-        return 'bg-purple-100 text-purple-800 border-purple-300'
-      case 'Padre Bueno':
-        return 'bg-teal-100 text-teal-800 border-teal-300'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
-    }
+    // Estilo neutro: blanco con texto negro para máxima legibilidad
+    return 'bg-white text-black border-gray-300'
   }
 
   const filteredOrders = selectedLocation === 'all' 
@@ -935,17 +927,17 @@ const DailyOrders = ({ user, loading }) => {
                 </thead>
                 <tbody>
                   {sortedOrders.map((order, index) => (
-                    <tr key={order.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 dark:bg-gray-800'}>
+                    <tr key={order.id} className={'bg-white'}>
                       <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark xl:pl-11">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                             <User className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h5 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-wide">
+                            <h5 className="text-xl font-extrabold text-black tracking-wide">
                               {order.user_name}
                             </h5>
-                            <p className="text-sm text-gray-900 dark:text-gray-200">
+                            <p className="text-sm text-black">
                               {order.user_email}
                             </p>
                           </div>
@@ -975,22 +967,22 @@ const DailyOrders = ({ user, loading }) => {
                             return (
                               <div className="space-y-1" title={summary.title}>
                                 {summary.principalCount > 0 && (
-                                  <div className="text-base font-extrabold text-gray-900 dark:text-white">
+                                  <div className="text-base font-extrabold text-black">
                                     Plato Principal: {summary.principalCount}
                                   </div>
                                 )}
                                 {summary.others.map((o, idx) => (
-                                  <div key={idx} className="text-base text-gray-900 dark:text-white break-words">
+                                  <div key={idx} className="text-base text-black break-words">
                                     {o.name} (x{o.qty})
                                   </div>
                                 ))}
                                 {summary.remaining > 0 && (
-                                  <div className="text-sm text-gray-700 dark:text-gray-300 font-semibold">
+                                  <div className="text-sm text-black font-semibold">
                                     +{summary.remaining} más...
                                   </div>
                                 )}
                                 {customSide && (
-                                  <div className="text-sm italic text-orange-800 dark:text-orange-300 mt-2 font-bold">
+                                  <div className="text-sm italic text-black mt-2 font-bold">
                                     Guarnición: {customSide}
                                   </div>
                                 )}
@@ -1000,7 +992,7 @@ const DailyOrders = ({ user, loading }) => {
                         </div>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
-                        <p className="text-base font-mono font-bold text-gray-900 dark:text-white">
+                        <p className="text-base font-mono font-bold text-black">
                           {formatTime(order.created_at)}
                         </p>
                       </td>
