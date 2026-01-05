@@ -626,16 +626,16 @@ const DailyOrders = ({ user, loading }) => {
 
         {/* Admin Warning */}
         {isAdmin && (
-          <div className="mb-8 rounded-xl border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 to-yellow-100 p-6 dark:border-yellow-800 dark:bg-yellow-900/20 shadow-xl">
+          <div className="mb-8 rounded-xl border-2 border-yellow-400 bg-white p-6 shadow-xl">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-200 dark:bg-yellow-800 shadow-lg">
-                <AlertIcon className="h-7 w-7 text-yellow-700 dark:text-yellow-400" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 shadow-lg">
+                <AlertIcon className="h-7 w-7 text-yellow-600" />
               </div>
               <div>
-                <h5 className="text-xl font-bold text-yellow-800 dark:text-yellow-200 mb-2">
+                <h5 className="text-xl font-bold text-black mb-2">
                   ⚠️ Recordatorio Importante
                 </h5>
-                <p className="text-lg text-yellow-700 dark:text-yellow-300 font-semibold leading-relaxed">
+                <p className="text-lg text-black font-semibold leading-relaxed">
                   Exporta los pedidos a Excel y archiva los pedidos pendientes al final de cada día.
                   Esto asegura que los pedidos queden contabilizados y no bloqueen nuevos pedidos.
                 </p>
