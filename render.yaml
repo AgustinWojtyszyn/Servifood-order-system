@@ -4,16 +4,18 @@ services:
     env: node
     buildCommand: npm install && npm run build
     startCommand: npx serve -s dist -l 10000
+    # Ajuste de caché para evitar referencias a chunks viejos tras un deploy
     headers:
-      - path: /*
+      # Nunca cachear HTML y JS/CSS de la app; forzar revalidación en cada carga
+      - path: /index.html
         name: Cache-Control
-        value: public, max-age=31536000, immutable
+        value: public, max-age=0, must-revalidate
       - path: /assets/*.js
         name: Cache-Control
-        value: public, max-age=31536000, immutable
+        value: public, max-age=0, must-revalidate
       - path: /assets/*.css
         name: Cache-Control
-        value: public, max-age=31536000, immutable
+        value: public, max-age=0, must-revalidate
       - path: /assets/*.jpg
         name: Cache-Control
         value: public, max-age=31536000, immutable
@@ -26,9 +28,6 @@ services:
       - path: /assets/*.woff2
         name: Cache-Control
         value: public, max-age=31536000, immutable
-      - path: /index.html
-        name: Cache-Control
-        value: public, max-age=0, must-revalidate
       - path: /robots.txt
         name: Cache-Control
         value: public, max-age=86400
