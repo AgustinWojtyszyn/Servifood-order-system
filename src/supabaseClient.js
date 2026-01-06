@@ -372,6 +372,14 @@ export const db = {
       error = fallbackResult.error
     }
 
+    // Si aún falla por delivery_date inexistente, reintentar sin delivery_date
+    if (error && (error.code === '42703' || /delivery_date/i.test(error.message || ''))) {
+      const fallbackNoDelivery = 'id, status, created_at, total_items, items'
+      const fallbackNoDeliveryResult = await selectOrders(fallbackNoDelivery)
+      orders = fallbackNoDeliveryResult.data
+      error = fallbackNoDeliveryResult.error
+    }
+
     if (error) return { error }
 
     // Helper para iterar fechas del rango inclusive
@@ -389,7 +397,7 @@ export const db = {
       days.push(`${yyyy}-${mm}-${dd}`)
     }
 
-    // Agrupar por fecha de negocio preferentemente delivery_date, si no existe, por created_at convertido a zona local
+    // Agrupar por fecha de negocio preferentemente delivery_date, si existe; si no, por created_at convertido a zona local
     const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
     const bucketForOrder = (o) => {
       if (o.delivery_date) return o.delivery_date.slice(0, 10)
