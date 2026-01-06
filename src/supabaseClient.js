@@ -352,12 +352,25 @@ export const db = {
     // Consultar pedidos del rango por created_at (más seguro), luego agrupar por día de negocio (delivery_date si existe)
     const startUtc = new Date(`${start}T00:00:00.000Z`).toISOString()
     const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
-    const { data: orders, error } = await supabase
-      .from('orders')
-      // Nota: total_amount puede no existir; incluimos items y custom_responses para agregados detallados
-      .select('id, status, delivery_date, created_at, total_items, items, custom_responses')
-      .gte('created_at', startUtc)
-      .lte('created_at', endUtc)
+    const selectOrders = async (cols) => {
+      return supabase
+        .from('orders')
+        .select(cols)
+        .gte('created_at', startUtc)
+        .lte('created_at', endUtc)
+    }
+
+    // Intento principal: incluye custom_responses si existe
+    const primaryColumns = 'id, status, delivery_date, created_at, total_items, items, custom_responses'
+    let { data: orders, error } = await selectOrders(primaryColumns)
+
+    // Si falla por columna inexistente (ej. custom_responses), reintentar sin esa columna
+    if (error && (error.code === '42703' || /custom_responses/i.test(error.message || ''))) {
+      const fallbackColumns = 'id, status, delivery_date, created_at, total_items, items'
+      const fallbackResult = await selectOrders(fallbackColumns)
+      orders = fallbackResult.data
+      error = fallbackResult.error
+    }
 
     if (error) return { error }
 
