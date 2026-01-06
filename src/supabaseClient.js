@@ -337,6 +337,85 @@ export const db = {
     return { count, error }
   },
 
+  // Desglose diario por rango usando datos históricos reales
+  // - Filtra por delivery_date si existe (día de entrega del negocio)
+  // - Aplica mismos criterios de estado para consistencia
+  // - Incluye días sin pedidos con valor 0 para continuidad
+  getDailyBreakdown: async ({ start, end, timeZone = 'America/Argentina/San_Juan' }) => {
+    if (!start || !end) {
+      return { error: new Error('Rango inválido: start/end son requeridos') }
+    }
+
+    // Estados que cuentan como "pedido" en este panel
+    const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
+
+    // Consultar pedidos del rango por delivery_date (día de negocio)
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('id, status, delivery_date, created_at, total_items, total_amount')
+      .gte('delivery_date', start)
+      .lte('delivery_date', end)
+      .in('status', COUNTABLE_STATUSES)
+
+    if (error) return { error }
+
+    // Helper para iterar fechas del rango inclusive
+    const parseISODate = (str) => {
+      const [y, m, d] = str.split('-').map(Number)
+      return new Date(y, m - 1, d)
+    }
+    const startDate = parseISODate(start)
+    const endDate = parseISODate(end)
+    const days = []
+    for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
+      const yyyy = dt.getFullYear()
+      const mm = String(dt.getMonth() + 1).padStart(2, '0')
+      const dd = String(dt.getDate()).padStart(2, '0')
+      days.push(`${yyyy}-${mm}-${dd}`)
+    }
+
+    // Agrupar por fecha de negocio preferentemente delivery_date, si no existe, por created_at convertido a zona local
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+    const bucketForOrder = (o) => {
+      if (o.delivery_date) return o.delivery_date.slice(0, 10)
+      // Fallback a created_at -> fecha local del negocio
+      try {
+        const d = new Date(o.created_at)
+        return fmt.format(d)
+      } catch {
+        return null
+      }
+    }
+
+    const byDay = new Map()
+    for (const day of days) {
+      byDay.set(day, { date: day, count: 0, total_items: 0, total_amount: 0 })
+    }
+
+    Array.isArray(orders) && orders.forEach(o => {
+      const key = bucketForOrder(o)
+      if (!key) return
+      if (!byDay.has(key)) {
+        byDay.set(key, { date: key, count: 0, total_items: 0, total_amount: 0 })
+      }
+      const row = byDay.get(key)
+      row.count += 1
+      row.total_items += (o.total_items || 0)
+      row.total_amount += (o.total_amount || 0)
+      byDay.set(key, row)
+    })
+
+    const daily_breakdown = days.map(d => byDay.get(d)).filter(Boolean)
+    const range_totals = daily_breakdown.reduce((acc, d) => {
+      acc.count += d.count
+      acc.total_items += d.total_items
+      acc.total_amount += d.total_amount
+      return acc
+    }, { count: 0, total_items: 0, total_amount: 0 })
+
+    return { data: { daily_breakdown, range_totals, start, end, statuses: COUNTABLE_STATUSES, timeZone }, error: null }
+  },
+
   // Menú
   getMenuItems: async () => {
     // Usar cache para menú (cambia poco)

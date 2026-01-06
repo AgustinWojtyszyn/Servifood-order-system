@@ -4,7 +4,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Download, Package, TrendingUp, User } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { supabase } from '../supabaseClient'
+import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
 
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
@@ -71,10 +71,12 @@ function DateRangePicker({ value, onChange }) {
 
 
 const MonthlyPanel = ({ user, loading }) => {
+  const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [metricsLoading, setMetricsLoading] = useState(false)
   const [metrics, setMetrics] = useState(null)
   const [error, setError] = useState(null)
+  const [dailyData, setDailyData] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -104,6 +106,9 @@ const MonthlyPanel = ({ user, loading }) => {
         .gte('delivery_date', dateRange.start)
         .lte('delivery_date', dateRange.end)
       if (ordersError) throw ordersError
+
+      // Aplicar mismos criterios de estados que el desglose diario
+      orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
 
       // Agrupar por ubicación (location) usando todos los pedidos del rango
       const grouped = {}
@@ -183,10 +188,19 @@ const MonthlyPanel = ({ user, loading }) => {
         }
       })
 
+      // Para consistencia, usar el total del desglose diario
       setMetrics({
-        totalPedidos: orders.length,
+        totalPedidos: 0,
         empresas
       })
+
+      // Desglose diario del rango (fuente histórica real)
+      const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: dateRange.start, end: dateRange.end })
+      if (breakdownError) throw breakdownError
+      setDailyData(breakdown)
+
+      // Actualizar totalPedidos desde breakdown para consistencia
+      setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
     } catch (err) {
       setError('Error al obtener métricas')
     } finally {
@@ -248,6 +262,29 @@ const MonthlyPanel = ({ user, loading }) => {
     XLSX.writeFile(wb, fileName)
   }
 
+  // Exportar desglose diario del rango
+  const handleExportDailyExcel = () => {
+    if (!dailyData || !dailyData.daily_breakdown) return
+    const rows = dailyData.daily_breakdown.map(d => ({
+      Fecha: d.date,
+      Pedidos: d.count,
+      'Total ítems': d.total_items || 0,
+      'Monto total': d.total_amount || 0
+    }))
+    // Agregar totales al final
+    rows.push({
+      Fecha: 'Totales',
+      Pedidos: dailyData.range_totals.count,
+      'Total ítems': dailyData.range_totals.total_items,
+      'Monto total': dailyData.range_totals.total_amount
+    })
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Desglose Diario')
+    const fileName = `desglose-diario-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
+    XLSX.writeFile(wb, fileName)
+  }
+
   return (
     <RequireUser user={user} loading={loading}>
     <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
@@ -293,6 +330,15 @@ const MonthlyPanel = ({ user, loading }) => {
             <Download className="h-5 w-5" />
             Exportar Excel
           </button>
+          {dailyData?.daily_breakdown && (
+            <button
+              onClick={handleExportDailyExcel}
+              className="ml-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
+            >
+              <Download className="h-5 w-5" />
+              Exportar rango (diario)
+            </button>
+          )}
         </div>
       )}
       {/* Métricas y tabla */}
@@ -300,6 +346,44 @@ const MonthlyPanel = ({ user, loading }) => {
       {error && <div className="mt-4 text-center text-red-600 font-bold">{error}</div>}
       {metrics && (
         <div className="space-y-6">
+          {/* Desglose diario del rango */}
+          {dailyData?.daily_breakdown && (
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                <div className="font-bold text-blue-900 text-lg">Desglose diario del rango</div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
+                  <thead className="bg-blue-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Fecha (YYYY-MM-DD)</th>
+                      <th className="px-4 py-2 text-right">Cantidad de pedidos</th>
+                      <th className="px-4 py-2 text-right">Total ítems</th>
+                      <th className="px-4 py-2 text-right">Monto total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dailyData.daily_breakdown.map(d => (
+                      <tr key={d.date} className="border-t hover:bg-blue-50 transition-all">
+                        <td className="px-4 py-2">{d.date}</td>
+                        <td className="px-4 py-2 text-right">{d.count}</td>
+                        <td className="px-4 py-2 text-right">{d.total_items || 0}</td>
+                        <td className="px-4 py-2 text-right">{d.total_amount || 0}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-t bg-blue-100">
+                      <td className="px-4 py-2 font-semibold">Totales del rango</td>
+                      <td className="px-4 py-2 text-right font-semibold">{dailyData.range_totals.count}</td>
+                      <td className="px-4 py-2 text-right font-semibold">{dailyData.range_totals.total_items}</td>
+                      <td className="px-4 py-2 text-right font-semibold">{dailyData.range_totals.total_amount}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Tarjetas de métricas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full">
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
