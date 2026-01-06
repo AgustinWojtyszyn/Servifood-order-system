@@ -355,7 +355,6 @@ export const db = {
       .select('id, status, delivery_date, created_at, total_items, total_amount')
       .gte('delivery_date', start)
       .lte('delivery_date', end)
-      .in('status', COUNTABLE_STATUSES)
 
     if (error) return { error }
 
@@ -392,7 +391,8 @@ export const db = {
       byDay.set(day, { date: day, count: 0, total_items: 0, total_amount: 0 })
     }
 
-    Array.isArray(orders) && orders.forEach(o => {
+    const filteredOrders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
+    filteredOrders.forEach(o => {
       const key = bucketForOrder(o)
       if (!key) return
       if (!byDay.has(key)) {
