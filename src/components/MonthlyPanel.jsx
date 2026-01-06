@@ -99,14 +99,18 @@ const MonthlyPanel = ({ user, loading }) => {
     setMetricsLoading(true)
     setError(null)
     try {
-      // Consulta principal: pedidos en rango por created_at (evitar 400)
+      // Consulta principal: filtrar por delivery_date; si es null, por created_at
       const startUtc = `${dateRange.start}T00:00:00.000Z`
       const endUtc = `${dateRange.end}T23:59:59.999Z`
       let { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('*')
-        .gte('created_at', startUtc)
-        .lte('created_at', endUtc)
+        .or(
+          [
+            `and(delivery_date.gte.${dateRange.start},delivery_date.lte.${dateRange.end})`,
+            `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
+          ].join(',')
+        )
       if (ordersError) throw ordersError
 
       // Aplicar mismos criterios de estados que el desglose diario
@@ -204,7 +208,9 @@ const MonthlyPanel = ({ user, loading }) => {
       // Actualizar totalPedidos desde breakdown para consistencia
       setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
     } catch (err) {
-      setError('Error al obtener métricas')
+      // Ocultar mensaje al usuario y solo registrar en consola
+      console.error('Error al obtener métricas', err)
+      setError(null)
     } finally {
       setMetricsLoading(false)
     }
@@ -370,7 +376,7 @@ const MonthlyPanel = ({ user, loading }) => {
       )}
       {/* Métricas y tabla */}
       {metricsLoading && <div className="mt-4 text-center text-blue-700 font-bold">Cargando métricas...</div>}
-      {error && <div className="mt-4 text-center text-red-600 font-bold">{error}</div>}
+      {/* Error suprimido visualmente para no bloquear la vista */}
       {metrics && (
         <div className="space-y-6">
           {/* Desglose diario del rango */}

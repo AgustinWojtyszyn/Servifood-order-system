@@ -349,15 +349,19 @@ export const db = {
     // Estados que cuentan como "pedido" en este panel
     const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
 
-    // Consultar pedidos del rango por created_at (más seguro), luego agrupar por día de negocio (delivery_date si existe)
+    // Preferir filtrar por delivery_date; si es null, usar created_at
     const startUtc = new Date(`${start}T00:00:00.000Z`).toISOString()
     const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
     const selectOrders = async (cols) => {
       return supabase
         .from('orders')
         .select(cols)
-        .gte('created_at', startUtc)
-        .lte('created_at', endUtc)
+        .or(
+          [
+            `and(delivery_date.gte.${start},delivery_date.lte.${end})`,
+            `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
+          ].join(',')
+        )
     }
 
     // Intento principal: incluye custom_responses si existe
