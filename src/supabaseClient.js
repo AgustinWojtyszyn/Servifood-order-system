@@ -354,7 +354,8 @@ export const db = {
     const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('id, status, delivery_date, created_at, total_items, total_amount')
+      // No seleccionamos total_amount porque la columna no existe en la tabla base
+      .select('id, status, delivery_date, created_at, total_items')
       .gte('created_at', startUtc)
       .lte('created_at', endUtc)
 
