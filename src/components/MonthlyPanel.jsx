@@ -99,12 +99,14 @@ const MonthlyPanel = ({ user, loading }) => {
     setMetricsLoading(true)
     setError(null)
     try {
-      // Consulta principal: pedidos en rango
+      // Consulta principal: pedidos en rango por created_at (evitar 400)
+      const startUtc = `${dateRange.start}T00:00:00.000Z`
+      const endUtc = `${dateRange.end}T23:59:59.999Z`
       let { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('*')
-        .gte('delivery_date', dateRange.start)
-        .lte('delivery_date', dateRange.end)
+        .gte('created_at', startUtc)
+        .lte('created_at', endUtc)
       if (ordersError) throw ordersError
 
       // Aplicar mismos criterios de estados que el desglose diario

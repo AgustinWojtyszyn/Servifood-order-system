@@ -349,12 +349,14 @@ export const db = {
     // Estados que cuentan como "pedido" en este panel
     const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
 
-    // Consultar pedidos del rango por delivery_date (día de negocio)
+    // Consultar pedidos del rango por created_at (más seguro), luego agrupar por día de negocio (delivery_date si existe)
+    const startUtc = new Date(`${start}T00:00:00.000Z`).toISOString()
+    const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
     const { data: orders, error } = await supabase
       .from('orders')
       .select('id, status, delivery_date, created_at, total_items, total_amount')
-      .gte('delivery_date', start)
-      .lte('delivery_date', end)
+      .gte('created_at', startUtc)
+      .lte('created_at', endUtc)
 
     if (error) return { error }
 
