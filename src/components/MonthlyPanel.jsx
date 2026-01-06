@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
-import DatePicker from 'react-datepicker'
+import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Download, Package, TrendingUp, User } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
+import { es } from 'date-fns/locale'
+
+// Configurar calendario en español
+registerLocale('es', es)
+setDefaultLocale('es')
 
 // Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
 function DateRangePicker({ value, onChange }) {
@@ -25,6 +30,7 @@ function DateRangePicker({ value, onChange }) {
         <label className="font-semibold mb-1">Desde:</label>
         <DatePicker
           selected={startDate}
+          locale="es"
           onChange={date => {
             const iso = date ? date.toISOString().slice(0, 10) : ''
             // Si la fecha de fin es menor, ajusta
@@ -45,6 +51,7 @@ function DateRangePicker({ value, onChange }) {
         <label className="font-semibold mb-1">Hasta:</label>
         <DatePicker
           selected={endDate}
+          locale="es"
           onChange={date => {
             const iso = date ? date.toISOString().slice(0, 10) : ''
             // Si la fecha de inicio es mayor, ajusta
@@ -289,9 +296,7 @@ const MonthlyPanel = ({ user, loading }) => {
         'OPCIÓN 6': d.opciones?.['OPCIÓN 6'] || 0,
         'Total opciones': d.total_opciones || 0,
         'Guarniciones (tipo: cantidad)': guarnStr || '—',
-        'Total guarniciones': d.total_guarniciones || 0,
-        'Total ítems': d.total_items || 0,
-        'Monto total': d.total_amount || 0
+        'Total guarniciones': d.total_guarniciones || 0
       }
     })
     // Totales del rango (sumados desde el desglose)
@@ -307,9 +312,7 @@ const MonthlyPanel = ({ user, loading }) => {
       'OPCIÓN 6': '',
       'Total opciones': dailyData.range_totals.total_opciones,
       'Guarniciones (tipo: cantidad)': '',
-      'Total guarniciones': dailyData.range_totals.total_guarniciones,
-      'Total ítems': dailyData.range_totals.total_items,
-      'Monto total': dailyData.range_totals.total_amount
+      'Total guarniciones': dailyData.range_totals.total_guarniciones
     })
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
@@ -391,30 +394,24 @@ const MonthlyPanel = ({ user, loading }) => {
                   <thead className="bg-blue-50">
                     <tr>
                       <th className="px-4 py-2 text-left">Fecha (YYYY-MM-DD)</th>
-                      <th className="px-4 py-2 text-right">Cantidad de pedidos</th>
-                      <th className="px-4 py-2 text-right">Total ítems</th>
-                      <th className="px-4 py-2 text-right">Monto total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dailyData.daily_breakdown.map(d => (
-                      <tr key={d.date} className="border-t hover:bg-blue-50 transition-all">
-                        <td className="px-4 py-2">{d.date}</td>
-                        <td className="px-4 py-2 text-right">{d.count}</td>
-                        <td className="px-4 py-2 text-right">{d.total_items || 0}</td>
-                        <td className="px-4 py-2 text-right">{d.total_amount || 0}</td>
-                      </tr>
-                    ))}
-                    <tr className="border-t bg-blue-100">
-                      <td className="px-4 py-2 font-semibold">Totales del rango</td>
-                      <td className="px-4 py-2 text-right font-semibold">{dailyData.range_totals.count}</td>
-                      <td className="px-4 py-2 text-right font-semibold">{dailyData.range_totals.total_items}</td>
-                      <td className="px-4 py-2 text-right font-semibold">{dailyData.range_totals.total_amount}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  <th className="px-4 py-2 text-right">Cantidad de pedidos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dailyData.daily_breakdown.map(d => (
+                  <tr key={d.date} className="border-t hover:bg-blue-50 transition-all">
+                    <td className="px-4 py-2">{d.date}</td>
+                    <td className="px-4 py-2 text-right">{d.count}</td>
+                  </tr>
+                ))}
+                <tr className="border-t bg-blue-100">
+                  <td className="px-4 py-2 font-semibold">Totales del rango</td>
+                  <td className="px-4 py-2 text-right font-semibold">{dailyData.range_totals.count}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
           )}
 
           {/* Tarjetas de métricas */}
