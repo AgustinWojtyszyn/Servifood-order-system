@@ -267,16 +267,41 @@ const MonthlyPanel = ({ user, loading }) => {
   // Exportar desglose diario del rango
   const handleExportDailyExcel = () => {
     if (!dailyData || !dailyData.daily_breakdown) return
-    const rows = dailyData.daily_breakdown.map(d => ({
-      Fecha: d.date,
-      Pedidos: d.count,
-      'Total ítems': d.total_items || 0,
-      'Monto total': d.total_amount || 0
-    }))
-    // Agregar totales al final
+    const rows = dailyData.daily_breakdown.map(d => {
+      const guarnStr = Object.entries(d.tipos_guarniciones || {})
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+      return {
+        Fecha: d.date,
+        Pedidos: d.count,
+        'Menús principales': d.menus_principales || 0,
+        'OPCIÓN 1': d.opciones?.['OPCIÓN 1'] || 0,
+        'OPCIÓN 2': d.opciones?.['OPCIÓN 2'] || 0,
+        'OPCIÓN 3': d.opciones?.['OPCIÓN 3'] || 0,
+        'OPCIÓN 4': d.opciones?.['OPCIÓN 4'] || 0,
+        'OPCIÓN 5': d.opciones?.['OPCIÓN 5'] || 0,
+        'OPCIÓN 6': d.opciones?.['OPCIÓN 6'] || 0,
+        'Total opciones': d.total_opciones || 0,
+        'Guarniciones (tipo: cantidad)': guarnStr || '—',
+        'Total guarniciones': d.total_guarniciones || 0,
+        'Total ítems': d.total_items || 0,
+        'Monto total': d.total_amount || 0
+      }
+    })
+    // Totales del rango (sumados desde el desglose)
     rows.push({
       Fecha: 'Totales',
       Pedidos: dailyData.range_totals.count,
+      'Menús principales': dailyData.range_totals.menus_principales,
+      'OPCIÓN 1': '',
+      'OPCIÓN 2': '',
+      'OPCIÓN 3': '',
+      'OPCIÓN 4': '',
+      'OPCIÓN 5': '',
+      'OPCIÓN 6': '',
+      'Total opciones': dailyData.range_totals.total_opciones,
+      'Guarniciones (tipo: cantidad)': '',
+      'Total guarniciones': dailyData.range_totals.total_guarniciones,
       'Total ítems': dailyData.range_totals.total_items,
       'Monto total': dailyData.range_totals.total_amount
     })

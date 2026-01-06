@@ -354,8 +354,8 @@ export const db = {
     const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
     const { data: orders, error } = await supabase
       .from('orders')
-      // No seleccionamos total_amount porque la columna no existe en la tabla base
-      .select('id, status, delivery_date, created_at, total_items')
+      // Nota: total_amount puede no existir; incluimos items y custom_responses para agregados detallados
+      .select('id, status, delivery_date, created_at, total_items, items, custom_responses')
       .gte('created_at', startUtc)
       .lte('created_at', endUtc)
 
@@ -391,7 +391,17 @@ export const db = {
 
     const byDay = new Map()
     for (const day of days) {
-      byDay.set(day, { date: day, count: 0, total_items: 0, total_amount: 0 })
+      byDay.set(day, {
+        date: day,
+        count: 0,
+        total_items: 0,
+        total_amount: 0,
+        menus_principales: 0,
+        opciones: { 'OPCIÓN 1': 0, 'OPCIÓN 2': 0, 'OPCIÓN 3': 0, 'OPCIÓN 4': 0, 'OPCIÓN 5': 0, 'OPCIÓN 6': 0 },
+        tipos_guarniciones: {},
+        total_opciones: 0,
+        total_guarniciones: 0
+      })
     }
 
     const filteredOrders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
@@ -405,6 +415,52 @@ export const db = {
       row.count += 1
       row.total_items += (o.total_items || 0)
       row.total_amount += (o.total_amount || 0)
+
+      // Procesar items: separar menús principales y opciones
+      let items = []
+      if (Array.isArray(o.items)) {
+        items = o.items
+      } else if (typeof o.items === 'string') {
+        try { items = JSON.parse(o.items) } catch {}
+      }
+      items.forEach(item => {
+        const qty = (item?.quantity ?? 1)
+        const nombre = (item?.name ?? '').trim()
+        const m = nombre.match(/^OPC(ION|IÓN)\s*(\d+)/i)
+        if (m) {
+          const n = Number(m[2])
+          const key = `OPCIÓN ${n}`
+          if (row.opciones[key] === undefined) row.opciones[key] = 0
+          row.opciones[key] += qty
+          row.total_opciones += qty
+        } else {
+          row.menus_principales += qty
+        }
+      })
+
+      // Procesar guarniciones desde custom_responses
+      let customResponses = []
+      if (Array.isArray(o.custom_responses)) {
+        customResponses = o.custom_responses
+      } else if (typeof o.custom_responses === 'string') {
+        try { customResponses = JSON.parse(o.custom_responses) } catch {}
+      }
+      customResponses.forEach(resp => {
+        const r = (resp?.response ?? '').trim()
+        if (r) {
+          row.tipos_guarniciones[r] = (row.tipos_guarniciones[r] || 0) + 1
+          row.total_guarniciones += 1
+        }
+        if (Array.isArray(resp?.options)) {
+          resp.options.forEach(opt => {
+            const o = (opt ?? '').trim()
+            if (!o) return
+            row.tipos_guarniciones[o] = (row.tipos_guarniciones[o] || 0) + 1
+            row.total_guarniciones += 1
+          })
+        }
+      })
+
       byDay.set(key, row)
     })
 
@@ -413,8 +469,11 @@ export const db = {
       acc.count += d.count
       acc.total_items += d.total_items
       acc.total_amount += d.total_amount
+      acc.menus_principales += d.menus_principales
+      acc.total_opciones += d.total_opciones
+      acc.total_guarniciones += d.total_guarniciones
       return acc
-    }, { count: 0, total_items: 0, total_amount: 0 })
+    }, { count: 0, total_items: 0, total_amount: 0, menus_principales: 0, total_opciones: 0, total_guarniciones: 0 })
 
     return { data: { daily_breakdown, range_totals, start, end, statuses: COUNTABLE_STATUSES, timeZone }, error: null }
   },
