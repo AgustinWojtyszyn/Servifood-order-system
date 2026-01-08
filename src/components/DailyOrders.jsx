@@ -863,7 +863,7 @@ const DailyOrders = ({ user, loading }) => {
           </div>
         </div>
 
-        {/* Orders Table */}
+        {/* Orders Table / Mobile Cards */}
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b-2 border-primary-200 px-6 py-6 dark:border-strokedark sm:px-8 xl:px-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -898,7 +898,9 @@ const DailyOrders = ({ user, loading }) => {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Vista de tabla para pantallas medianas y grandes */}
+            <div className="overflow-x-auto hidden md:block">
               <table className="w-full table-auto">
                 <thead>
                   <tr className="bg-white text-left border-b-2 border-gray-200">
@@ -1018,6 +1020,88 @@ const DailyOrders = ({ user, loading }) => {
                 </tbody>
               </table>
             </div>
+
+            {/* Vista tipo tarjetas para móviles (mobile-first) */}
+            <div className="md:hidden px-4 pb-6 space-y-4">
+              {sortedOrders.map((order) => {
+                const summary = summarizeOrderItems(order.items)
+                const customSide = getCustomSideFromResponses(order.custom_responses)
+                return (
+                  <div
+                    key={order.id}
+                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-bold text-black truncate">
+                          {order.user_name}
+                        </p>
+                        <p className="text-xs text-gray-600 truncate">
+                          {order.user_email}
+                        </p>
+                      </div>
+                      <p className="text-xs font-mono font-semibold text-black ml-2">
+                        {formatTime(order.created_at)}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${getLocationBadgeColor(order.location)}`}
+                      >
+                        {order.location}
+                      </span>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold border ${getStatusColor(order.status)}`}
+                      >
+                        {getStatusText(order.status)}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border-2 border-gray-300 bg-white px-3 py-1 text-xs font-extrabold text-black ml-auto">
+                        {order.total_items} items
+                      </span>
+                    </div>
+
+                    <div className="text-sm text-black space-y-1" title={summary.title}>
+                      {summary.principalCount > 0 && (
+                        <div className="font-semibold">
+                          Plato Principal: {summary.principalCount}
+                        </div>
+                      )}
+                      {summary.others.map((o, idx) => (
+                        <div key={idx} className="break-words">
+                          {o.name} (x{o.qty})
+                        </div>
+                      ))}
+                      {summary.remaining > 0 && (
+                        <div className="text-xs font-semibold text-gray-700">
+                          +{summary.remaining} más...
+                        </div>
+                      )}
+                      {customSide && (
+                        <div className="text-xs italic font-semibold mt-1">
+                          Guarnición: {customSide}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        className="text-sm font-semibold text-primary-700 hover:text-primary-900"
+                        onClick={() => {
+                          alert(`Detalles del pedido:\n\nCliente: ${order.user_name}\nEmail: ${order.user_email}\nUbicación: ${order.location}\nEstado: ${getStatusText(order.status)}\nItems: ${order.total_items}\nComentarios: ${order.comments || 'Sin comentarios'}`)
+                        }}
+                      >
+                        Ver detalles
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            </>
           )}
         </div>
 

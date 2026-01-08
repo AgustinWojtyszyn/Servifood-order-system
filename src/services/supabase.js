@@ -5,6 +5,17 @@ import { sanitizeInput } from '../utils'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// Log controlado para diagnosticar env vars en producción
+// Activa esto seteando VITE_LOG_SUPABASE_ENV="true" en el entorno de deploy
+if (import.meta.env.VITE_LOG_SUPABASE_ENV === 'true') {
+  console.log('[Supabase] URL:', supabaseUrl || 'undefined')
+  if (supabaseAnonKey) {
+    console.log('[Supabase] ANON_KEY prefix:', supabaseAnonKey.slice(0, 6) + '...')
+  } else {
+    console.log('[Supabase] ANON_KEY prefix: undefined')
+  }
+}
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
