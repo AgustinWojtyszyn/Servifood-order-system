@@ -8,6 +8,45 @@ import RequireUser from './RequireUser'
 
 const EDIT_WINDOW_MINUTES = 15
 
+// Helper para detectar guarnición principal desde custom_responses
+const getCustomSideFromResponses = (responses = []) => {
+  if (!Array.isArray(responses) || responses.length === 0) return null
+  for (const r of responses) {
+    const title = r?.title?.toLowerCase() || ''
+    if (title.includes('guarn')) {
+      return r?.answer ?? r?.response ?? null
+    }
+  }
+  return null
+}
+
+// Resumen legible de items del pedido (similar a DailyOrders)
+const summarizeOrderItems = (items = []) => {
+  if (!Array.isArray(items)) return { principalCount: 0, others: [], remaining: 0, title: '' }
+
+  const principal = items.filter(
+    item => item && item.name && item.name.toLowerCase().includes('menú principal')
+  )
+  const others = items
+    .filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'))
+    .map(item => ({ name: item.name, qty: item.quantity || 1 }))
+
+  const principalCount = principal.reduce((sum, item) => sum + (item.quantity || 1), 0)
+  const displayedOthers = others.slice(0, 3)
+  const remaining = Math.max(others.length - displayedOthers.length, 0)
+
+  const titleParts = []
+  if (principalCount > 0) titleParts.push(`Plato Principal: ${principalCount}`)
+  titleParts.push(...others.map(o => `${o.name} (x${o.qty})`))
+
+  return {
+    principalCount,
+    others: displayedOthers,
+    remaining,
+    title: titleParts.join('; ')
+  }
+}
+
 const Dashboard = ({ user, loading }) => {
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(true)
@@ -92,17 +131,6 @@ const Dashboard = ({ user, loading }) => {
             user_name: userName
           }
         })
-        
-        // Si NO es admin, filtrar solo pedidos de hoy Y excluir completados/entregados
-        if (!isAdmin) {
-          ordersWithUserNames = ordersWithUserNames.filter(order => {
-            const orderDate = new Date(order.created_at)
-            orderDate.setHours(0, 0, 0, 0)
-            const isToday = orderDate.getTime() === today.getTime()
-            const isNotCompleted = order.status !== 'completed' && order.status !== 'delivered'
-            return isToday && isNotCompleted
-          })
-        }
         
         setOrders(ordersWithUserNames)
         calculateStats(ordersWithUserNames)
@@ -676,6 +704,88 @@ const Dashboard = ({ user, loading }) => {
           </div>
         </div>
       )}
+
+      {/* Historial de pedidos (días anteriores) para todos los usuarios */}
+      {(() => {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const pastOrders = orders.filter(order => {
+          const orderDate = new Date(order.created_at)
+          orderDate.setHours(0, 0, 0, 0)
+          return orderDate.getTime() < today.getTime()
+        })
+        if (pastOrders.length === 0) return null
+        return (
+          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 drop-shadow">
+                Historial de pedidos (días anteriores)
+              </h2>
+              <span className="text-sm text-gray-600 font-semibold">
+                {pastOrders.length} pedido(s)
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {pastOrders.slice(0, 20).map(order => {
+                const summary = summarizeOrderItems(order.items)
+                const customSide = getCustomSideFromResponses(order.custom_responses)
+                return (
+                  <div
+                    key={order.id}
+                    className="flex flex-col gap-2 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-white/95"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                          Pedido #{order.id.slice(-8)}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                          {order.location} • {formatDate(order.created_at)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-gray-100 text-gray-800 border border-gray-300">
+                          {order.status === 'delivered' ? 'Entregado' :
+                           order.status === 'completed' ? 'Completado' :
+                           order.status === 'pending' ? 'Pendiente' :
+                           order.status === 'processing' ? 'En Proceso' : 'Cancelado'}
+                        </span>
+                        <span className="inline-flex px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                          {order.total_items || (order.items?.length || 0)} items
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs sm:text-sm text-gray-900 space-y-1" title={summary.title}>
+                      {summary.principalCount > 0 && (
+                        <div className="font-semibold">
+                          Plato Principal: {summary.principalCount}
+                        </div>
+                      )}
+                      {summary.others.map((o, idx) => (
+                        <div key={idx} className="break-words">
+                          {o.name} (x{o.qty})
+                        </div>
+                      ))}
+                      {summary.remaining > 0 && (
+                        <div className="text-[11px] sm:text-xs font-semibold text-gray-700">
+                          +{summary.remaining} más...
+                        </div>
+                      )}
+                      {customSide && (
+                        <div className="text-[11px] sm:text-xs italic font-semibold mt-1">
+                          Guarnición: {customSide}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Modal de Detalles */}
       {selectedOrder && (
