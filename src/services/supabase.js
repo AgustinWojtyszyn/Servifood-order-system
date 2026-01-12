@@ -26,7 +26,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    storageKey: 'sb-servifood-auth' // clave única para evitar colisiones si hubiera más clientes
   },
   db: {
     schema: 'public'

@@ -1,53 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'your-supabase-url'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-supabase-anon-key'
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  },
-  db: {
-    schema: 'public'
-  },
-  global: {
-    headers: { 
-      'x-application-name': 'servifood-app'
-    }
-  }
-})
-
-// Redirección global si el token expira mucho tiempo (fuera de línea)
-supabase.auth.onAuthStateChange((event, session) => {
-  if ((event === 'SIGNED_OUT' || event === 'TOKEN_REFRESH_FAILED') && !session) {
-    // Si el usuario estaba logueado y el token expiró mucho tiempo
-    if (!window.location.pathname.startsWith('/login')) {
-      window.location.href = '/login';
-    }
-  }
-})
-
-// Eliminar todos los pedidos pendientes de días anteriores
-// Se agrega como método a db más abajo
-// Cache simple en memoria para reducir consultas repetidas
-// (definido más arriba)
-
-// Configuración de autenticación
-// (definición única de 'auth' más abajo)
-
-
-// ...existing code...
-// Archivar todos los pedidos pendientes (de cualquier día)
-export const archiveAllPendingOrders = async () => {
-  const { data, error } = await supabase
-    .from('orders')
-    .update({ status: 'archived', updated_at: new Date().toISOString() })
-    .eq('status', 'pending')
-  return { data, error }
-}
-// ...existing code...
+// Usamos una única instancia compartida desde services/supabase para evitar
+// el warning de múltiples GoTrueClient en el mismo storage.
+import { supabase } from './services/supabase'
+export { supabase }
 
 // Redirección global si el token expira mucho tiempo (fuera de línea)
 supabase.auth.onAuthStateChange((event, session) => {
@@ -157,8 +111,17 @@ export const auth = {
 // Funciones de base de datos
 import { Archive as ArchiveIcon } from 'lucide-react'
 
+// Archivar todos los pedidos pendientes (de cualquier día)
+const archiveAllPendingOrders = async () => {
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status: 'archived', updated_at: new Date().toISOString() })
+    .eq('status', 'pending')
+  return { data, error }
+}
+
 export const db = {
-  archiveAllPendingOrders: archiveAllPendingOrders,
+  archiveAllPendingOrders,
         // "Eliminar" pendientes: se cancelan para conservarlos en el histórico (panel mensual)
         deleteAllPendingOrders: async () => {
           const { data, error } = await supabase

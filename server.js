@@ -13,8 +13,24 @@ const numCPUs = os.cpus().length;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Content Security Policy alineado con los recursos reales de la app
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://connect.facebook.net https://jsdelivr.net https://cdn.jsdelivr.net",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: https: blob:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "worker-src 'self' blob:"
+].join('; ');
+
 if (cluster.isMaster) {
   console.log(`Master PID ${process.pid} - lanzando ${numCPUs} workers`);
+  console.log(`[Security] CSP aplicado: ${CONTENT_SECURITY_POLICY}`);
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
@@ -29,8 +45,8 @@ if (cluster.isMaster) {
   app.use((req, res, next) => {
     // Fuerza HTTPS en navegadores compatibles
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-    // Política de contenido restrictiva (ajusta si usas recursos externos)
-    res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'self';");
+    // Política de contenido alineada con los recursos que usa la app (Supabase, fuentes y analytics)
+    res.setHeader('Content-Security-Policy', CONTENT_SECURITY_POLICY);
     // Previene clickjacking
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     // Previene sniffing de tipo de contenido
