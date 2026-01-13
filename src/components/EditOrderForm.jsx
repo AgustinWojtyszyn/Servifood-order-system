@@ -176,13 +176,26 @@ export default function EditOrderForm({ user, loading }) {
             : [...current, value]
         }
       })
-    } else {
-      // Para otros tipos, simplemente guardar el valor
-      setCustomResponses(prev => ({
-        ...prev,
-        [optionId]: value
-      }))
+      return
     }
+
+    if (type === 'multiple_choice') {
+      // Permitir deseleccionar si se hace clic en la opción ya elegida
+      setCustomResponses(prev => {
+        const current = prev[optionId]
+        return {
+          ...prev,
+          [optionId]: current === value ? null : value
+        }
+      })
+      return
+    }
+
+    // Para otros tipos, simplemente guardar el valor
+    setCustomResponses(prev => ({
+      ...prev,
+      [optionId]: value
+    }))
   }
 
   const getSelectedItemsList = () => {
@@ -538,23 +551,36 @@ export default function EditOrderForm({ user, loading }) {
                       {option.required && <span className="text-red-600 ml-1">*</span>}
                     </label>
 
-                    {option.type === 'multiple_choice' && option.options && (
-                      <div className="space-y-2">
-                        {option.options.map((opt, index) => (
-                          <label key={index} className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+                  {option.type === 'multiple_choice' && option.options && (
+                    <div className="space-y-2">
+                      {option.options.map((opt, index) => {
+                        const isSelected = customResponses[option.id] === opt
+                        return (
+                          <label
+                            key={index}
+                            className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer"
+                            onClick={(e) => {
+                              if (isSelected) {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleCustomResponse(option.id, null, 'multiple_choice')
+                              }
+                            }}
+                          >
                             <input
                               type="radio"
                               name={`option-${option.id}`}
                               value={opt}
-                              checked={customResponses[option.id] === opt}
+                              checked={isSelected}
                               onChange={(e) => handleCustomResponse(option.id, e.target.value, 'multiple_choice')}
                               className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
                             />
                             <span className="ml-3 text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
                           </label>
-                        ))}
-                      </div>
-                    )}
+                        )
+                      })}
+                    </div>
+                  )}
 
                     {option.type === 'checkbox' && option.options && (
                       <div className="space-y-2">
