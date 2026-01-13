@@ -309,7 +309,7 @@ const Dashboard = ({ user, loading }) => {
         onClick={onClose}
       >
         <div 
-          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="sticky top-0 bg-gradient-to-r from-primary-600 to-primary-700 text-white p-6 rounded-t-2xl flex justify-between items-center">

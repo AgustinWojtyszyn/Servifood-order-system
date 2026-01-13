@@ -66,7 +66,7 @@ const Layout = ({ children, user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+      <div className="flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 h-full min-h-screen overflow-hidden">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
@@ -93,7 +93,7 @@ const Layout = ({ children, user, loading }) => {
         </div>
       </header>
 
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
         {/* Overlay para mobile */}
         {sidebarOpen && (
@@ -194,8 +194,8 @@ const Layout = ({ children, user, loading }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 p-4 md:p-8 min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 p-4 md:p-8 min-h-0 overflow-y-auto">
             {children}
           </div>
         </main>
