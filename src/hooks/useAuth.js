@@ -63,9 +63,13 @@ export const useAuth = () => {
         console.log('[Auth] loadUserData start', authUser?.id)
       }
       // Usar directamente los datos del usuario de Supabase sin consultar tabla users
-      setUser((prev) => prev || authUser)
-      setIsAdmin(false)
-      setIsSuperAdmin(false)
+      const roleFromMetadata = authUser?.user_metadata?.role || authUser?.app_metadata?.role || authUser?.role
+      const isAdminRole = roleFromMetadata === 'admin' || roleFromMetadata === 'superadmin'
+      const isSuperAdminRole = roleFromMetadata === 'superadmin'
+
+      setUser((prev) => prev || { ...authUser, role: roleFromMetadata })
+      setIsAdmin(isAdminRole)
+      setIsSuperAdmin(isSuperAdminRole)
     } catch (error) {
       console.error('Error loading user data:', error)
       setUser((prev) => prev || authUser)
