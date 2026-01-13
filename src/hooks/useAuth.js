@@ -13,7 +13,18 @@ export const useAuth = () => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await authService.getSession()
+        const { session, error } = await authService.getSession()
+
+        if (error) {
+          if (import.meta.env.DEV) {
+            console.error('[Auth] getSession error', error)
+          }
+          throw error
+        }
+
+        if (import.meta.env.DEV) {
+          console.log('[Auth] initial session', session ? 'found' : 'none')
+        }
 
         if (session?.user) {
           await loadUserData(session.user)
@@ -30,6 +41,9 @@ export const useAuth = () => {
 
     // Listener para cambios de autenticación
     const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+      if (import.meta.env.DEV) {
+        console.log('[Auth] onAuthStateChange', event, session ? 'has session' : 'no session')
+      }
       if (event === 'SIGNED_IN' && session?.user) {
         await loadUserData(session.user)
       } else if (event === 'SIGNED_OUT') {
@@ -45,40 +59,22 @@ export const useAuth = () => {
 
   const loadUserData = useCallback(async (authUser) => {
     try {
-      // Obtener datos adicionales del usuario desde la tabla users
-      const { data: userData } = await usersService.getUserById(authUser.id)
-
-      if (userData) {
-        const fullUser = {
-          ...authUser,
-          ...userData,
-          // Combinar metadata
-          user_metadata: {
-            ...authUser.user_metadata,
-            ...userData
-          }
-        }
-
-        setUser(fullUser)
-
-        // Verificar roles
-        const adminStatus = await usersService.isUserAdmin(authUser.id)
-        const superAdminStatus = await usersService.isUserSuperAdmin(authUser.id)
-
-        setIsAdmin(adminStatus)
-        setIsSuperAdmin(superAdminStatus)
-      } else {
-        // Usuario no encontrado en tabla users, usar solo datos de auth
-        setUser(authUser)
-        setIsAdmin(false)
-        setIsSuperAdmin(false)
+      if (import.meta.env.DEV) {
+        console.log('[Auth] loadUserData start', authUser?.id)
       }
+      // Usar directamente los datos del usuario de Supabase sin consultar tabla users
+      setUser((prev) => prev || authUser)
+      setIsAdmin(false)
+      setIsSuperAdmin(false)
     } catch (error) {
       console.error('Error loading user data:', error)
-      setUser(authUser)
+      setUser((prev) => prev || authUser)
       setIsAdmin(false)
       setIsSuperAdmin(false)
     } finally {
+      if (import.meta.env.DEV) {
+        console.log('[Auth] loadUserData done')
+      }
       setLoading(false)
     }
   }, [])
@@ -190,6 +186,12 @@ export const useAuth = () => {
       return { data: null, error }
     }
   }, [loadUserData])
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[Auth] state', { user, loading, isAdmin, isSuperAdmin })
+    }
+  }, [user, loading, isAdmin, isSuperAdmin])
 
   return {
     // Estado

@@ -10,11 +10,12 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com;
       img-src 'self' data: https: blob:;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* wss://localhost:* https://www.google-analytics.com https://www.googletagmanager.com;
       frame-src 'none';
       object-src 'none';
       base-uri 'self';
       form-action 'self';
+      worker-src 'self' blob:;
     " />
 
     <link rel="icon" type="image/jpeg" href="/src/assets/servifood logo.jpg" />
@@ -89,16 +90,62 @@
       html {
         scroll-behavior: smooth;
       }
+
+      /* Fallback amigable mientras carga React */
+      #fallback-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #303f9f 100%);
+        color: #fff;
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        text-align: center;
+      }
+
+      #fallback-loader .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(255,255,255,0.25);
+        border-top-color: #ff9800;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
 
   <body>
+    <div id="fallback-loader">
+      <div class="spinner" aria-hidden="true"></div>
+      <div>
+        <div style="font-size: 18px; font-weight: 700;">Cargando ServiFood...</div>
+        <div style="font-size: 14px; opacity: 0.9;">Si esto tarda, intenta refrescar o revisa tu conexión.</div>
+      </div>
+    </div>
     <div id="root"></div>
     <!--
       NOTA IMPORTANTE:
       - Para desarrollo y build de Vite, el script debe apuntar a /src/main.jsx
       - SOLO para deploy en producción, reemplaza esta línea por el bundle generado (ej: /assets/index-xxxx.js)
     -->
+    <script>
+      (function() {
+        const fallback = document.getElementById('fallback-loader');
+        window.__servifood_loader_hide = () => {
+          if (fallback) fallback.style.display = 'none';
+        };
+        // Ocultar automáticamente si React no llegó a montarse en 8s para evitar un loop infinito
+        setTimeout(() => {
+          if (window.__servifood_loader_hide) window.__servifood_loader_hide();
+        }, 8000);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

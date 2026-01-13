@@ -49,9 +49,16 @@ class UsersService {
         throw new Error('ID de usuario requerido')
       }
 
+      if (import.meta.env.DEV) {
+        console.log('[UsersService] getUserById start', userId)
+      }
+
       const cacheKey = `user_${userId}`
 
       const queryFn = async () => {
+        if (import.meta.env.DEV) {
+          console.log('[UsersService] querying user', userId)
+        }
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -65,8 +72,15 @@ class UsersService {
 
       const data = await supabaseService.cachedQuery(cacheKey, queryFn, 300000) // 5 minutos
 
+      if (import.meta.env.DEV) {
+        console.log('[UsersService] getUserById result', data)
+      }
+
       return { data, error: null }
     } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('[UsersService] getUserById error', error)
+      }
       return { data: null, error: handleError(error, 'getUserById') }
     }
   }

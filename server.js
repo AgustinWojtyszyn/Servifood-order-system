@@ -5,6 +5,7 @@ import compression from 'compression';
 import path from 'path';
 import cluster from 'cluster';
 import os from 'os';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { sendDailyOrdersExcel } from './sendDailyOrdersEmail.js';
 
@@ -12,6 +13,14 @@ const PORT = process.env.PORT || 3000;
 const numCPUs = os.cpus().length;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const distPath = path.join(__dirname, 'dist');
+const assetsPath = path.join(distPath, 'assets');
+
+const setNoStoreHeaders = (res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+};
 
 // Content Security Policy alineado con los recursos reales de la app
 const CONTENT_SECURITY_POLICY = [
@@ -87,33 +96,75 @@ if (cluster.isMaster) {
 
 
 
-
-  // Servir assets estáticos con cache largo (1 año) y responder 404 si no existe
-  app.use('/assets', express.static(path.join(__dirname, 'dist/assets'), {
+  // Servir assets estáticos versionados con cache largo e immutable
+  app.use('/assets', express.static(assetsPath, {
     maxAge: '1y',
     immutable: true,
     etag: true,
-    fallthrough: false // Si no existe, responde 404
+    fallthrough: false,
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
   }));
 
-  // Servir archivos estáticos sueltos (manifest, robots, etc) con cache corto (1 hora) y responder 404 si no existe
+  // Manifest y service worker siempre sin cache
+  app.get(['/manifest.json', '/service-worker.js'], (req, res, next) => {
+    const fileName = req.path === '/manifest.json' ? 'manifest.json' : 'service-worker.js';
+    const filePath = path.join(distPath, fileName);
+    setNoStoreHeaders(res);
+    res.sendFile(filePath, (err) => {
+      if (err) next();
+    });
+  });
+
+  // Archivos sueltos (robots, sitemap, etc) con cache corto
   app.use((req, res, next) => {
-    if (/^\/assets\//.test(req.url)) return next();
-    if (req.url === '/' || req.url.startsWith('/api')) return next();
-    express.static(path.join(__dirname, 'dist'), {
+    if (req.url.startsWith('/api') || req.url === '/' || /^\/(assets|manifest\.json|service-worker\.js)/.test(req.url)) {
+      return next();
+    }
+    express.static(distPath, {
       maxAge: '1h',
       etag: true,
       index: false,
-      fallthrough: false // Si no existe, responde 404
+      fallthrough: false
     })(req, res, next);
   });
 
-  // Servir index.html SOLO para rutas que no sean assets ni archivos estáticos
-  app.get(/^\/(?!api|assets\/|manifest\.json$|robots\.txt$|sitemap\.xml$|version\.txt$).*/, (req, res) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  // Index para raíz explícita sin cache
+  app.get(['/', '/index.html'], (req, res) => {
+    setNoStoreHeaders(res);
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+
+  // Endpoint opcional de diagnóstico de caché (activar con CACHE_DEBUG=1)
+  if (process.env.CACHE_DEBUG === '1') {
+    app.get('/__cache-debug', (req, res) => {
+      let sampleAsset = null;
+      try {
+        const files = fs.readdirSync(assetsPath).filter((file) =>
+          fs.statSync(path.join(assetsPath, file)).isFile()
+        );
+        sampleAsset = files.length ? `/assets/${files[0]}` : null;
+      } catch {
+        sampleAsset = null;
+      }
+      res.json({
+        note: 'Diagnóstico estático (no afecta headers reales)',
+        cacheControl: {
+          '/': 'no-store',
+          '/index.html': 'no-store',
+          [sampleAsset || '/assets/<hash>.js']: 'public, max-age=31536000, immutable',
+          '/manifest.json': 'no-store',
+          '/service-worker.js': 'no-store'
+        }
+      });
+    });
+  }
+
+  // Fallback SPA: cualquier ruta desconocida devuelve index sin cache
+  app.get(/^\/(?!api\/|assets\/|manifest\.json$|service-worker\.js$).*/, (req, res) => {
+    setNoStoreHeaders(res);
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 
   // Manejo global de errores
