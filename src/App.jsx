@@ -20,7 +20,6 @@ const Dashboard = lazy(() => import('./components/Dashboard'))
 const AdminPanel = lazy(() => import('./components/AdminPanel'))
 const SuperAdminPanel = lazy(() => import('./components/SuperAdminPanel'))
 const DailyOrders = lazy(() => import('./components/DailyOrders'))
-const AdminChat = lazy(() => import('./components/AdminChat'))
 const OrderForm = lazy(() => import('./components/OrderForm'))
 const EditOrderForm = lazy(() => import('./components/EditOrderForm'))
 const Profile = lazy(() => import('./components/Profile'))
@@ -83,9 +82,6 @@ function App() {
               } />
               <Route path="/daily-orders" element={
                 !loading && (user ? <Layout user={user} loading={loading}><DailyOrders user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/admin-chat" element={
-                !loading && (user ? <Layout user={user} loading={loading}><AdminChat user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
               } />
               <Route path="/monthly-panel" element={
                 !loading && (user ? <Layout user={user} loading={loading}><MonthlyPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)

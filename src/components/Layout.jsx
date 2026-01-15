@@ -58,7 +58,6 @@ const Layout = ({ children, user, loading }) => {
     })
     menuItems.push({ name: 'Panel Mensual', path: '/monthly-panel', icon: Calendar })
     menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
-    menuItems.push({ name: 'Chat Admins', path: '/admin-chat', icon: MessageCircle })
   }
 
   // Add Profile option for all users

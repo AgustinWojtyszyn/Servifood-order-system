@@ -33,7 +33,6 @@
 - AdminPanel
 - SuperAdminPanel
 - DailyOrders
-- AdminChat
 - OrderForm
 - Profile
 ```
