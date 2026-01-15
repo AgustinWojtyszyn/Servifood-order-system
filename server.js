@@ -101,6 +101,7 @@ if (cluster.isMaster) {
     maxAge: '1y',
     immutable: true,
     etag: true,
+    index: false,
     fallthrough: false,
     setHeaders: (res) => {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -108,8 +109,10 @@ if (cluster.isMaster) {
   }));
 
   // Manifest y service worker siempre sin cache
-  app.get(['/manifest.json', '/service-worker.js'], (req, res, next) => {
-    const fileName = req.path === '/manifest.json' ? 'manifest.json' : 'service-worker.js';
+  app.get(['/manifest.json', '/manifest.webmanifest', '/service-worker.js'], (req, res, next) => {
+    const fileName = req.path === '/manifest.json' || req.path === '/manifest.webmanifest'
+      ? (fs.existsSync(path.join(distPath, 'manifest.webmanifest')) ? 'manifest.webmanifest' : 'manifest.json')
+      : 'service-worker.js';
     const filePath = path.join(distPath, fileName);
     setNoStoreHeaders(res);
     res.sendFile(filePath, (err) => {
@@ -119,14 +122,14 @@ if (cluster.isMaster) {
 
   // Archivos sueltos (robots, sitemap, etc) con cache corto
   app.use((req, res, next) => {
-    if (req.url.startsWith('/api') || req.url === '/' || /^\/(assets|manifest\.json|service-worker\.js)/.test(req.url)) {
+    if (req.url.startsWith('/api') || req.url === '/' || /^\/(assets|manifest(\.json|\.webmanifest)?|service-worker\.js)/.test(req.url)) {
       return next();
     }
     express.static(distPath, {
       maxAge: '1h',
       etag: true,
       index: false,
-      fallthrough: false
+      fallthrough: true
     })(req, res, next);
   });
 
@@ -148,21 +151,44 @@ if (cluster.isMaster) {
       } catch {
         sampleAsset = null;
       }
+
+      const mimeMap = (p) => {
+        const ext = path.extname(p || '').toLowerCase();
+        const map = {
+          '.js': 'application/javascript',
+          '.css': 'text/css',
+          '.map': 'application/json',
+          '.json': 'application/json',
+          '.webmanifest': 'application/manifest+json',
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.svg': 'image/svg+xml',
+          '.ico': 'image/x-icon',
+          '.woff2': 'font/woff2'
+        };
+        return map[ext] || 'application/octet-stream';
+      };
+
       res.json({
-        note: 'Diagnóstico estático (no afecta headers reales)',
-        cacheControl: {
-          '/': 'no-store',
-          '/index.html': 'no-store',
-          [sampleAsset || '/assets/<hash>.js']: 'public, max-age=31536000, immutable',
-          '/manifest.json': 'no-store',
-          '/service-worker.js': 'no-store'
+        paths: {
+          '/': { cache: 'no-store', type: 'text/html' },
+          '/index.html': { cache: 'no-store', type: 'text/html' },
+          [sampleAsset || '/assets/<hash>.js']: { cache: 'public, max-age=31536000, immutable', type: mimeMap(sampleAsset || '.js') },
+          '/manifest.webmanifest': { cache: 'no-store', type: 'application/manifest+json' },
+          '/service-worker.js': { cache: 'no-store', type: 'application/javascript' }
         }
       });
     });
   }
 
+  // Si se solicita un archivo con extensión y no existe, devolver 404 sin fallback a index.html
+  app.get(/^.+\.[a-zA-Z0-9]+$/, (req, res, next) => {
+    res.status(404).type('text/plain').send('Not found');
+  });
+
   // Fallback SPA: cualquier ruta desconocida devuelve index sin cache
-  app.get(/^\/(?!api\/|assets\/|manifest\.json$|service-worker\.js$).*/, (req, res) => {
+  app.get(/^\/(?!api\/|assets\/|manifest(\.json|\.webmanifest)?$|service-worker\.js$).*/, (req, res) => {
     setNoStoreHeaders(res);
     res.sendFile(path.join(distPath, 'index.html'));
   });
