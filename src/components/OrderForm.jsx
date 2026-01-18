@@ -23,7 +23,7 @@ const OrderForm = ({ user, loading }) => {
   const [isPastDeadline, setIsPastDeadline] = useState(false)
   const navigate = useNavigate()
 
-  const locations = ['La Laja']
+  const locations = ['La Laja', 'Genneia']
 
   useEffect(() => {
     if (!user?.id) return

@@ -36,7 +36,7 @@ const DailyOrders = ({ user, loading }) => {
     cancelled: 0
   })
 
-  const locations = ['Los Berros', 'La Laja', 'Padre Bueno']
+  const locations = ['Los Berros', 'La Laja', 'Padre Bueno', 'Genneia']
 
   // Función robusta para detectar y extraer guarniciones personalizadas
   const getCustomSideFromResponses = (responses = []) => {

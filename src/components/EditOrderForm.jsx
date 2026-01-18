@@ -26,7 +26,7 @@ export default function EditOrderForm({ user, loading }) {
   const location = useLocation()
   const order = location.state?.order
 
-  const locations = ['Los Berros', 'La Laja', 'Padre Bueno']
+  const locations = ['Los Berros', 'La Laja', 'Padre Bueno', 'Genneia']
 
   useEffect(() => {
     if (!order) {
