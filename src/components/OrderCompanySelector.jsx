@@ -1,0 +1,92 @@
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Building2, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react'
+import RequireUser from './RequireUser'
+import { COMPANY_LIST, COMPANY_CATALOG } from '../constants/companyConfig'
+
+const OrderCompanySelector = ({ user, loading }) => {
+  const navigate = useNavigate()
+
+  const orderedCompanies = useMemo(() => {
+    return [...COMPANY_LIST]
+  }, [])
+
+  const handleSelect = (slug) => {
+    navigate(`/order/${slug}`)
+  }
+
+  return (
+    <RequireUser user={user} loading={loading}>
+      <div className="max-w-5xl mx-auto space-y-8">
+        <header className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 border-2 border-white/40 text-white font-semibold shadow-lg">
+            <ShieldCheck className="h-5 w-5" />
+            Elige tu empresa antes de crear el pedido
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-black text-white drop-shadow-2xl">
+            ¿Para qué empresa vas a pedir hoy?
+          </h1>
+          <p className="text-lg sm:text-xl text-white/90 max-w-3xl mx-auto font-semibold drop-shadow">
+            Cada empresa puede tener preguntas y configuraciones propias (ej. multiple choice). Selecciona la correcta y te llevamos a su flujo dedicado.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          {orderedCompanies.map((company) => (
+            <button
+              key={company.slug}
+              onClick={() => handleSelect(company.slug)}
+              className="relative group text-left bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl hover:shadow-3xl overflow-hidden transition-all duration-200 hover:-translate-y-1.5 p-2 sm:p-3"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${company.accent} opacity-10 group-hover:opacity-25 transition-opacity`} />
+              <div className="p-6 sm:p-8 flex flex-col gap-5 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="p-5 rounded-2xl bg-white shadow-inner border-2 border-gray-100">
+                    <Building2 className="h-9 w-9 text-gray-800" />
+                  </div>
+                  <div>
+                    <p className={`inline-flex px-4 py-2.5 rounded-full text-xl font-black ${company.badgeClass} border border-white`}>
+                      {company.name}
+                    </p>
+                    <p className="text-lg font-semibold text-gray-800 mt-1">Flujo dedicado</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-lg sm:text-xl text-gray-900 font-bold leading-snug">
+                    {company.description}
+                  </p>
+                  <p className="text-sm sm:text-base text-gray-700">
+                    {company.customHint}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                    {company.locations.join(' • ')}
+                  </div>
+                  <div className="inline-flex items-center gap-2 text-secondary-700 font-bold text-base">
+                    Continuar
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="bg-white/15 border-2 border-white/30 rounded-2xl p-4 sm:p-6 text-white shadow-2xl flex items-center gap-3">
+          <Sparkles className="h-6 w-6 flex-shrink-0 text-yellow-200" />
+          <div className="space-y-1">
+            <p className="text-lg font-bold">Configuraciones por empresa</p>
+            <p className="text-sm text-white/90">
+              Las preguntas adicionales solo se mostrarán en el flujo de la empresa que elijas. Así evitamos cambios globales y mantenemos experiencias separadas.
+            </p>
+          </div>
+        </div>
+      </div>
+    </RequireUser>
+  )
+}
+
+export default OrderCompanySelector

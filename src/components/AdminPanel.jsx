@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle } from 'lucide-react'
+import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle, Building2 } from 'lucide-react'
 import RequireUser from './RequireUser'
+import { COMPANY_LIST, COMPANY_CATALOG } from '../constants/companyConfig'
 
 const AdminPanel = () => {
   // Archivar todos los pedidos pendientes
@@ -48,6 +49,18 @@ const AdminPanel = () => {
   // Estados para limpieza de datos
   const [completedOrdersCount, setCompletedOrdersCount] = useState(0)
   const [deletingOrders, setDeletingOrders] = useState(false)
+
+  const getCompanyLabel = (slug) => {
+    if (!slug) return 'Todas las empresas'
+    const match = COMPANY_LIST.find(c => c.slug === slug)
+    return match ? match.name : slug
+  }
+
+  const getCompanyBadgeClass = (slug) => {
+    if (!slug) return 'bg-gray-100 text-gray-700'
+    const match = COMPANY_LIST.find(c => c.slug === slug)
+    return match?.badgeClass || 'bg-gray-100 text-gray-700'
+  }
 
   useEffect(() => {
     if (!user?.id || !isAdmin) return
@@ -308,7 +321,8 @@ const AdminPanel = () => {
       type: 'multiple_choice',
       options: [''],
       required: false,
-      active: true
+      active: true,
+      company: ''
     })
     setEditingOptions(true)
   }
@@ -332,6 +346,7 @@ const AdminPanel = () => {
           ? newOption.options.filter(opt => opt.trim()) 
           : null,
         order_position: customOptions.length,
+        company: newOption.company || null,
         active: true // Asegurar que siempre esté activa
       }
 
@@ -880,6 +895,9 @@ const AdminPanel = () => {
                         {option.type === 'multiple_choice' ? 'Opción Múltiple' :
                          option.type === 'checkbox' ? 'Casillas' : 'Texto'}
                       </span>
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${getCompanyBadgeClass(option.company)}`}>
+                        {getCompanyLabel(option.company)}
+                      </span>
                       {option.required && (
                         <span className="text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
                           Requerido
@@ -1011,6 +1029,27 @@ const AdminPanel = () => {
                     <option value="checkbox">Casillas (múltiples respuestas)</option>
                     <option value="text">Texto Libre</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Empresa / alcance *
+                  </label>
+                  <select
+                    value={newOption.company || ''}
+                    onChange={(e) => handleOptionFieldChange('company', e.target.value)}
+                    className="input-field w-full bg-white text-gray-900 text-sm sm:text-base"
+                  >
+                    <option value="">Visible para todas las empresas</option>
+                    {COMPANY_LIST.map(company => (
+                      <option key={company.slug} value={company.slug}>
+                        Solo {company.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Las preguntas se mostrarán únicamente en el flujo de la empresa elegida.
+                  </p>
                 </div>
 
                 {/* Opciones (solo para multiple_choice y checkbox) */}

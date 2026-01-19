@@ -1,8 +1,40 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle } from 'lucide-react'
+import { ShoppingCart, X, ChefHat, User, Settings, Clock, AlertTriangle, Building2 } from 'lucide-react'
 import RequireUser from './RequireUser'
+import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
+
+const filterOptionsByCompany = (options = [], companySlug) => {
+  const normalized = companySlug?.toLowerCase()
+  if (!normalized) return options
+
+  if (normalized === 'laja') {
+    // Solo guarnición; acepta opciones sin company o con company=laja
+    return options.filter(opt => {
+      const target = (opt?.company || opt?.company_slug || opt?.target_company || '').toLowerCase()
+      const isGuarn = (opt?.title || '').toLowerCase().includes('guarn')
+      return isGuarn && (!target || target === normalized)
+    })
+  }
+
+  // Para otras empresas, solo opciones explícitamente asignadas a esa company
+  return options.filter(opt => {
+    const target = (opt?.company || opt?.company_slug || opt?.target_company || '').toLowerCase()
+    return target === normalized
+  })
+}
+
+// Evitar duplicados por título+company
+const dedupeOptions = (options = []) => {
+  const seen = new Set()
+  return options.filter(opt => {
+    const key = `${(opt.title || '').toLowerCase()}|${(opt.company || '').toLowerCase()}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 
 const OrderForm = ({ user, loading }) => {
   const [menuItems, setMenuItems] = useState([])
@@ -22,8 +54,15 @@ const OrderForm = ({ user, loading }) => {
   const [hasOrderToday, setHasOrderToday] = useState(false)
   const [isPastDeadline, setIsPastDeadline] = useState(false)
   const navigate = useNavigate()
-
-  const locations = ['La Laja', 'Genneia']
+  const { companySlug: companySlugParam } = useParams()
+  const [searchParams] = useSearchParams()
+  const defaultCompanySlug = COMPANY_LIST[0]?.slug || 'laja'
+  const rawCompanySlug = (companySlugParam || searchParams.get('company') || defaultCompanySlug).toLowerCase()
+  const companyConfig = COMPANY_CATALOG[rawCompanySlug] || COMPANY_CATALOG[defaultCompanySlug]
+  const locations = useMemo(
+    () => companyConfig?.locations || COMPANY_LIST[0]?.locations || [],
+    [companyConfig]
+  )
 
   useEffect(() => {
     if (!user?.id) return
@@ -37,7 +76,28 @@ const OrderForm = ({ user, loading }) => {
       name: user?.user_metadata?.full_name || '',
       email: user?.email || ''
     }))
-  }, [user])
+  }, [user, rawCompanySlug])
+
+  useEffect(() => {
+    // Redirigir a la selección si llega un slug desconocido
+    if (companySlugParam && !COMPANY_CATALOG[rawCompanySlug]) {
+      navigate('/order', { replace: true })
+    }
+  }, [companySlugParam, navigate, rawCompanySlug])
+
+  useEffect(() => {
+    const defaultLocation = locations[0] || ''
+    setFormData(prev => {
+      if (!prev.location || !locations.includes(prev.location)) {
+        return { ...prev, location: defaultLocation }
+      }
+      return prev
+    })
+  }, [locations])
+
+  useEffect(() => {
+    setCustomResponses({})
+  }, [rawCompanySlug])
 
   const checkOrderDeadline = () => {
     const now = new Date()
@@ -114,7 +174,8 @@ const OrderForm = ({ user, loading }) => {
     try {
       const { data, error } = await db.getCustomOptions()
       if (!error && data) {
-        setCustomOptions(data)
+        const filtered = filterOptionsByCompany(data, rawCompanySlug)
+        setCustomOptions(dedupeOptions(filtered))
       }
     } catch (err) {
       console.error('Error fetching custom options:', err)
@@ -383,11 +444,18 @@ const OrderForm = ({ user, loading }) => {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
         ) : (
 
             <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
               <div className="text-center">
+                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/15 border-2 border-white/30 shadow-lg text-white mb-3">
+                  <Building2 className="h-5 w-5" />
+                  <div className="text-left">
+                    <p className="text-xs font-semibold uppercase tracking-wide">Empresa seleccionada</p>
+                    <p className="text-base sm:text-lg font-bold">{companyConfig.name}</p>
+                  </div>
+                </div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
                 <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Seleccioná tu menú y completa tus datos</p>
                 <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
@@ -598,6 +666,9 @@ const OrderForm = ({ user, loading }) => {
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Opciones Adicionales</h2>
                 <p style={{ fontWeight: '900' }} className="text-xs sm:text-sm text-gray-900 mt-1">Personaliza tu pedido</p>
+                <p className="text-[11px] sm:text-xs text-gray-600 font-semibold">
+                  Solo mostramos las opciones activas para {companyConfig.name}.
+                </p>
               </div>
             </div>
 

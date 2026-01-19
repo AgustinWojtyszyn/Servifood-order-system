@@ -20,6 +20,7 @@ const Dashboard = lazy(() => import('./components/Dashboard'))
 const AdminPanel = lazy(() => import('./components/AdminPanel'))
 const SuperAdminPanel = lazy(() => import('./components/SuperAdminPanel'))
 const DailyOrders = lazy(() => import('./components/DailyOrders'))
+const OrderCompanySelector = lazy(() => import('./components/OrderCompanySelector'))
 const OrderForm = lazy(() => import('./components/OrderForm'))
 const EditOrderForm = lazy(() => import('./components/EditOrderForm'))
 const Profile = lazy(() => import('./components/Profile'))
@@ -66,6 +67,9 @@ function App() {
               } />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/order" element={
+                !loading && (user ? <Layout user={user} loading={loading}><OrderCompanySelector user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              } />
+              <Route path="/order/:companySlug" element={
                 !loading && (user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
               } />
               <Route path="/edit-order" element={

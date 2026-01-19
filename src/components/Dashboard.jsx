@@ -316,7 +316,7 @@ const Dashboard = ({ user, loading }) => {
           className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 bg-gradient-to-r from-primary-600 to-primary-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
+          <div className="sticky top-0 bg-linear-to-r from-primary-600 to-primary-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">Detalles del Pedido</h2>
               <p className="text-primary-100 mt-1">#{order.id.slice(-8)}</p>
@@ -464,7 +464,7 @@ const Dashboard = ({ user, loading }) => {
             className={`inline-flex items-center justify-center font-bold py-3 px-6 text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 ${
               refreshing
                 ? 'bg-gray-400 cursor-not-allowed text-white'
-                : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white'
+                : 'bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white'
             }`}
           >
             <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -473,13 +473,13 @@ const Dashboard = ({ user, loading }) => {
           {isAdmin && (
             <button
               onClick={handleMarkAllAsCompleted}
-              className="inline-flex items-center justify-center bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center justify-center bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
             >
               <CheckCircle className="h-5 w-5 mr-2" />
               Marcar Todos Completos
             </button>
           )}
-          <Link to="/order" className="btn-primary inline-flex items-center justify-center w-full sm:w-auto bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+          <Link to="/order" className="btn-primary inline-flex items-center justify-center w-full sm:w-auto bg-linear-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
             <Plus className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
             Nuevo Pedido
           </Link>
@@ -488,12 +488,12 @@ const Dashboard = ({ user, loading }) => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-        <div className="card bg-gradient-to-br from-white to-blue-50 shadow-2xl border-2 border-primary-200 transform hover:scale-105 transition-all duration-200">
+        <div className="card bg-linear-to-br from-white to-blue-50 shadow-2xl border-2 border-primary-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg">
+            <div className="p-3 sm:p-4 rounded-full bg-linear-to-br from-primary-500 to-primary-700 shadow-lg">
               <div className="relative">
                 <div className="flex items-center justify-center">
-                  <ChefHat className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400 bg-white rounded-full border-2 border-yellow-300 shadow-lg mx-auto flex-shrink-0" style={{ display: 'block', margin: '0 auto' }} title="Chef" />
+                  <ChefHat className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400 bg-white rounded-full border-2 border-yellow-300 shadow-lg mx-auto shrink-0" style={{ display: 'block', margin: '0 auto' }} title="Chef" />
                 </div>
               </div>
             </div>
@@ -504,9 +504,9 @@ const Dashboard = ({ user, loading }) => {
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-white to-yellow-50 shadow-2xl border-2 border-yellow-200 transform hover:scale-105 transition-all duration-200">
+        <div className="card bg-linear-to-br from-white to-yellow-50 shadow-2xl border-2 border-yellow-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
+            <div className="p-3 sm:p-4 rounded-full bg-linear-to-br from-yellow-400 to-yellow-600 shadow-lg">
               <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="ml-4 sm:ml-5">
@@ -516,9 +516,9 @@ const Dashboard = ({ user, loading }) => {
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-white to-green-50 shadow-2xl border-2 border-green-200 transform hover:scale-105 transition-all duration-200">
+        <div className="card bg-linear-to-br from-white to-green-50 shadow-2xl border-2 border-green-200 transform hover:scale-105 transition-all duration-200">
           <div className="flex items-center">
-            <div className="p-3 sm:p-4 rounded-full bg-gradient-to-br from-green-500 to-green-700 shadow-lg">
+            <div className="p-3 sm:p-4 rounded-full bg-linear-to-br from-green-500 to-green-700 shadow-lg">
               <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="ml-4 sm:ml-5">
@@ -531,20 +531,20 @@ const Dashboard = ({ user, loading }) => {
 
       {/* Support Card - Para usuarios normales */}
       {!isAdmin && (
-        <div className="card bg-gradient-to-br from-green-50 to-emerald-50 shadow-xl border-2 border-green-300">
+        <div className="card bg-linear-to-br from-green-50 to-emerald-50 shadow-xl border-2 border-green-300">
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl">
+            <div className="bg-linear-to-r from-green-500 to-green-600 text-white p-4 rounded-xl">
               <MessageCircle className="h-10 w-10" />
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">¿Necesitas ayuda?</h3>
               <p className="text-gray-700 mb-4">Estamos aquí para ayudarte. ¡Hablemos por WhatsApp! 😊</p>
               <a
-                href="https://wa.me/2644405294?text=¡Hola!%20Necesito%20ayuda%20con%20ServiFood%20Catering%20🍽️"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-              >
+                  href="https://wa.me/2644405294?text=¡Hola!%20Necesito%20ayuda%20con%20ServiFood%20Catering%20🍽️"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                >
                 <Phone className="h-5 w-5" />
                 Contactar por WhatsApp
               </a>
@@ -570,7 +570,7 @@ const Dashboard = ({ user, loading }) => {
             <img src={servifoodLogo} alt="Servifood Logo" className="h-20 w-20 mx-auto mb-4 rounded-full object-cover shadow-lg bg-white" />
             <h3 className="text-2xl font-bold text-gray-900 mb-2">No hay pedidos en el historial</h3>
             <p className="text-xl text-gray-600 mb-6">¡Crea un pedido para comenzar!</p>
-            <Link to="/order" className="btn-primary bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-4 px-8 text-lg rounded-xl shadow-lg">
+            <Link to="/order" className="btn-primary bg-linear-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-4 px-8 text-lg rounded-xl shadow-lg">
               Crear Pedido
             </Link>
           </div>
@@ -584,7 +584,7 @@ const Dashboard = ({ user, loading }) => {
                 return (
                   <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
                     <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                      <div className={`p-2 rounded-full flex-shrink-0 ${
+                      <div className={`p-2 rounded-full shrink-0 ${
                         status === 'delivered' || status === 'completed' ? 'bg-green-100' :
                         status === 'pending' ? 'bg-yellow-100' :
                         status === 'cancelled' ? 'bg-red-100' : 'bg-blue-100'
@@ -688,7 +688,7 @@ const Dashboard = ({ user, loading }) => {
               <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-3 sm:p-4 border-2 border-green-200 bg-green-50 rounded-xl transition-all">
                 <div className="flex flex-col sm:flex-row sm:items-center flex-1 min-w-0 gap-2 sm:gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-full bg-green-100 flex-shrink-0">
+                    <div className="p-2 rounded-full bg-green-100 shrink-0">
                       <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -785,7 +785,7 @@ const Dashboard = ({ user, loading }) => {
                         </div>
                       )}
                       {summary.others.map((o, idx) => (
-                        <div key={idx} className="break-words">
+                        <div key={idx} className="wrap-break-word">
                           {o.name} (x{o.qty})
                         </div>
                       ))}

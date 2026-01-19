@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.custom_options (
   title TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('multiple_choice', 'text', 'checkbox')),
   options JSONB, -- Para multiple_choice y checkbox: array de opciones
+  company TEXT, -- Slug de la empresa (null = visible para todas)
   required BOOLEAN DEFAULT false,
   active BOOLEAN DEFAULT true,
   order_position INTEGER DEFAULT 0,
@@ -16,10 +17,15 @@ CREATE TABLE IF NOT EXISTS public.custom_options (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
+-- Asegurar columna en instalaciones existentes
+ALTER TABLE public.custom_options ADD COLUMN IF NOT EXISTS company TEXT;
+
 -- Habilitar RLS
 ALTER TABLE public.custom_options ENABLE ROW LEVEL SECURITY;
 
 -- Políticas: todos pueden ver, solo admins pueden modificar
+DROP POLICY IF EXISTS "Everyone can view custom options" ON public.custom_options;
+DROP POLICY IF EXISTS "Only admins can modify custom options" ON public.custom_options;
 CREATE POLICY "Everyone can view custom options"
   ON public.custom_options FOR SELECT
   USING (true);
@@ -41,12 +47,13 @@ ADD COLUMN IF NOT EXISTS custom_responses JSONB DEFAULT '[]'::jsonb;
 -- Crear índices para mejor rendimiento
 CREATE INDEX IF NOT EXISTS idx_custom_options_active ON public.custom_options(active);
 CREATE INDEX IF NOT EXISTS idx_custom_options_order ON public.custom_options(order_position);
+CREATE INDEX IF NOT EXISTS idx_custom_options_company ON public.custom_options(company);
 
 -- Insertar opciones de ejemplo
-INSERT INTO public.custom_options (title, type, options, required, active, order_position) VALUES
-('¿Prefieres alguna bebida?', 'multiple_choice', '["Agua", "Jugo de Naranja", "Coca Cola", "Ninguna"]'::jsonb, false, true, 1),
-('¿Tienes alguna alergia alimentaria?', 'text', null, false, true, 2),
-('Preferencias adicionales', 'checkbox', '["Sin cebolla", "Sin ajo", "Extra picante", "Vegetariano"]'::jsonb, false, true, 3);
+INSERT INTO public.custom_options (title, type, options, required, active, order_position, company) VALUES
+('Bebidas (solo Genneia)', 'multiple_choice', '["Agua", "Soda", "Agua saborizada"]'::jsonb, false, true, 1, 'genneia'),
+('Postre (solo Genneia)', 'multiple_choice', '["Postre del día (solo martes y jueves)", "Fruta"]'::jsonb, false, true, 2, 'genneia'),
+('¿Desea alguna guarnición distinta a la del menú?', 'multiple_choice', '["Papas fritas", "Arroz", "Verduras", "Puré", "Fideos"]'::jsonb, false, true, 1, 'genneia');
 
 -- Verificar
 SELECT * FROM public.custom_options ORDER BY order_position;

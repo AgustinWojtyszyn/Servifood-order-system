@@ -65,9 +65,9 @@ const Layout = ({ children, user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="flex flex-col bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 h-full min-h-screen overflow-hidden">
+      <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 h-full min-h-screen overflow-hidden">
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
+      <header className="bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex flex-row items-center h-32 py-4 overflow-hidden w-full justify-center relative">
             <img 
@@ -110,7 +110,7 @@ const Layout = ({ children, user, loading }) => {
           style={{ pointerEvents: sidebarOpen || window.innerWidth >= 768 ? 'auto' : 'none' }}
         >
           {/* Botón cerrar solo en mobile */}
-          <div className="flex items-center justify-between h-16 px-4 border-b-2 border-primary-200 bg-gradient-to-r from-primary-700 to-primary-800">
+          <div className="flex items-center justify-between h-16 px-4 border-b-2 border-primary-200 bg-linear-to-r from-primary-700 to-primary-800">
             <span className="text-4xl font-extrabold drop-shadow-lg font-montserrat">
               <span style={{ color: '#2563eb', fontSize: '2.8rem', lineHeight: 1 }}>Servi</span><span style={{ color: '#fb923c', fontSize: '2.8rem', lineHeight: 1 }}>Food</span>
             </span>
@@ -135,7 +135,7 @@ const Layout = ({ children, user, loading }) => {
                         if (isActive) {
                           classes += " bg-blue-600 text-white shadow-lg"
                         } else if (item.highlighted) {
-                          classes += " bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md animate-pulse-slow"
+                          classes += " bg-linear-to-r from-blue-500 to-blue-600 text-white shadow-md animate-pulse-slow"
                         } else {
                           classes += " text-gray-800 hover:bg-blue-50"
                         }
@@ -143,7 +143,7 @@ const Layout = ({ children, user, loading }) => {
                       }}
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <Icon className="h-6 w-6 mr-3 flex-shrink-0" />
+                      <Icon className="h-6 w-6 mr-3 shrink-0" />
                       <span className="flex-1">{item.name}</span>
                     </NavLink>
                   </li>
@@ -157,9 +157,9 @@ const Layout = ({ children, user, loading }) => {
                       setAdminTutorialOpen(true)
                       setSidebarOpen(false)
                     }}
-                    className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-700 mt-4"
+                    className="group flex items-center w-full px-4 py-3 text-purple-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-purple-200 hover:border-transparent hover:bg-linear-to-r hover:from-purple-600 hover:to-purple-700 mt-4"
                   >
-                    <Settings className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                    <Settings className="h-6 w-6 mr-3 shrink-0 group-hover:text-white transition-colors" />
                     <span className="group-hover:text-white transition-colors">Tutorial Admin 👨‍💼</span>
                   </button>
                 </li>
@@ -170,9 +170,9 @@ const Layout = ({ children, user, loading }) => {
                     setTutorialOpen(true)
                     setSidebarOpen(false)
                   }}
-                  className="group flex items-center w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
+                  className="group flex items-center w-full px-4 py-3 rounded-xl bg-linear-to-r from-blue-600 to-blue-700 text-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-xl border-2 border-blue-500 hover:border-blue-400 hover:from-blue-500 hover:to-blue-600"
                 >
-                  <HelpCircle className="h-6 w-6 mr-3 flex-shrink-0 text-white" />
+                  <HelpCircle className="h-6 w-6 mr-3 shrink-0 text-white" />
                   <span className="text-white">Ver Tutorial</span>
                 </button>
               </li>
@@ -182,9 +182,9 @@ const Layout = ({ children, user, loading }) => {
                     handleLogout()
                     setSidebarOpen(false)
                   }}
-                  className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700"
+                  className="group flex items-center w-full px-4 py-3 text-red-700 rounded-xl bg-white font-bold text-base transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-lg border-2 border-red-200 hover:border-transparent hover:bg-linear-to-r hover:from-red-600 hover:to-red-700"
                 >
-                  <LogOut className="h-6 w-6 mr-3 flex-shrink-0 group-hover:text-white transition-colors" />
+                  <LogOut className="h-6 w-6 mr-3 shrink-0 group-hover:text-white transition-colors" />
                   <span className="group-hover:text-white transition-colors">Cerrar Sesión</span>
                 </button>
               </li>
