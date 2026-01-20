@@ -507,7 +507,7 @@ const AdminPanel = () => {
                   : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
               }`}
             >
-              <Users className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               <span>Usuarios</span>
             </button>
             <button
@@ -518,7 +518,7 @@ const AdminPanel = () => {
                   : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
               }`}
             >
-              <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               <span>Menú</span>
             </button>
             <button
@@ -529,7 +529,7 @@ const AdminPanel = () => {
                   : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
               }`}
             >
-              <Settings className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <Settings className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               <span>Opciones</span>
             </button>
           </nav>
@@ -545,7 +545,7 @@ const AdminPanel = () => {
                 : 'bg-white/20 text-white hover:bg-white/30 border-2 border-white/40'
             }`}
           >
-            <Database className="h-5 w-5 flex-shrink-0" />
+            <Database className="h-5 w-5 shrink-0" />
             <span>Limpiar Cache</span>
             {completedOrdersCount > 0 && (
               <span className="ml-2 inline-flex items-center justify-center px-2.5 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full shadow-md">
@@ -619,7 +619,7 @@ const AdminPanel = () => {
                     </h3>
                     <p className="text-sm text-gray-600 truncate mt-1">{user.email}</p>
                   </div>
-                  <span className={`ml-2 flex-shrink-0 inline-flex px-2.5 py-1 text-xs font-bold rounded-full ${
+                  <span className={`ml-2 shrink-0 inline-flex px-2.5 py-1 text-xs font-bold rounded-full ${
                     user.role === 'admin'
                       ? 'bg-purple-100 text-purple-800'
                       : 'bg-blue-100 text-blue-800'
@@ -664,7 +664,7 @@ const AdminPanel = () => {
           {/* Vista Desktop - Tabla */}
           <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-primary-600 to-primary-700">
+              <thead className="bg-linear-to-r from-primary-600 to-primary-700">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
                     Usuario
@@ -718,7 +718,7 @@ const AdminPanel = () => {
                         </select>
                         <button
                           onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
-                          className="p-2.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors flex-shrink-0"
+                          className="p-2.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors shrink-0"
                           title="Eliminar usuario"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -816,12 +816,12 @@ const AdminPanel = () => {
               {newMenuItems.map((item, index) => (
                 <div key={index} className="border-2 border-gray-200 rounded-xl bg-white p-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                    <div className="shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
                       {index + 1}
                     </div>
                     <button
                       onClick={() => removeMenuItem(index)}
-                      className="ml-auto p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0"
+                      className="ml-auto p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors shrink-0"
                       title="Eliminar plato"
                     >
                       <Trash2 className="h-5 w-5" />
@@ -885,7 +885,7 @@ const AdminPanel = () => {
                 <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-primary-300 transition-all min-w-0">
                   {/* Header con título y badges */}
                   <div className="mb-3">
-                    <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-2 break-words">{option.title}</h3>
+                    <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-2 wrap-break-word">{option.title}</h3>
                     <div className="flex flex-wrap gap-2">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                         option.type === 'multiple_choice' ? 'bg-blue-100 text-blue-800' :
@@ -963,7 +963,7 @@ const AdminPanel = () => {
                       
                       <button
                         onClick={() => handleDeleteOption(option.id)}
-                        className="flex-shrink-0 px-4 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold text-sm flex items-center gap-1"
+                        className="shrink-0 px-4 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-semibold text-sm flex items-center gap-1"
                         title="Eliminar"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -994,7 +994,7 @@ const AdminPanel = () => {
                     setEditingOptions(false)
                     setNewOption(null)
                   }}
-                  className="p-2 hover:bg-red-100 rounded-lg text-red-600 flex-shrink-0"
+                  className="p-2 hover:bg-red-100 rounded-lg text-red-600 shrink-0"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1071,7 +1071,7 @@ const AdminPanel = () => {
                           {newOption.options.length > 1 && (
                             <button
                               onClick={() => handleRemoveOptionChoice(index)}
-                              className="p-2.5 text-red-600 hover:bg-red-100 rounded-lg flex-shrink-0"
+                              className="p-2.5 text-red-600 hover:bg-red-100 rounded-lg shrink-0"
                             >
                               <X className="h-5 w-5" />
                             </button>
@@ -1132,9 +1132,9 @@ const AdminPanel = () => {
       {activeTab === 'cleanup' && (
         <div className="space-y-6">
           {/* Advertencia importante */}
-          <div className="card bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 shadow-xl">
+          <div className="card bg-linear-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 shadow-xl">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 p-3 bg-yellow-400 rounded-full">
+              <div className="shrink-0 p-3 bg-yellow-400 rounded-full">
                 <AlertTriangle className="h-8 w-8 text-yellow-900" />
               </div>
               <div className="flex-1">
@@ -1157,7 +1157,7 @@ const AdminPanel = () => {
           {/* Panel de limpieza de pedidos completados y pendientes antiguos */}
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
+              <div className="p-3 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl">
                 <Database className="h-8 w-8 text-white" />
               </div>
               <div>
@@ -1167,7 +1167,7 @@ const AdminPanel = () => {
             </div>
 
             {/* Estadísticas */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border-2 border-gray-200">
+            <div className="bg-linear-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border-2 border-gray-200">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
                   <div className="flex items-center justify-between">
@@ -1213,7 +1213,7 @@ const AdminPanel = () => {
                 className={`w-full py-3 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3 mb-2
                   ${archivingPending
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'}
+                    : 'bg-linear-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'}
                 `}
                 title="Archivar todos los pedidos pendientes (de hoy y días anteriores)"
               >
@@ -1267,7 +1267,7 @@ const AdminPanel = () => {
                   className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${
                     deletingOrders
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'
+                      : 'bg-linear-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'
                   }`}
                 >
                   {deletingOrders ? (
@@ -1301,7 +1301,7 @@ const AdminPanel = () => {
           </div>
 
           {/* Tips adicionales */}
-          <div className="card bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-300">
+          <div className="card bg-linear-to-br from-purple-50 to-blue-50 border-2 border-purple-300">
             <h3 className="text-xl font-bold text-purple-900 mb-4 flex items-center gap-2">
               <Settings className="h-6 w-6" />
               💡 Mejores Prácticas

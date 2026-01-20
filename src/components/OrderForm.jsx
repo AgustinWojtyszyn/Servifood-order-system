@@ -459,12 +459,12 @@ const OrderForm = ({ user, loading }) => {
   return (
 
     <RequireUser user={user} loading={loading}>
-      <div className="p-3 sm:p-6 min-h-[100dvh] flex flex-col" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
+      <div className="p-3 sm:p-6 min-h-dvh flex flex-col" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
         {isPastDeadline ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 sm:p-6 shadow-lg max-w-xl w-full">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 bg-red-100 rounded-full p-2">
+                <div className="shrink-0 bg-red-100 rounded-full p-2">
                   <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
                 <div>
@@ -516,7 +516,7 @@ const OrderForm = ({ user, loading }) => {
               {!hasOrderToday && (
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 shadow-lg">
                   <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <Clock className="h-5 w-5 text-blue-600 shrink-0" />
                     <div>
                       <p className="text-sm sm:text-base text-blue-800 font-medium">
                         Horario de pedidos: <strong>9:00 a 22:00 horas</strong> (horario Argentina, GMT-3) del día anterior a la entrega
@@ -534,7 +534,7 @@ const OrderForm = ({ user, loading }) => {
               {/* Información Personal */}
               <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
                 <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                  <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
+                  <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
                     <User className="h-5 w-5 sm:h-6 sm:w-6" />
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Información Personal</h2>
@@ -609,7 +609,7 @@ const OrderForm = ({ user, loading }) => {
 {/* Selección de Menú */}
 <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
   <div className="flex items-center gap-3 mb-6">
-    <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
+    <div className="bg-linear-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
       <ChefHat className="h-6 w-6" />
     </div>
     <div>
@@ -665,9 +665,9 @@ const OrderForm = ({ user, loading }) => {
 
         {/* Resumen del Pedido */}
         {getSelectedItemsList().length > 0 && (
-          <div className="card bg-gradient-to-br from-green-50 to-emerald-50 backdrop-blur-sm shadow-xl border-2 border-green-300">
+          <div className="card bg-linear-to-br from-green-50 to-emerald-50 backdrop-blur-sm shadow-xl border-2 border-green-300">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-2 sm:p-3 rounded-xl">
+              <div className="bg-linear-to-r from-green-600 to-emerald-600 text-white p-2 sm:p-3 rounded-xl">
                 <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
@@ -708,7 +708,7 @@ const OrderForm = ({ user, loading }) => {
         {customOptions.filter(opt => opt.active).length > 0 && (
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
+              <div className="bg-linear-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
                 <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
@@ -722,7 +722,7 @@ const OrderForm = ({ user, loading }) => {
 
             <div className="space-y-6">
               {customOptions.filter(opt => opt.active).map((option) => (
-                <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50">
+                <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50">
                   <label className="block text-sm text-gray-900 mb-3" style={{ fontWeight: '900' }}>
                     {option.title}
                     {option.required && <span className="text-red-600 ml-1">*</span>}
@@ -848,7 +848,7 @@ const OrderForm = ({ user, loading }) => {
         )}
 
         {/* Botón de confirmación - SIEMPRE visible al fondo, nunca fijo en mobile */}
-        <div className="w-full bg-gradient-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 flex justify-center sm:mt-6 z-40"
+        <div className="w-full bg-linear-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 flex justify-center sm:mt-6 z-40"
           style={{
             position: 'relative',
             bottom: 'auto',
