@@ -65,9 +65,9 @@ const Tutorial = ({ isOpen, onClose }) => {
         <div className="bg-gradient-to-r from-primary-900 to-primary-800 p-6 text-white relative border-b-4 border-secondary-500">
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+            className="absolute top-4 right-4 p-2 bg-white/90 text-gray-900 hover:bg-white rounded-lg transition-colors border border-gray-200 shadow-sm"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5 text-gray-900" />
           </button>
           <div className="flex items-center gap-3">
             <BookOpen className="h-8 w-8" />
