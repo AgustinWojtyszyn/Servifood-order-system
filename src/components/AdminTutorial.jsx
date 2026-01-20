@@ -456,10 +456,10 @@ const AdminTutorial = ({ isOpen, onClose }) => {
             </div>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-white/30 rounded-lg transition-colors bg-white/10 border-2 border-white/30"
+              className="p-2 rounded-lg transition-colors bg-white text-gray-900 hover:bg-gray-100 border-2 border-gray-200 shadow-sm"
               title="Cerrar tutorial"
             >
-              <X className="h-6 w-6 text-white" />
+              <X className="h-6 w-6 text-gray-900" />
             </button>
           </div>
           
