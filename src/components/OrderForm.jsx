@@ -57,8 +57,25 @@ const OrderForm = ({ user, loading }) => {
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
   const defaultCompanySlug = COMPANY_LIST[0]?.slug || 'laja'
-  const rawCompanySlug = (companySlugParam || searchParams.get('company') || defaultCompanySlug).toLowerCase()
+  const rawCompanySlug = (companySlugParam || searchParams.get('company') || defaultCompanySlug || '')
+    .trim()
+    .toLowerCase()
   const companyConfig = COMPANY_CATALOG[rawCompanySlug] || COMPANY_CATALOG[defaultCompanySlug]
+  const isGenneia = (companyConfig?.slug || rawCompanySlug || '').toLowerCase() === 'genneia'
+  const isGenneiaPostreOption = (option = {}) =>
+    isGenneia && (option.title || '').toLowerCase().includes('postre')
+  const argentinaWeekday = useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat('es-AR', { weekday: 'long', timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date())
+    } catch (err) {
+      return new Date().toLocaleDateString('es-AR', { weekday: 'long' })
+    }
+  }, [])
+  const normalizedWeekday = useMemo(
+    () => (argentinaWeekday || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
+    [argentinaWeekday]
+  )
+  const isGenneiaPostreDay = isGenneia && (normalizedWeekday === 'lunes' || normalizedWeekday === 'miercoles')
   const locations = useMemo(
     () => companyConfig?.locations || COMPANY_LIST[0]?.locations || [],
     [companyConfig]
@@ -98,6 +115,32 @@ const OrderForm = ({ user, loading }) => {
   useEffect(() => {
     setCustomResponses({})
   }, [rawCompanySlug])
+
+  useEffect(() => {
+    if (!isGenneia) return
+    setCustomResponses((prev) => {
+      let changed = false
+      const updated = { ...prev }
+
+      customOptions.forEach((option) => {
+        if (!isGenneiaPostreOption(option)) return
+
+        const current = prev[option.id]
+        const isPostreSelected =
+          typeof current === 'string' && current.toLowerCase().includes('postre')
+        const frutaOption = option.options?.find((opt) => opt?.toLowerCase().includes('fruta'))
+
+        // Forzar fruta cuando no es día de postre o preseleccionar fruta si está vacío
+        const shouldForceFruta = !isGenneiaPostreDay && frutaOption
+        if (shouldForceFruta && (!current || isPostreSelected)) {
+          updated[option.id] = frutaOption
+          changed = true
+        }
+      })
+
+      return changed ? updated : prev
+    })
+  }, [isGenneia, isGenneiaPostreDay, customOptions])
 
   const checkOrderDeadline = () => {
     const now = new Date()
@@ -316,7 +359,7 @@ const OrderForm = ({ user, loading }) => {
 
     // Validar opciones requeridas (solo las que están activas)
     const missingRequiredOptions = customOptions
-      .filter(opt => opt.active && opt.required && !customResponses[opt.id])
+      .filter(opt => opt.active && (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id])
       .map(opt => opt.title)
 
     if (missingRequiredOptions.length > 0) {
@@ -463,6 +506,11 @@ const OrderForm = ({ user, loading }) => {
                   <div className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded-lg shadow text-yellow-900 text-sm sm:text-base">
                     <strong>Importante:</strong> No realices <b>pedidos de prueba</b>. Todos los pedidos se contabilizan para el día siguiente y serán preparados. Si necesitas cancelar un pedido, hazlo desde la aplicación o comunícate por WhatsApp dentro de los <b>15 minutos</b> posteriores a haberlo realizado.
                   </div>
+                  {isGenneia && (
+                    <div className="mt-3 bg-amber-50 border-l-4 border-amber-500 p-3 rounded-lg shadow text-amber-900 text-sm sm:text-base">
+                      <strong>Postre Genneia:</strong> Elegí <b>Postre del día</b> solo los <b>lunes y miércoles</b> (entrega martes y jueves). El resto de los días <b>marcá siempre Fruta</b> como opción (martes, jueves y viernes).
+                    </div>
+                  )}
                 </div>
               </div>
               {!hasOrderToday && (
@@ -679,16 +727,31 @@ const OrderForm = ({ user, loading }) => {
                     {option.title}
                     {option.required && <span className="text-red-600 ml-1">*</span>}
                   </label>
+                  {isGenneia && option.title?.toLowerCase().includes('postre') && (
+                    <div className="mb-3 text-sm font-semibold text-amber-800 bg-amber-50 border border-amber-300 rounded-lg p-2">
+                      Solo elegí <b>Postre del día</b> lunes y miércoles (entrega martes y jueves). El resto de los días marcá <b>Fruta</b>. Los martes, jueves y viernes el postre queda deshabilitado.
+                    </div>
+                  )}
 
                   {option.type === 'multiple_choice' && option.options && (
                     <div className="space-y-2">
                       {option.options.map((opt, index) => {
                         const isSelected = customResponses[option.id] === opt
+                        const isPostreOption =
+                          isGenneia &&
+                          option.title?.toLowerCase().includes('postre') &&
+                          opt?.toLowerCase().includes('postre')
+                        const disablePostre = isPostreOption && !isGenneiaPostreDay
                         return (
                         <label
                           key={index}
                           className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer"
                           onClick={(e) => {
+                            if (disablePostre) {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              return
+                            }
                             if (isSelected) {
                               e.preventDefault()
                               e.stopPropagation()
@@ -701,10 +764,17 @@ const OrderForm = ({ user, loading }) => {
                             name={`option-${option.id}`}
                             value={opt}
                             checked={isSelected}
+                            disabled={disablePostre}
                             onChange={(e) => handleCustomResponse(option.id, e.target.value, 'multiple_choice')}
-                            className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                            className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
-                          <span className="ml-3 text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
+                          <span
+                            className={`ml-3 text-sm ${disablePostre ? 'text-gray-400' : 'text-gray-900'}`}
+                            style={{ fontWeight: '900' }}
+                          >
+                            {opt}
+                            {disablePostre && ' (no disponible hoy)'}
+                          </span>
                         </label>
                       )})}
                     </div>
