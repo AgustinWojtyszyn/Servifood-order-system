@@ -457,9 +457,17 @@ const OrderForm = ({ user, loading }) => {
   }
 
   return (
-
     <RequireUser user={user} loading={loading}>
-      <div className="p-3 sm:p-6 min-h-dvh flex flex-col" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
+      <div
+        className="p-3 sm:p-6 min-h-dvh flex flex-col overflow-y-auto sm:overflow-visible"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          WebkitOverflowScrolling: 'touch',
+          height: '100dvh',
+          maxHeight: '100dvh',
+          overscrollBehavior: 'contain',
+        }}
+      >
         {isPastDeadline ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 sm:p-6 shadow-lg max-w-xl w-full">
