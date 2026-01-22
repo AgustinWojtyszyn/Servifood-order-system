@@ -117,6 +117,7 @@ const archiveAllPendingOrders = async () => {
     .from('orders')
     .update({ status: 'archived', updated_at: new Date().toISOString() })
     .eq('status', 'pending')
+    .select('id')
   return { data, error }
 }
 

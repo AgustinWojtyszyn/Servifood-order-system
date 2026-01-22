@@ -1,5 +1,5 @@
 const InternalLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900">
+  <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary-700 via-primary-800 to-primary-900">
     <div className="text-center">
       <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
       <p className="text-white text-base font-medium">Cargando...</p>
@@ -152,10 +152,13 @@ const DailyOrders = ({ user, loading }) => {
             user_email: (orderUser?.email ? orderUser.email : (order.customer_email !== undefined ? order.customer_email : ''))
           };
         }) : [];
+
+        // Ocultar pedidos ya archivados
+        const visibleTodayOrders = todayOrders.filter(order => order.status !== 'archived')
         
-        setOrders(todayOrders)
+        setOrders(visibleTodayOrders)
         setAvailableDishes(Array.from(dishesSet).sort())
-        calculateStats(todayOrders)
+        calculateStats(visibleTodayOrders)
       }
     } catch (err) {
       console.error('Error:', err)
@@ -654,7 +657,7 @@ const DailyOrders = ({ user, loading }) => {
             <button
               onClick={exportToExcel}
               disabled={exportableOrdersCount === 0}
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-600 hover:to-green-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-green-500 to-green-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-600 hover:to-green-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
             >
               <FileSpreadsheet className="mr-3 h-6 w-6" />
               📊 Excel ({exportableOrdersCount})
@@ -663,7 +666,7 @@ const DailyOrders = ({ user, loading }) => {
             <button
               onClick={shareViaWhatsApp}
               disabled={sortedOrders.length === 0}
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-700 hover:to-green-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-green-600 to-green-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-700 hover:to-green-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
             >
               <Send className="mr-3 h-6 w-6" />
               📱 WhatsApp
@@ -683,7 +686,7 @@ const DailyOrders = ({ user, loading }) => {
                     }
                   }
                 }}
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-600 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200"
+                className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-500 to-blue-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-600 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200"
                 title="Archiva todos los pedidos pendientes al final del día para mantener el sistema limpio"
               >
                 <ArchiveIcon className="mr-3 h-6 w-6" />
@@ -810,7 +813,7 @@ const DailyOrders = ({ user, loading }) => {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-8">
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-6 shadow-xl border-2 border-primary-300">
+          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-primary-500 to-primary-700 p-6 shadow-xl border-2 border-primary-300">
             <div className="flex items-center justify-between">
               <div className="z-10">
                 <span className="text-base font-semibold text-primary-100">Total Pedidos</span>
@@ -827,7 +830,7 @@ const DailyOrders = ({ user, loading }) => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-secondary-500 to-secondary-700 p-6 shadow-xl border-2 border-secondary-300">
+          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-secondary-500 to-secondary-700 p-6 shadow-xl border-2 border-secondary-300">
             <div className="flex items-center justify-between">
               <div className="z-10">
                 <span className="text-base font-semibold text-secondary-100">Total Items</span>
@@ -844,7 +847,7 @@ const DailyOrders = ({ user, loading }) => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 shadow-xl border-2 border-yellow-300">
+          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-yellow-500 to-yellow-600 p-6 shadow-xl border-2 border-yellow-300">
             <div className="flex items-center justify-between">
               <div className="z-10">
                 <span className="text-base font-semibold text-yellow-100">Pendientes</span>
@@ -861,7 +864,7 @@ const DailyOrders = ({ user, loading }) => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-500 to-green-600 p-6 shadow-xl border-2 border-green-300">
+          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-green-500 to-green-600 p-6 shadow-xl border-2 border-green-300">
             <div className="flex items-center justify-between">
               <div className="z-10">
                 <span className="text-base font-semibold text-green-100">Completados</span>
@@ -878,7 +881,7 @@ const DailyOrders = ({ user, loading }) => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-red-600 p-6 shadow-xl border-2 border-red-300">
+          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-red-500 to-red-600 p-6 shadow-xl border-2 border-red-300">
             <div className="flex items-center justify-between">
               <div className="z-10">
                 <span className="text-base font-semibold text-red-100">Cancelados</span>
@@ -1007,7 +1010,7 @@ const DailyOrders = ({ user, loading }) => {
                                   </div>
                                 )}
                                 {summary.others.map((o, idx) => (
-                                  <div key={idx} className="text-base text-black break-words">
+                                  <div key={idx} className="text-base text-black wrap-break-word">
                                     {o.name} (x{o.qty})
                                   </div>
                                 ))}
@@ -1104,7 +1107,7 @@ const DailyOrders = ({ user, loading }) => {
                         </div>
                       )}
                       {summary.others.map((o, idx) => (
-                        <div key={idx} className="break-words">
+                        <div key={idx} className="wrap-break-word">
                           {o.name} (x{o.qty})
                         </div>
                       ))}
@@ -1140,8 +1143,8 @@ const DailyOrders = ({ user, loading }) => {
 
         {/* Location Summary */}
         {selectedLocation === 'all' && stats.total > 0 && (
-          <div className="rounded-xl bg-gradient-to-br from-white to-gray-50 shadow-2xl border-2 border-primary-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-600 to-primary-800 px-8 py-6">
+          <div className="rounded-xl bg-linear-to-br from-white to-gray-50 shadow-2xl border-2 border-primary-200 overflow-hidden">
+            <div className="bg-linear-to-r from-primary-600 to-primary-800 px-8 py-6">
               <h3 className="text-3xl font-black text-white flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 shadow-lg">
                   <MapPin className="h-7 w-7 text-white" />
@@ -1152,7 +1155,7 @@ const DailyOrders = ({ user, loading }) => {
             <div className="p-8">
               <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
                 {locations.map((location, index) => (
-                  <div key={location} className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white to-gray-100 p-8 shadow-2xl border-2 border-gray-200 hover:shadow-3xl transition-all duration-300 hover:scale-105">
+                  <div key={location} className="relative overflow-hidden rounded-xl bg-linear-to-br from-white to-gray-100 p-8 shadow-2xl border-2 border-gray-200 hover:shadow-3xl transition-all duration-300 hover:scale-105">
                     <div className="flex items-center justify-between">
                       <div className="z-10">
                         <h4 className="text-3xl font-black text-gray-800 mb-3 flex items-center gap-3">

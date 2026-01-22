@@ -345,7 +345,7 @@ export default function EditOrderForm({ user, loading }) {
 
         <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 shadow-lg">
           <div className="flex items-start gap-3">
-            <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+            <Clock className="h-5 w-5 text-blue-600 shrink-0" />
             <div>
               <p className="text-sm sm:text-base text-blue-800 font-medium">
                 <strong>Edición disponible:</strong> Solo puedes editar pedidos dentro de los primeros {EDIT_WINDOW_MINUTES} minutos de creación
@@ -361,7 +361,7 @@ export default function EditOrderForm({ user, loading }) {
           {/* Información Personal */}
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
+              <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
                 <User className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Información Personal</h2>
@@ -440,7 +440,7 @@ export default function EditOrderForm({ user, loading }) {
           {/* Selección de Menú */}
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-gradient-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
+              <div className="bg-linear-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
                 <ChefHat className="h-6 w-6" />
               </div>
               <div>
@@ -492,9 +492,9 @@ export default function EditOrderForm({ user, loading }) {
 
           {/* Resumen del Pedido */}
           {getSelectedItemsList().length > 0 && (
-            <div className="card bg-gradient-to-br from-green-50 to-emerald-50 backdrop-blur-sm shadow-xl border-2 border-green-300">
+            <div className="card bg-linear-to-br from-green-50 to-emerald-50 backdrop-blur-sm shadow-xl border-2 border-green-300">
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-2 sm:p-3 rounded-xl">
+                <div className="bg-linear-to-r from-green-600 to-emerald-600 text-white p-2 sm:p-3 rounded-xl">
                   <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div>
@@ -534,7 +534,7 @@ export default function EditOrderForm({ user, loading }) {
           {customOptions.filter(opt => opt.active).length > 0 && (
             <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
+                <div className="bg-linear-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
                   <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div>
@@ -545,7 +545,7 @@ export default function EditOrderForm({ user, loading }) {
 
               <div className="space-y-6">
                 {customOptions.filter(opt => opt.active).map((option) => (
-                  <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50">
+                  <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50">
                     <label className="block text-sm text-gray-900 mb-3" style={{ fontWeight: '900' }}>
                       {option.title}
                       {option.required && <span className="text-red-600 ml-1">*</span>}
@@ -644,7 +644,7 @@ export default function EditOrderForm({ user, loading }) {
           )}
 
           {/* Botón de confirmación - Sticky en mobile con safe area */}
-          <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto bg-gradient-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+          <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto bg-linear-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 sm:flex sm:justify-end mt-0 sm:mt-6 z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
             <div className="flex gap-3 w-full sm:w-auto">
               <button
                 type="button"

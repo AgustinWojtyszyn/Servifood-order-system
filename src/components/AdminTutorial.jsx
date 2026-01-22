@@ -22,23 +22,23 @@ const AdminTutorial = ({ isOpen, onClose }) => {
             <h4 className="font-bold text-blue-900 mb-2">Tus privilegios incluyen:</h4>
             <ul className="space-y-2 text-blue-800">
               <li className="flex items-start gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                 <span>Ver <strong>todos los pedidos</strong> de todos los usuarios</span>
               </li>
               <li className="flex items-start gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                 <span>Gestionar <strong>usuarios</strong> y asignar roles</span>
               </li>
               <li className="flex items-start gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                 <span>Modificar el <strong>menú</strong> diario</span>
               </li>
               <li className="flex items-start gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                 <span>Crear <strong>opciones personalizadas</strong> y encuestas</span>
               </li>
               <li className="flex items-start gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                 <span>Cambiar <strong>estados de pedidos</strong></span>
               </li>
             </ul>
@@ -101,7 +101,7 @@ const AdminTutorial = ({ isOpen, onClose }) => {
             Como admin, puedes cambiar el estado de cualquier pedido directamente desde el Dashboard:
           </p>
           
-          <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-2 border-yellow-300 p-4 rounded-lg">
+          <div className="bg-linear-to-r from-yellow-50 to-yellow-100 border-2 border-yellow-300 p-4 rounded-lg">
             <h4 className="font-bold text-yellow-900 mb-3 text-lg">Estados Disponibles:</h4>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
@@ -354,7 +354,7 @@ const AdminTutorial = ({ isOpen, onClose }) => {
       icon: MessageCircle,
       content: (
         <div className="space-y-4">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 p-5 rounded-lg">
+          <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 p-5 rounded-lg">
             <h4 className="font-bold text-blue-900 mb-3 text-xl">📌 Recomendaciones:</h4>
             
             <div className="space-y-4">
@@ -443,7 +443,7 @@ const AdminTutorial = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-6">
+        <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="bg-white/20 p-3 rounded-lg">
