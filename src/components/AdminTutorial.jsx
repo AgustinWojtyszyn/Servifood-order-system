@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { X, ChevronLeft, ChevronRight, Users, ChefHat, Settings, Eye, CheckCircle, Bell, MessageCircle } from 'lucide-react'
+import { useOverlayLock } from '../contexts/OverlayLockContext'
 
 const AdminTutorial = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0)
+  useOverlayLock(isOpen)
+
+  if (!isOpen) return null
 
   const handleClose = () => {
     setCurrentStep(0) // Reiniciar al paso 1 cuando se cierra

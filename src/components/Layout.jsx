@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle } from 'lucide-react'
@@ -7,6 +7,8 @@ import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
 import RequireUser from './RequireUser'
+import { useScrollLock } from '../hooks/useScrollLock'
+import { OverlayLockProvider } from '../contexts/OverlayLockContext'
 
 
 const Layout = ({ children, user, loading }) => {
@@ -14,7 +16,16 @@ const Layout = ({ children, user, loading }) => {
   const [tutorialOpen, setTutorialOpen] = useState(false)
   const [adminTutorialOpen, setAdminTutorialOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [externalLocks, setExternalLocks] = useState(0)
   const navigate = useNavigate()
+  const registerExternalLock = useCallback(() => {
+    setExternalLocks((count) => count + 1)
+    return () => setExternalLocks((count) => Math.max(0, count - 1))
+  }, [])
+  const isAnyOverlayOpen = sidebarOpen || tutorialOpen || adminTutorialOpen || externalLocks > 0
+
+  // Scroll lock centralizado para cualquier overlay (sidebar, tutoriales o locks de hijos).
+  useScrollLock(isAnyOverlayOpen)
 
   useEffect(() => {
     if (!user?.id) return
@@ -65,7 +76,8 @@ const Layout = ({ children, user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 h-full min-h-screen overflow-hidden">
+      <OverlayLockProvider registerLock={registerExternalLock}>
+      <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-[100dvh] w-full">
       {/* Header */}
       <header className="bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
@@ -92,7 +104,7 @@ const Layout = ({ children, user, loading }) => {
         </div>
       </header>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
         {/* Overlay para mobile */}
         {sidebarOpen && (
@@ -193,8 +205,8 @@ const Layout = ({ children, user, loading }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="flex-1 p-4 md:p-8 min-h-0 overflow-y-auto">
+        <main className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 p-4 md:p-8 min-h-0">
             {children}
           </div>
         </main>
@@ -207,6 +219,7 @@ const Layout = ({ children, user, loading }) => {
       {/* Support Button */}
       <SupportButton />
       </div>
+      </OverlayLockProvider>
     </RequireUser>
   )
 }

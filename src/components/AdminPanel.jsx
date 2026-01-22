@@ -489,7 +489,7 @@ const AdminPanel = () => {
 
   return (
     <RequireUser user={user} loading={loading}>
-    <div className="min-h-screen pt-16 pb-24 p-3 sm:p-6 space-y-6 sm:space-y-8" style={{ paddingBottom: '120px' }}>
+    <div className="min-h-[100dvh] pt-16 pb-24 p-3 sm:p-6 space-y-6 sm:space-y-8" style={{ paddingBottom: '120px' }}>
       <div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-2xl mb-2">Panel de Administración</h1>
         <p className="text-sm sm:text-base md:text-lg text-white/90 drop-shadow-lg mt-2">Gestiona usuarios y el menú de opciones</p>
@@ -880,7 +880,7 @@ const AdminPanel = () => {
 
           {/* Lista de opciones existentes - Con scroll adaptativo */}
           {!editingOptions && customOptions.length > 0 && (
-            <div className="space-y-4 max-h-[calc(100vh-400px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="space-y-4 max-h-[calc(100dvh-400px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {customOptions.map((option, index) => (
                 <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-primary-300 transition-all min-w-0">
                   {/* Header con título y badges */}

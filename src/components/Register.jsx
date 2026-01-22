@@ -95,7 +95,7 @@ const Register = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen w-full min-w-0 overflow-x-hidden flex flex-col justify-center py-4 px-2 sm:py-8 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+      <div className="min-h-[100dvh] w-full min-w-0 overflow-x-hidden flex flex-col justify-center py-4 px-2 sm:py-8 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
         <div className="w-full max-w-md mx-4 sm:mx-auto flex flex-col flex-1 justify-center" style={{paddingBottom: '2rem'}}>
           <div className="text-center bg-white rounded-3xl shadow-2xl p-10 border-4 border-white/20 mt-4 mb-4">
             <div className="flex justify-center mb-6">
@@ -166,7 +166,7 @@ const Register = () => {
   }
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+    <div className="w-full min-h-[100dvh] flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
       <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center" style={{maxHeight: '98vh'}}>
         <div className="text-center mb-2 sm:mb-6 pt-1 pb-1">
           <div className="flex justify-center mb-2 sm:mb-4">

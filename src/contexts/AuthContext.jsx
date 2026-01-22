@@ -33,7 +33,7 @@ export const withAuth = (Component) => {
 
     if (loading) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-[100dvh] flex items-center justify-center">
           <div className="animate-pulse-slow">
             <div className="text-center">
               <div className="w-16 h-16 bg-orange-200 rounded-full mx-auto mb-4"></div>
@@ -47,7 +47,7 @@ export const withAuth = (Component) => {
     if (!isAuthenticated) {
       // Intentar refrescar la sesión y recargar la página actual
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-[100dvh] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Sesión expirada o no detectada
@@ -77,7 +77,7 @@ export const withAdmin = (Component) => {
 
     if (loading) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-[100dvh] flex items-center justify-center">
           <div className="animate-pulse-slow">
             <div className="text-center">
               <div className="w-16 h-16 bg-orange-200 rounded-full mx-auto mb-4"></div>
@@ -91,7 +91,7 @@ export const withAdmin = (Component) => {
     if (!isAuthenticated) {
       // Intentar refrescar la sesión y recargar la página actual
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-[100dvh] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Sesión expirada o no detectada
@@ -112,7 +112,7 @@ export const withAdmin = (Component) => {
 
     if (!isAdmin) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-[100dvh] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Acceso denegado
@@ -142,7 +142,7 @@ export const withSuperAdmin = (Component) => {
 
     if (loading) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-[100dvh] flex items-center justify-center">
           <div className="animate-pulse-slow">
             <div className="text-center">
               <div className="w-16 h-16 bg-orange-200 rounded-full mx-auto mb-4"></div>
@@ -155,7 +155,7 @@ export const withSuperAdmin = (Component) => {
 
     if (!isAuthenticated) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-[100dvh] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Acceso requerido
@@ -176,7 +176,7 @@ export const withSuperAdmin = (Component) => {
 
     if (!isSuperAdmin) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-[100dvh] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Acceso denegado

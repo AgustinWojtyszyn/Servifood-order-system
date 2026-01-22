@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { X, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
+import { useOverlayLock } from '../contexts/OverlayLockContext'
 
 const Tutorial = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0)
+  useOverlayLock(isOpen)
 
   const handleClose = () => {
     setCurrentStep(0) // Reiniciar al paso 1 cuando se cierra

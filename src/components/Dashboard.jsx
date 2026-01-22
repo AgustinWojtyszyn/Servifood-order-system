@@ -5,6 +5,7 @@ import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Setti
 import servifoodLogo from '../assets/servifood logo.jpg'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
+import { useOverlayLock } from '../contexts/OverlayLockContext'
 
 const EDIT_WINDOW_MINUTES = 15
 
@@ -59,6 +60,7 @@ const Dashboard = ({ user, loading }) => {
     completed: 0
   })
   const navigate = useNavigate()
+  useOverlayLock(!!selectedOrder)
 
   useEffect(() => {
     if (!user?.id) return

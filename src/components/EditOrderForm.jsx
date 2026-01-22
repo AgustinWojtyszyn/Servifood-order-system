@@ -315,7 +315,7 @@ export default function EditOrderForm({ user, loading }) {
   if (success) {
     return (
       <RequireUser user={user} loading={loading}>
-        <div className="p-3 sm:p-6 flex items-center justify-center min-h-screen">
+        <div className="p-3 sm:p-6 flex items-center justify-center min-h-dvh">
           <div className="max-w-2xl mx-auto text-center px-4">
             <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-6 sm:p-8 shadow-2xl">
               <div className="flex justify-center mb-3 sm:mb-4">
@@ -335,7 +335,7 @@ export default function EditOrderForm({ user, loading }) {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-screen">
+      <div className="p-3 sm:p-6 pb-32 sm:pb-6 min-h-dvh">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4">
         <div className="text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Editar Pedido</h1>
