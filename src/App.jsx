@@ -4,8 +4,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { supabase, auth } from './supabaseClient'
 import SplashScreen from './components/SplashScreen'
 import './App.css'
-import { HelpCenterProvider } from './contexts/HelpCenterProvider'
-import HelpWidget from './components/HelpWidget'
 
 // Importaciones inmediatas (críticas para la carga inicial)
 import Layout from './components/Layout'
@@ -167,61 +165,57 @@ function App() {
     loading ? (
       <InternalLoader />
     ) : (
-      <HelpCenterProvider>
-        <Router>
-          <div
-            className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
-          >
-            <Suspense fallback={<InternalLoader />}>
-              <Routes>
-              <Route path="/" element={
-                !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
-              } />
-              <Route path="/dashboard" element={
-                !loading && (user ? <Layout user={user} loading={loading}><Dashboard user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/login" element={
-                !loading && (user ? <Navigate to="/dashboard" /> : <Login />)
-              } />
-              <Route path="/register" element={
-                !loading && (user ? <Navigate to="/dashboard" /> : <Register />)
-              } />
-              <Route path="/forgot-password" element={
-                !loading && (user ? <Navigate to="/dashboard" /> : <ForgotPassword />)
-              } />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/order" element={
-                !loading && (user ? <Layout user={user} loading={loading}><OrderCompanySelector user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/order/:companySlug" element={
-                !loading && (user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/edit-order" element={
-                !loading && (user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/profile" element={
-                !loading && (user ? <Layout user={user} loading={loading}><Profile user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/admin" element={
-                !loading && (user ? <Layout user={user} loading={loading}><AdminPanel loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/superadmin" element={
-                !loading && (user ? <Layout user={user} loading={loading}><SuperAdminPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/daily-orders" element={
-                !loading && (user ? <Layout user={user} loading={loading}><DailyOrders user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/monthly-panel" element={
-                !loading && (user ? <Layout user={user} loading={loading}><MonthlyPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-              } />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              </Routes>
-            </Suspense>
-            {/* Widget global de ayuda */}
-            <HelpWidget />
-          </div>
-        </Router>
-      </HelpCenterProvider>
+      <Router>
+        <div
+          className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
+        >
+          <Suspense fallback={<InternalLoader />}>
+            <Routes>
+            <Route path="/" element={
+              !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
+            } />
+            <Route path="/dashboard" element={
+              !loading && (user ? <Layout user={user} loading={loading}><Dashboard user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/login" element={
+              !loading && (user ? <Navigate to="/dashboard" /> : <Login />)
+            } />
+            <Route path="/register" element={
+              !loading && (user ? <Navigate to="/dashboard" /> : <Register />)
+            } />
+            <Route path="/forgot-password" element={
+              !loading && (user ? <Navigate to="/dashboard" /> : <ForgotPassword />)
+            } />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/order" element={
+              !loading && (user ? <Layout user={user} loading={loading}><OrderCompanySelector user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/order/:companySlug" element={
+              !loading && (user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/edit-order" element={
+              !loading && (user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/profile" element={
+              !loading && (user ? <Layout user={user} loading={loading}><Profile user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/admin" element={
+              !loading && (user ? <Layout user={user} loading={loading}><AdminPanel loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/superadmin" element={
+              !loading && (user ? <Layout user={user} loading={loading}><SuperAdminPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/daily-orders" element={
+              !loading && (user ? <Layout user={user} loading={loading}><DailyOrders user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/monthly-panel" element={
+              !loading && (user ? <Layout user={user} loading={loading}><MonthlyPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            </Routes>
+          </Suspense>
+        </div>
+      </Router>
     )
   )
 }
