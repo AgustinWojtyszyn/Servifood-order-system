@@ -18,6 +18,14 @@ const Layout = ({ children, user, loading }) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [externalLocks, setExternalLocks] = useState(0)
   const navigate = useNavigate()
+  // Helpers de diagnóstico siempre disponibles bajo window.__logScrollMetrics y __logScrollContainers.
+  const isScrollDebug = (() => {
+    if (typeof import.meta === 'undefined') return false
+    const envFlag = import.meta?.env?.VITE_SCROLL_DEBUG === '1'
+    const isDev = import.meta?.env?.DEV
+    const urlFlag = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('scrollDebug') === '1'
+    return envFlag || isDev || urlFlag
+  })()
   const registerExternalLock = useCallback(() => {
     setExternalLocks((count) => count + 1)
     return () => setExternalLocks((count) => Math.max(0, count - 1))
@@ -26,6 +34,47 @@ const Layout = ({ children, user, loading }) => {
 
   // Scroll lock centralizado para cualquier overlay (sidebar, tutoriales o locks de hijos).
   useScrollLock(isAnyOverlayOpen)
+
+  // Herramienta de diagnóstico (dev) para identificar contenedores que generan barras de scroll internas.
+  useEffect(() => {
+    const logScrollContainers = () => {
+      const candidates = Array.from(document.querySelectorAll('*')).filter((el) => {
+        const style = window.getComputedStyle(el)
+        const oy = style.overflowY
+        const hasOverflow = oy === 'auto' || oy === 'scroll' || oy === 'overlay'
+        return hasOverflow && el.scrollHeight - 1 > el.clientHeight
+      })
+      return candidates
+    }
+
+    window.__logScrollContainers = logScrollContainers
+
+    return () => {
+      if (window.__logScrollContainers === logScrollContainers) {
+        delete window.__logScrollContainers
+      }
+    }
+  }, [])
+
+  // Métricas de scroll para diagnosticar doble scroll en dev.
+  useEffect(() => {
+    const logMetrics = () => {
+      const metrics = {
+        innerHeight: window.innerHeight,
+        docScrollHeight: document.documentElement?.scrollHeight,
+        bodyScrollHeight: document.body?.scrollHeight
+      }
+      window.__logScrollMetrics = () => metrics
+    }
+    logMetrics()
+    window.addEventListener('resize', logMetrics)
+    return () => {
+      window.removeEventListener('resize', logMetrics)
+      if (window.__logScrollMetrics === logMetrics) {
+        delete window.__logScrollMetrics
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!user?.id) return
@@ -134,7 +183,7 @@ const Layout = ({ children, user, loading }) => {
               <X className="h-7 w-7" />
             </button>
           </div>
-          <nav className="mt-8 px-4 bg-white min-h-full flex flex-col">
+          <nav className="mt-8 px-4 bg-white flex flex-col flex-1 min-h-0">
             <ul className="space-y-2 flex-1 bg-white">
               {menuItems.map((item) => {
                 const Icon = item.icon
@@ -205,8 +254,9 @@ const Layout = ({ children, user, loading }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 p-4 md:p-8 min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 overflow-visible">
+          {/* El único scroll vertical de la app vive en el body; aquí evitamos overflow para no generar una segunda barra. */}
+          <div className="flex-1 p-4 md:p-8 min-h-0 overflow-visible">
             {children}
           </div>
         </main>

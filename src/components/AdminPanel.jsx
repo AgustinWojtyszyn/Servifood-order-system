@@ -880,7 +880,7 @@ const AdminPanel = () => {
 
           {/* Lista de opciones existentes - Con scroll adaptativo */}
           {!editingOptions && customOptions.length > 0 && (
-            <div className="space-y-4 max-h-[calc(100dvh-400px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="space-y-4 pr-2">
               {customOptions.map((option, index) => (
                 <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-white hover:border-primary-300 transition-all min-w-0">
                   {/* Header con título y badges */}

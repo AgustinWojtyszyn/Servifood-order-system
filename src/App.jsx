@@ -39,6 +39,130 @@ const InternalLoader = () => (
 function App() {
   const { user, loading } = useAuthContext()
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+
+    let lastHighlighted = null
+
+    const describeEl = (el) => {
+      const tag = el.tagName?.toLowerCase?.() || 'node'
+      const id = el.id ? `#${el.id}` : ''
+      const classList = typeof el.className === 'string' && el.className.trim().length
+        ? `.${el.className.trim().split(/\s+/).slice(0, 3).join('.')}`
+        : ''
+      return `${tag}${id}${classList}`
+    }
+
+    const captureMetrics = (el) => {
+      if (!el) return null
+      const style = window.getComputedStyle(el)
+      const clientHeight = el.clientHeight || 0
+      const scrollHeight = el.scrollHeight || 0
+      const dy = scrollHeight - clientHeight
+      const vbarPx = Math.max(0, el.offsetWidth - el.clientWidth)
+      return {
+        el,
+        selector: describeEl(el),
+        overflowY: style.overflowY,
+        height: style.height,
+        maxHeight: style.maxHeight,
+        clientHeight,
+        scrollHeight,
+        dy,
+        vbarPx
+      }
+    }
+
+    const logScrollOwners = () => {
+      const scopedNodes = document.body
+        ? [document.body, ...document.body.querySelectorAll('*')]
+        : Array.from(document.querySelectorAll('*'))
+
+      const entries = scopedNodes
+        .map((el) => {
+          const metrics = captureMetrics(el)
+          if (!metrics) return null
+          const hasOverflow = ['auto', 'scroll', 'overlay'].includes(metrics.overflowY) && metrics.dy > 2
+          const showsScrollbar = metrics.vbarPx > 0 || metrics.overflowY === 'scroll'
+          return hasOverflow || showsScrollbar ? metrics : null
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+          if (b.vbarPx !== a.vbarPx) return b.vbarPx - a.vbarPx
+          return b.dy - a.dy
+        })
+
+      if (lastHighlighted && (!entries.length || lastHighlighted !== entries[0].el)) {
+        lastHighlighted.style.outline = ''
+        lastHighlighted = null
+      }
+
+      if (entries[0]) {
+        entries[0].el.style.outline = '2px solid red'
+        lastHighlighted = entries[0].el
+      }
+
+      if (entries.length) {
+        console.groupCollapsed('[scroll-debug] overflow-y containers / visible scrollbars (body descendants)')
+        console.table(
+          entries
+            .slice(0, 20)
+            .map(({ selector, overflowY, height, maxHeight, clientHeight, scrollHeight, dy, vbarPx }) => ({
+              selector,
+              overflowY,
+              height,
+              maxHeight,
+              clientHeight,
+              scrollHeight,
+              dy,
+              vbarPx
+            }))
+        )
+        console.groupEnd()
+      } else {
+        console.log('[scroll-debug] Sin contenedores con overflow-y auto/scroll/overlay visibles')
+      }
+
+      const snapshotTargets = [
+        ['html', document.documentElement],
+        ['body', document.body],
+        ['#root', document.getElementById('root')],
+        ['.app-shell', document.querySelector('.app-shell')]
+      ]
+
+      const snapshot = snapshotTargets.reduce((acc, [label, el]) => {
+        const metrics = captureMetrics(el)
+        if (!metrics) return acc
+        acc[label] = {
+          overflowY: metrics.overflowY,
+          height: metrics.height,
+          maxHeight: metrics.maxHeight,
+          clientHeight: metrics.clientHeight,
+          scrollHeight: metrics.scrollHeight,
+          dy: metrics.dy,
+          vbarPx: metrics.vbarPx
+        }
+        return acc
+      }, {})
+
+      console.log('[scroll-debug] snapshot', snapshot)
+
+      return entries
+    }
+
+    window.__logScrollOwners = logScrollOwners
+    window.__logScrollY = logScrollOwners
+    logScrollOwners()
+
+    return () => {
+      if (lastHighlighted) {
+        lastHighlighted.style.outline = ''
+      }
+      if (window.__logScrollY === logScrollOwners) delete window.__logScrollY
+      if (window.__logScrollOwners === logScrollOwners) delete window.__logScrollOwners
+    }
+  }, [])
+
   return (
     loading ? (
       <InternalLoader />
@@ -46,7 +170,7 @@ function App() {
       <HelpCenterProvider>
         <Router>
           <div
-            className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden"
+            className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
           >
             <Suspense fallback={<InternalLoader />}>
               <Routes>
