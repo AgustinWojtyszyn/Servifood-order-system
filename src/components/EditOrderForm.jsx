@@ -546,7 +546,11 @@ export default function EditOrderForm({ user, loading }) {
               <div className="space-y-6">
                 {customOptions.filter(opt => opt.active).map((option) => (
                   <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50">
-                    <label className="block text-sm text-gray-900 mb-3" style={{ fontWeight: '900' }}>
+                    <label
+                      className="block text-sm text-gray-900 mb-3"
+                      style={{ fontWeight: '900' }}
+                      htmlFor={option.type === 'text' ? `custom-option-${option.id}` : undefined}
+                    >
                       {option.title}
                       {option.required && <span className="text-red-600 ml-1">*</span>}
                     </label>

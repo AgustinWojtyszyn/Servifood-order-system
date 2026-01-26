@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react'
+import { forwardRef, useId, useState } from 'react'
 import { cn } from '../../utils'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -6,6 +6,7 @@ const Input = forwardRef(({
   className,
   type = 'text',
   label,
+  id,
   error,
   helperText,
   leftIcon,
@@ -24,11 +25,12 @@ const Input = forwardRef(({
 
   const isPassword = type === 'password'
   const hasError = !!error
+  const inputId = id || useId()
 
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label htmlFor={inputId} className="block text-sm font-medium text-gray-700">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -43,6 +45,7 @@ const Input = forwardRef(({
 
         <input
           ref={ref}
+          id={inputId}
           type={inputType}
           className={cn(
             'w-full px-4 py-3 border-2 rounded-lg transition-all duration-200',

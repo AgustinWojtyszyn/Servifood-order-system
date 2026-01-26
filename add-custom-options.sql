@@ -48,12 +48,20 @@ ADD COLUMN IF NOT EXISTS custom_responses JSONB DEFAULT '[]'::jsonb;
 CREATE INDEX IF NOT EXISTS idx_custom_options_active ON public.custom_options(active);
 CREATE INDEX IF NOT EXISTS idx_custom_options_order ON public.custom_options(order_position);
 CREATE INDEX IF NOT EXISTS idx_custom_options_company ON public.custom_options(company);
+CREATE UNIQUE INDEX IF NOT EXISTS uidx_custom_options_company_title_type ON public.custom_options (company, lower(title), type);
 
 -- Insertar opciones de ejemplo
 INSERT INTO public.custom_options (title, type, options, required, active, order_position, company) VALUES
-('Bebidas (solo Genneia)', 'multiple_choice', '["Agua", "Soda", "Agua saborizada"]'::jsonb, false, true, 1, 'genneia'),
+('Bebidas (solo Genneia)', 'multiple_choice', '["Agua", "Soda", "Agua saborizada", "Coca cola"]'::jsonb, false, true, 1, 'genneia'),
 ('Postre (solo Genneia)', 'multiple_choice', '["Postre del día (solo martes y jueves)", "Fruta"]'::jsonb, false, true, 2, 'genneia'),
-('¿Desea alguna guarnición distinta a la del menú?', 'multiple_choice', '["Papas fritas", "Arroz", "Verduras", "Puré", "Fideos"]'::jsonb, false, true, 1, 'genneia');
+('¿Desea alguna guarnición distinta a la del menú?', 'multiple_choice', '["Papas fritas", "Arroz", "Verduras", "Puré", "Fideos"]'::jsonb, false, true, 1, 'genneia')
+ON CONFLICT (company, lower(title), type) DO UPDATE
+SET
+  options = EXCLUDED.options,
+  required = EXCLUDED.required,
+  active = EXCLUDED.active,
+  order_position = EXCLUDED.order_position,
+  updated_at = TIMEZONE('utc'::text, NOW());
 
 -- Verificar
 SELECT * FROM public.custom_options ORDER BY order_position;

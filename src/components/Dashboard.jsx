@@ -639,19 +639,25 @@ const Dashboard = ({ user, loading }) => {
                         <Eye className="h-4 w-4" />
                       </button>
                       {isAdmin ? (
-                        <select
-                          value={status}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value, status)}
-                          className={`text-xs font-semibold rounded-full px-2 sm:px-3 py-1 border-2 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            status === 'completed' || status === 'delivered' ? 'bg-green-100 text-green-800 border-green-300' :
-                            status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-300' :
-                            'bg-yellow-100 text-yellow-800 border-yellow-300'
-                          }`}
-                        >
-                          <option value="pending">Pendiente</option>
-                          <option value="completed">Completado</option>
-                          <option value="cancelled">Cancelado</option>
-                        </select>
+                        <>
+                          <label htmlFor={`order-status-${order.id}`} className="sr-only">
+                            Cambiar estado del pedido {order.id}
+                          </label>
+                          <select
+                            id={`order-status-${order.id}`}
+                            value={status}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value, status)}
+                            className={`text-xs font-semibold rounded-full px-2 sm:px-3 py-1 border-2 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                              status === 'completed' || status === 'delivered' ? 'bg-green-100 text-green-800 border-green-300' :
+                              status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-300' :
+                              'bg-yellow-100 text-yellow-800 border-yellow-300'
+                            }`}
+                          >
+                            <option value="pending">Pendiente</option>
+                            <option value="completed">Completado</option>
+                            <option value="cancelled">Cancelado</option>
+                          </select>
+                        </>
                       ) : (
                         <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
                           status === 'delivered' || status === 'completed' ? 'bg-green-100 text-green-800' :

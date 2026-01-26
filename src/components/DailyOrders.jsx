@@ -639,8 +639,9 @@ const DailyOrders = ({ user, loading }) => {
             </button>
 
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-700 mb-1">Empresa para exportar</label>
+              <label htmlFor="export-company" className="text-xs font-semibold text-gray-700 mb-1">Empresa para exportar</label>
               <select
+                id="export-company"
                 value={exportCompany}
                 onChange={(e) => setExportCompany(e.target.value)}
                 className="rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500"
@@ -719,10 +720,11 @@ const DailyOrders = ({ user, loading }) => {
         {/* Filters */}
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="filter-location" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Ubicación
             </label>
             <select
+              id="filter-location"
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -737,10 +739,11 @@ const DailyOrders = ({ user, loading }) => {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="filter-status" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Estado
             </label>
             <select
+              id="filter-status"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -753,10 +756,11 @@ const DailyOrders = ({ user, loading }) => {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="filter-dish" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Platillo
             </label>
             <select
+              id="filter-dish"
               value={selectedDish}
               onChange={(e) => setSelectedDish(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -771,10 +775,11 @@ const DailyOrders = ({ user, loading }) => {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="filter-side" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Guarnición
             </label>
             <select
+              id="filter-side"
               value={selectedSide}
               onChange={(e) => setSelectedSide(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -796,10 +801,11 @@ const DailyOrders = ({ user, loading }) => {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="filter-sort" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Ordenar por
             </label>
             <select
+              id="filter-sort"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"

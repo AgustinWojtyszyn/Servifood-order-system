@@ -636,8 +636,9 @@ const AdminPanel = () => {
                 {/* Controles */}
                 <div className="flex gap-2 pt-3 border-t border-gray-200">
                   <div className="flex-1">
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Cambiar Rol</label>
+                    <label htmlFor={`mobile-role-${user.id}`} className="block text-xs font-bold text-gray-700 mb-1">Cambiar Rol</label>
                     <select
+                      id={`mobile-role-${user.id}`}
                       value={user.role || 'user'}
                       onChange={(e) => handleRoleChange(user.id, e.target.value)}
                       className="w-full text-sm border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium"
@@ -708,7 +709,9 @@ const AdminPanel = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
+                        <label htmlFor={`table-role-${user.id}`} className="sr-only">Cambiar rol para {user.full_name || user.email || 'usuario'}</label>
                         <select
+                          id={`table-role-${user.id}`}
                           value={user.role || 'user'}
                           onChange={(e) => handleRoleChange(user.id, e.target.value)}
                           className="text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"
@@ -813,7 +816,10 @@ const AdminPanel = () => {
                 </p>
               </div>
               
-              {newMenuItems.map((item, index) => (
+              {newMenuItems.map((item, index) => {
+                const nameId = `menu-item-name-${index}`
+                const descId = `menu-item-description-${index}`
+                return (
                 <div key={index} className="border-2 border-gray-200 rounded-xl bg-white p-4">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
@@ -828,7 +834,9 @@ const AdminPanel = () => {
                     </button>
                   </div>
                   <div className="space-y-3">
+                    <label htmlFor={nameId} className="sr-only">Nombre del plato</label>
                     <input
+                      id={nameId}
                       type="text"
                       placeholder="Nombre del plato"
                       value={item.name}
@@ -836,7 +844,9 @@ const AdminPanel = () => {
                       className="input-field font-semibold text-base bg-white text-gray-900 w-full"
                       required
                     />
+                    <label htmlFor={descId} className="sr-only">Descripción del plato</label>
                     <input
+                      id={descId}
                       type="text"
                       placeholder="Descripción (opcional)"
                       value={item.description}
@@ -845,7 +855,8 @@ const AdminPanel = () => {
                     />
                   </div>
                 </div>
-              ))}
+                )
+              }))}
               
               <button
                 onClick={addMenuItem}
@@ -1003,10 +1014,11 @@ const AdminPanel = () => {
               <div className="space-y-4">
                 {/* Título */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                  <label htmlFor="new-option-title" className="block text-sm font-bold text-gray-900 mb-2">
                     Título/Pregunta *
                   </label>
                   <input
+                    id="new-option-title"
                     type="text"
                     value={newOption.title}
                     onChange={(e) => handleOptionFieldChange('title', e.target.value)}
@@ -1017,10 +1029,11 @@ const AdminPanel = () => {
 
                 {/* Tipo */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                  <label htmlFor="new-option-type" className="block text-sm font-bold text-gray-900 mb-2">
                     Tipo de Respuesta *
                   </label>
                   <select
+                    id="new-option-type"
                     value={newOption.type}
                     onChange={(e) => handleOptionFieldChange('type', e.target.value)}
                     className="input-field w-full bg-white text-gray-900 text-sm sm:text-base"
@@ -1032,10 +1045,11 @@ const AdminPanel = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                  <label htmlFor="new-option-company" className="block text-sm font-bold text-gray-900 mb-2">
                     Empresa / alcance *
                   </label>
                   <select
+                    id="new-option-company"
                     value={newOption.company || ''}
                     onChange={(e) => handleOptionFieldChange('company', e.target.value)}
                     className="input-field w-full bg-white text-gray-900 text-sm sm:text-base"
@@ -1061,7 +1075,11 @@ const AdminPanel = () => {
                     <div className="space-y-2">
                       {newOption.options.map((opt, index) => (
                         <div key={index} className="flex gap-2">
+                          <label htmlFor={`option-choice-${index}`} className="sr-only">
+                            Opción {index + 1}
+                          </label>
                           <input
+                            id={`option-choice-${index}`}
                             type="text"
                             value={opt}
                             onChange={(e) => handleOptionChoiceChange(index, e.target.value)}
@@ -1093,12 +1111,12 @@ const AdminPanel = () => {
                 <div className="flex items-center gap-2 bg-white rounded-lg p-3 border border-gray-200">
                   <input
                     type="checkbox"
-                    id="required"
+                    id="new-option-required"
                     checked={newOption.required}
                     onChange={(e) => handleOptionFieldChange('required', e.target.checked)}
                     className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <label htmlFor="required" className="text-sm font-bold text-gray-900 cursor-pointer select-none">
+                  <label htmlFor="new-option-required" className="text-sm font-bold text-gray-900 cursor-pointer select-none">
                     Campo requerido
                   </label>
                 </div>
