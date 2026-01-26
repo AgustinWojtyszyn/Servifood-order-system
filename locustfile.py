@@ -1,101 +1,105 @@
-from locust import HttpUser, task, between # type: ignore
+from locust import HttpUser, task, between
+import os
 import random
+from urllib.parse import urlencode
 
-class ServiFoodUser(HttpUser):
+APP_HOST = "https://food-order-app-3avy.onrender.com"
+SUPABASE_URL = os.environ.get("SUPABASE_URL")  # ej: https://xxxx.supabase.co
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+
+# Assets (los que viste en Network). Si cambian con cada build, actualizalos cuando despliegues.
+ASSETS = [
+    "/assets/OrderCompanySelector-Cpkt6TVN.js",
+    "/assets/companyConfig-DXvnmIWp.js",
+    "/assets/OrderForm-C71SxUJH.js",
+    "/assets/Imageservifood%20logo-DO8gzfSS.jpg",
+]
+
+
+def supabase_headers():
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return None
+    return {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+        "Accept": "application/json",
+    }
+
+
+class AppReadOnlyUser(HttpUser):
     """
-    Simula un usuario de ServiFood realizando acciones típicas
-    OPTIMIZADO: Menos tareas, más enfocado en endpoints críticos
+    Recorrido 'real' sin huella sensible:
+    - Solo GET (sin inserts/updates)
+    - Sin PII
+    - Sin user_id hardcodeado
     """
-    wait_time = between(0.5, 2)  # Reducido: Espera entre 0.5 y 2 segundos
-    
+
+    host = APP_HOST
+    wait_time = between(0.5, 2)
+
     def on_start(self):
-        """Se ejecuta cuando un usuario simulado comienza"""
-        # Datos de prueba para registro/login
-        self.email = f"test_user_{random.randint(1000, 9999)}@example.com"
-        import os
-        self.password = os.environ.get("TEST_USER_PASSWORD", "Test123456")
-        self.auth_token = None
-    
+        self.sb_headers = supabase_headers()
+        # Client separado para Supabase (otro host).
+        self.sb = None
+        if SUPABASE_URL and self.sb_headers:
+            self.sb = self.client.__class__(
+                base_url=SUPABASE_URL,
+                request_event=self.environment.events.request,
+                user=self,
+            )
+
     @task(5)
-    def view_homepage(self):
-        """Visitar la página principal (tarea más común)"""
-        self.client.get("/")
-    
+    def spa_root(self):
+        self.client.get("/", name="GET /")
+
     @task(3)
-    def view_dashboard(self):
-        """Visitar el dashboard"""
-        self.client.get("/dashboard")
-    
-    @task(3)
-    def view_orders(self):
-        """Visitar la página de pedidos"""
-        self.client.get("/orders")
-    
-    @task(2)
-    def view_history(self):
-        """Visitar el historial"""
-        self.client.get("/history")
-    
-    @task(1)
-    def login_attempt(self):
-        """Simular intento de login"""
-        with self.client.post("/login", json={
-            "email": self.email,
-            "password": self.password
-        }, catch_response=True) as response:
-            if response.status_code in [200, 302, 401, 404]:
-                response.success()
-    
-    @task(1)
-    def load_static_assets(self):
-        """Cargar assets estáticos principales"""
-        # Reducido a 1 asset crítico
-        self.client.get("/assets/index.js", name="/assets/[static]")
+    def load_assets(self):
+        asset = random.choice(ASSETS)
+        self.client.get(asset, name="GET /assets/[chunk]")
 
+    @task(6)
+    def supabase_read(self):
+        """
+        Replica tus lecturas: users, menu_items, custom_options, orders
+        (sin filtrar por user_id para no depender de UUID real)
+        """
+        if not self.sb:
+            return
 
-class AdminUser(HttpUser):
-    """
-    Simula un administrador usando el panel de admin
-    """
-    wait_time = between(2, 5)
-    
-    @task(5)
-    def view_admin_panel(self):
-        """Visitar el panel de administración"""
-        self.client.get("/admin")
-    
-    @task(3)
-    def manage_users(self):
-        """Gestionar usuarios (simulación)"""
-        self.client.get("/admin#users")
-    
-    @task(2)
-    def manage_menu(self):
-        """Gestionar menú (simulación)"""
-        self.client.get("/admin#menu")
-    
-    @task(2)
-    def manage_options(self):
-        """Gestionar opciones (simulación)"""
-        self.client.get("/admin#options")
+        choice = random.choice(["users", "menu_items", "custom_options", "orders"])
 
+        if choice == "users":
+            params = {
+                "select": "id,email,full_name,role,created_at",
+                "order": "created_at.desc",
+                "limit": "20",
+            }
+            path = "/rest/v1/users?" + urlencode(params, safe=",*=")
+            self.sb.get(path, headers=self.sb_headers, name="SB GET users")
 
-class APIUser(HttpUser):
-    """
-    Simula llamadas directas a la API/Supabase
-    """
-    wait_time = between(1, 2)
-    
-    @task(5)
-    def fetch_data(self):
-        """Simular peticiones de datos"""
-        # Estas son simulaciones genéricas
-        # Ajusta según tus endpoints reales
-        endpoints = [
-            "/api/orders",
-            "/api/menu",
-            "/api/users",
-            "/api/stats"
-        ]
-        endpoint = random.choice(endpoints)
-        self.client.get(endpoint, name="/api/[endpoint]")
+        elif choice == "orders":
+            params = {
+                "select": "*",
+                "order": "created_at.desc",
+                "limit": "20",
+            }
+            path = "/rest/v1/orders?" + urlencode(params, safe=",*=")
+            self.sb.get(path, headers=self.sb_headers, name="SB GET orders")
+
+        elif choice == "menu_items":
+            params = {
+                "select": "id,name,description,created_at",
+                "order": "created_at.desc",
+                "limit": "50",
+            }
+            path = "/rest/v1/menu_items?" + urlencode(params, safe=",*=")
+            self.sb.get(path, headers=self.sb_headers, name="SB GET menu_items")
+
+        else:  # custom_options
+            params = {
+                "select": "*",
+                "order": "order_position.asc",
+                "limit": "200",
+            }
+            path = "/rest/v1/custom_options?" + urlencode(params, safe=",*=")
+            self.sb.get(path, headers=self.sb_headers, name="SB GET custom_options")
