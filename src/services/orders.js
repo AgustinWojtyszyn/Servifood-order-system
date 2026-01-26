@@ -30,11 +30,11 @@ class OrdersService {
       }
 
       const { data, error } = await supabaseService.withRetry(
-        () => supabase
-          .from('orders')
-          .insert([orderWithDefaults])
-          .select()
-          .single(),
+        () => supabase.rpc('create_order_idempotent', {
+          p_user_id: orderWithDefaults.user_id,
+          p_idempotency_key: orderWithDefaults.idempotency_key || null,
+          p_payload: orderWithDefaults
+        }),
         'createOrder'
       )
 

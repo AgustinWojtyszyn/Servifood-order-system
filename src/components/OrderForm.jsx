@@ -315,6 +315,50 @@ const OrderForm = ({ user, loading }) => {
     return getSelectedItemsList().length
   }
 
+  const computePayloadSignature = (items = [], responses = [], comments = '', deliveryDate = '', location = '') => {
+    const sortedItems = [...(items || [])].map(i => ({
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity || 1
+    })).sort((a, b) => (a.id || '').toString().localeCompare((b.id || '').toString()))
+
+    const sortedResponses = [...(responses || [])].map(r => ({
+      id: r.id,
+      title: r.title,
+      response: r.response
+    })).sort((a, b) => (a.id || '').toString().localeCompare((b.id || '').toString()))
+
+    const normalized = {
+      location: (location || '').trim().toLowerCase(),
+      items: sortedItems,
+      responses: sortedResponses,
+      comments: comments || '',
+      deliveryDate: deliveryDate || ''
+    }
+
+    const json = JSON.stringify(normalized)
+    let hash = 0
+    for (let i = 0; i < json.length; i++) {
+      hash = (hash * 31 + json.charCodeAt(i)) >>> 0
+    }
+    return hash.toString(16)
+  }
+
+  const buildIdempotencyStorageKey = (items = [], location = '', signature = '') => {
+    const userPart = user?.id || 'anon'
+    const itemsPart = (items || []).map(item => item.id).filter(Boolean).sort().join('-') || 'no-items'
+    const locationPart = (location || 'no-location').toString().trim().toLowerCase().replace(/\s+/g, '-')
+    const signaturePart = signature || 'no-signature'
+    return `order-idempotency-${userPart}-${locationPart}-${itemsPart}-${signaturePart}`
+  }
+
+  const generateIdempotencyKey = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID()
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
@@ -368,29 +412,48 @@ const OrderForm = ({ user, loading }) => {
       return
     }
 
-    try {
-      // Calcular fecha de entrega (día siguiente)
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const deliveryDate = tomorrow.toISOString().split('T')[0]
-      
-      // Preparar respuestas personalizadas (solo las activas con respuesta válida)
-      const customResponsesArray = customOptions
-        .filter(opt => {
-          if (!opt.active) return false
-          const response = customResponses[opt.id]
-          // Verificar que la respuesta existe y no está vacía
-          if (!response) return false
-          if (Array.isArray(response) && response.length === 0) return false
-          if (typeof response === 'string' && response.trim() === '') return false
-          return true
-        })
-        .map(opt => ({
-          id: opt.id,
-          title: opt.title,
-          response: customResponses[opt.id]
-        }))
+    const customResponsesArray = customOptions
+      .filter(opt => {
+        if (!opt.active) return false
+        const response = customResponses[opt.id]
+        // Verificar que la respuesta existe y no está vacía
+        if (!response) return false
+        if (Array.isArray(response) && response.length === 0) return false
+        if (typeof response === 'string' && response.trim() === '') return false
+        return true
+      })
+      .map(opt => ({
+        id: opt.id,
+        title: opt.title,
+        response: customResponses[opt.id]
+      }))
 
+    // Calcular fecha de entrega (día siguiente)
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const deliveryDate = tomorrow.toISOString().split('T')[0]
+
+    const idempotencySignature = computePayloadSignature(
+      selectedItemsList.map(item => ({ ...item, quantity: 1 })),
+      customResponsesArray,
+      formData.comments,
+      deliveryDate,
+      formData.location
+    )
+
+    const idempotencyStorageKey = buildIdempotencyStorageKey(selectedItemsList, formData.location, idempotencySignature)
+    let idempotencyKey = null
+
+    try {
+      if (typeof window !== 'undefined') {
+        const existingKey = sessionStorage.getItem(idempotencyStorageKey)
+        idempotencyKey = existingKey || generateIdempotencyKey()
+        sessionStorage.setItem(idempotencyStorageKey, idempotencyKey)
+      } else {
+        idempotencyKey = generateIdempotencyKey()
+      }
+
+      // Preparar respuestas personalizadas (solo las activas con respuesta válida)
       const orderData = {
         user_id: user.id,
         location: formData.location,
@@ -406,7 +469,8 @@ const OrderForm = ({ user, loading }) => {
         delivery_date: deliveryDate,
         status: 'pending',
         total_items: calculateTotal(),
-        custom_responses: customResponsesArray
+        custom_responses: customResponsesArray,
+        idempotency_key: idempotencyKey
       }
 
       const { error } = await db.createOrder(orderData)
@@ -422,6 +486,9 @@ const OrderForm = ({ user, loading }) => {
           setError('Error al crear el pedido: ' + msg)
         }
       } else {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem(idempotencyStorageKey)
+        }
         setSuccess(true)
         setTimeout(() => {
           navigate('/')
