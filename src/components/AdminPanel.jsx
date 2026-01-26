@@ -856,7 +856,7 @@ const AdminPanel = () => {
                   </div>
                 </div>
                 )
-              }))}
+              })}
               
               <button
                 onClick={addMenuItem}
