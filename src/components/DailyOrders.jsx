@@ -21,6 +21,7 @@ const DailyOrders = ({ user, loading }) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [exportCompany, setExportCompany] = useState('all')
+  const [exportStatusFilter, setExportStatusFilter] = useState('completed')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedDish, setSelectedDish] = useState('all')
   const [selectedSide, setSelectedSide] = useState('all')
@@ -382,6 +383,20 @@ const DailyOrders = ({ user, loading }) => {
     })
   }
 
+  // Filtro combinado para exportar directo a la empresa (empresa + estado)
+  const filterOrdersForCompanyExport = (ordersList, company, statusFilter) => {
+    const companyFiltered = filterOrdersByCompany(ordersList, company)
+
+    switch (statusFilter) {
+      case 'completed':
+        return companyFiltered.filter(order => order.status === 'completed' || order.status === 'delivered')
+      case 'pending':
+        return companyFiltered.filter(order => order.status === 'pending')
+      default:
+        return companyFiltered
+    }
+  }
+
 
 
   const exportToExcel = () => {
@@ -520,6 +535,97 @@ const DailyOrders = ({ user, loading }) => {
     }
   }
 
+  // Export específico para enviar datos a la empresa con confirmación de pedido
+  const exportCompanyReport = () => {
+    const companyOrders = filterOrdersForCompanyExport(sortedOrders, exportCompany, exportStatusFilter)
+
+    if (companyOrders.length === 0) {
+      alert('No hay pedidos con ese filtro para exportar a la empresa')
+      return
+    }
+
+    try {
+      const reportData = companyOrders.map(order => {
+        const itemsList = []
+
+        if (Array.isArray(order.items)) {
+          order.items.forEach(item => {
+            if (!item?.name) return
+            itemsList.push(`${normalizeDishName(item.name)} (x${item.quantity || 1})`)
+          })
+        }
+
+        const customSide = getCustomSideFromResponses(order.custom_responses || [])
+        if (customSide) {
+          itemsList.push(`Guarnición: ${customSide}`)
+        }
+
+        const otherResponses = getOtherCustomResponses(order.custom_responses || [])
+        const customResponses = otherResponses
+          .map(r => {
+            const response = Array.isArray(r.response) ? r.response.join(', ') : r.response
+            return `${r.title}: ${response}`
+          }).join(' | ') || 'Sin opciones'
+
+        const confirmationDate = formatDate(order.updated_at || order.completed_at || order.created_at)
+        const companyTarget = order.company || order.company_slug || order.target_company || order.location || 'Empresa no asignada'
+        const isConfirmed = order.status === 'completed' || order.status === 'delivered'
+
+        return {
+          'ID Pedido': order.id || order.order_id || 'N/A',
+          'Empresa Destino': companyTarget,
+          'Ubicación': order.location || 'Sin ubicación',
+          'Cliente': order.customer_name || order.user_name || 'Sin nombre',
+          'Email': order.customer_email || order.user_email || 'Sin email',
+          'Teléfono': order.customer_phone || 'Sin teléfono',
+          'Estado': getStatusText(order.status),
+          'Confirmación': isConfirmed ? 'Pedido completo confirmado' : 'Pendiente de confirmación',
+          'Fecha Confirmación': confirmationDate,
+          'Items Detallados': itemsList.join(' | ') || 'Sin items',
+          'Guarnición Seleccionada': customSide || 'Sin guarnición',
+          'Opciones Adicionales': customResponses,
+          'Comentarios': order.comments || 'Sin comentarios'
+        }
+      })
+
+      const wb = XLSX.utils.book_new()
+      const ws = XLSX.utils.json_to_sheet(reportData)
+      ws['!cols'] = [
+        { wch: 12 }, // ID
+        { wch: 20 }, // Empresa
+        { wch: 16 }, // Ubicación
+        { wch: 20 }, // Cliente
+        { wch: 25 }, // Email
+        { wch: 14 }, // Teléfono
+        { wch: 14 }, // Estado
+        { wch: 26 }, // Confirmación
+        { wch: 22 }, // Fecha Confirmación
+        { wch: 40 }, // Items
+        { wch: 20 }, // Guarnición
+        { wch: 40 }, // Opciones
+        { wch: 30 }  // Comentarios
+      ]
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Confirmacion Empresa')
+
+      const today = new Date().toISOString().split('T')[0]
+      const companySlug = exportCompany !== 'all' ? exportCompany.replace(/\\s+/g, '_') : 'todas'
+      const statusSlug = exportStatusFilter
+      const fileName = `Confirmacion_Pedidos_${companySlug}_${statusSlug}_${today}.xlsx`
+
+      XLSX.writeFile(wb, fileName, {
+        bookType: 'xlsx',
+        type: 'binary',
+        cellStyles: true
+      })
+
+      alert(`✓ ${companyOrders.length} pedidos exportados para la empresa (${exportCompany === 'all' ? 'todas' : exportCompany})`)
+    } catch (error) {
+      console.error('Error al exportar para la empresa:', error)
+      alert('Error al exportar el archivo para la empresa. Por favor, inténtalo de nuevo.')
+    }
+  }
+
   // Nueva función para compartir por WhatsApp
   const shareViaWhatsApp = () => {
     if (sortedOrders.length === 0) {
@@ -610,6 +716,7 @@ const DailyOrders = ({ user, loading }) => {
   }
 
   const exportableOrdersCount = filterOrdersByCompany(sortedOrders, exportCompany).length
+  const companyExportableOrdersCount = filterOrdersForCompanyExport(sortedOrders, exportCompany, exportStatusFilter).length
 
   return (
     <RequireUser user={user} loading={loading}>
@@ -655,6 +762,20 @@ const DailyOrders = ({ user, loading }) => {
               </select>
             </div>
 
+            <div className="flex flex-col">
+              <label htmlFor="export-status" className="text-xs font-semibold text-gray-700 mb-1">Estado para enviar</label>
+              <select
+                id="export-status"
+                value={exportStatusFilter}
+                onChange={(e) => setExportStatusFilter(e.target.value)}
+                className="rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="completed">Solo completados</option>
+                <option value="pending">Solo pendientes</option>
+                <option value="all">Todos los estados</option>
+              </select>
+            </div>
+
             <button
               onClick={exportToExcel}
               disabled={exportableOrdersCount === 0}
@@ -662,6 +783,15 @@ const DailyOrders = ({ user, loading }) => {
             >
               <FileSpreadsheet className="mr-3 h-6 w-6" />
               📊 Excel ({exportableOrdersCount})
+            </button>
+
+            <button
+              onClick={exportCompanyReport}
+              disabled={companyExportableOrdersCount === 0}
+              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-700 hover:to-blue-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
+            >
+              <Mail className="mr-3 h-6 w-6" />
+              🏢 Exportar a Empresa ({companyExportableOrdersCount})
             </button>
 
             <button

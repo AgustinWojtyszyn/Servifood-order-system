@@ -279,6 +279,32 @@ Consulta la [documentación de pruebas](testing/README.md) para:
 
 **Guía rápida:** [testing/QUICKSTART.md](testing/QUICKSTART.md)
 
+### Locust (solo lectura, Supabase REST)
+
+Instalar Locust:
+```bash
+pip install locust
+```
+
+Exportar variables de entorno (ajusta tus valores):
+```bash
+export APP_BASE_URL="https://food-order-app-3avy.onrender.com"
+export SUPABASE_REST_URL="https://<tu-ref>.supabase.co/rest/v1"
+export SUPABASE_ANON_KEY="<tu-anon-key>"
+export TEST_USER_ID="ae177d76-9f35-44ac-a662-1b1e4146dbe4"  # opcional
+```
+
+Ejecutar con UI:
+```bash
+locust -f locustfile.py --host $APP_BASE_URL
+# Abrir http://localhost:8089 y definir usuarios/spawn rate
+```
+
+Ejemplo headless:
+```bash
+locust -f locustfile.py --host $APP_BASE_URL --headless -u 150 -r 15 -t 5m
+```
+
 ## 📞 Soporte
 
 Para soporte, enviar email a support@servifood.com o crear un issue en el repositorio.

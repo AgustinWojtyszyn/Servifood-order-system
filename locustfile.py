@@ -3,103 +3,126 @@ import os
 import random
 from urllib.parse import urlencode
 
-APP_HOST = "https://food-order-app-3avy.onrender.com"
-SUPABASE_URL = os.environ.get("SUPABASE_URL")  # ej: https://xxxx.supabase.co
+APP_BASE_URL = os.environ.get("APP_BASE_URL", "https://food-order-app-3avy.onrender.com")
+SUPABASE_REST_URL = os.environ.get("SUPABASE_REST_URL")  # ej: https://xxxx.supabase.co/rest/v1
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+TEST_USER_ID = os.environ.get("TEST_USER_ID", "ae177d76-9f35-44ac-a662-1b1e4146dbe4")
 
-# Assets (los que viste en Network). Si cambian con cada build, actualizalos cuando despliegues.
+# Assets representativos del build actual (actualiza hashes tras cada release).
 ASSETS = [
-    "/assets/OrderCompanySelector-Cpkt6TVN.js",
-    "/assets/companyConfig-DXvnmIWp.js",
-    "/assets/OrderForm-C71SxUJH.js",
+    "/assets/AdminPanel-aP81Zvhg.js",
+    "/assets/Profile-PTXI4aGy.js",
     "/assets/Imageservifood%20logo-DO8gzfSS.jpg",
 ]
 
 
 def supabase_headers():
-    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+    if not SUPABASE_REST_URL or not SUPABASE_ANON_KEY:
         return None
     return {
         "apikey": SUPABASE_ANON_KEY,
         "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
         "Accept": "application/json",
+        "Prefer": "count=none",
     }
+
+
+def random_range_header(page_size=50, max_pages=4):
+    """
+    Devuelve un rango tipo '0-49', '50-99', etc. para simular scroll/paginación.
+    max_pages es inclusivo, con page 0..max_pages.
+    """
+    page = random.randint(0, max_pages)
+    start = page * page_size
+    end = start + page_size - 1
+    return f"{start}-{end}"
 
 
 class AppReadOnlyUser(HttpUser):
     """
-    Recorrido 'real' sin huella sensible:
+    Recorrido 'real' solo lectura:
     - Solo GET (sin inserts/updates)
-    - Sin PII
-    - Sin user_id hardcodeado
+    - Supabase via anon key
+    - Sin user_id hardcodeado fuera de env
     """
 
-    host = APP_HOST
+    host = APP_BASE_URL
     wait_time = between(0.5, 2)
 
     def on_start(self):
         self.sb_headers = supabase_headers()
-        # Client separado para Supabase (otro host).
-        self.sb = None
-        if SUPABASE_URL and self.sb_headers:
-            self.sb = self.client.__class__(
-                base_url=SUPABASE_URL,
-                request_event=self.environment.events.request,
-                user=self,
-            )
 
-    @task(5)
-    def spa_root(self):
-        self.client.get("/", name="GET /")
-
-    @task(3)
-    def load_assets(self):
-        asset = random.choice(ASSETS)
-        self.client.get(asset, name="GET /assets/[chunk]")
-
-    @task(6)
-    def supabase_read(self):
+    def supabase_get(self, path, name, range_header=None):
         """
-        Replica tus lecturas: users, menu_items, custom_options, orders
-        (sin filtrar por user_id para no depender de UUID real)
+        GET contra Supabase REST usando URL absoluta.
+        Marca 401/403 como fallidos pero no detiene la prueba.
         """
-        if not self.sb:
+        if not SUPABASE_REST_URL or not self.sb_headers:
             return
 
-        choice = random.choice(["users", "menu_items", "custom_options", "orders"])
+        url = SUPABASE_REST_URL.rstrip("/") + path
+        headers = dict(self.sb_headers)
+        if range_header:
+            headers["Range"] = range_header
 
-        if choice == "users":
-            params = {
-                "select": "id,email,full_name,role,created_at",
-                "order": "created_at.desc",
-                "limit": "20",
-            }
-            path = "/rest/v1/users?" + urlencode(params, safe=",*=")
-            self.sb.get(path, headers=self.sb_headers, name="SB GET users")
+        with self.client.get(url, headers=headers, name=name, catch_response=True) as resp:
+            if resp.status_code in (401, 403):
+                resp.failure(f"{name} unauthorized {resp.status_code}")
+            elif resp.status_code >= 400:
+                resp.failure(f"{name} unexpected {resp.status_code}")
+            else:
+                resp.success()
 
-        elif choice == "orders":
-            params = {
-                "select": "*",
-                "order": "created_at.desc",
-                "limit": "20",
-            }
-            path = "/rest/v1/orders?" + urlencode(params, safe=",*=")
-            self.sb.get(path, headers=self.sb_headers, name="SB GET orders")
+    @task(30)
+    def spa_and_assets(self):
+        self.client.get("/", name="GET /")
+        assets_to_load = random.sample(ASSETS, k=random.randint(1, min(2, len(ASSETS))))
+        for asset in assets_to_load:
+            self.client.get(asset, name="GET /assets/[chunk]")
 
-        elif choice == "menu_items":
-            params = {
-                "select": "id,name,description,created_at",
-                "order": "created_at.desc",
-                "limit": "50",
-            }
-            path = "/rest/v1/menu_items?" + urlencode(params, safe=",*=")
-            self.sb.get(path, headers=self.sb_headers, name="SB GET menu_items")
+    @task(35)
+    def menu_and_options(self):
+        menu_params = {
+            "select": "id,name,description,created_at",
+            "order": "created_at.desc",
+        }
+        menu_path = "/menu_items?" + urlencode(menu_params, safe=",*=")
+        self.supabase_get(menu_path, name="SB GET menu_items")
 
-        else:  # custom_options
-            params = {
-                "select": "*",
-                "order": "order_position.asc",
-                "limit": "200",
-            }
-            path = "/rest/v1/custom_options?" + urlencode(params, safe=",*=")
-            self.sb.get(path, headers=self.sb_headers, name="SB GET custom_options")
+        options_params = {
+            "select": "*",
+            "order": "order_position.asc",
+        }
+        options_path = "/custom_options?" + urlencode(options_params, safe=",*=")
+        self.supabase_get(options_path, name="SB GET custom_options")
+
+    @task(20)
+    def orders_by_user(self):
+        params = {
+            "select": "*",
+            "order": "created_at.desc",
+            "user_id": f"eq.{TEST_USER_ID}",
+        }
+        range_header = random_range_header()
+        path = "/orders?" + urlencode(params, safe=",*=")
+        self.supabase_get(path, name="SB GET orders by user", range_header=range_header)
+
+    @task(10)
+    def users_admin_list(self):
+        params = {
+            "select": "id,email,full_name,role,created_at",
+            "order": "created_at.desc",
+        }
+        range_header = random_range_header()
+        path = "/users?" + urlencode(params, safe=",*=")
+        self.supabase_get(path, name="SB GET users paginated", range_header=range_header)
+
+    @task(5)
+    def completed_orders_ids(self):
+        params = {
+            "select": "id",
+            "status": "eq.completed",
+        }
+        range_header = random_range_header()
+        path = "/orders?" + urlencode(params, safe=",*=")
+        self.supabase_get(path, name="SB GET orders completed ids", range_header=range_header)
