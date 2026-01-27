@@ -85,6 +85,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const [metrics, setMetrics] = useState(null)
   const [error, setError] = useState(null)
   const [dailyData, setDailyData] = useState(null)
+  const [showDaily, setShowDaily] = useState(false)
   const navigate = useNavigate()
 
   const palette = ['#2563eb', '#fb8c00', '#10b981', '#a855f7', '#ef4444', '#0ea5e9', '#f59e0b', '#22d3ee']
@@ -216,6 +217,7 @@ const MonthlyPanel = ({ user, loading }) => {
       const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: dateRange.start, end: dateRange.end })
       if (breakdownError) throw breakdownError
       setDailyData(breakdown)
+      setShowDaily(false) // requiere confirmación para desplegar
 
       // Actualizar totalPedidos desde breakdown para consistencia
       setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
@@ -405,32 +407,48 @@ const MonthlyPanel = ({ user, loading }) => {
           {/* Gráficos rápidos */}
           {dailyData?.daily_breakdown && (
             <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full">
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart2 className="h-5 w-5 text-blue-600" />
-                <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <BarChart2 className="h-5 w-5 text-blue-600" />
+                  <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-700">
+                    {dailyData.daily_breakdown.length} días en el rango seleccionado.
+                  </p>
+                  <button
+                    onClick={() => setShowDaily(prev => !prev)}
+                    className="px-3 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all shadow disabled:opacity-60"
+                  >
+                    {showDaily ? 'Ocultar desglose' : 'Ver desglose diario'}
+                  </button>
+                </div>
               </div>
-              <div className="h-72 flex items-end gap-2 overflow-x-auto px-1">
-                {dailyData.daily_breakdown.map((d, idx) => {
-                  const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
-                  const height = `${heightPx}px`
-                  const color = palette[idx % palette.length]
-                  return (
-                    <div key={d.date} className="flex flex-col items-center flex-1 min-w-[46px]">
-                      <div
-                        className="w-full rounded-t-md transition-all"
-                        style={{
-                          background: color,
-                          height,
-                          minHeight: '6px'
-                        }}
-                        title={`${d.date}: ${d.count} pedidos`}
-                      />
-                      <div className="text-[11px] text-gray-600 mt-1 whitespace-nowrap">{d.date.slice(5)}</div>
-                      <div className="text-xs font-semibold text-gray-800">{d.count}</div>
-                    </div>
-                  )
-                })}
-              </div>
+
+              {showDaily && (
+                <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-3">
+                  {dailyData.daily_breakdown.map((d, idx) => {
+                    const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
+                    const height = `${heightPx}px`
+                    const color = palette[idx % palette.length]
+                    return (
+                      <div key={d.date} className="flex flex-col items-center flex-1 min-w-[46px]">
+                        <div
+                          className="w-full rounded-t-md transition-all"
+                          style={{
+                            background: color,
+                            height,
+                            minHeight: '6px'
+                          }}
+                          title={`${d.date}: ${d.count} pedidos`}
+                        />
+                        <div className="text-[11px] text-gray-600 mt-1 whitespace-nowrap">{d.date.slice(5)}</div>
+                        <div className="text-xs font-semibold text-gray-800">{d.count}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
