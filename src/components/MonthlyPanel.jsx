@@ -8,6 +8,8 @@ import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
 import { es } from 'date-fns/locale'
 import { useRef } from 'react'
+import clipboardImg from '../assets/clipboard.png'
+import choiceImg from '../assets/choice.png'
 
 // Configurar calendario en español
 registerLocale('es', es)
@@ -521,7 +523,11 @@ const MonthlyPanel = ({ user, loading }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full">
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
               <div className="text-center">
-                <Calendar className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mx-auto mb-2" />
+                <img
+                  src={clipboardImg}
+                  alt="Total pedidos"
+                  className="h-8 w-8 mx-auto mb-2 object-contain"
+                />
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Pedidos</p>
                 <p className="text-2xl md:text-3xl font-bold text-blue-600">{metrics.totalPedidos}</p>
               </div>
@@ -561,7 +567,11 @@ const MonthlyPanel = ({ user, loading }) => {
             </div>
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-yellow-200 w-full">
               <div className="text-center">
-                <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-yellow-600 mx-auto mb-2" />
+                <img
+                  src={choiceImg}
+                  alt="Total opciones"
+                  className="h-8 w-8 mx-auto mb-2 object-contain"
+                />
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Opciones</p>
                 <p className="text-2xl md:text-3xl font-bold text-yellow-600">{metrics.empresas.reduce((acc, e) => acc + e.totalOpciones, 0)}</p>
               </div>
