@@ -125,7 +125,7 @@ const MonthlyPanel = ({ user, loading }) => {
       const endUtc = `${currentRange.end}T23:59:59.999Z`
       let { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('*')
+        .select('id,status,delivery_date,created_at,total_items,items,custom_responses,location,company,company_slug,target_company')
         .or(
           [
             `and(delivery_date.gte.${currentRange.start},delivery_date.lte.${currentRange.end})`,
@@ -381,9 +381,7 @@ const MonthlyPanel = ({ user, loading }) => {
             <button
               onClick={() => {
                 if (!isDraftValid) return
-                const applied = { ...draftRange }
-                setDateRange(applied)
-                fetchMetrics(applied)
+                setDateRange({ ...draftRange }) // el efecto se encarga de pedir datos
               }}
               disabled={!isDraftValid}
               className={`px-4 py-2 rounded-lg font-bold text-white shadow transition-all duration-200 ${
