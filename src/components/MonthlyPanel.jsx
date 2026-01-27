@@ -123,7 +123,8 @@ const MonthlyPanel = ({ user, loading }) => {
       // Consulta principal: filtrar por delivery_date; si es null, por created_at
       const startUtc = `${currentRange.start}T00:00:00.000Z`
       const endUtc = `${currentRange.end}T23:59:59.999Z`
-      const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location,company,company_slug,target_company'
+      // Solo columnas existentes requeridas para métricas
+      const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location'
 
       // Dos consultas explícitas para evitar problemas de encoding con OR complejo
       const [{ data: deliveryOrders, error: deliveryErr }, { data: createdOrders, error: createdErr }] = await Promise.all([
