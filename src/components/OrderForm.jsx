@@ -830,9 +830,10 @@ const OrderForm = ({ user, loading }) => {
 
         {/* Checkbox funcional */}
         <div className="flex justify-end mt-6">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer" htmlFor={`select-item-${item.id}`}>
             <input
               type="checkbox"
+              id={`select-item-${item.id}`}
               checked={selectedItems[item.id] === true}
               onChange={(e) => handleItemSelect(item.id, e.target.checked)}
               className="h-6 w-6 rounded border-gray-400 text-primary-600
@@ -931,10 +932,12 @@ const OrderForm = ({ user, loading }) => {
                           option.title?.toLowerCase().includes('postre') &&
                           opt?.toLowerCase().includes('postre')
                         const disablePostre = isPostreOption && !isGenneiaPostreDay
+                        const inputId = `option-${option.id}-choice-${index}`
                         return (
                         <label
                           key={index}
                           className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer"
+                          htmlFor={inputId}
                           onClick={(e) => {
                             if (disablePostre) {
                               e.preventDefault()
@@ -950,6 +953,7 @@ const OrderForm = ({ user, loading }) => {
                         >
                           <input
                             type="radio"
+                            id={inputId}
                             name={`option-${option.id}`}
                             value={opt}
                             checked={isSelected}
@@ -971,10 +975,13 @@ const OrderForm = ({ user, loading }) => {
 
                   {option.type === 'checkbox' && option.options && (
                     <div className="space-y-2">
-                      {option.options.map((opt, index) => (
-                        <label key={index} className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+                      {option.options.map((opt, index) => {
+                        const inputId = `option-${option.id}-checkbox-${index}`
+                        return (
+                        <label key={index} htmlFor={inputId} className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
                           <input
                             type="checkbox"
+                            id={inputId}
                             value={opt}
                             checked={(customResponses[option.id] || []).includes(opt)}
                             onChange={(e) => handleCustomResponse(option.id, e.target.value, 'checkbox')}
@@ -982,7 +989,7 @@ const OrderForm = ({ user, loading }) => {
                           />
                           <span className="ml-3 text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
                         </label>
-                      ))}
+                      )})}
                     </div>
                   )}
 
