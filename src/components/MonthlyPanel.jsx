@@ -88,6 +88,8 @@ const MonthlyPanel = ({ user, loading }) => {
   const [metrics, setMetrics] = useState(null)
   const [error, setError] = useState(null)
   const [dailyData, setDailyData] = useState(null)
+  const [ordersByDay, setOrdersByDay] = useState({})
+  const [selectedDate, setSelectedDate] = useState(null)
   const [showDailyTable, setShowDailyTable] = useState(false)
   const fetchId = useRef(0)
   const navigate = useNavigate()
@@ -120,6 +122,8 @@ const MonthlyPanel = ({ user, loading }) => {
     setMetricsLoading(true)
     setMetrics(null)
     setDailyData(null)
+    setOrdersByDay({})
+    setSelectedDate(null)
     setError(null)
     try {
       // Consulta principal: filtrar por delivery_date; si es null, por created_at
@@ -244,6 +248,24 @@ const MonthlyPanel = ({ user, loading }) => {
       if (reqId === fetchId.current) {
         setDailyData(breakdown)
         setShowDailyTable(false) // requiere confirmación para desplegar
+        // Indexar órdenes por día para detalles sin refetch
+        const byDay = {}
+        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/San_Juan', year: 'numeric', month: '2-digit', day: '2-digit' })
+        const bucketForOrder = (o) => {
+          if (o.delivery_date) return o.delivery_date.slice(0, 10)
+          try {
+            return fmt.format(new Date(o.created_at))
+          } catch {
+            return null
+          }
+        }
+        orders.forEach(o => {
+          const day = bucketForOrder(o)
+          if (!day) return
+          if (!byDay[day]) byDay[day] = []
+          byDay[day].push(o)
+        })
+        setOrdersByDay(byDay)
       }
 
       // Actualizar totalPedidos desde breakdown para consistencia
@@ -454,9 +476,13 @@ const MonthlyPanel = ({ user, loading }) => {
                   const height = `${heightPx}px`
                   const color = palette[0]
                   return (
-                    <div key={d.date} className="flex flex-col items-center flex-1 min-w-[46px]">
+                    <div
+                      key={d.date}
+                      className="flex flex-col items-center flex-1 min-w-[46px] cursor-pointer select-none"
+                      onClick={() => setSelectedDate(d.date)}
+                    >
                       <div
-                        className="w-full rounded-t-md transition-all"
+                        className={`w-full rounded-t-md transition-all ${selectedDate === d.date ? 'ring-2 ring-blue-400 shadow-lg' : ''}`}
                         style={{
                           background: color,
                           height,
@@ -480,6 +506,14 @@ const MonthlyPanel = ({ user, loading }) => {
                 <Calendar className="h-5 w-5 text-blue-600" />
                 <div className="font-bold text-blue-900 text-lg">Desglose diario del rango</div>
               </div>
+              {selectedDate && (
+                <DailyDetailPanel
+                  date={selectedDate}
+                  orders={ordersByDay[selectedDate] || []}
+                  dailyBreakdown={dailyData.daily_breakdown.find(d => d.date === selectedDate)}
+                  onClose={() => setSelectedDate(null)}
+                />
+              )}
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm text-gray-700">
                   {dailyData.daily_breakdown.length} días en el rango seleccionado.
@@ -646,3 +680,193 @@ const MonthlyPanel = ({ user, loading }) => {
 }
 
 export default MonthlyPanel
+
+// Panel de detalle diario
+const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
+  if (!date) return null
+
+  const fmtTime = (ts) => {
+    try {
+      return new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    } catch { return '—' }
+  }
+
+  const isOption = (name = '') => /^OPC(ION|IÓN)\s*\d+/i.test(name.trim())
+
+  let totals = { pedidos: orders.length, menus: 0, opciones: 0, guarniciones: 0 }
+  const byEmpresa = {}
+  const byMenu = {}
+  const byOpcion = {}
+  const byGuarnicion = {}
+
+  orders.forEach(order => {
+    const empresa = order.location || 'Sin ubicación'
+    if (!byEmpresa[empresa]) byEmpresa[empresa] = 0
+    byEmpresa[empresa] += 1
+
+    let items = []
+    if (Array.isArray(order.items)) items = order.items
+    else if (typeof order.items === 'string') {
+      try { items = JSON.parse(order.items) } catch {}
+    }
+    items.forEach(it => {
+      const qty = it?.quantity || 1
+      const name = (it?.name || '').trim()
+      if (!name) return
+      if (isOption(name)) {
+        totals.opciones += qty
+        byOpcion[name] = (byOpcion[name] || 0) + qty
+      } else {
+        totals.menus += qty
+        byMenu[name] = (byMenu[name] || 0) + qty
+      }
+    })
+
+    let custom = []
+    if (Array.isArray(order.custom_responses)) custom = order.custom_responses
+    else if (typeof order.custom_responses === 'string') {
+      try { custom = JSON.parse(order.custom_responses) } catch {}
+    }
+    custom.forEach(cr => {
+      const val = (cr?.response || '').trim()
+      if (val) {
+        totals.guarniciones += 1
+        byGuarnicion[val] = (byGuarnicion[val] || 0) + 1
+      }
+      if (Array.isArray(cr?.options)) {
+        cr.options.forEach(opt => {
+          const o = (opt || '').trim()
+          if (!o) return
+          totals.guarniciones += 1
+          byGuarnicion[o] = (byGuarnicion[o] || 0) + 1
+        })
+      }
+    })
+  })
+
+  const summary = dailyBreakdown || {
+    date,
+    count: totals.pedidos,
+    menus_principales: totals.menus,
+    total_opciones: totals.opciones,
+    total_guarniciones: totals.guarniciones
+  }
+
+  return (
+    <div className="mb-4 border-2 border-blue-200 rounded-xl p-4 bg-blue-50/60 shadow-inner">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h4 className="text-lg font-bold text-blue-900">Detalle del {date}</h4>
+          <p className="text-sm text-blue-800">Pedidos: {summary.count ?? totals.pedidos}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="px-3 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow"
+        >
+          Cerrar detalle
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <Stat label="Total pedidos" value={summary.count ?? totals.pedidos} />
+        <Stat label="Total menús" value={summary.menus_principales ?? totals.menus} />
+        <Stat label="Total opciones" value={summary.total_opciones ?? totals.opciones} />
+        <Stat label="Total guarniciones" value={summary.total_guarniciones ?? totals.guarniciones} />
+      </div>
+
+      <Section title="Desglose por empresa">
+        <ChipList data={byEmpresa} />
+      </Section>
+
+      <Section title="Menús principales">
+        <ChipList data={byMenu} />
+      </Section>
+
+      <Section title="Opciones">
+        <ChipList data={byOpcion} />
+      </Section>
+
+      <Section title="Guarniciones">
+        <ChipList data={byGuarnicion} />
+      </Section>
+
+      <Section title="Pedidos del día">
+        {orders.length === 0 ? (
+          <p className="text-sm text-gray-600">No hay pedidos en este día.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm bg-white border rounded-xl shadow">
+              <thead className="bg-blue-100 text-blue-900">
+                <tr>
+                  <th className="px-3 py-2 text-left">Hora</th>
+                  <th className="px-3 py-2 text-left">Empresa</th>
+                  <th className="px-3 py-2 text-left">Items</th>
+                  <th className="px-3 py-2 text-left">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o, i) => (
+                  <tr key={`${o.id}-${i}`} className="border-t hover:bg-blue-50">
+                    <td className="px-3 py-2">{fmtTime(o.created_at)}</td>
+                    <td className="px-3 py-2">{o.location || '—'}</td>
+                    <td className="px-3 py-2">
+                      {renderItems(o, isOption)}
+                    </td>
+                    <td className="px-3 py-2 capitalize">{o.status || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
+    </div>
+  )
+}
+
+const Stat = ({ label, value }) => (
+  <div className="bg-white rounded-lg border border-blue-200 p-3 text-center shadow-sm">
+    <p className="text-xs font-semibold text-gray-600">{label}</p>
+    <p className="text-xl font-bold text-blue-800">{value ?? 0}</p>
+  </div>
+)
+
+const Section = ({ title, children }) => (
+  <div className="mb-4">
+    <h5 className="text-sm font-bold text-blue-900 mb-2">{title}</h5>
+    {children}
+  </div>
+)
+
+const ChipList = ({ data }) => {
+  const entries = Object.entries(data || {})
+  if (!entries.length) return <p className="text-sm text-gray-600">Sin datos.</p>
+  return (
+    <div className="flex flex-wrap gap-2">
+      {entries.map(([k, v]) => (
+        <span key={k} className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+          {k}: {v}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+const renderItems = (order, isOptionFn) => {
+  let items = []
+  if (Array.isArray(order.items)) items = order.items
+  else if (typeof order.items === 'string') {
+    try { items = JSON.parse(order.items) } catch {}
+  }
+  if (!items.length) return '—'
+  return items.map((it, idx) => {
+    const name = it?.name || 'Item'
+    const qty = it?.quantity || 1
+    const tag = isOptionFn(name) ? 'Opción' : 'Menú'
+    return (
+      <span key={idx} className="inline-block mr-2 mb-1 px-2 py-1 rounded bg-gray-100 text-gray-800 text-xs font-semibold">
+        {tag}: {name} (x{qty})
+      </span>
+    )
+  })
+}
