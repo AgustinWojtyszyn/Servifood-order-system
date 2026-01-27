@@ -120,9 +120,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
     const reqId = ++fetchId.current
     setMetricsLoading(true)
-    setMetrics(null)
-    setDailyData(null)
-    setOrdersByDay({})
+    // Mantener datos actuales para evitar parpadeos; solo limpiar selección puntual
     setSelectedDate(null)
     setError(null)
     try {
@@ -457,7 +455,17 @@ const MonthlyPanel = ({ user, loading }) => {
         </div>
       )}
       {/* Métricas y tabla */}
-      {metricsLoading && <div className="mt-4 text-center text-blue-700 font-bold">Cargando métricas...</div>}
+      {metricsLoading && (
+        <div className="mt-4 mx-auto max-w-2xl">
+          <div className="flex items-center gap-3 bg-blue-50 border-2 border-blue-300 rounded-xl p-4 shadow-lg">
+            <div className="h-10 w-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
+            <div>
+              <p className="text-base sm:text-lg font-extrabold text-blue-900">Cargando métricas del rango...</p>
+              <p className="text-sm text-blue-800">Esto debería tardar solo un momento.</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Error suprimido visualmente para no bloquear la vista */}
       {metrics && (
         <div className="space-y-6">
