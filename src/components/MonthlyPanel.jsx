@@ -406,7 +406,8 @@ const MonthlyPanel = ({ user, loading }) => {
             <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
             <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
             <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
-            <li>Próximamente: haz click en las filas para ver detalles adicionales.</li>
+            <li>Haz clic en una <b>barra del gráfico</b> para ver el detalle completo de ese día (totales, desglose por empresa/menús/opciones/guarniciones y lista de pedidos). Usa “Cerrar detalle” para volver.</li>
+            <li>El <b>desglose diario en tabla</b> se muestra solo cuando presionas “Ver tabla diaria”, para evitar scroll en rangos grandes.</li>
           </ol>
         </div>
       </div>
