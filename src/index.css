@@ -19,6 +19,15 @@
     scroll-behavior: smooth;
   }
 
+  /* Ocultar scrollbar en contenedores horizontales (mobile-friendly) */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   body {
     min-height: 100%;
     height: auto;

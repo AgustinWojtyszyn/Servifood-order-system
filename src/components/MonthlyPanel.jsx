@@ -383,7 +383,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-    <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
+    <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: '100vh', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
       {/* Título arriba de los tips */}
       <div className="bg-linear-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
         <div className="flex flex-col gap-4">
