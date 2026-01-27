@@ -212,6 +212,18 @@ function App() {
               !loading && (user ? <Layout user={user} loading={loading}><MonthlyPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            {/* Redirección global para rutas inexistentes */}
+            <Route
+              path="*"
+              element={
+                !loading && (
+                  <Navigate
+                    to={user ? '/dashboard' : '/'}
+                    replace
+                  />
+                )
+              }
+            />
             </Routes>
           </Suspense>
         </div>
