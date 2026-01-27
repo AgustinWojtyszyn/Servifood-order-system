@@ -34,15 +34,9 @@ const features = [
 export default function LandingPage() {
   const [showIntro, setShowIntro] = useState(false)
 
+  // Mostrar intro en cada carga/recarga de la página
   useEffect(() => {
-    const seenKey = 'servifood_intro_seen'
-    const storage = window.sessionStorage
-    const alreadySeen = storage.getItem(seenKey) === 'true'
-
-    if (!alreadySeen) {
-      setShowIntro(true)
-      storage.setItem(seenKey, 'true')
-    }
+    setShowIntro(true)
   }, [])
 
   useEffect(() => {
@@ -96,19 +90,20 @@ export default function LandingPage() {
         }
 
         .intro-logo {
-          width: min(32vh, 220px);
-          height: min(32vh, 220px);
+          width: clamp(200px, 34vh, 300px);
+          height: clamp(200px, 34vh, 300px);
           object-fit: contain;
           border-radius: 20px;
           box-shadow: 0 25px 80px rgba(0,0,0,0.35);
+          will-change: transform, filter;
           animation: logoZoom 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
         @keyframes logoZoom {
-          0%   { transform: scale(0.65); opacity: 0; filter: blur(0px); }
-          55%  { transform: scale(1.05); opacity: 1; filter: blur(0px); }
-          80%  { transform: scale(1.25); opacity: 1; filter: blur(1px); }
-          100% { transform: scale(1.45); opacity: 0; filter: blur(6px); }
+          0%   { transform: scale(0.70); opacity: 0; filter: blur(0px); }
+          55%  { transform: scale(1.08); opacity: 1; filter: blur(0px); }
+          80%  { transform: scale(1.18); opacity: 1; filter: blur(1px); }
+          100% { transform: scale(1.25); opacity: 0; filter: blur(4px); }
         }
 
         @keyframes introFade {
