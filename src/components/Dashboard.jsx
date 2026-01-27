@@ -572,7 +572,7 @@ const Dashboard = ({ user, loading }) => {
             <img src={servifoodLogo} alt="Servifood Logo" className="h-20 w-20 mx-auto mb-4 rounded-full object-cover shadow-lg bg-white" />
             <h3 className="text-2xl font-bold text-gray-900 mb-2">No hay pedidos en el historial</h3>
             <p className="text-xl text-gray-600 mb-6">¡Crea un pedido para comenzar!</p>
-            <Link to="/order" className="btn-primary bg-linear-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-4 px-8 text-lg rounded-xl shadow-lg">
+            <Link to="/order" className="btn-primary bg-linear-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-black font-bold py-4 px-8 text-lg rounded-xl shadow-lg">
               Crear Pedido
             </Link>
           </div>
