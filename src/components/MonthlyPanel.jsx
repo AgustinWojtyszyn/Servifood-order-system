@@ -123,16 +123,29 @@ const MonthlyPanel = ({ user, loading }) => {
       // Consulta principal: filtrar por delivery_date; si es null, por created_at
       const startUtc = `${currentRange.start}T00:00:00.000Z`
       const endUtc = `${currentRange.end}T23:59:59.999Z`
-      let { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select('id,status,delivery_date,created_at,total_items,items,custom_responses,location,company,company_slug,target_company')
-        .or(
-          [
-            `and(delivery_date.gte.${currentRange.start},delivery_date.lte.${currentRange.end})`,
-            `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
-          ].join(',')
-        )
-      if (ordersError) throw ordersError
+      const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location,company,company_slug,target_company'
+
+      // Dos consultas explícitas para evitar problemas de encoding con OR complejo
+      const [{ data: deliveryOrders, error: deliveryErr }, { data: createdOrders, error: createdErr }] = await Promise.all([
+        supabase
+          .from('orders')
+          .select(columns)
+          .gte('delivery_date', currentRange.start)
+          .lte('delivery_date', currentRange.end),
+        supabase
+          .from('orders')
+          .select(columns)
+          .is('delivery_date', null)
+          .gte('created_at', startUtc)
+          .lte('created_at', endUtc)
+      ])
+
+      if (deliveryErr) throw deliveryErr
+      if (createdErr) throw createdErr
+
+      let orders = []
+      if (Array.isArray(deliveryOrders)) orders = orders.concat(deliveryOrders)
+      if (Array.isArray(createdOrders)) orders = orders.concat(createdOrders)
 
       // Aplicar mismos criterios de estados que el desglose diario
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
