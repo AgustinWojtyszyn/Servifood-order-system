@@ -92,7 +92,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const fetchId = useRef(0)
   const navigate = useNavigate()
 
-  const palette = ['#2563eb', '#fb8c00', '#10b981', '#a855f7', '#ef4444', '#0ea5e9', '#f59e0b', '#22d3ee']
+  const palette = ['#2563eb']
   const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
   const isDraftValid = draftRange.start && draftRange.end && draftRange.start <= draftRange.end
 
@@ -452,7 +452,7 @@ const MonthlyPanel = ({ user, loading }) => {
                 {dailyData.daily_breakdown.map((d, idx) => {
                   const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
                   const height = `${heightPx}px`
-                  const color = palette[idx % palette.length]
+                  const color = palette[0]
                   return (
                     <div key={d.date} className="flex flex-col items-center flex-1 min-w-[46px]">
                       <div
