@@ -79,7 +79,8 @@ function DateRangePicker({ value, onChange }) {
 
 const MonthlyPanel = ({ user, loading }) => {
   const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
-  const [dateRange, setDateRange] = useState({ start: '', end: '' })
+  const [draftRange, setDraftRange] = useState({ start: '', end: '' })
+  const [dateRange, setDateRange] = useState({ start: '', end: '' }) // rango aplicado
   const [metricsLoading, setMetricsLoading] = useState(false)
   const [metrics, setMetrics] = useState(null)
   const [error, setError] = useState(null)
@@ -89,6 +90,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const palette = ['#2563eb', '#fb8c00', '#10b981', '#a855f7', '#ef4444', '#0ea5e9', '#f59e0b', '#22d3ee']
   const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
   const maxEmpresaCount = metrics?.empresas ? Math.max(...metrics.empresas.map(x => x.cantidadPedidos || 0), 1) : 1
+  const isDraftValid = draftRange.start && draftRange.end && draftRange.start <= draftRange.end
 
   useEffect(() => {
     // Control de acceso: solo admin
@@ -99,7 +101,7 @@ const MonthlyPanel = ({ user, loading }) => {
   }, [user, navigate])
 
   useEffect(() => {
-    // Solo buscar si el rango es válido
+    // Solo buscar si el rango aplicado es válido
     if (dateRange.start && dateRange.end && dateRange.start <= dateRange.end) {
       fetchMetrics()
     }
@@ -329,7 +331,7 @@ const MonthlyPanel = ({ user, loading }) => {
     <RequireUser user={user} loading={loading}>
     <div className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto" style={{overflowY: 'visible', overflowX: 'hidden', minHeight: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '120px'}}>
       {/* Título arriba de los tips */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
+      <div className="bg-linear-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
         <div className="flex flex-col gap-4">
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
@@ -346,7 +348,7 @@ const MonthlyPanel = ({ user, loading }) => {
         <div>
           <div className="font-bold text-blue-900 mb-2 text-lg">Modo de uso del Panel Mensual</div>
           <ol className="list-decimal pl-6 text-blue-900 text-base space-y-1">
-            <li>Selecciona el <b>rango de fechas</b> para ver el resumen de pedidos por empresa.</li>
+            <li>Selecciona el <b>rango de fechas</b> y presiona <b>“Aplicar rango”</b> para ver el resumen de pedidos por empresa.</li>
             <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
             <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
             <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
@@ -357,7 +359,22 @@ const MonthlyPanel = ({ user, loading }) => {
 
       {/* Selector de fechas */}
       <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full mb-4">
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
+        <div className="flex flex-col gap-3">
+          <DateRangePicker value={draftRange} onChange={setDraftRange} />
+          <div className="flex justify-end">
+            <button
+              onClick={() => isDraftValid && setDateRange(draftRange)}
+              disabled={!isDraftValid}
+              className={`px-4 py-2 rounded-lg font-bold text-white shadow transition-all duration-200 ${
+                isDraftValid
+                  ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'
+                  : 'bg-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Aplicar rango
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Exportar a Excel */}
@@ -395,9 +412,10 @@ const MonthlyPanel = ({ user, loading }) => {
                   <BarChart2 className="h-5 w-5 text-blue-600" />
                   <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
                 </div>
-                <div className="h-64 flex items-end gap-2 overflow-x-auto px-1">
+                <div className="h-72 flex items-end gap-2 overflow-x-auto px-1">
                   {dailyData.daily_breakdown.map((d, idx) => {
-                    const height = `${Math.max((d.count / maxDailyCount) * 100, 4)}%`
+                    const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
+                    const height = `${heightPx}px`
                     const color = palette[idx % palette.length]
                     return (
                       <div key={d.date} className="flex flex-col items-center flex-1 min-w-[46px]">
@@ -424,9 +442,10 @@ const MonthlyPanel = ({ user, loading }) => {
                   <BarChart2 className="h-5 w-5 text-emerald-600" />
                   <div className="font-bold text-emerald-900 text-lg">Pedidos por empresa</div>
                 </div>
-                <div className="h-64 flex items-end gap-2 overflow-x-auto px-1">
+                <div className="h-72 flex items-end gap-2 overflow-x-auto px-1">
                   {metrics.empresas.map((e, idx) => {
-                    const height = `${Math.max((e.cantidadPedidos / maxEmpresaCount) * 100, 6)}%`
+                    const heightPx = Math.max((e.cantidadPedidos / maxEmpresaCount) * 220, 10)
+                    const height = `${heightPx}px`
                     const color = palette[idx % palette.length]
                     return (
                       <div key={e.empresa} className="flex flex-col items-center flex-1 min-w-[60px]">
