@@ -544,6 +544,16 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M8 9c1.5 1 3.5 1 5 0" />
                   <path d="M9 14c.8-.6 2.2-.6 3 0" />
                   <path d="M14.5 9.5c.7.4 1.2 1.1 1.2 1.9 0 .6-.2 1-.4 1.3" />
+                  {/* Tenedor a la izquierda */}
+                  <path d="M2.7 6v10" />
+                  <path d="M3.7 6v10" />
+                  <path d="M2 6.2h2.4" />
+                  <path d="M2 8h2.4" />
+                  {/* Cuchillo a la derecha */}
+                  <path d="M19.8 6v10" />
+                  <path d="M20.8 6v10" />
+                  <path d="M19.8 6c0-.6 1-.6 1 0" />
+                  <path d="M19.8 15.5c0 .8.8 1.5 1.5 1.5" />
                 </svg>
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Menús</p>
                 <p className="text-2xl md:text-3xl font-bold text-green-600">{metrics.empresas.reduce((acc, e) => acc + (e.totalMenus - e.totalOpciones), 0)}</p>
