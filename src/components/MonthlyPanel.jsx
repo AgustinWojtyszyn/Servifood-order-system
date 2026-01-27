@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Download, Package, TrendingUp, User } from 'lucide-react'
+import { Calendar, Download, Package, TrendingUp, User, BarChart2 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
@@ -85,6 +85,10 @@ const MonthlyPanel = ({ user, loading }) => {
   const [error, setError] = useState(null)
   const [dailyData, setDailyData] = useState(null)
   const navigate = useNavigate()
+
+  const palette = ['#2563eb', '#fb8c00', '#10b981', '#a855f7', '#ef4444', '#0ea5e9', '#f59e0b', '#22d3ee']
+  const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
+  const maxEmpresaCount = metrics?.empresas ? Math.max(...metrics.empresas.map(x => x.cantidadPedidos || 0), 1) : 1
 
   useEffect(() => {
     // Control de acceso: solo admin
@@ -382,6 +386,69 @@ const MonthlyPanel = ({ user, loading }) => {
       {/* Error suprimido visualmente para no bloquear la vista */}
       {metrics && (
         <div className="space-y-6">
+          {/* Gráficos rápidos */}
+          {dailyData?.daily_breakdown && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Pedidos por día */}
+              <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart2 className="h-5 w-5 text-blue-600" />
+                  <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
+                </div>
+                <div className="h-64 flex items-end gap-2 overflow-x-auto px-1">
+                  {dailyData.daily_breakdown.map((d, idx) => {
+                    const height = `${Math.max((d.count / maxDailyCount) * 100, 4)}%`
+                    const color = palette[idx % palette.length]
+                    return (
+                      <div key={d.date} className="flex flex-col items-center flex-1 min-w-[46px]">
+                        <div
+                          className="w-full rounded-t-md transition-all"
+                          style={{
+                            background: color,
+                            height,
+                            minHeight: '6px'
+                          }}
+                          title={`${d.date}: ${d.count} pedidos`}
+                        />
+                        <div className="text-[11px] text-gray-600 mt-1 whitespace-nowrap">{d.date.slice(5)}</div>
+                        <div className="text-xs font-semibold text-gray-800">{d.count}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Pedidos por empresa */}
+              <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart2 className="h-5 w-5 text-emerald-600" />
+                  <div className="font-bold text-emerald-900 text-lg">Pedidos por empresa</div>
+                </div>
+                <div className="h-64 flex items-end gap-2 overflow-x-auto px-1">
+                  {metrics.empresas.map((e, idx) => {
+                    const height = `${Math.max((e.cantidadPedidos / maxEmpresaCount) * 100, 6)}%`
+                    const color = palette[idx % palette.length]
+                    return (
+                      <div key={e.empresa} className="flex flex-col items-center flex-1 min-w-[60px]">
+                        <div
+                          className="w-full rounded-t-md transition-all"
+                          style={{
+                            background: color,
+                            height,
+                            minHeight: '8px'
+                          }}
+                          title={`${e.empresa}: ${e.cantidadPedidos} pedidos`}
+                        />
+                        <div className="text-[11px] text-gray-600 mt-1 text-center whitespace-nowrap">{e.empresa}</div>
+                        <div className="text-xs font-semibold text-gray-800">{e.cantidadPedidos}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Desglose diario del rango */}
           {dailyData?.daily_breakdown && (
             <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full">
