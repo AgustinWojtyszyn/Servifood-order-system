@@ -404,14 +404,17 @@ const MonthlyPanel = ({ user, loading }) => {
       {/* Error suprimido visualmente para no bloquear la vista */}
       {metrics && (
         <div className="space-y-6">
-          {/* Gráficos rápidos */}
+          {/* Gráficos rápidos (siempre visibles cuando hay datos) */}
           {dailyData?.daily_breakdown && (
             <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart2 className="h-5 w-5 text-blue-600" />
                 <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
               </div>
-              <div className="h-72 flex items-end gap-2 overflow-x-auto px-1">
+              <p className="text-sm text-gray-700 mb-3">
+                {dailyData.daily_breakdown.length} días en el rango seleccionado.
+              </p>
+              <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-1">
                 {dailyData.daily_breakdown.map((d, idx) => {
                   const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
                   const height = `${heightPx}px`
