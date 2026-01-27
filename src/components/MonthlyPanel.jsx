@@ -516,7 +516,22 @@ const MonthlyPanel = ({ user, loading }) => {
             </div>
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-green-200 w-full">
               <div className="text-center">
-                <Package className="h-6 w-6 md:h-8 md:w-8 text-green-600 mx-auto mb-2" />
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6 md:h-8 md:w-8 text-green-600 mx-auto mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 14c0 2.8 2.7 5 8 5s8-2.2 8-5" />
+                  <path d="M6 10h12" />
+                  <path d="M9 7.5c.5-1 1.7-2 3-2s2.5 1 3 2" />
+                  <path d="M5 10c0-2 1.5-3.5 3.5-3.5H15C17 6.5 18 8 18 10" />
+                  <path d="M4 14h16" />
+                </svg>
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Menús</p>
                 <p className="text-2xl md:text-3xl font-bold text-green-600">{metrics.empresas.reduce((acc, e) => acc + (e.totalMenus - e.totalOpciones), 0)}</p>
               </div>
