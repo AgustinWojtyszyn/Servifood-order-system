@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { db } from '../supabaseClient'
+import { ordersService } from '../services/orders'
 import { ShoppingCart, X, ChefHat, User, Settings, Clock, AlertTriangle, Building2 } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
@@ -53,6 +54,10 @@ const OrderForm = ({ user, loading }) => {
   const [success, setSuccess] = useState(false)
   const [hasOrderToday, setHasOrderToday] = useState(false)
   const [isPastDeadline, setIsPastDeadline] = useState(false)
+  const [suggestion, setSuggestion] = useState(null) // último pedido sugerido
+  const [suggestionVisible, setSuggestionVisible] = useState(false)
+  const [suggestionLoading, setSuggestionLoading] = useState(false)
+  const [suggestionSummary, setSuggestionSummary] = useState('')
   const navigate = useNavigate()
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
@@ -87,6 +92,7 @@ const OrderForm = ({ user, loading }) => {
     fetchMenuItems()
     fetchCustomOptions()
     checkTodayOrder()
+    loadLastOrderSuggestion()
     // Pre-fill user data
     setFormData(prev => ({
       ...prev,
@@ -178,6 +184,30 @@ const OrderForm = ({ user, loading }) => {
       }
     } catch (err) {
       console.error('Error checking today order:', err)
+    }
+  }
+
+  const loadLastOrderSuggestion = async () => {
+    if (!user?.id) return
+    setSuggestionLoading(true)
+    try {
+      const { data, error } = await ordersService.getLastOrderByUser(user.id)
+      if (!error && data) {
+        setSuggestion(data)
+        setSuggestionVisible(true)
+        setSuggestionSummary(buildSuggestionSummary(data))
+      } else {
+        setSuggestion(null)
+        setSuggestionVisible(false)
+        setSuggestionSummary('')
+      }
+    } catch (err) {
+      console.error('Error loading last order suggestion:', err)
+      setSuggestion(null)
+      setSuggestionVisible(false)
+      setSuggestionSummary('')
+    } finally {
+      setSuggestionLoading(false)
     }
   }
 
@@ -357,6 +387,48 @@ const OrderForm = ({ user, loading }) => {
       return crypto.randomUUID()
     }
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  }
+
+  const buildSuggestionSummary = (order) => {
+    if (!order) return ''
+    const items = Array.isArray(order.items) ? order.items : []
+    const list = items.map(i => `${i.name || 'Item'}${i.quantity ? ` (x${i.quantity})` : ''}`).join(', ')
+    const loc = order.location ? ` en ${order.location}` : ''
+    return list ? `${list}${loc}` : `Pedido anterior${loc}`
+  }
+
+  const mapOrderItemsToSelection = (items = []) => {
+    const selectedMap = {}
+    items.forEach(it => {
+      const byId = menuItems.find(m => m.id === it.id)
+      if (byId) {
+        selectedMap[byId.id] = true
+        return
+      }
+      const byName = menuItems.find(m => m.name?.toLowerCase() === (it.name || '').toLowerCase())
+      if (byName) {
+        selectedMap[byName.id] = true
+      }
+    })
+    return selectedMap
+  }
+
+  const handleRepeatSuggestion = () => {
+    if (!suggestion) return
+    const selectedMap = mapOrderItemsToSelection(suggestion.items || [])
+    setSelectedItems(selectedMap)
+    setFormData(prev => ({
+      ...prev,
+      comments: suggestion.comments || '',
+      location: suggestion.location || locations[0] || prev.location
+    }))
+    setSuggestionVisible(false)
+  }
+
+  const handleDismissSuggestion = () => {
+    setSuggestionVisible(false)
+    setSuggestion(null)
+    setSuggestionSummary('')
   }
 
   const handleSubmit = async (e) => {
@@ -597,6 +669,48 @@ const OrderForm = ({ user, loading }) => {
                       </p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Sugerencias inteligentes */}
+              {suggestionVisible && suggestion && (
+                <div className="bg-white border-2 border-green-300 rounded-xl p-4 sm:p-5 shadow-xl flex flex-col gap-3">
+                  <div className="flex justify-between items-start gap-3">
+                    <div>
+                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Sugerencias inteligentes</p>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                        La última vez pediste: <span className="text-green-700">{suggestionSummary || '—'}</span>
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDismissSuggestion}
+                      className="text-gray-500 hover:text-gray-700"
+                      aria-label="Cerrar sugerencia"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-700">¿Querés repetirlo?</p>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleRepeatSuggestion}
+                      className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold shadow"
+                    >
+                      Repetir pedido
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDismissSuggestion}
+                      className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold shadow"
+                    >
+                      No, hacer uno nuevo
+                    </button>
+                  </div>
+                  {suggestionLoading && (
+                    <p className="text-xs text-gray-500">Cargando sugerencia...</p>
+                  )}
                 </div>
               )}
             </div>

@@ -408,6 +408,35 @@ class OrdersService {
       return { data: null, error: handleError(error, 'bulkUpdateStatus') }
     }
   }
+
+  // Último pedido del usuario (no cancelado, máx 60 días)
+  async getLastOrderByUser(userId) {
+    try {
+      if (!userId) throw new Error('ID de usuario requerido')
+
+      const sixtyDaysAgo = new Date()
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+      const sixtyIso = sixtyDaysAgo.toISOString()
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', userId)
+        .neq('status', ORDER_STATUS.CANCELLED)
+        .gte('created_at', sixtyIso)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') { // sin filas
+        throw error
+      }
+
+      return { data: data || null, error: null }
+    } catch (error) {
+      return { data: null, error: handleError(error, 'getLastOrderByUser') }
+    }
+  }
 }
 
 // Instancia singleton del servicio
