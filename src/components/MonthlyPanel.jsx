@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
 import { es } from 'date-fns/locale'
+import { useRef } from 'react'
 
 // Configurar calendario en español
 registerLocale('es', es)
@@ -86,6 +87,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const [error, setError] = useState(null)
   const [dailyData, setDailyData] = useState(null)
   const [showDailyTable, setShowDailyTable] = useState(false)
+  const fetchId = useRef(0)
   const navigate = useNavigate()
 
   const palette = ['#2563eb', '#fb8c00', '#10b981', '#a855f7', '#ef4444', '#0ea5e9', '#f59e0b', '#22d3ee']
@@ -103,24 +105,30 @@ const MonthlyPanel = ({ user, loading }) => {
   useEffect(() => {
     // Solo buscar si el rango aplicado es válido
     if (dateRange.start && dateRange.end && dateRange.start <= dateRange.end) {
-      fetchMetrics()
+      fetchMetrics(dateRange)
     }
     // eslint-disable-next-line
   }, [dateRange])
 
-  async function fetchMetrics() {
+  async function fetchMetrics(range) {
+    const currentRange = range || dateRange
+    if (!currentRange?.start || !currentRange?.end || currentRange.start > currentRange.end) return
+
+    const reqId = ++fetchId.current
     setMetricsLoading(true)
+    setMetrics(null)
+    setDailyData(null)
     setError(null)
     try {
       // Consulta principal: filtrar por delivery_date; si es null, por created_at
-      const startUtc = `${dateRange.start}T00:00:00.000Z`
-      const endUtc = `${dateRange.end}T23:59:59.999Z`
+      const startUtc = `${currentRange.start}T00:00:00.000Z`
+      const endUtc = `${currentRange.end}T23:59:59.999Z`
       let { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .or(
           [
-            `and(delivery_date.gte.${dateRange.start},delivery_date.lte.${dateRange.end})`,
+            `and(delivery_date.gte.${currentRange.start},delivery_date.lte.${currentRange.end})`,
             `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
           ].join(',')
         )
@@ -214,19 +222,26 @@ const MonthlyPanel = ({ user, loading }) => {
       })
 
       // Desglose diario del rango (fuente histórica real)
-      const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: dateRange.start, end: dateRange.end })
+      const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: currentRange.start, end: currentRange.end })
       if (breakdownError) throw breakdownError
-      setDailyData(breakdown)
-      setShowDailyTable(false) // requiere confirmación para desplegar
+      // Evitar condiciones de carrera: solo actualizar si es la petición vigente
+      if (reqId === fetchId.current) {
+        setDailyData(breakdown)
+        setShowDailyTable(false) // requiere confirmación para desplegar
+      }
 
       // Actualizar totalPedidos desde breakdown para consistencia
-      setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
+      if (reqId === fetchId.current) {
+        setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
+      }
     } catch (err) {
       // Ocultar mensaje al usuario y solo registrar en consola
       console.error('Error al obtener métricas', err)
       setError(null)
     } finally {
-      setMetricsLoading(false)
+      if (reqId === fetchId.current) {
+        setMetricsLoading(false)
+      }
     }
   }
 
@@ -364,7 +379,12 @@ const MonthlyPanel = ({ user, loading }) => {
           <DateRangePicker value={draftRange} onChange={setDraftRange} />
           <div className="flex justify-end">
             <button
-              onClick={() => isDraftValid && setDateRange(draftRange)}
+              onClick={() => {
+                if (!isDraftValid) return
+                const applied = { ...draftRange }
+                setDateRange(applied)
+                fetchMetrics(applied)
+              }}
               disabled={!isDraftValid}
               className={`px-4 py-2 rounded-lg font-bold text-white shadow transition-all duration-200 ${
                 isDraftValid
