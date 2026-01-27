@@ -70,8 +70,18 @@ export const auth = {
   },
 
   signOut: async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    // Evitamos scope global (403 con anon key). Si falla, limpiamos storage local.
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
+      if (error) {
+        clearSupabaseStorage()
+        return { error }
+      }
+      return { error: null }
+    } catch (error) {
+      clearSupabaseStorage()
+      return { error }
+    }
   },
 
   resetPassword: async (email) => {
@@ -106,6 +116,22 @@ export const auth = {
   onAuthStateChange: (callback) => {
     return supabase.auth.onAuthStateChange(callback)
   }
+}
+
+// Limpia cualquier rastro de sesión de Supabase en storages
+export const clearSupabaseStorage = () => {
+  const patterns = ['sb-', 'supabase', 'gotrue']
+  ;[window.localStorage, window.sessionStorage].forEach(store => {
+    if (!store) return
+    const keysToRemove = []
+    for (let i = 0; i < store.length; i++) {
+      const key = store.key(i)
+      if (patterns.some(p => key?.toLowerCase().includes(p))) {
+        keysToRemove.push(key)
+      }
+    }
+    keysToRemove.forEach(k => store.removeItem(k))
+  })
 }
 
 // Funciones de base de datos

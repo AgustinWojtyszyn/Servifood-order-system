@@ -72,11 +72,15 @@ class AuthService {
   async signOut() {
     try {
       const { error } = await supabaseService.withRetry(
-        () => supabase.auth.signOut(),
+        () => supabase.auth.signOut({ scope: 'local' }),
         'signOut'
       )
 
-      if (error) throw error
+      if (error) {
+        // fallback: limpiar storage local si el endpoint devolvió error
+        import('../supabaseClient').then(({ clearSupabaseStorage }) => clearSupabaseStorage())
+        throw error
+      }
 
       // Limpiar cache al cerrar sesión
       supabaseService.invalidateCache()

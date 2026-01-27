@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom';
 import servifoodLogo from '../assets/servifood logo.jpg';
 
@@ -31,8 +32,91 @@ const features = [
 ];
 
 export default function LandingPage() {
+  const [showIntro, setShowIntro] = useState(false)
+
+  useEffect(() => {
+    const seenKey = 'servifood_intro_seen'
+    const storage = window.sessionStorage
+    const alreadySeen = storage.getItem(seenKey) === 'true'
+
+    if (!alreadySeen) {
+      setShowIntro(true)
+      storage.setItem(seenKey, 'true')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showIntro) return
+
+    // Bloquear scroll mientras dura la animación
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const timer = setTimeout(() => {
+      setShowIntro(false)
+    }, 1400) // ~1.4s
+
+    return () => {
+      clearTimeout(timer)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [showIntro])
+
   return (
     <div className="flex flex-col min-h-[100dvh] w-full min-w-0 overflow-x-hidden bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
+
+      {/* Intro cinematográfica */}
+      {showIntro && (
+        <div className="intro-overlay">
+          <img
+            src={servifoodLogo}
+            alt="ServiFood Catering Logo"
+            className="intro-logo"
+            onError={e => {
+              e.target.onerror = null;
+              e.target.src = 'https://via.placeholder.com/200?text=ServiFood';
+            }}
+          />
+        </div>
+      )}
+
+      {/* Estilos locales para la animación */}
+      <style>{`
+        .intro-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #1a237e, #283593, #303f9f);
+          overflow: hidden;
+          pointer-events: all;
+          animation: introFade 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .intro-logo {
+          width: min(32vh, 220px);
+          height: min(32vh, 220px);
+          object-fit: contain;
+          border-radius: 20px;
+          box-shadow: 0 25px 80px rgba(0,0,0,0.35);
+          animation: logoZoom 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes logoZoom {
+          0%   { transform: scale(0.65); opacity: 0; filter: blur(0px); }
+          55%  { transform: scale(1.05); opacity: 1; filter: blur(0px); }
+          80%  { transform: scale(1.25); opacity: 1; filter: blur(1px); }
+          100% { transform: scale(1.45); opacity: 0; filter: blur(6px); }
+        }
+
+        @keyframes introFade {
+          0%   { opacity: 1; }
+          80%  { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `}</style>
 
       {/* HEADER */}
       <div className="flex flex-col items-center justify-center pt-8 pb-2">

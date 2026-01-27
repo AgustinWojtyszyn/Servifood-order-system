@@ -189,6 +189,11 @@ const Register = () => {
               Inicia sesión aquí
             </Link>
           </p>
+          <p className="text-xs sm:text-sm mt-1">
+            <Link to="/" className="font-semibold hover:underline" style={{color: '#ffcc80'}}>
+              ← Volver al inicio
+            </Link>
+          </p>
         </div>
 
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-8 border-4 border-white/20" style={{maxHeight: 'none', overflow: 'visible', minWidth: '320px', width: '100%'}}>

@@ -80,6 +80,11 @@ const Login = () => {
               Regístrate acá
             </Link>
           </p>
+          <p className="mt-1 text-xs sm:text-sm">
+            <Link to="/" className="font-semibold hover:underline" style={{color: '#ffcc80'}}>
+              ← Volver al inicio
+            </Link>
+          </p>
         </div>
 
         <div className="card bg-white/95 backdrop-blur-sm shadow-2xl border-2 border-white/20 px-2 sm:px-0" style={{maxHeight: 'none', overflow: 'visible', minWidth: '320px', width: '100%'}}>
