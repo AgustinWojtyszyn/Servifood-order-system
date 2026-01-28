@@ -92,6 +92,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const [selectedDate, setSelectedDate] = useState(null)
   const [showDailyTable, setShowDailyTable] = useState(false)
   const fetchId = useRef(0)
+  const manualFetchRef = useRef(false)
   const navigate = useNavigate()
 
   const palette = ['#2563eb']
@@ -108,6 +109,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
   useEffect(() => {
     // Solo buscar si el rango aplicado es válido
+    if (manualFetchRef.current) return
     if (dateRange.start && dateRange.end && dateRange.start <= dateRange.end) {
       fetchMetrics(dateRange)
     }
@@ -390,6 +392,28 @@ const MonthlyPanel = ({ user, loading }) => {
     setError(null)
   }
 
+  const handleApplyRange = async () => {
+    if (!isDraftValid) return
+    const newRange = { ...draftRange }
+    // Marcar fetch manual para evitar doble disparo desde el effect
+    manualFetchRef.current = true
+    // Feedback inmediato
+    setMetricsLoading(true)
+    // Limpiar datos anteriores para evitar parpadeos de rangos previos
+    setMetrics(null)
+    setDailyData(null)
+    setOrdersByDay({})
+    setSelectedDate(null)
+    setShowDailyTable(false)
+    setError(null)
+    setDateRange(newRange)
+    try {
+      await fetchMetrics(newRange)
+    } finally {
+      manualFetchRef.current = false
+    }
+  }
+
   return (
     <RequireUser user={user} loading={loading}>
     <div
@@ -447,17 +471,7 @@ const MonthlyPanel = ({ user, loading }) => {
               Limpiar rango
             </button>
             <button
-              onClick={() => {
-                if (!isDraftValid) return
-                // Reflejar rango aplicado de inmediato y limpiar datos anteriores
-                setDateRange({ ...draftRange })
-                setMetrics(null)
-                setDailyData(null)
-                setOrdersByDay({})
-                setSelectedDate(null)
-                setShowDailyTable(false)
-                setError(null)
-              }}
+              onClick={handleApplyRange}
               disabled={!isDraftValid}
               className={`px-4 py-2 rounded-lg font-bold text-white shadow transition-all duration-200 ${
                 isDraftValid
