@@ -132,6 +132,30 @@ const MonthlyPanel = ({ user, loading }) => {
     } catch {}
   }, [])
 
+  // Sync logs from window store into state so getDailyBreakdown logs are visible
+  useEffect(() => {
+    if (!debugEnabled) return
+    const id = setInterval(() => {
+      if (typeof window === 'undefined') return
+      const external = window.__monthlyPanelLogs || []
+      if (external.length === 0) return
+      setDebugLogs(prev => {
+        const merged = [...external, ...prev]
+        // dedupe by timestamp+label+json data
+        const seen = new Set()
+        const uniq = []
+        for (const e of merged) {
+          const key = `${e.ts}|${e.label}|${JSON.stringify(e.data || {})}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          uniq.push(e)
+        }
+        return uniq.slice(0, 120)
+      })
+    }, 800)
+    return () => clearInterval(id)
+  }, [debugEnabled])
+
   useEffect(() => {
     // Solo buscar si el rango aplicado es válido
     if (manualFetchRef.current) return
@@ -292,9 +316,81 @@ const MonthlyPanel = ({ user, loading }) => {
         total: breakdown?.range_totals?.count || 0,
         sample: breakdown?.daily_breakdown?.slice?.(0, 3) || []
       })
+      // Fallback: si Supabase devolvió 0 en breakdown pero tenemos órdenes, recalcular rápido desde "orders"
+      let finalBreakdown = breakdown
+      if ((breakdown?.range_totals?.count ?? 0) === 0 && orders.length > 0) {
+        const byDay = {}
+        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/San_Juan', year: 'numeric', month: '2-digit', day: '2-digit' })
+        const bucketForOrder = (o) => {
+          if (o.delivery_date) return o.delivery_date.slice(0, 10)
+          try {
+            return fmt.format(new Date(o.created_at))
+          } catch { return null }
+        }
+        orders.forEach(o => {
+          const day = bucketForOrder(o)
+          if (!day) return
+          if (!byDay[day]) {
+            byDay[day] = {
+              date: day,
+              count: 0,
+              menus_principales: 0,
+              opciones: {},
+              total_opciones: 0,
+              tipos_guarniciones: {},
+              total_guarniciones: 0
+            }
+          }
+          const row = byDay[day]
+          row.count += 1
+          let items = []
+          if (Array.isArray(o.items)) items = o.items
+          else if (typeof o.items === 'string') { try { items = JSON.parse(o.items) } catch {} }
+          items.forEach(it => {
+            const qty = it?.quantity || 1
+            const name = (it?.name || '').trim()
+            const m = name.match(/^OPC(ION|IÓN)\s*(\d+)/i)
+            if (m) {
+              const key = `OPCIÓN ${m[2]}`
+              row.opciones[key] = (row.opciones[key] || 0) + qty
+              row.total_opciones += qty
+            } else {
+              row.menus_principales += qty
+            }
+          })
+          let custom = []
+          if (Array.isArray(o.custom_responses)) custom = o.custom_responses
+          else if (typeof o.custom_responses === 'string') { try { custom = JSON.parse(o.custom_responses) } catch {} }
+          custom.forEach(cr => {
+            const r = (cr?.response || '').trim()
+            if (r) {
+              row.tipos_guarniciones[r] = (row.tipos_guarniciones[r] || 0) + 1
+              row.total_guarniciones += 1
+            }
+            if (Array.isArray(cr?.options)) {
+              cr.options.forEach(opt => {
+                const v = (opt || '').trim()
+                if (!v) return
+                row.tipos_guarniciones[v] = (row.tipos_guarniciones[v] || 0) + 1
+                row.total_guarniciones += 1
+              })
+            }
+          })
+        })
+        const daily_breakdown = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
+        const range_totals = daily_breakdown.reduce((acc, d) => {
+          acc.count += d.count
+          acc.menus_principales += d.menus_principales || 0
+          acc.total_opciones += d.total_opciones || 0
+          acc.total_guarniciones += d.total_guarniciones || 0
+          return acc
+        }, { count: 0, menus_principales: 0, total_opciones: 0, total_guarniciones: 0 })
+        finalBreakdown = { daily_breakdown, range_totals }
+        pushLog('breakdown-fallback', { days: daily_breakdown.length, total: range_totals.count })
+      }
       // Evitar condiciones de carrera: solo actualizar si es la petición vigente
       if (reqId === fetchId.current) {
-        setDailyData(breakdown)
+        setDailyData(finalBreakdown)
         setShowDailyTable(false) // requiere confirmación para desplegar
         // Indexar órdenes por día para detalles sin refetch
         const byDay = {}
@@ -320,10 +416,10 @@ const MonthlyPanel = ({ user, loading }) => {
       // Actualizar totalPedidos desde breakdown para consistencia
       if (reqId === fetchId.current) {
         setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
+        pushLog('totals-updated', { totalPedidos: breakdown.range_totals.count })
       }
     } catch (err) {
-      // Ocultar mensaje al usuario y solo registrar en consola
-      console.error('Error al obtener métricas', err)
+      pushLog('error', { message: err?.message || 'unknown', stack: err?.stack })
       setError(null)
     } finally {
       if (reqId === fetchId.current) {
