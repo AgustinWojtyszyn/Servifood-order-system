@@ -95,9 +95,8 @@ const MonthlyPanel = ({ user, loading }) => {
   const manualFetchRef = useRef(false)
   const navigate = useNavigate()
   const logDebug = (...args) => {
-    if (process.env.NODE_ENV === 'production') return
-    // Prefijo para identificar trazas del panel
-    console.log('[MonthlyPanel]', ...args)
+    // Prefijo para identificar trazas del panel; siempre loguea para depuración de campo
+    console.info('[MonthlyPanel]', ...args)
   }
 
   const palette = ['#2563eb']
@@ -126,6 +125,7 @@ const MonthlyPanel = ({ user, loading }) => {
     if (!currentRange?.start || !currentRange?.end || currentRange.start > currentRange.end) return
 
     const reqId = ++fetchId.current
+    logDebug('fetchMetrics init', { currentRange, reqId })
     setMetricsLoading(true)
     // Mantener datos actuales para evitar parpadeos; solo limpiar selección puntual
     setSelectedDate(null)
@@ -159,6 +159,7 @@ const MonthlyPanel = ({ user, loading }) => {
       let orders = []
       if (Array.isArray(deliveryOrders)) orders = orders.concat(deliveryOrders)
       if (Array.isArray(createdOrders)) orders = orders.concat(createdOrders)
+      logDebug('raw orders combined', orders.length)
 
       // Aplicar mismos criterios de estados que el desglose diario
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
@@ -284,6 +285,7 @@ const MonthlyPanel = ({ user, loading }) => {
           if (!byDay[day]) byDay[day] = []
           byDay[day].push(o)
         })
+        logDebug('orders indexed by day', { days: Object.keys(byDay).length, sampleDay: Object.keys(byDay)[0] })
         setOrdersByDay(byDay)
       }
 
@@ -298,6 +300,7 @@ const MonthlyPanel = ({ user, loading }) => {
     } finally {
       if (reqId === fetchId.current) {
         setMetricsLoading(false)
+        logDebug('fetchMetrics end', { reqId, currentRange })
       }
     }
   }
@@ -426,6 +429,7 @@ const MonthlyPanel = ({ user, loading }) => {
     setShowDailyTable(false)
     setError(null)
     setDateRange(newRange)
+    logDebug('apply range clicked', newRange)
     try {
       await fetchMetrics(newRange)
     } finally {
