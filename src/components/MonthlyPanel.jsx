@@ -453,33 +453,59 @@ const MonthlyPanel = ({ user, loading }) => {
   const handleExportExcel = () => {
     if (!metrics || !metrics.empresas) return
     // Exportación robusta: separar menús principales y opciones, y mostrar cantidades claras
+    const rows = buildSummaryRows(metrics)
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Resumen')
+    const fileName = `panel-mensual-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
+    XLSX.writeFile(wb, fileName)
+  }
+
+  // Exportar desglose diario del rango
+  const handleExportDailyExcel = () => {
+    if (!dailyData || !dailyData.daily_breakdown) return
+    const rows = buildDailyRows(dailyData)
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Desglose Diario')
+    const fileName = `desglose-diario-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
+    XLSX.writeFile(wb, fileName)
+  }
+
+  const handleExportAllExcel = () => {
+    if (!metrics || !metrics.empresas) return
+    const wb = XLSX.utils.book_new()
+    const summaryRows = buildSummaryRows(metrics)
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Resumen')
+    if (dailyData?.daily_breakdown) {
+      const dailyRows = buildDailyRows(dailyData)
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dailyRows), 'Desglose Diario')
+    }
+    const fileName = `panel-completo-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
+    XLSX.writeFile(wb, fileName)
+  }
+
+  const buildSummaryRows = (metricsData) => {
     const rows = []
-    metrics.empresas.forEach(e => {
-      // Menús principales (excluyendo los que son opciones)
+    metricsData.empresas.forEach(e => {
       const tiposMenusPrincipales = Object.entries(e.tiposMenus)
         .filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '')
-        .reduce((acc, [k, v]) => acc + v, 0)
+        .reduce((acc, [_, v]) => acc + v, 0)
 
-      // Opciones (solo los que son opciones)
-      const opciones = {};
+      const opciones = {}
       for (let i = 1; i <= 6; i++) {
-        const key = `OPCIÓN ${i}`;
-        // Buscar tanto 'OPCIÓN X' como 'OPCION X' (sin tilde)
+        const key = `OPCIÓN ${i}`
         const cantidad = Object.entries(e.tiposMenus).reduce((acc, [nombre, v]) => {
-          if (new RegExp(`^OPC(ION|IÓN)\\s*${i}$`, 'i').test(nombre)) {
-            return acc + v;
-          }
-          return acc;
-        }, 0);
-        opciones[key] = cantidad;
+          if (new RegExp(`^OPC(ION|IÓN)\\s*${i}$`, 'i').test(nombre)) return acc + v
+          return acc
+        }, 0)
+        opciones[key] = cantidad
       }
 
-      // Guarniciones
       const tiposGuarniciones = Object.entries(e.tiposGuarniciones)
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
 
-      // Exportar una sola fila por empresa, cada opción en su columna
       rows.push({
         Empresa: e.empresa,
         'Pedidos': e.cantidadPedidos,
@@ -496,17 +522,11 @@ const MonthlyPanel = ({ user, loading }) => {
         'Total guarniciones': e.totalGuarniciones
       })
     })
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Resumen')
-    const fileName = `panel-mensual-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
-    XLSX.writeFile(wb, fileName)
+    return rows
   }
 
-  // Exportar desglose diario del rango
-  const handleExportDailyExcel = () => {
-    if (!dailyData || !dailyData.daily_breakdown) return
-    const rows = dailyData.daily_breakdown.map(d => {
+  const buildDailyRows = (daily) => {
+    const rows = daily.daily_breakdown.map(d => {
       const guarnStr = Object.entries(d.tipos_guarniciones || {})
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
@@ -525,26 +545,21 @@ const MonthlyPanel = ({ user, loading }) => {
         'Total guarniciones': d.total_guarniciones || 0
       }
     })
-    // Totales del rango (sumados desde el desglose)
     rows.push({
       Fecha: 'Totales',
-      Pedidos: dailyData.range_totals.count,
-      'Menús principales': dailyData.range_totals.menus_principales,
+      Pedidos: daily.range_totals.count,
+      'Menús principales': daily.range_totals.menus_principales,
       'OPCIÓN 1': '',
       'OPCIÓN 2': '',
       'OPCIÓN 3': '',
       'OPCIÓN 4': '',
       'OPCIÓN 5': '',
       'OPCIÓN 6': '',
-      'Total opciones': dailyData.range_totals.total_opciones,
+      'Total opciones': daily.range_totals.total_opciones,
       'Guarniciones (tipo: cantidad)': '',
-      'Total guarniciones': dailyData.range_totals.total_guarniciones
+      'Total guarniciones': daily.range_totals.total_guarniciones
     })
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Desglose Diario')
-    const fileName = `desglose-diario-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
-    XLSX.writeFile(wb, fileName)
+    return rows
   }
 
   const handleClearRange = () => {
@@ -684,6 +699,13 @@ const MonthlyPanel = ({ user, loading }) => {
       {/* Exportar a Excel */}
       {metrics && (
         <div className="flex justify-end mb-2">
+          <button
+            onClick={handleExportAllExcel}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
+          >
+            <Download className="h-5 w-5" />
+            Exportar panel (todo)
+          </button>
           <button
             onClick={handleExportExcel}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
