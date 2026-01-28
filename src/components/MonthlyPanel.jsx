@@ -239,6 +239,12 @@ const MonthlyPanel = ({ user, loading }) => {
         let tiposGuarniciones = {}
         let totalOpciones = 0
         let tiposOpciones = {}
+        let totalBebidas = 0
+        let tiposBebidas = {}
+        const isBebida = (text = '') => {
+          const t = (text || '').toLowerCase()
+          return ['bebida', 'agua', 'jugo', 'coca', 'gaseosa', 'sprite', 'fanta', 'pepsi', 'soda'].some(k => t.includes(k))
+        }
         const norm = (v) => {
           if (v === null || v === undefined) return ''
           if (typeof v === 'string') return v.trim()
@@ -287,6 +293,10 @@ const MonthlyPanel = ({ user, loading }) => {
               totalGuarniciones++
               const tipo = baseResp
               tiposGuarniciones[tipo] = (tiposGuarniciones[tipo] || 0) + 1
+              if (isBebida(tipo)) {
+                totalBebidas++
+                tiposBebidas[tipo] = (tiposBebidas[tipo] || 0) + 1
+              }
             }
             // Si hay opciones (array)
             if (Array.isArray(resp.options)) {
@@ -295,6 +305,10 @@ const MonthlyPanel = ({ user, loading }) => {
                 if (!tipo) return
                 totalGuarniciones++
                 tiposGuarniciones[tipo] = (tiposGuarniciones[tipo] || 0) + 1
+                if (isBebida(tipo)) {
+                  totalBebidas++
+                  tiposBebidas[tipo] = (tiposBebidas[tipo] || 0) + 1
+                }
               })
             }
           })
@@ -305,9 +319,11 @@ const MonthlyPanel = ({ user, loading }) => {
           totalMenus,
           totalOpciones,
           totalGuarniciones,
+          totalBebidas,
           tiposMenus,
           tiposOpciones,
-          tiposGuarniciones
+          tiposGuarniciones,
+          tiposBebidas
         }
       })
 
@@ -464,7 +480,7 @@ const MonthlyPanel = ({ user, loading }) => {
   // Exportar desglose diario del rango
   const handleExportDailyExcel = () => {
     if (!dailyData || !dailyData.daily_breakdown) return
-    const rows = buildDailyRows(dailyData)
+    const rows = buildDailyRows(dailyData, ordersByDay)
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Desglose Diario')
@@ -478,7 +494,7 @@ const MonthlyPanel = ({ user, loading }) => {
     const summaryRows = buildSummaryRows(metrics)
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Resumen')
     if (dailyData?.daily_breakdown) {
-      const dailyRows = buildDailyRows(dailyData)
+      const dailyRows = buildDailyRows(dailyData, ordersByDay)
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dailyRows), 'Desglose Diario')
     }
     const fileName = `panel-completo-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
@@ -505,6 +521,9 @@ const MonthlyPanel = ({ user, loading }) => {
       const tiposGuarniciones = Object.entries(e.tiposGuarniciones)
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
+      const tiposBebidas = Object.entries(e.tiposBebidas || {})
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
 
       rows.push({
         Empresa: e.empresa,
@@ -517,19 +536,54 @@ const MonthlyPanel = ({ user, loading }) => {
         'OPCIÓN 5': opciones['OPCIÓN 5'] || 0,
         'OPCIÓN 6': opciones['OPCIÓN 6'] || 0,
         'Guarniciones': tiposGuarniciones || '—',
+        'Bebidas': tiposBebidas || '—',
         'Total menús': e.totalMenus - e.totalOpciones,
         'Total opciones': e.totalOpciones,
-        'Total guarniciones': e.totalGuarniciones
+        'Total guarniciones': e.totalGuarniciones,
+        'Total bebidas': e.totalBebidas || 0
       })
     })
     return rows
   }
 
-  const buildDailyRows = (daily) => {
+  const buildDailyRows = (daily, byDay) => {
     const rows = daily.daily_breakdown.map(d => {
       const guarnStr = Object.entries(d.tipos_guarniciones || {})
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
+      let bebidasStr = '—'
+      let totalBebidas = 0
+      const dayOrders = byDay?.[d.date] || []
+      if (dayOrders.length) {
+        const tiposBebidas = {}
+        const isBebida = (text = '') => {
+          const t = (text || '').toLowerCase()
+          return ['bebida', 'agua', 'jugo', 'coca', 'gaseosa', 'sprite', 'fanta', 'pepsi', 'soda'].some(k => t.includes(k))
+        }
+        dayOrders.forEach(o => {
+          let custom = []
+          if (Array.isArray(o.custom_responses)) custom = o.custom_responses
+          else if (typeof o.custom_responses === 'string') { try { custom = JSON.parse(o.custom_responses) } catch {} }
+          custom.forEach(cr => {
+            const resp = cr?.response || ''
+            if (isBebida(resp)) {
+              const key = resp.trim() || 'Bebida'
+              tiposBebidas[key] = (tiposBebidas[key] || 0) + 1
+              totalBebidas++
+            }
+            if (Array.isArray(cr?.options)) {
+              cr.options.forEach(opt => {
+                if (isBebida(opt)) {
+                  const key = (opt || '').trim() || 'Bebida'
+                  tiposBebidas[key] = (tiposBebidas[key] || 0) + 1
+                  totalBebidas++
+                }
+              })
+            }
+          })
+        })
+        bebidasStr = Object.entries(tiposBebidas).map(([k, v]) => `${k}: ${v}`).join('; ') || '—'
+      }
       return {
         Fecha: d.date,
         Pedidos: d.count,
@@ -542,7 +596,9 @@ const MonthlyPanel = ({ user, loading }) => {
         'OPCIÓN 6': d.opciones?.['OPCIÓN 6'] || 0,
         'Total opciones': d.total_opciones || 0,
         'Guarniciones (tipo: cantidad)': guarnStr || '—',
-        'Total guarniciones': d.total_guarniciones || 0
+        'Total guarniciones': d.total_guarniciones || 0,
+        'Bebidas (tipo: cantidad)': bebidasStr,
+        'Total bebidas': totalBebidas
       }
     })
     rows.push({
@@ -557,7 +613,9 @@ const MonthlyPanel = ({ user, loading }) => {
       'OPCIÓN 6': '',
       'Total opciones': daily.range_totals.total_opciones,
       'Guarniciones (tipo: cantidad)': '',
-      'Total guarniciones': daily.range_totals.total_guarniciones
+      'Total guarniciones': daily.range_totals.total_guarniciones,
+      'Bebidas (tipo: cantidad)': '',
+      'Total bebidas': ''
     })
     return rows
   }
