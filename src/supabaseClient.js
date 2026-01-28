@@ -430,6 +430,17 @@ export const db = {
       })
     }
 
+    const norm = (v) => {
+      if (v === null || v === undefined) return ''
+      if (typeof v === 'string') return v.trim()
+      if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+      if (Array.isArray(v)) return v.map(norm).filter(Boolean).join(', ')
+      if (typeof v === 'object') {
+        try { return JSON.stringify(v) } catch { return String(v) }
+      }
+      return String(v)
+    }
+
     const filteredOrders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
     filteredOrders.forEach(o => {
       const key = bucketForOrder(o)
@@ -472,16 +483,16 @@ export const db = {
         try { customResponses = JSON.parse(o.custom_responses) } catch {}
       }
       customResponses.forEach(resp => {
-        const r = (resp?.response ?? '').trim()
+        const r = norm(resp?.response)
         if (r) {
           row.tipos_guarniciones[r] = (row.tipos_guarniciones[r] || 0) + 1
           row.total_guarniciones += 1
         }
         if (Array.isArray(resp?.options)) {
           resp.options.forEach(opt => {
-            const o = (opt ?? '').trim()
-            if (!o) return
-            row.tipos_guarniciones[o] = (row.tipos_guarniciones[o] || 0) + 1
+            const val = norm(opt)
+            if (!val) return
+            row.tipos_guarniciones[val] = (row.tipos_guarniciones[val] || 0) + 1
             row.total_guarniciones += 1
           })
         }
