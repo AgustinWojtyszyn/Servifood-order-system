@@ -98,6 +98,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const palette = ['#2563eb']
   const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
   const isDraftValid = draftRange.start && draftRange.end && draftRange.start <= draftRange.end
+  const isWaitingData = metricsLoading || (!metrics && !error)
 
   useEffect(() => {
     // Control de acceso: solo admin
@@ -275,7 +276,10 @@ const MonthlyPanel = ({ user, loading }) => {
     } catch (err) {
       // Ocultar mensaje al usuario y solo registrar en consola
       console.error('Error al obtener métricas', err)
-      setError(null)
+      setError('No pudimos obtener las métricas. Intenta nuevamente.')
+      // Mostrar estado vacío para evitar quedarse sin UI
+      setMetrics({ totalPedidos: 0, empresas: [] })
+      setDailyData({ daily_breakdown: [], range_totals: { count: 0, menus_principales: 0, total_opciones: 0, total_guarniciones: 0 } })
     } finally {
       if (reqId === fetchId.current) {
         setMetricsLoading(false)
@@ -485,6 +489,19 @@ const MonthlyPanel = ({ user, loading }) => {
         </div>
       </div>
 
+      {/* Loader persistente mientras no hay datos */}
+      {isWaitingData && (
+        <div className="mt-4 mx-auto max-w-2xl">
+          <div className="flex items-center gap-3 bg-blue-50 border-2 border-blue-300 rounded-xl p-4 shadow-lg">
+            <div className="h-10 w-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
+            <div>
+              <p className="text-base sm:text-lg font-extrabold text-blue-900">Cargando métricas del rango...</p>
+              <p className="text-sm text-blue-800">Esperá un momento mientras traemos los datos seleccionados.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Exportar a Excel */}
       {metrics && (
         <div className="flex justify-end mb-2">
@@ -507,17 +524,7 @@ const MonthlyPanel = ({ user, loading }) => {
         </div>
       )}
       {/* Métricas y tabla */}
-      {metricsLoading && (
-        <div className="mt-4 mx-auto max-w-2xl">
-          <div className="flex items-center gap-3 bg-blue-50 border-2 border-blue-300 rounded-xl p-4 shadow-lg">
-            <div className="h-10 w-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
-            <div>
-              <p className="text-base sm:text-lg font-extrabold text-blue-900">Cargando métricas del rango...</p>
-              <p className="text-sm text-blue-800">Esto debería tardar solo un momento.</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* (spinner movido arriba con isWaitingData) */}
       {/* Error suprimido visualmente para no bloquear la vista */}
       {metrics && (
         <div className="space-y-6">
