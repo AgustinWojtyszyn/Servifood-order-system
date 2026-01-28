@@ -449,7 +449,14 @@ const MonthlyPanel = ({ user, loading }) => {
             <button
               onClick={() => {
                 if (!isDraftValid) return
-                setDateRange({ ...draftRange }) // el efecto se encarga de pedir datos
+                // Reflejar rango aplicado de inmediato y limpiar datos anteriores
+                setDateRange({ ...draftRange })
+                setMetrics(null)
+                setDailyData(null)
+                setOrdersByDay({})
+                setSelectedDate(null)
+                setShowDailyTable(false)
+                setError(null)
               }}
               disabled={!isDraftValid}
               className={`px-4 py-2 rounded-lg font-bold text-white shadow transition-all duration-200 ${
