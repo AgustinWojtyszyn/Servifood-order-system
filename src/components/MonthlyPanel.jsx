@@ -81,7 +81,7 @@ function DateRangePicker({ value, onChange }) {
 
 
 const MonthlyPanel = ({ user, loading }) => {
-  const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
+  const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending', 'ready', 'preparing']
   const [draftRange, setDraftRange] = useState({ start: '', end: '' })
   const [dateRange, setDateRange] = useState({ start: '', end: '' }) // rango aplicado
   const [metricsLoading, setMetricsLoading] = useState(false)
@@ -127,6 +127,7 @@ const MonthlyPanel = ({ user, loading }) => {
     setSelectedDate(null)
     setError(null)
     try {
+      console.info('[MonthlyPanel] Fetching metrics', currentRange)
       // Consulta principal: filtrar por delivery_date; si es null, por created_at
       const startUtc = `${currentRange.start}T00:00:00.000Z`
       const endUtc = `${currentRange.end}T23:59:59.999Z`
@@ -150,6 +151,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
       if (deliveryErr) throw deliveryErr
       if (createdErr) throw createdErr
+      console.info('[MonthlyPanel] deliveryOrders', (deliveryOrders || []).length, 'createdOrders', (createdOrders || []).length)
 
       let orders = []
       if (Array.isArray(deliveryOrders)) orders = orders.concat(deliveryOrders)
@@ -157,6 +159,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
       // Aplicar mismos criterios de estados que el desglose diario
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
+      console.info('[MonthlyPanel] orders after status filter', orders.length)
 
       // Agrupar por ubicación (location) usando todos los pedidos del rango
       const grouped = {}
@@ -245,6 +248,7 @@ const MonthlyPanel = ({ user, loading }) => {
       // Desglose diario del rango (fuente histórica real)
       const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: currentRange.start, end: currentRange.end })
       if (breakdownError) throw breakdownError
+      console.info('[MonthlyPanel] breakdown days', breakdown?.daily_breakdown?.length, 'range count', breakdown?.range_totals?.count)
       // Evitar condiciones de carrera: solo actualizar si es la petición vigente
       if (reqId === fetchId.current) {
         setDailyData(breakdown)
@@ -274,8 +278,8 @@ const MonthlyPanel = ({ user, loading }) => {
         setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
       }
     } catch (err) {
-      // Ocultar mensaje al usuario y solo registrar en consola
       console.error('Error al obtener métricas', err)
+      console.error('Detalles del error:', err?.message, err)
       setError('No pudimos obtener las métricas. Intenta nuevamente.')
       // Mostrar estado vacío para evitar quedarse sin UI
       setMetrics({ totalPedidos: 0, empresas: [] })
