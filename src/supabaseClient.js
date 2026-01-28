@@ -336,14 +336,15 @@ export const db = {
       return { error: new Error('Rango inválido: start/end son requeridos') }
     }
 
-    // Estados que cuentan como "pedido" en este panel
-    const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
+    // Estados que cuentan como "pedido" en este panel (incluir en preparación/listo)
+    const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending', 'ready', 'preparing']
 
     // Preferir filtrar por delivery_date; si es null, usar created_at
     const startUtc = new Date(`${start}T00:00:00.000Z`).toISOString()
     const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
     const selectOrders = async (cols) => {
-      return supabase
+      console.info('[getDailyBreakdown] query', { start, end, cols })
+      const res = await supabase
         .from('orders')
         .select(cols)
         .or(
@@ -352,6 +353,8 @@ export const db = {
             `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
           ].join(',')
         )
+      console.info('[getDailyBreakdown] result', { count: res?.data?.length || 0, error: res?.error })
+      return res
     }
 
     // Intento principal: incluye custom_responses si existe

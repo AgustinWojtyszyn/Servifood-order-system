@@ -81,7 +81,8 @@ function DateRangePicker({ value, onChange }) {
 
 
 const MonthlyPanel = ({ user, loading }) => {
-  const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
+  // Estados que cuentan para métricas (incluir preparaciones listas)
+  const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending', 'ready', 'preparing']
   const [draftRange, setDraftRange] = useState({ start: '', end: '' })
   const [dateRange, setDateRange] = useState({ start: '', end: '' }) // rango aplicado
   const [metricsLoading, setMetricsLoading] = useState(false)
@@ -137,6 +138,7 @@ const MonthlyPanel = ({ user, loading }) => {
       const endUtc = `${currentRange.end}T23:59:59.999Z`
       // Solo columnas existentes requeridas para métricas
       const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location'
+      logDebug('query params', { startUtc, endUtc, start: currentRange.start, end: currentRange.end })
 
       // Dos consultas explícitas para evitar problemas de encoding con OR complejo
       const [{ data: deliveryOrders, error: deliveryErr }, { data: createdOrders, error: createdErr }] = await Promise.all([
@@ -163,10 +165,16 @@ const MonthlyPanel = ({ user, loading }) => {
 
       // Aplicar mismos criterios de estados que el desglose diario
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
+      const statusCount = orders.reduce((acc, o) => {
+        const s = o.status || 'unknown'
+        acc[s] = (acc[s] || 0) + 1
+        return acc
+      }, {})
       logDebug('orders fetched', {
         delivery: deliveryOrders?.length || 0,
         created: createdOrders?.length || 0,
         afterFilter: orders.length,
+        statusCount,
         sample: orders.slice(0, 3)
       })
 
