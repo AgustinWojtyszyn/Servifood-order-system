@@ -834,6 +834,7 @@ const OrderForm = ({ user, loading }) => {
             <input
               type="checkbox"
               id={`select-item-${item.id}`}
+              name={`select-item-${item.id}`}
               checked={selectedItems[item.id] === true}
               onChange={(e) => handleItemSelect(item.id, e.target.checked)}
               className="h-6 w-6 rounded border-gray-400 text-primary-600
@@ -982,6 +983,7 @@ const OrderForm = ({ user, loading }) => {
                           <input
                             type="checkbox"
                             id={inputId}
+                            name={`option-${option.id}-checkbox`}
                             value={opt}
                             checked={(customResponses[option.id] || []).includes(opt)}
                             onChange={(e) => handleCustomResponse(option.id, e.target.value, 'checkbox')}

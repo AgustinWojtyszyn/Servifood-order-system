@@ -94,6 +94,11 @@ const MonthlyPanel = ({ user, loading }) => {
   const fetchId = useRef(0)
   const manualFetchRef = useRef(false)
   const navigate = useNavigate()
+  const logDebug = (...args) => {
+    if (process.env.NODE_ENV === 'production') return
+    // Prefijo para identificar trazas del panel
+    console.log('[MonthlyPanel]', ...args)
+  }
 
   const palette = ['#2563eb']
   const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
@@ -126,6 +131,7 @@ const MonthlyPanel = ({ user, loading }) => {
     setSelectedDate(null)
     setError(null)
     try {
+      logDebug('fetch start', currentRange)
       // Consulta principal: filtrar por delivery_date; si es null, por created_at
       const startUtc = `${currentRange.start}T00:00:00.000Z`
       const endUtc = `${currentRange.end}T23:59:59.999Z`
@@ -156,6 +162,12 @@ const MonthlyPanel = ({ user, loading }) => {
 
       // Aplicar mismos criterios de estados que el desglose diario
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
+      logDebug('orders fetched', {
+        delivery: deliveryOrders?.length || 0,
+        created: createdOrders?.length || 0,
+        afterFilter: orders.length,
+        sample: orders.slice(0, 3)
+      })
 
       // Agrupar por ubicación (location) usando todos los pedidos del rango
       const grouped = {}
@@ -236,14 +248,21 @@ const MonthlyPanel = ({ user, loading }) => {
       })
 
       // Para consistencia, usar el total del desglose diario
-      setMetrics({
+      const newMetrics = {
         totalPedidos: 0,
         empresas
-      })
+      }
+      logDebug('metrics grouped', { empresas: newMetrics.empresas.length })
+      setMetrics(newMetrics)
 
       // Desglose diario del rango (fuente histórica real)
       const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: currentRange.start, end: currentRange.end })
       if (breakdownError) throw breakdownError
+      logDebug('breakdown', {
+        days: breakdown?.daily_breakdown?.length || 0,
+        total: breakdown?.range_totals?.count || 0,
+        sample: breakdown?.daily_breakdown?.slice?.(0, 3) || []
+      })
       // Evitar condiciones de carrera: solo actualizar si es la petición vigente
       if (reqId === fetchId.current) {
         setDailyData(breakdown)
