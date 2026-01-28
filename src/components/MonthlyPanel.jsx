@@ -92,12 +92,22 @@ const MonthlyPanel = ({ user, loading }) => {
   const [ordersByDay, setOrdersByDay] = useState({})
   const [selectedDate, setSelectedDate] = useState(null)
   const [showDailyTable, setShowDailyTable] = useState(false)
+  const [debugLogs, setDebugLogs] = useState([])
+  const [debugEnabled, setDebugEnabled] = useState(true)
+  const [showDebug, setShowDebug] = useState(true)
   const fetchId = useRef(0)
   const manualFetchRef = useRef(false)
   const navigate = useNavigate()
-  const logDebug = (...args) => {
-    // Prefijo para identificar trazas del panel; siempre loguea para depuración de campo
-    console.info('[MonthlyPanel]', ...args)
+
+  // Logger que no depende de console.* (minificador los elimina). Almacena en estado y window.
+  const pushLog = (label, data = {}) => {
+    const entry = { ts: new Date().toISOString(), label, data }
+    setDebugLogs(prev => [entry, ...prev].slice(0, 80))
+    if (typeof window !== 'undefined') {
+      window.__monthlyPanelLogs = window.__monthlyPanelLogs || []
+      window.__monthlyPanelLogs.unshift(entry)
+      if (window.__monthlyPanelLogs.length > 200) window.__monthlyPanelLogs.pop()
+    }
   }
 
   const palette = ['#2563eb']
@@ -113,6 +123,16 @@ const MonthlyPanel = ({ user, loading }) => {
   }, [user, navigate])
 
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('debug') === '1') {
+        setDebugEnabled(true)
+        setShowDebug(true)
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
     // Solo buscar si el rango aplicado es válido
     if (manualFetchRef.current) return
     if (dateRange.start && dateRange.end && dateRange.start <= dateRange.end) {
@@ -126,19 +146,19 @@ const MonthlyPanel = ({ user, loading }) => {
     if (!currentRange?.start || !currentRange?.end || currentRange.start > currentRange.end) return
 
     const reqId = ++fetchId.current
-    logDebug('fetchMetrics init', { currentRange, reqId })
+    pushLog('fetchMetrics-init', { currentRange, reqId })
     setMetricsLoading(true)
     // Mantener datos actuales para evitar parpadeos; solo limpiar selección puntual
     setSelectedDate(null)
     setError(null)
     try {
-      logDebug('fetch start', currentRange)
+      pushLog('fetch-start', currentRange)
       // Consulta principal: filtrar por delivery_date; si es null, por created_at
       const startUtc = `${currentRange.start}T00:00:00.000Z`
       const endUtc = `${currentRange.end}T23:59:59.999Z`
       // Solo columnas existentes requeridas para métricas
       const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location'
-      logDebug('query params', { startUtc, endUtc, start: currentRange.start, end: currentRange.end })
+      pushLog('query-params', { startUtc, endUtc, start: currentRange.start, end: currentRange.end })
 
       // Dos consultas explícitas para evitar problemas de encoding con OR complejo
       const [{ data: deliveryOrders, error: deliveryErr }, { data: createdOrders, error: createdErr }] = await Promise.all([
@@ -161,7 +181,7 @@ const MonthlyPanel = ({ user, loading }) => {
       let orders = []
       if (Array.isArray(deliveryOrders)) orders = orders.concat(deliveryOrders)
       if (Array.isArray(createdOrders)) orders = orders.concat(createdOrders)
-      logDebug('raw orders combined', orders.length)
+      pushLog('orders-raw', { total: orders.length })
 
       // Aplicar mismos criterios de estados que el desglose diario
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
@@ -170,7 +190,7 @@ const MonthlyPanel = ({ user, loading }) => {
         acc[s] = (acc[s] || 0) + 1
         return acc
       }, {})
-      logDebug('orders fetched', {
+      pushLog('orders-filtered', {
         delivery: deliveryOrders?.length || 0,
         created: createdOrders?.length || 0,
         afterFilter: orders.length,
@@ -261,13 +281,13 @@ const MonthlyPanel = ({ user, loading }) => {
         totalPedidos: 0,
         empresas
       }
-      logDebug('metrics grouped', { empresas: newMetrics.empresas.length })
+      pushLog('metrics-grouped', { empresas: newMetrics.empresas.length })
       setMetrics(newMetrics)
 
       // Desglose diario del rango (fuente histórica real)
       const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: currentRange.start, end: currentRange.end })
       if (breakdownError) throw breakdownError
-      logDebug('breakdown', {
+      pushLog('breakdown', {
         days: breakdown?.daily_breakdown?.length || 0,
         total: breakdown?.range_totals?.count || 0,
         sample: breakdown?.daily_breakdown?.slice?.(0, 3) || []
@@ -293,7 +313,7 @@ const MonthlyPanel = ({ user, loading }) => {
           if (!byDay[day]) byDay[day] = []
           byDay[day].push(o)
         })
-        logDebug('orders indexed by day', { days: Object.keys(byDay).length, sampleDay: Object.keys(byDay)[0] })
+        pushLog('orders-indexed', { days: Object.keys(byDay).length, sampleDay: Object.keys(byDay)[0] })
         setOrdersByDay(byDay)
       }
 
@@ -308,7 +328,7 @@ const MonthlyPanel = ({ user, loading }) => {
     } finally {
       if (reqId === fetchId.current) {
         setMetricsLoading(false)
-        logDebug('fetchMetrics end', { reqId, currentRange })
+        pushLog('fetch-end', { reqId, currentRange })
       }
     }
   }
@@ -437,7 +457,7 @@ const MonthlyPanel = ({ user, loading }) => {
     setShowDailyTable(false)
     setError(null)
     setDateRange(newRange)
-    logDebug('apply range clicked', newRange)
+    pushLog('apply-range', { range: newRange })
     try {
       await fetchMetrics(newRange)
     } finally {
@@ -515,6 +535,35 @@ const MonthlyPanel = ({ user, loading }) => {
           </div>
         </div>
       </div>
+
+      {/* Panel de logs (solo si debug=1 en query) */}
+      {debugEnabled && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 md:p-4 shadow mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-amber-900">Logs de Panel Mensual</p>
+              <p className="text-xs text-amber-800">Se almacenan en memoria y en window.__monthlyPanelLogs</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDebug(prev => !prev)}
+              className="px-3 py-1 text-xs font-bold rounded bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {showDebug ? 'Ocultar' : 'Ver logs'}
+            </button>
+          </div>
+          {showDebug && (
+            <div className="mt-3 max-h-64 overflow-auto font-mono text-xs bg-white border border-amber-200 rounded p-2 space-y-1">
+              {debugLogs.length === 0 && <div className="text-amber-700">Sin logs aún</div>}
+              {debugLogs.map((l, idx) => (
+                <div key={`${l.ts}-${idx}`} className="text-amber-900">
+                  <span className="font-semibold">{l.ts}</span> · <span className="font-bold">{l.label}</span> · {JSON.stringify(l.data)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Exportar a Excel */}
       {metrics && (

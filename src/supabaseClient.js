@@ -339,11 +339,19 @@ export const db = {
     // Estados que cuentan como "pedido" en este panel (incluir en preparación/listo)
     const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending', 'ready', 'preparing']
 
+    const dbg = (label, data = {}) => {
+      if (typeof window !== 'undefined') {
+        window.__monthlyPanelLogs = window.__monthlyPanelLogs || []
+        window.__monthlyPanelLogs.unshift({ ts: new Date().toISOString(), label: `db:${label}`, data })
+        if (window.__monthlyPanelLogs.length > 200) window.__monthlyPanelLogs.pop()
+      }
+    }
+
     // Preferir filtrar por delivery_date; si es null, usar created_at
     const startUtc = new Date(`${start}T00:00:00.000Z`).toISOString()
     const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
     const selectOrders = async (cols) => {
-      console.info('[getDailyBreakdown] query', { start, end, cols })
+      dbg('query', { start, end, cols })
       const res = await supabase
         .from('orders')
         .select(cols)
@@ -353,7 +361,7 @@ export const db = {
             `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
           ].join(',')
         )
-      console.info('[getDailyBreakdown] result', { count: res?.data?.length || 0, error: res?.error })
+      dbg('result', { count: res?.data?.length || 0, error: res?.error })
       return res
     }
 
