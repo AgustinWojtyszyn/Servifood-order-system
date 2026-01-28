@@ -239,6 +239,15 @@ const MonthlyPanel = ({ user, loading }) => {
         let tiposGuarniciones = {}
         let totalOpciones = 0
         let tiposOpciones = {}
+        const norm = (v) => {
+          if (v === null || v === undefined) return ''
+          if (typeof v === 'string') return v.trim()
+          if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+          if (typeof v === 'object') {
+            try { return JSON.stringify(v) } catch { return String(v) }
+          }
+          return String(v)
+        }
 
         pedidos.forEach(p => {
           // Procesar items (menús principales y opciones)
@@ -273,16 +282,18 @@ const MonthlyPanel = ({ user, loading }) => {
           }
           customResponses.forEach(resp => {
             // Si hay respuesta de guarnición
-            if (resp.response) {
+            const baseResp = norm(resp.response)
+            if (baseResp) {
               totalGuarniciones++
-              const tipo = (resp.response || '').trim()
+              const tipo = baseResp
               tiposGuarniciones[tipo] = (tiposGuarniciones[tipo] || 0) + 1
             }
             // Si hay opciones (array)
             if (Array.isArray(resp.options)) {
               resp.options.forEach(opt => {
+                const tipo = norm(opt)
+                if (!tipo) return
                 totalGuarniciones++
-                const tipo = (opt || '').trim()
                 tiposGuarniciones[tipo] = (tiposGuarniciones[tipo] || 0) + 1
               })
             }
@@ -327,6 +338,15 @@ const MonthlyPanel = ({ user, loading }) => {
             return fmt.format(new Date(o.created_at))
           } catch { return null }
         }
+        const norm = (v) => {
+          if (v === null || v === undefined) return ''
+          if (typeof v === 'string') return v.trim()
+          if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+          if (typeof v === 'object') {
+            try { return JSON.stringify(v) } catch { return String(v) }
+          }
+          return String(v)
+        }
         orders.forEach(o => {
           const day = bucketForOrder(o)
           if (!day) return
@@ -362,14 +382,14 @@ const MonthlyPanel = ({ user, loading }) => {
           if (Array.isArray(o.custom_responses)) custom = o.custom_responses
           else if (typeof o.custom_responses === 'string') { try { custom = JSON.parse(o.custom_responses) } catch {} }
           custom.forEach(cr => {
-            const r = (cr?.response || '').trim()
+            const r = norm(cr?.response)
             if (r) {
               row.tipos_guarniciones[r] = (row.tipos_guarniciones[r] || 0) + 1
               row.total_guarniciones += 1
             }
             if (Array.isArray(cr?.options)) {
               cr.options.forEach(opt => {
-                const v = (opt || '').trim()
+                const v = norm(opt)
                 if (!v) return
                 row.tipos_guarniciones[v] = (row.tipos_guarniciones[v] || 0) + 1
                 row.total_guarniciones += 1
