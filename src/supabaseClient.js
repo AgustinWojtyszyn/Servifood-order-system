@@ -337,7 +337,7 @@ export const db = {
     }
 
     // Estados que cuentan como "pedido" en este panel
-    const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending', 'ready', 'preparing']
+    const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
 
     // Preferir filtrar por delivery_date; si es null, usar created_at
     const startUtc = new Date(`${start}T00:00:00.000Z`).toISOString()

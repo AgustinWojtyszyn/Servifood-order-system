@@ -81,7 +81,7 @@ function DateRangePicker({ value, onChange }) {
 
 
 const MonthlyPanel = ({ user, loading }) => {
-  const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending', 'ready', 'preparing']
+  const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending']
   const [draftRange, setDraftRange] = useState({ start: '', end: '' })
   const [dateRange, setDateRange] = useState({ start: '', end: '' }) // rango aplicado
   const [metricsLoading, setMetricsLoading] = useState(false)
@@ -98,7 +98,6 @@ const MonthlyPanel = ({ user, loading }) => {
   const palette = ['#2563eb']
   const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
   const isDraftValid = draftRange.start && draftRange.end && draftRange.start <= draftRange.end
-  const isWaitingData = metricsLoading || (!metrics && !error)
 
   useEffect(() => {
     // Control de acceso: solo admin
@@ -127,7 +126,6 @@ const MonthlyPanel = ({ user, loading }) => {
     setSelectedDate(null)
     setError(null)
     try {
-      console.info('[MonthlyPanel] Fetching metrics', currentRange)
       // Consulta principal: filtrar por delivery_date; si es null, por created_at
       const startUtc = `${currentRange.start}T00:00:00.000Z`
       const endUtc = `${currentRange.end}T23:59:59.999Z`
@@ -151,7 +149,6 @@ const MonthlyPanel = ({ user, loading }) => {
 
       if (deliveryErr) throw deliveryErr
       if (createdErr) throw createdErr
-      console.info('[MonthlyPanel] deliveryOrders', (deliveryOrders || []).length, 'createdOrders', (createdOrders || []).length)
 
       let orders = []
       if (Array.isArray(deliveryOrders)) orders = orders.concat(deliveryOrders)
@@ -159,7 +156,6 @@ const MonthlyPanel = ({ user, loading }) => {
 
       // Aplicar mismos criterios de estados que el desglose diario
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
-      console.info('[MonthlyPanel] orders after status filter', orders.length)
 
       // Agrupar por ubicación (location) usando todos los pedidos del rango
       const grouped = {}
@@ -248,7 +244,6 @@ const MonthlyPanel = ({ user, loading }) => {
       // Desglose diario del rango (fuente histórica real)
       const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: currentRange.start, end: currentRange.end })
       if (breakdownError) throw breakdownError
-      console.info('[MonthlyPanel] breakdown days', breakdown?.daily_breakdown?.length, 'range count', breakdown?.range_totals?.count)
       // Evitar condiciones de carrera: solo actualizar si es la petición vigente
       if (reqId === fetchId.current) {
         setDailyData(breakdown)
@@ -278,12 +273,9 @@ const MonthlyPanel = ({ user, loading }) => {
         setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
       }
     } catch (err) {
+      // Ocultar mensaje al usuario y solo registrar en consola
       console.error('Error al obtener métricas', err)
-      console.error('Detalles del error:', err?.message, err)
-      setError('No pudimos obtener las métricas. Intenta nuevamente.')
-      // Mostrar estado vacío para evitar quedarse sin UI
-      setMetrics({ totalPedidos: 0, empresas: [] })
-      setDailyData({ daily_breakdown: [], range_totals: { count: 0, menus_principales: 0, total_opciones: 0, total_guarniciones: 0 } })
+      setError(null)
     } finally {
       if (reqId === fetchId.current) {
         setMetricsLoading(false)
@@ -493,19 +485,6 @@ const MonthlyPanel = ({ user, loading }) => {
         </div>
       </div>
 
-      {/* Loader persistente mientras no hay datos */}
-      {isWaitingData && (
-        <div className="mt-4 mx-auto max-w-2xl">
-          <div className="flex items-center gap-3 bg-blue-50 border-2 border-blue-300 rounded-xl p-4 shadow-lg">
-            <div className="h-10 w-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
-            <div>
-              <p className="text-base sm:text-lg font-extrabold text-blue-900">Cargando métricas del rango...</p>
-              <p className="text-sm text-blue-800">Esperá un momento mientras traemos los datos seleccionados.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Exportar a Excel */}
       {metrics && (
         <div className="flex justify-end mb-2">
@@ -528,7 +507,17 @@ const MonthlyPanel = ({ user, loading }) => {
         </div>
       )}
       {/* Métricas y tabla */}
-      {/* (spinner movido arriba con isWaitingData) */}
+      {metricsLoading && (
+        <div className="mt-4 mx-auto max-w-2xl">
+          <div className="flex items-center gap-3 bg-blue-50 border-2 border-blue-300 rounded-xl p-4 shadow-lg">
+            <div className="h-10 w-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
+            <div>
+              <p className="text-base sm:text-lg font-extrabold text-blue-900">Cargando métricas del rango...</p>
+              <p className="text-sm text-blue-800">Esto debería tardar solo un momento.</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Error suprimido visualmente para no bloquear la vista */}
       {metrics && (
         <div className="space-y-6">
