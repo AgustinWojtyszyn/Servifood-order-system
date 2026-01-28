@@ -25,7 +25,7 @@ const DailyOrders = ({ user, loading }) => {
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedDish, setSelectedDish] = useState('all')
   const [selectedSide, setSelectedSide] = useState('all')
-  const [sortBy, setSortBy] = useState('time') // time, location, status
+  const [sortBy, setSortBy] = useState('recent') // recent, location, hour, status
   const [availableDishes, setAvailableDishes] = useState([])
   const [refreshing, setRefreshing] = useState(false)
   const [stats, setStats] = useState({
@@ -60,6 +60,23 @@ const DailyOrders = ({ user, loading }) => {
       !r.title?.toLowerCase().includes('guarnición') &&
       !r.title?.toLowerCase().includes('guarnicion')
     )
+  }
+
+  const isBeverage = (text = '') => {
+    const t = (text || '').toLowerCase()
+    return ['bebida', 'agua', 'jugo', 'coca', 'gaseosa', 'sprite', 'fanta', 'pepsi', 'soda'].some(k => t.includes(k))
+  }
+
+  const getBeverageCount = (customResponses) => {
+    if (!Array.isArray(customResponses)) return 0
+    let count = 0
+    customResponses.forEach(resp => {
+      if (isBeverage(resp?.response)) count += 1
+      if (Array.isArray(resp?.options)) {
+        resp.options.forEach(opt => { if (isBeverage(opt)) count += 1 })
+      }
+    })
+    return count
   }
 
   useEffect(() => {
@@ -323,16 +340,23 @@ const DailyOrders = ({ user, loading }) => {
     }) : [];
   }
 
-  // Aplicar ordenamiento
+  // Aplicar ordenamiento (empresa agrupada y luego hora asc; hora asc; recientes desc)
   const sortedOrders = [...dishFilteredOrders].sort((a, b) => {
-    switch(sortBy) {
-      case 'location':
-        return a.location.localeCompare(b.location)
+    const dateA = new Date(a.created_at)
+    const dateB = new Date(b.created_at)
+    switch (sortBy) {
+      case 'location': {
+        const loc = (a.location || '').localeCompare(b.location || '')
+        if (loc !== 0) return loc
+        return dateA - dateB // dentro de la empresa, por hora ascendente
+      }
+      case 'hour':
+        return dateA - dateB // cronológico ascendente
       case 'status':
-        return a.status.localeCompare(b.status)
-      case 'time':
+        return (a.status || '').localeCompare(b.status || '')
+      case 'recent':
       default:
-        return new Date(b.created_at) - new Date(a.created_at)
+        return dateB - dateA // más recientes primero
     }
   })
 
@@ -940,8 +964,9 @@ const DailyOrders = ({ user, loading }) => {
               onChange={(e) => setSortBy(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
-              <option value="time">Recientes</option>
-              <option value="location">Ubicación</option>
+              <option value="recent">Recientes</option>
+              <option value="location">Empresa</option>
+              <option value="hour">Hora (asc)</option>
               <option value="status">Estado</option>
             </select>
           </div>
@@ -1045,8 +1070,9 @@ const DailyOrders = ({ user, loading }) => {
                 </h3>
                 <p className="text-lg text-gray-600 dark:text-gray-400 font-semibold">
                   Ordenado por: {
-                    sortBy === 'time' ? 'Más recientes' :
-                    sortBy === 'location' ? 'Ubicación' :
+                    sortBy === 'recent' ? 'Más recientes' :
+                    sortBy === 'location' ? 'Empresa (hora asc)' :
+                    sortBy === 'hour' ? 'Hora ascendente' :
                     'Estado'
                   }
                 </p>
@@ -1090,6 +1116,9 @@ const DailyOrders = ({ user, loading }) => {
                     </th>
                     <th className="min-w-[150px] px-6 py-5 font-bold text-black text-lg">
                       🍽️ Platillos
+                    </th>
+                    <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
+                      🥤 Bebidas
                     </th>
                     <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
                       🕐 Hora
@@ -1163,6 +1192,11 @@ const DailyOrders = ({ user, loading }) => {
                         </div>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
+                        <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-base font-bold text-blue-800">
+                          {getBeverageCount(order.custom_responses)} bebidas
+                        </span>
+                      </td>
+                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
                         <p className="text-base font-mono font-bold text-black">
                           {formatTime(order.created_at)}
                         </p>
@@ -1213,6 +1247,9 @@ const DailyOrders = ({ user, loading }) => {
                       </span>
                       <span className="inline-flex items-center rounded-full border-2 border-gray-300 bg-white px-3 py-1 text-xs font-extrabold text-black ml-auto">
                         {order.total_items} items
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
+                        {getBeverageCount(order.custom_responses)} bebidas
                       </span>
                     </div>
 
