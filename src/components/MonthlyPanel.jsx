@@ -379,6 +379,17 @@ const MonthlyPanel = ({ user, loading }) => {
     XLSX.writeFile(wb, fileName)
   }
 
+  const handleClearRange = () => {
+    setDraftRange({ start: '', end: '' })
+    setDateRange({ start: '', end: '' })
+    setMetrics(null)
+    setDailyData(null)
+    setOrdersByDay({})
+    setSelectedDate(null)
+    setShowDailyTable(false)
+    setError(null)
+  }
+
   return (
     <RequireUser user={user} loading={loading}>
     <div
@@ -422,7 +433,19 @@ const MonthlyPanel = ({ user, loading }) => {
       <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full mb-4">
         <div className="flex flex-col gap-3">
           <DateRangePicker value={draftRange} onChange={setDraftRange} />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleClearRange}
+              disabled={!dateRange.start && !dateRange.end && !draftRange.start && !draftRange.end}
+              className={`px-4 py-2 rounded-lg font-bold text-blue-700 border-2 border-blue-200 shadow transition-all duration-200 ${
+                dateRange.start || dateRange.end || draftRange.start || draftRange.end
+                  ? 'bg-white hover:bg-blue-50 hover:border-blue-400'
+                  : 'bg-gray-200 cursor-not-allowed text-gray-500 border-gray-200'
+              }`}
+            >
+              Limpiar rango
+            </button>
             <button
               onClick={() => {
                 if (!isDraftValid) return
