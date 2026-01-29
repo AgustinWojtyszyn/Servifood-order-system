@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ClipboardList, RefreshCcw, Search, ShieldCheck } from 'lucide-react'
+import { ClipboardList, RefreshCcw, Search, ShieldCheck, Activity, ServerCrash } from 'lucide-react'
 import { auditService } from '../services/audit'
 import { formatDate, getTimeAgo, truncate } from '../utils'
+import { healthCheck } from '../services/supabase'
 import { withAdmin } from '../contexts/AuthContext'
 
 const ACTION_LABELS = {
@@ -12,14 +13,16 @@ const ACTION_LABELS = {
   user_deleted: 'Eliminación de usuario',
   member_removed: 'Baja de miembro',
   login_as: 'Ingreso como otro usuario',
-  permission_updated: 'Actualización de permisos'
+  permission_updated: 'Actualización de permisos',
+  menu_updated: 'Carga/actualización del menú diario'
 }
 
 const ACTION_FILTERS = [
   { id: 'role', label: 'Cambios de rol', actions: ['role_transfer', 'role_changed'] },
   { id: 'create', label: 'Altas de usuarios', actions: ['user_created', 'user_invited'] },
   { id: 'delete', label: 'Bajas / eliminaciones', actions: ['user_deleted', 'member_removed'] },
-  { id: 'perm', label: 'Permisos', actions: ['permission_updated'] }
+  { id: 'perm', label: 'Permisos', actions: ['permission_updated'] },
+  { id: 'menu', label: 'Cambios de menú', actions: ['menu_updated'] }
 ]
 
 const friendlyAction = (action) => ACTION_LABELS[action] || (action ? action.replace(/_/g, ' ') : 'Acción')
@@ -54,9 +57,13 @@ const AuditLogs = () => {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [activeFilters, setActiveFilters] = useState([])
+  const [health, setHealth] = useState(null)
+  const [healthLoading, setHealthLoading] = useState(true)
+  const [healthError, setHealthError] = useState(null)
 
   useEffect(() => {
     loadLogs()
+    loadHealth()
   }, [])
 
   const loadLogs = async () => {
@@ -66,6 +73,22 @@ const AuditLogs = () => {
     if (error) setError(error.message || 'No se pudieron cargar los registros')
     setLogs(data || [])
     setLoading(false)
+  }
+
+  const loadHealth = async () => {
+    setHealthLoading(true)
+    setHealthError(null)
+    try {
+      const res = await healthCheck()
+      if (!res?.healthy) {
+        setHealthError(res?.error || 'Supabase respondió con error')
+      }
+      setHealth(res)
+    } catch (err) {
+      setHealthError(err?.message || 'No se pudo obtener salud del sistema')
+    } finally {
+      setHealthLoading(false)
+    }
   }
 
   const toggleFilter = (actions) => {
@@ -174,6 +197,75 @@ const AuditLogs = () => {
           </div>
         </div>
       </header>
+
+      {/* Salud del sistema */}
+      <section className="bg-white rounded-2xl shadow-xl border border-emerald-100 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Salud del sistema</p>
+              <h2 className="text-xl font-extrabold text-gray-900">Supabase + app</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Ping ligero a Supabase y diagnóstico local para admins (latencia, timestamp, último error).
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={loadHealth}
+            disabled={healthLoading}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors"
+          >
+            <RefreshCcw className={`h-4 w-4 ${healthLoading ? 'animate-spin' : ''}`} />
+            Re-evaluar
+          </button>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
+            <p className="text-xs font-semibold text-gray-600 uppercase">Estado Supabase</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${
+                healthLoading ? 'bg-gray-200 text-gray-600' :
+                healthError || health?.healthy === false ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+              }`}>
+                {healthLoading ? 'Evaluando…' : healthError || health?.healthy === false ? 'Degradado' : 'OK'}
+              </span>
+              {!healthLoading && (healthError || health?.error) && (
+                <ServerCrash className="h-5 w-5 text-red-600" />
+              )}
+            </div>
+            <p className="text-xs text-gray-600 mt-2">
+              {healthLoading
+                ? 'Ejecutando healthCheck()'
+                : healthError || health?.error
+                  ? truncate(healthError || health?.error, 120)
+                  : 'Consulta HEAD a tabla users exitosa'}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
+            <p className="text-xs font-semibold text-gray-600 uppercase">Última ejecución</p>
+            <p className="text-sm text-gray-900 mt-1">
+              {health?.timestamp ? formatTimestamp(health.timestamp) : 'N/D'}
+            </p>
+            <p className="text-xs text-gray-600 mt-2">
+              Timestamp ISO de healthCheck (lado cliente).
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
+            <p className="text-xs font-semibold text-gray-600 uppercase">Mejoras sugeridas</p>
+            <ul className="mt-2 space-y-1 text-xs text-gray-700 list-disc list-inside">
+              <li>Agregar métrica de latencia real (fetch simple + performance.now).</li>
+              <li>Crear monitor cron serverless → Slack/Email si health falla.</li>
+              <li>Persistir histórico en `audit_logs` con acción `health_probe`.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
       <section className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">

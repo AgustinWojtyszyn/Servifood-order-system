@@ -659,6 +659,24 @@ export const db = {
         .select('id, name, description, created_at')
         .order('created_at', { ascending: true })
       
+      if (!error) {
+        const summary = {
+          inserted: itemsToInsert.length,
+          updated: itemsToUpdate.length,
+          deleted: itemsToDelete.length,
+          total: data?.length || 0
+        }
+        await logAudit({
+          action: 'menu_updated',
+          details: `Menú diario actualizado (agregados: ${summary.inserted}, editados: ${summary.updated}, eliminados: ${summary.deleted}, total vigente: ${summary.total})`,
+          target_name: 'Todos los usuarios',
+          metadata: {
+            summary,
+            items: (menuItems || []).map(({ id, name }) => ({ id, name }))
+          }
+        })
+      }
+
       return { data, error }
     } catch (err) {
       console.error('Unexpected error in updateMenuItems:', err)
