@@ -9,6 +9,7 @@ import SupportButton from './SupportButton'
 import RequireUser from './RequireUser'
 import { useScrollLock } from '../hooks/useScrollLock'
 import { OverlayLockProvider } from '../contexts/OverlayLockContext'
+import DevPanel from './DevPanel'
 
 
 const Layout = ({ children, user, loading }) => {
@@ -288,6 +289,8 @@ const Layout = ({ children, user, loading }) => {
           <div className="flex-1 p-4 md:p-8 min-h-0 overflow-visible">
             {children}
           </div>
+          {/* Panel flotante solo admins */}
+          <DevPanel />
         </main>
       </div>
 

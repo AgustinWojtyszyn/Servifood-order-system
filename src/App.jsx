@@ -9,6 +9,7 @@ import './App.css'
 import Layout from './components/Layout'
 import Login from './components/Login'
 import LandingPage from './components/LandingPage'
+import { useScreenMetrics } from './hooks/useScreenMetrics'
 
 // Lazy loading de componentes (carga diferida)
 const Register = lazy(() => import('./components/Register'))
@@ -37,6 +38,7 @@ const InternalLoader = () => (
 
 function App() {
   const { user, loading } = useAuthContext()
+  useScreenMetrics()
 
   useEffect(() => {
     if (!import.meta.env.DEV) return
