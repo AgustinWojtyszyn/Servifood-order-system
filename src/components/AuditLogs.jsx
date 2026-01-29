@@ -63,11 +63,17 @@ const AuditLogs = () => {
   const [healthError, setHealthError] = useState(null)
   const [ordersCount, setOrdersCount] = useState(null)
   const [ordersError, setOrdersError] = useState(null)
+  const [healthLogs, setHealthLogs] = useState([])
+  const [healthLogsLoading, setHealthLogsLoading] = useState(true)
+  const [healthLogsError, setHealthLogsError] = useState(null)
+  const [healthRange, setHealthRange] = useState('24h') // '24h' | '7d'
+  const [healthOnlyErrors, setHealthOnlyErrors] = useState(false)
 
   useEffect(() => {
     loadLogs()
     loadHealth()
     loadOrdersCount()
+    loadHealthProbes()
 
     const interval = setInterval(() => {
       loadOrdersCount(true)
@@ -98,6 +104,28 @@ const AuditLogs = () => {
       setHealthError(err?.message || 'No se pudo obtener salud del sistema')
     } finally {
       setHealthLoading(false)
+    }
+  }
+
+  const loadHealthProbes = async () => {
+    setHealthLogsLoading(true)
+    setHealthLogsError(null)
+    try {
+      const { data, error } = await auditService.getAuditLogs({
+        actions: ['health_probe'],
+        limit: 200
+      })
+      if (error) {
+        setHealthLogsError(error.message || 'No se pudieron cargar los health probes')
+        setHealthLogs([])
+      } else {
+        setHealthLogs(data || [])
+      }
+    } catch (err) {
+      setHealthLogsError(err?.message || 'Error cargando health probes')
+      setHealthLogs([])
+    } finally {
+      setHealthLogsLoading(false)
     }
   }
 
@@ -160,6 +188,33 @@ const AuditLogs = () => {
       return haystack.includes(search.toLowerCase())
     })
   }, [logs, activeFilters, search])
+
+  const filteredHealthLogs = useCallback(() => {
+    const now = new Date()
+    const from = new Date(now)
+    if (healthRange === '24h') {
+      from.setHours(now.getHours() - 24)
+    } else if (healthRange === '7d') {
+      from.setDate(now.getDate() - 7)
+    }
+
+    return (healthLogs || [])
+      .filter((log) => {
+        const ts = new Date(log.created_at || log.timestamp || 0)
+        if (isNaN(ts)) return false
+        if (ts < from || ts > now) return false
+
+        const md = log.metadata || {}
+        const status = Number(md.status_code || md.status || 0)
+        const supabaseOk = md.supabase_ok
+
+        if (healthOnlyErrors) {
+          return (status >= 400) || supabaseOk === false
+        }
+        return true
+      })
+      .slice(0, 200)
+  }, [healthLogs, healthRange, healthOnlyErrors])
 
   const missingTable = error && /audit_logs/i.test(error)
 
@@ -373,7 +428,7 @@ create index audit_logs_created_at_idx on public.audit_logs (created_at desc);`}
               </div>
             </div>
             <button
-              onClick={() => { loadHealth(); loadOrdersCount(true) }}
+              onClick={() => { loadHealth(); loadOrdersCount(true); loadHealthProbes() }}
               disabled={healthLoading}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors"
             >
@@ -442,6 +497,107 @@ create index audit_logs_created_at_idx on public.audit_logs (created_at desc);`}
               <li>Persistir histórico en `audit_logs` con acción `health_probe`.</li>
               <li>Escuchar canal realtime de `orders` para conteo instantáneo.</li>
             </ul>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              {[
+                { id: '24h', label: 'Últimas 24h' },
+                { id: '7d', label: 'Últimos 7 días' }
+              ].map(opt => {
+                const active = healthRange === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setHealthRange(opt.id)}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
+                      active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+              <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 ml-2">
+                <input
+                  type="checkbox"
+                  checked={healthOnlyErrors}
+                  onChange={(e) => setHealthOnlyErrors(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Solo errores (status &gt;= 400 o supabase_ok = false)
+              </label>
+            </div>
+            <p className="text-sm text-gray-600">
+              Mostrando últimos {healthLogs?.length || 0} eventos health_probe (limit 200)
+            </p>
+          </div>
+
+          <div className="overflow-x-auto bg-white rounded-xl border border-gray-100 shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Latencia (ms)</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Path</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">IP</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User Agent</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Request ID</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {healthLogsLoading && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500 text-sm">
+                      Cargando health_probe...
+                    </td>
+                  </tr>
+                )}
+                {!healthLogsLoading && healthLogsError && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-red-600 text-sm">
+                      {truncate(healthLogsError, 160)}
+                    </td>
+                  </tr>
+                )}
+                {!healthLogsLoading && !healthLogsError && filteredHealthLogs().length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500 text-sm">
+                      No hay eventos health_probe para los filtros seleccionados.
+                    </td>
+                  </tr>
+                )}
+                {!healthLogsLoading && !healthLogsError && filteredHealthLogs().map((log) => {
+                  const md = log.metadata || {}
+                  return (
+                    <tr key={log.id || log.created_at || Math.random()}>
+                      <td className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap">
+                        {formatTimestamp(log.created_at || log.timestamp)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 whitespace-nowrap">
+                        {md.status_code ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap">
+                        {md.latency_ms ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap">
+                        {md.path || log.details || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap">
+                        {md.ip || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800">
+                        {truncate(md.user_agent || '', 80) || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap">
+                        {md.request_id || '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </section>
       )}

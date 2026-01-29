@@ -8,6 +8,8 @@ import os from 'os';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { sendDailyOrdersExcel } from './sendDailyOrdersEmail.js';
+import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 const PORT = process.env.PORT || 3000;
 const numCPUs = os.cpus().length;
@@ -50,6 +52,15 @@ if (cluster.isMaster) {
 } else {
   const app = express();
 
+  // Supabase backend client (prefiere service role)
+  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+  const supabase = SUPABASE_URL
+    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY, { auth: { persistSession: false } })
+    : null;
+
   // --- Seguridad: Headers recomendados ---
   app.use((req, res, next) => {
     // Fuerza HTTPS en navegadores compatibles
@@ -79,6 +90,72 @@ if (cluster.isMaster) {
     } catch (err) {
       console.error('Error enviando email:', err);
       res.status(500).json({ error: 'Error enviando email' });
+    }
+  });
+
+  // --- Health check con auditoría liviana ---
+  app.get('/health', async (req, res) => {
+    const start = Date.now();
+    let ok = true;
+    let supabaseOk = null;
+    let errorMessage = null;
+
+    if (supabase) {
+      try {
+        // Ping minimal a Supabase (HEAD-equivalente)
+        const { error } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .limit(1);
+        if (error) {
+          ok = false;
+          supabaseOk = false;
+          errorMessage = error.message;
+        } else {
+          supabaseOk = true;
+        }
+      } catch (e) {
+        ok = false;
+        supabaseOk = false;
+        errorMessage = e?.message || 'Supabase ping failed';
+      }
+    }
+
+    const latencyMs = Date.now() - start;
+    const requestId = req.header('x-request-id') || crypto.randomUUID();
+    const ip = (req.header('x-forwarded-for')?.split(',')[0] || req.socket?.remoteAddress || null);
+    const ua = req.header('user-agent') || null;
+
+    res.status(ok ? 200 : 503).json({
+      ok,
+      supabase_ok: supabaseOk,
+      ts: new Date().toISOString(),
+      latency_ms: latencyMs,
+      request_id: requestId
+    });
+
+    // Loguear en background (best-effort) como telemetría/auditoría
+    if (supabase) {
+      supabase
+        .from('audit_logs')
+        .insert([{
+          action: 'health_probe',
+          details: ok ? 'Health OK' : `Health degraded: ${errorMessage || 'unknown'}`,
+          actor_name: 'health-endpoint',
+          target_name: 'telemetry',
+          metadata: {
+            latency_ms: latencyMs,
+            path: req.path,
+            method: req.method,
+            status_code: ok ? 200 : 503,
+            request_id: requestId,
+            ip,
+            user_agent: ua,
+            supabase_ok: supabaseOk
+          },
+          created_at: new Date().toISOString()
+        }])
+        .catch(() => {}); // No romper health
     }
   });
 

@@ -155,7 +155,7 @@ const Layout = ({ children, user, loading }) => {
   return (
     <RequireUser user={user} loading={loading}>
       <OverlayLockProvider registerLock={registerExternalLock}>
-      <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-[100dvh] w-full">
+      <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-dvh w-full">
       {/* Header */}
       <header className="bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
