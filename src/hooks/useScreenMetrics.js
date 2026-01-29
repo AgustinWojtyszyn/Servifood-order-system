@@ -20,7 +20,9 @@ export const useScreenMetrics = () => {
           p_meta: { admin: isAdmin }
         })
       } catch (e) {
-        // silencio para no romper navegación
+        if (import.meta.env.DEV) {
+          console.warn('[metrics] log_metric screen.view failed', e?.message || e)
+        }
       }
     }
     send()
