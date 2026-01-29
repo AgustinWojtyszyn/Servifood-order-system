@@ -289,8 +289,6 @@ const Layout = ({ children, user, loading }) => {
           <div className="flex-1 p-4 md:p-8 min-h-0 overflow-visible">
             {children}
           </div>
-          {/* Panel flotante solo admins */}
-          <DevPanel />
         </main>
       </div>
 
@@ -300,6 +298,8 @@ const Layout = ({ children, user, loading }) => {
 
       {/* Support Button */}
       <SupportButton />
+      {/* Panel flotante solo admins, fuera del flujo principal */}
+      <DevPanel />
       </div>
       </OverlayLockProvider>
     </RequireUser>
