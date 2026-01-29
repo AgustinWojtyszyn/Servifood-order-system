@@ -178,8 +178,8 @@ const AuditLogs = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
                 active
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-700'
+                  ? 'bg-white text-blue-700 border-blue-600 shadow-md'
+                  : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
               }`}
             >
               {tab.label}
