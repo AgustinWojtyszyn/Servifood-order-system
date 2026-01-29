@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { ClipboardList, RefreshCcw, Search, ShieldCheck, Activity, ServerCrash, BarChart2 } from 'lucide-react'
 import { auditService } from '../services/audit'
 import { formatDate, getTimeAgo, truncate } from '../utils'
