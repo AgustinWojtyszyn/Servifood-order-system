@@ -25,6 +25,7 @@ const EditOrderForm = lazy(() => import('./components/EditOrderForm'))
 const Profile = lazy(() => import('./components/Profile'))
 const MonthlyPanel = lazy(() => import('./components/MonthlyPanel'))
 const AuditLogs = lazy(() => import('./components/AuditLogs'))
+const DevMode = lazy(() => import('./components/DevMode'))
 
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
@@ -221,6 +222,9 @@ function App() {
             } />
             <Route path="/auditoria" element={
               !loading && (user ? <Layout user={user} loading={loading}><AuditLogs user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/dev-mode" element={
+              !loading && (user ? <Layout user={user} loading={loading}><DevMode user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/auth/callback" element={<AuthCallback />} />
             {/* Redirección global para rutas inexistentes */}

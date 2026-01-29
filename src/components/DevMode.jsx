@@ -1,0 +1,149 @@
+import { useEffect, useState } from 'react'
+import { BarChart2, Activity, RefreshCcw, Trash2 } from 'lucide-react'
+import { supabase } from '../services/supabase'
+import { useAuthContext } from '../contexts/AuthContext'
+import { Navigate } from 'react-router-dom'
+
+const WINDOW_SECONDS = 600
+const REFRESH_MS = 5000
+
+const DevMode = () => {
+  const { isAdmin, user } = useAuthContext()
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const fetchMetrics = async () => {
+    setLoading(true)
+    setError(null)
+    const { data, error } = await supabase.rpc('get_metrics_summary', {
+      p_window_seconds: WINDOW_SECONDS,
+      p_limit: 50
+    })
+    if (error) setError(error.message)
+    setData(data || [])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchMetrics()
+    const id = setInterval(fetchMetrics, REFRESH_MS)
+    return () => clearInterval(id)
+  }, [])
+
+  if (!isAdmin || !user || user.id !== 'ae177d76-9f35-44ac-a662-1b1e4146dbe4') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-2xl bg-black text-white flex items-center justify-center shadow-lg">
+            <Activity className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-sm uppercase tracking-wide text-gray-600 font-semibold">Modo Dev</p>
+            <h1 className="text-2xl font-extrabold text-gray-900">Métricas en tiempo real (últimos 10 min)</h1>
+            <p className="text-sm text-gray-600">Solo visible para: agustinwojtyszyn99@gmail.com</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchMetrics}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 hover:bg-gray-50"
+            title="Refrescar"
+          >
+            <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refrescar
+          </button>
+          <button
+            onClick={async () => {
+              const { error } = await supabase.rpc('clear_metrics', { p_older_than_days: 7 })
+              if (error) alert('No se pudo limpiar: ' + error.message)
+              else fetchMetrics()
+            }}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border border-red-200 text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            Limpiar &gt;7 días
+          </button>
+        </div>
+      </header>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      {loading && <p className="text-sm text-gray-600">Cargando...</p>}
+      {!loading && !error && data.length === 0 && <p className="text-sm text-gray-600">Sin datos en la ventana.</p>}
+
+      {!loading && !error && data.length > 0 && (
+        <div className="space-y-6">
+          <div className="bg-white shadow-xl border border-gray-100 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart2 className="h-5 w-5 text-blue-600" />
+              <h2 className="text-lg font-bold text-gray-900">Operaciones</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-left">
+                <thead className="text-gray-500 border-b">
+                  <tr>
+                    <th className="px-3 py-2">Op</th>
+                    <th className="px-3 py-2">P50</th>
+                    <th className="px-3 py-2">P95</th>
+                    <th className="px-3 py-2">Err%</th>
+                    <th className="px-3 py-2">Calls</th>
+                    <th className="px-3 py-2">RPS</th>
+                    <th className="px-3 py-2">Último</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.filter(d => d.kind === 'op').map(row => (
+                    <tr key={row.op}>
+                      <td className="px-3 py-2 font-semibold">{row.op}</td>
+                      <td className="px-3 py-2">{row.p50_ms?.toFixed?.(1) ?? '—'}</td>
+                      <td className="px-3 py-2">{row.p95_ms?.toFixed?.(1) ?? '—'}</td>
+                      <td className="px-3 py-2">{row.calls ? ((row.errors / row.calls) * 100).toFixed(1) : '0'}%</td>
+                      <td className="px-3 py-2">{row.calls}</td>
+                      <td className="px-3 py-2">{row.rps_window?.toFixed?.(2) ?? '0'}</td>
+                      <td className="px-3 py-2 text-gray-600 text-xs">{row.last_ts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white shadow-xl border border-gray-100 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart2 className="h-5 w-5 text-green-600" />
+              <h2 className="text-lg font-bold text-gray-900">Pantallas</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-left">
+                <thead className="text-gray-500 border-b">
+                  <tr>
+                    <th className="px-3 py-2">Screen</th>
+                    <th className="px-3 py-2">RPS</th>
+                    <th className="px-3 py-2">Views</th>
+                    <th className="px-3 py-2">Último</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.filter(d => d.kind === 'screen').map(row => (
+                    <tr key={row.op}>
+                      <td className="px-3 py-2 font-semibold">{row.op}</td>
+                      <td className="px-3 py-2">{row.rps_window?.toFixed?.(2) ?? '0'}</td>
+                      <td className="px-3 py-2">{row.calls}</td>
+                      <td className="px-3 py-2 text-gray-600 text-xs">{row.last_ts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default DevMode
