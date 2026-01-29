@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ClipboardList, RefreshCcw, Search, ShieldCheck, Activity, ServerCrash } from 'lucide-react'
+import { ClipboardList, RefreshCcw, Search, ShieldCheck, Activity, ServerCrash, BarChart2 } from 'lucide-react'
 import { auditService } from '../services/audit'
 import { formatDate, getTimeAgo, truncate } from '../utils'
-import { healthCheck } from '../services/supabase'
+import { healthCheck, supabase } from '../services/supabase'
 import { withAdmin } from '../contexts/AuthContext'
 
 const ACTION_LABELS = {
@@ -60,10 +60,19 @@ const AuditLogs = () => {
   const [health, setHealth] = useState(null)
   const [healthLoading, setHealthLoading] = useState(true)
   const [healthError, setHealthError] = useState(null)
+  const [ordersCount, setOrdersCount] = useState(null)
+  const [ordersError, setOrdersError] = useState(null)
 
   useEffect(() => {
     loadLogs()
     loadHealth()
+    loadOrdersCount()
+
+    const interval = setInterval(() => {
+      loadOrdersCount(true)
+    }, 10000) // 10s para pseudo tiempo real ligero
+
+    return () => clearInterval(interval)
   }, [])
 
   const loadLogs = async () => {
@@ -88,6 +97,23 @@ const AuditLogs = () => {
       setHealthError(err?.message || 'No se pudo obtener salud del sistema')
     } finally {
       setHealthLoading(false)
+    }
+  }
+
+  const loadOrdersCount = async (silent = false) => {
+    if (!silent) setOrdersError(null)
+    try {
+      const { count, error } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+
+      if (error) {
+        setOrdersError(error.message || 'Error al contar pedidos')
+      } else {
+        setOrdersCount(count ?? 0)
+      }
+    } catch (err) {
+      setOrdersError(err?.message || 'Error desconocido al contar pedidos')
     }
   }
 
@@ -132,128 +158,148 @@ const AuditLogs = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <header className="bg-white rounded-2xl shadow-xl border border-blue-100 p-6 flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg">
-            <ClipboardList className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-sm uppercase tracking-wide text-blue-700 font-semibold">
-              Auditoría
-            </p>
-            <h1 className="text-2xl font-extrabold text-gray-900">
-              Reporte de acciones administrativas
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Seguimiento legible de eventos sensibles: transferencias de rol, altas y bajas de usuarios,
-              y cambios de permisos.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por responsable, usuario afectado o detalle"
-              className="w-full pl-10 pr-3 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-inner bg-white/70"
-            />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {ACTION_FILTERS.map((filter) => {
-              const key = filter.actions.join(',')
-              const active = activeFilters.includes(key)
-              return (
-                <button
-                  key={filter.id}
-                  onClick={() => toggleFilter(filter.actions)}
-                  className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border transition-all ${
-                    active
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                      : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-700'
-                  }`}
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  {filter.label}
-                </button>
-              )
-            })}
-            <button
-              onClick={() => setActiveFilters([])}
-              className="text-sm font-semibold text-blue-700 hover:text-blue-900"
-            >
-              Quitar filtros
-            </button>
-            <button
-              onClick={loadLogs}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
-              disabled={loading}
-            >
-              <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Actualizar
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Salud del sistema */}
-      <section className="bg-white rounded-2xl shadow-xl border border-emerald-100 p-6 space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="grid gap-4 lg:grid-cols-[1.6fr,1fr]">
+        <header className="bg-white rounded-2xl shadow-xl border border-blue-100 p-6 flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg">
-              <Activity className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg">
+              <ClipboardList className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Salud del sistema</p>
-              <h2 className="text-xl font-extrabold text-gray-900">Supabase + app</h2>
+              <p className="text-sm uppercase tracking-wide text-blue-700 font-semibold">
+                Auditoría
+              </p>
+              <h1 className="text-2xl font-extrabold text-gray-900">
+                Reporte de acciones administrativas
+              </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Ping ligero a Supabase y diagnóstico local para admins (latencia, timestamp, último error).
+                Seguimiento legible de eventos sensibles: transferencias de rol, altas y bajas de usuarios,
+                cambios de permisos y ajustes de menú.
               </p>
             </div>
           </div>
-          <button
-            onClick={loadHealth}
-            disabled={healthLoading}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors"
-          >
-            <RefreshCcw className={`h-4 w-4 ${healthLoading ? 'animate-spin' : ''}`} />
-            Re-evaluar
-          </button>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
-            <p className="text-xs font-semibold text-gray-600 uppercase">Estado Supabase</p>
-            <div className="mt-1 flex items-center gap-2">
-              <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${
-                healthLoading ? 'bg-gray-200 text-gray-600' :
-                healthError || health?.healthy === false ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
-              }`}>
-                {healthLoading ? 'Evaluando…' : healthError || health?.healthy === false ? 'Degradado' : 'OK'}
-              </span>
-              {!healthLoading && (healthError || health?.error) && (
-                <ServerCrash className="h-5 w-5 text-red-600" />
-              )}
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por responsable, usuario afectado o detalle"
+                className="w-full pl-10 pr-3 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-inner bg-white/70"
+              />
             </div>
-            <p className="text-xs text-gray-600 mt-2">
-              {healthLoading
-                ? 'Ejecutando healthCheck()'
-                : healthError || health?.error
-                  ? truncate(healthError || health?.error, 120)
-                  : 'Consulta HEAD a tabla users exitosa'}
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {ACTION_FILTERS.map((filter) => {
+                const key = filter.actions.join(',')
+                const active = activeFilters.includes(key)
+                return (
+                  <button
+                    key={filter.id}
+                    onClick={() => toggleFilter(filter.actions)}
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border transition-all ${
+                      active
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-700'
+                    }`}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    {filter.label}
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => setActiveFilters([])}
+                className="text-sm font-semibold text-blue-700 hover:text-blue-900"
+              >
+                Quitar filtros
+              </button>
+              <button
+                onClick={loadLogs}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
+                disabled={loading}
+              >
+                <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Actualizar
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Salud + métrica en paralelo */}
+        <section className="bg-white rounded-2xl shadow-xl border border-emerald-100 p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm uppercase tracking-wide text-emerald-700 font-semibold">Salud del sistema</p>
+                <h2 className="text-xl font-extrabold text-gray-900">Supabase + app</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Ping ligero a Supabase, timestamp y conteo de pedidos casi en tiempo real.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => { loadHealth(); loadOrdersCount(true) }}
+              disabled={healthLoading}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors"
+            >
+              <RefreshCcw className={`h-4 w-4 ${healthLoading ? 'animate-spin' : ''}`} />
+              Re-evaluar
+            </button>
           </div>
 
-          <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
-            <p className="text-xs font-semibold text-gray-600 uppercase">Última ejecución</p>
-            <p className="text-sm text-gray-900 mt-1">
-              {health?.timestamp ? formatTimestamp(health.timestamp) : 'N/D'}
-            </p>
-            <p className="text-xs text-gray-600 mt-2">
-              Timestamp ISO de healthCheck (lado cliente).
-            </p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
+              <p className="text-xs font-semibold text-gray-600 uppercase">Estado Supabase</p>
+              <div className="mt-1 flex items-center gap-2">
+                <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${
+                  healthLoading ? 'bg-gray-200 text-gray-600' :
+                  healthError || health?.healthy === false ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  {healthLoading ? 'Evaluando…' : healthError || health?.healthy === false ? 'Degradado' : 'OK'}
+                </span>
+                {!healthLoading && (healthError || health?.error) && (
+                  <ServerCrash className="h-5 w-5 text-red-600" />
+                )}
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                {healthLoading
+                  ? 'Ejecutando healthCheck()'
+                  : healthError || health?.error
+                    ? truncate(healthError || health?.error, 120)
+                    : 'Consulta HEAD a tabla users exitosa'}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
+              <p className="text-xs font-semibold text-gray-600 uppercase">Última ejecución</p>
+              <p className="text-sm text-gray-900 mt-1">
+                {health?.timestamp ? formatTimestamp(health.timestamp) : 'N/D'}
+              </p>
+              <p className="text-xs text-gray-600 mt-2">
+                Timestamp ISO de healthCheck (lado cliente).
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
+              <p className="text-xs font-semibold text-gray-600 uppercase">Pedidos activos</p>
+              <div className="mt-1 flex items-center gap-2">
+                <div className="h-9 w-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow">
+                  <BarChart2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-lg font-extrabold text-gray-900">
+                    {ordersCount === null ? '—' : ordersCount}
+                  </p>
+                  <p className="text-xs text-gray-600">Pedidos totales (count exact cada 10s)</p>
+                </div>
+              </div>
+              {ordersError && (
+                <p className="text-[11px] text-red-600 mt-1">{truncate(ordersError, 80)}</p>
+              )}
+            </div>
           </div>
 
           <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
@@ -262,10 +308,11 @@ const AuditLogs = () => {
               <li>Agregar métrica de latencia real (fetch simple + performance.now).</li>
               <li>Crear monitor cron serverless → Slack/Email si health falla.</li>
               <li>Persistir histórico en `audit_logs` con acción `health_probe`.</li>
+              <li>Escuchar canal realtime de `orders` para conteo instantáneo.</li>
             </ul>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <section className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
