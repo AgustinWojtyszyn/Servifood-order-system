@@ -103,17 +103,23 @@ const AuditLogs = () => {
   const loadOrdersCount = async (silent = false) => {
     if (!silent) setOrdersError(null)
     try {
+      const start = new Date()
+      start.setHours(0, 0, 0, 0)
+      const end = new Date()
+      end.setHours(23, 59, 59, 999)
       const { count, error } = await supabase
         .from('orders')
         .select('id', { count: 'exact', head: true })
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString())
 
       if (error) {
-        setOrdersError(error.message || 'Error al contar pedidos')
+        setOrdersError(error.message || 'Error al contar pedidos del día')
       } else {
         setOrdersCount(count ?? 0)
       }
     } catch (err) {
-      setOrdersError(err?.message || 'Error desconocido al contar pedidos')
+      setOrdersError(err?.message || 'Error desconocido al contar pedidos del día')
     }
   }
 
@@ -284,7 +290,7 @@ const AuditLogs = () => {
             </div>
 
             <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
-              <p className="text-xs font-semibold text-gray-600 uppercase">Pedidos activos</p>
+              <p className="text-xs font-semibold text-gray-600 uppercase">Pedidos del día</p>
               <div className="mt-1 flex items-center gap-2">
                 <div className="h-9 w-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow">
                   <BarChart2 className="h-5 w-5" />
@@ -293,7 +299,7 @@ const AuditLogs = () => {
                   <p className="text-lg font-extrabold text-gray-900">
                     {ordersCount === null ? '—' : ordersCount}
                   </p>
-                  <p className="text-xs text-gray-600">Pedidos totales (count exact cada 10s)</p>
+                  <p className="text-xs text-gray-600">Pedidos creados hoy (recuento cada 10s)</p>
                 </div>
               </div>
               {ordersError && (
