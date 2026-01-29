@@ -23,6 +23,7 @@ const OrderForm = lazy(() => import('./components/OrderForm'))
 const EditOrderForm = lazy(() => import('./components/EditOrderForm'))
 const Profile = lazy(() => import('./components/Profile'))
 const MonthlyPanel = lazy(() => import('./components/MonthlyPanel'))
+const AuditLogs = lazy(() => import('./components/AuditLogs'))
 
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
@@ -210,6 +211,9 @@ function App() {
             } />
             <Route path="/monthly-panel" element={
               !loading && (user ? <Layout user={user} loading={loading}><MonthlyPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/auditoria" element={
+              !loading && (user ? <Layout user={user} loading={loading}><AuditLogs user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/auth/callback" element={<AuthCallback />} />
             {/* Redirección global para rutas inexistentes */}

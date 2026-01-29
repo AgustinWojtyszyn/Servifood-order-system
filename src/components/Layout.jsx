@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
@@ -90,12 +90,14 @@ const Layout = ({ children, user, loading }) => {
       const { data, error } = await db.getUsers()
       if (!error && data) {
         const currentUser = data.find(u => u.id === user?.id)
-        setIsAdmin(currentUser?.role === 'admin')
+        const roleValue = currentUser?.role || user?.user_metadata?.role
+        setIsAdmin(roleValue === 'admin' || roleValue === 'superadmin' || currentUser?.is_superadmin)
       }
     } catch (err) {
       console.error('Error checking user role:', err)
       // Fallback a user_metadata si falla la consulta
-      setIsAdmin(user?.user_metadata?.role === 'admin')
+      const roleValue = user?.user_metadata?.role
+      setIsAdmin(roleValue === 'admin' || roleValue === 'superadmin')
     }
   }
 
@@ -129,6 +131,7 @@ const Layout = ({ children, user, loading }) => {
     })
     menuItems.push({ name: 'Panel Mensual', path: '/monthly-panel', icon: Calendar })
     menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
+    menuItems.push({ name: 'Auditoría', path: '/auditoria', icon: ClipboardList })
   }
 
   // Add Profile option for all users
