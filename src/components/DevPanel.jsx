@@ -13,8 +13,8 @@ const DevPanel = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetchMetrics = async () => {
-    setLoading(true)
+  const fetchMetrics = async (silent = false) => {
+    if (!silent) setLoading(true)
     setError(null)
     const { data, error } = await supabase.rpc('get_metrics_summary', {
       p_window_seconds: WINDOW_SECONDS,
@@ -22,13 +22,13 @@ const DevPanel = () => {
     })
     if (error) setError(error.message)
     setData(data || [])
-    setLoading(false)
+    if (!silent) setLoading(false)
   }
 
   useEffect(() => {
     if (!isAdmin || !open) return
     fetchMetrics()
-    const id = setInterval(fetchMetrics, REFRESH_MS)
+    const id = setInterval(() => fetchMetrics(true), REFRESH_MS)
     return () => clearInterval(id)
   }, [isAdmin, open])
 
