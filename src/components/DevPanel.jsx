@@ -66,40 +66,40 @@ const DevPanel = () => {
             {!loading && !error && data.length === 0 && <p className="text-sm text-gray-600">Sin datos en la ventana.</p>}
             {!loading && !error && data.length > 0 && (
               <>
-                <h4 className="text-xs font-semibold text-gray-500">Operaciones</h4>
-                <table className="w-full text-xs text-left mb-2">
-                  <thead>
-                    <tr className="text-gray-500">
-                      <th>Op</th><th>P50</th><th>P95</th><th>Err%</th><th>Calls</th><th>RPS</th>
+                <h4 className="text-sm font-bold text-gray-800">Operaciones</h4>
+                <table className="w-full text-xs text-left mb-2 text-gray-900">
+                  <thead className="text-gray-600 bg-gray-50">
+                    <tr>
+                      <th className="px-2 py-1 font-semibold">Op</th><th className="px-2 py-1 font-semibold">P50</th><th className="px-2 py-1 font-semibold">P95</th><th className="px-2 py-1 font-semibold">Err%</th><th className="px-2 py-1 font-semibold">Calls</th><th className="px-2 py-1 font-semibold">RPS</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                     {data.filter(d => d.kind === 'op').map((row) => (
                       <tr key={row.op}>
-                        <td className="font-semibold">{row.op}</td>
-                        <td>{row.p50_ms?.toFixed?.(1) ?? '—'}</td>
-                        <td>{row.p95_ms?.toFixed?.(1) ?? '—'}</td>
-                        <td>{row.calls ? ((row.errors / row.calls) * 100).toFixed(1) : '0'}%</td>
-                        <td>{row.calls}</td>
-                        <td>{row.rps_window?.toFixed?.(2) ?? '0'}</td>
+                        <td className="px-2 py-1 font-semibold">{row.op}</td>
+                        <td className="px-2 py-1">{row.p50_ms?.toFixed?.(1) ?? '—'}</td>
+                        <td className="px-2 py-1">{row.p95_ms?.toFixed?.(1) ?? '—'}</td>
+                        <td className="px-2 py-1">{row.calls ? ((row.errors / row.calls) * 100).toFixed(1) : '0'}%</td>
+                        <td className="px-2 py-1">{row.calls}</td>
+                        <td className="px-2 py-1">{row.rps_window?.toFixed?.(2) ?? '0'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
 
-                <h4 className="text-xs font-semibold text-gray-500">Pantallas</h4>
-                <table className="w-full text-xs text-left">
-                  <thead>
-                    <tr className="text-gray-500">
-                      <th>Screen</th><th>RPS</th><th>Views</th>
+                <h4 className="text-sm font-bold text-gray-800">Pantallas</h4>
+                <table className="w-full text-xs text-left text-gray-900">
+                  <thead className="text-gray-600 bg-gray-50">
+                    <tr>
+                      <th className="px-2 py-1 font-semibold">Screen</th><th className="px-2 py-1 font-semibold">RPS</th><th className="px-2 py-1 font-semibold">Views</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                     {data.filter(d => d.kind === 'screen').map((row) => (
                       <tr key={row.op}>
-                        <td className="font-semibold">{row.op}</td>
-                        <td>{row.rps_window?.toFixed?.(2) ?? '0'}</td>
-                        <td>{row.calls}</td>
+                        <td className="px-2 py-1 font-semibold">{row.op}</td>
+                        <td className="px-2 py-1">{row.rps_window?.toFixed?.(2) ?? '0'}</td>
+                        <td className="px-2 py-1">{row.calls}</td>
                       </tr>
                     ))}
                   </tbody>
