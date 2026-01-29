@@ -38,7 +38,11 @@ const InternalLoader = () => (
 
 function App() {
   const { user, loading } = useAuthContext()
-  useScreenMetrics()
+
+  const ScreenMetricsListener = () => {
+    useScreenMetrics()
+    return null
+  }
 
   useEffect(() => {
     if (!import.meta.env.DEV) return
@@ -169,6 +173,7 @@ function App() {
       <InternalLoader />
     ) : (
       <Router>
+        <ScreenMetricsListener />
         <div
           className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
         >
