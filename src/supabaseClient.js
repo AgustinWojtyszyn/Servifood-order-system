@@ -137,6 +137,39 @@ export const clearSupabaseStorage = () => {
 // Funciones de base de datos
 import { Archive as ArchiveIcon } from 'lucide-react'
 
+// --- Auditoría básica (inserta registros en audit_logs) ---
+const logAudit = async ({
+  action,
+  details = '',
+  target_id = null,
+  target_email = null,
+  target_name = null,
+  metadata = null
+}) => {
+  try {
+    const { data: authUser } = await supabase.auth.getUser()
+    const actor = authUser?.user
+    const payload = {
+      action,
+      details,
+      actor_id: actor?.id || null,
+      actor_email: actor?.email || null,
+      actor_name: actor?.user_metadata?.full_name || actor?.email || 'Administrador',
+      target_id,
+      target_email,
+      target_name,
+      metadata,
+      created_at: new Date().toISOString()
+    }
+    // No bloquear el flujo principal; loguear best-effort
+    await supabase.from('audit_logs').insert([payload])
+  } catch (err) {
+    if (import.meta.env.DEV) {
+      console.warn('[audit][logAudit] no se pudo registrar auditoría:', err?.message || err)
+    }
+  }
+}
+
 // Archivar todos los pedidos pendientes (de cualquier día)
 const archiveAllPendingOrders = async () => {
   const { data, error } = await supabase
@@ -212,7 +245,21 @@ export const db = {
       .eq('id', userId)
       .select()
     // data es array, tomar el primero si existe
-    return { data: Array.isArray(data) ? data[0] : data, error }
+    const normalizedData = Array.isArray(data) ? data[0] : data
+
+    if (!error && normalizedData) {
+      // Auditoría: cambio de rol
+      await logAudit({
+        action: 'role_changed',
+        details: `Rol actualizado a "${role}"`,
+        target_id: userId,
+        target_email: normalizedData?.email,
+        target_name: normalizedData?.full_name,
+        metadata: { role }
+      })
+    }
+
+    return { data: normalizedData, error }
   },
 
   deleteUser: async (userId) => {
@@ -243,6 +290,14 @@ export const db = {
       .delete()
       .eq('id', userId)
     
+    if (!error) {
+      await logAudit({
+        action: 'user_deleted',
+        details: 'Usuario eliminado por administrador',
+        target_id: userId
+      })
+    }
+
     return { data, error }
   },
 
