@@ -91,7 +91,22 @@ const Layout = ({ children, user, loading }) => {
       if (!error && data) {
         const currentUser = data.find(u => u.id === user?.id)
         const roleValue = currentUser?.role || user?.user_metadata?.role
+
+        if (import.meta.env.DEV) {
+          console.log('[Layout][role-debug] users fetched', {
+            total: data.length,
+            currentUser,
+            roleValue,
+            userMetaRole: user?.user_metadata?.role,
+            flags: {
+              isAdmin: roleValue === 'admin' || roleValue === 'superadmin' || currentUser?.is_superadmin
+            }
+          })
+        }
+
         setIsAdmin(roleValue === 'admin' || roleValue === 'superadmin' || currentUser?.is_superadmin)
+      } else if (error && import.meta.env.DEV) {
+        console.warn('[Layout][role-debug] error fetching users', error)
       }
     } catch (err) {
       console.error('Error checking user role:', err)

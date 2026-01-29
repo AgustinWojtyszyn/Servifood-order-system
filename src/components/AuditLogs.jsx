@@ -105,6 +105,8 @@ const AuditLogs = () => {
     })
   }, [logs, activeFilters, search])
 
+  const missingTable = error && /audit_logs/i.test(error)
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <header className="bg-white rounded-2xl shadow-xl border border-blue-100 p-6 flex flex-col gap-3">
@@ -182,7 +184,7 @@ const AuditLogs = () => {
           </p>
           {error && (
             <span className="text-sm text-red-600 font-semibold">
-              {truncate(error, 120)}
+              {truncate(error, 160)}
             </span>
           )}
         </div>
@@ -199,7 +201,40 @@ const AuditLogs = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {!loading && filteredLogs.length === 0 && (
+              {!loading && missingTable && (
+                <tr>
+                  <td className="px-4 py-6 text-left text-gray-700 text-sm space-y-2" colSpan={5}>
+                    <p className="font-semibold text-red-700">La tabla <code>audit_logs</code> no existe en Supabase.</p>
+                    <p className="text-gray-700">
+                      Crea la tabla y vuelve a cargar la página. SQL sugerido:
+                    </p>
+                    <pre className="bg-gray-900 text-gray-100 text-xs p-3 rounded-lg overflow-x-auto">
+{`create extension if not exists "uuid-ossp";
+
+create table public.audit_logs (
+  id uuid primary key default uuid_generate_v4(),
+  action text not null,
+  details text,
+  actor_id uuid,
+  actor_email text,
+  actor_name text,
+  target_id uuid,
+  target_email text,
+  target_name text,
+  metadata jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index audit_logs_action_idx on public.audit_logs (action);
+create index audit_logs_created_at_idx on public.audit_logs (created_at desc);`}
+                    </pre>
+                    <p className="text-gray-700">
+                      Luego refresca este panel para ver los eventos.
+                    </p>
+                  </td>
+                </tr>
+              )}
+              {!loading && !missingTable && filteredLogs.length === 0 && (
                 <tr>
                   <td className="px-4 py-6 text-center text-gray-500 text-sm" colSpan={5}>
                     No hay eventos que coincidan con los filtros actuales.

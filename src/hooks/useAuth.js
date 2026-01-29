@@ -9,6 +9,12 @@ export const useAuth = () => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
+  const logRoleDebug = (...args) => {
+    if (import.meta.env.DEV) {
+      console.log('[Auth][role-debug]', ...args)
+    }
+  }
+
   // Cargar usuario inicial
   useEffect(() => {
     const initializeAuth = async () => {
@@ -67,9 +73,22 @@ export const useAuth = () => {
       const isAdminRole = roleFromMetadata === 'admin' || roleFromMetadata === 'superadmin'
       const isSuperAdminRole = roleFromMetadata === 'superadmin'
 
+      logRoleDebug('raw user metadata', {
+        id: authUser?.id,
+        email: authUser?.email,
+        roleFromMetadata,
+        app_metadata: authUser?.app_metadata,
+        user_metadata: authUser?.user_metadata
+      })
+
       setUser((prev) => prev || { ...authUser, role: roleFromMetadata })
       setIsAdmin(isAdminRole)
       setIsSuperAdmin(isSuperAdminRole)
+
+      logRoleDebug('computed flags', {
+        isAdmin: isAdminRole,
+        isSuperAdmin: isSuperAdminRole
+      })
     } catch (error) {
       console.error('Error loading user data:', error)
       setUser((prev) => prev || authUser)
