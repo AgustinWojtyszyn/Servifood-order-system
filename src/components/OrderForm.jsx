@@ -548,40 +548,57 @@ const OrderForm = ({ user, loading }) => {
       return
     }
 
-    if (selectedItemsList.length === 0) {
-      setError('Por favor selecciona al menos un plato del menú')
+    const lunchSelected = selectedTurns.lunch
+    const dinnerSelected = selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled
+
+    if (!lunchSelected && !dinnerSelected) {
+      setError('Selecciona al menos almuerzo o cena.')
+      setSubmitting(false)
+      return
+    }
+
+    if (lunchSelected && selectedItemsList.length === 0) {
+      setError('Selecciona al menos un plato para almuerzo.')
+      setSubmitting(false)
+      return
+    }
+
+    if (dinnerSelected && selectedItemsListDinner.length === 0) {
+      setError('Selecciona al menos un plato para cena.')
       setSubmitting(false)
       return
     }
 
     // Validar opciones requeridas visibles
-    const missingRequiredOptions = visibleOptions
-      .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id])
-      .map(opt => opt.title)
+    let customResponsesArray = []
+    if (lunchSelected) {
+      const missingRequiredOptions = visibleOptions
+        .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id])
+        .map(opt => opt.title)
 
-    if (missingRequiredOptions.length > 0) {
-      setError(`Por favor completa: ${missingRequiredOptions.join(', ')}`)
-      setSubmitting(false)
-      return
+      if (missingRequiredOptions.length > 0) {
+        setError(`Por favor completa (almuerzo): ${missingRequiredOptions.join(', ')}`)
+        setSubmitting(false)
+        return
+      }
+
+      customResponsesArray = visibleOptions
+        .filter(opt => {
+          const response = customResponses[opt.id]
+          if (!response) return false
+          if (Array.isArray(response) && response.length === 0) return false
+          if (typeof response === 'string' && response.trim() === '') return false
+          return true
+        })
+        .map(opt => ({
+          id: opt.id,
+          title: opt.title,
+          response: customResponses[opt.id]
+        }))
     }
 
-    const customResponsesArray = visibleOptions
-      .filter(opt => {
-        const response = customResponses[opt.id]
-        // Verificar que la respuesta existe y no está vacía
-        if (!response) return false
-        if (Array.isArray(response) && response.length === 0) return false
-        if (typeof response === 'string' && response.trim() === '') return false
-        return true
-      })
-      .map(opt => ({
-        id: opt.id,
-        title: opt.title,
-        response: customResponses[opt.id]
-      }))
-
     let customResponsesDinnerArray = []
-    if (selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled) {
+    if (dinnerSelected) {
       const missingRequiredOptionsDinner = visibleOptions
         .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id])
         .map(opt => opt.title)
