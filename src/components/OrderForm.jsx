@@ -49,8 +49,9 @@ const OrderForm = ({ user, loading }) => {
     phone: '',
     comments: ''
   })
-  const [mode, setMode] = useState('lunch') // lunch | dinner
+  const [mode, setMode] = useState('lunch') // legacy, derives from selection (keep for compat)
   const [dinnerEnabled, setDinnerEnabled] = useState(false)
+  const [selectedTurns, setSelectedTurns] = useState({ lunch: true, dinner: false })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -90,21 +91,11 @@ const OrderForm = ({ user, loading }) => {
 
   const visibleOptions = useMemo(() => {
     let opts = customOptions.filter(opt => opt.active)
-    if (mode !== 'dinner' || !dinnerEnabled) {
-      opts = opts.filter(opt => !opt.dinner_only && !/\[cena\]/i.test(opt.title || ''))
-    }
-    if (mode === 'dinner' && dinnerEnabled) {
-      const virtualDinner = {
-        id: 'dinner-notes',
-        title: 'Preferencias para cena',
-        type: 'text',
-        active: true,
-        required: false
-      }
-      opts = [virtualDinner, ...opts]
+    if (!dinnerEnabled) {
+      opts = opts.filter(opt => !opt.dinner_only)
     }
     return opts
-  }, [customOptions, mode, dinnerEnabled])
+  }, [customOptions, dinnerEnabled])
 
   useEffect(() => {
     if (!user?.id) return
@@ -190,6 +181,10 @@ const OrderForm = ({ user, loading }) => {
       if (!error && Array.isArray(data)) {
         const dinner = data.find(f => f.feature === 'dinner' && f.enabled)
         setDinnerEnabled(!!dinner)
+        if (!dinner) {
+          setSelectedTurns({ lunch: true, dinner: false })
+          setMode('lunch')
+        }
       }
     } catch (err) {
       console.error('Error fetching user features', err)
@@ -379,7 +374,7 @@ const OrderForm = ({ user, loading }) => {
     return getSelectedItemsList().length
   }
 
-  const computePayloadSignature = (items = [], responses = [], comments = '', deliveryDate = '', location = '') => {
+  const computePayloadSignature = (items = [], responses = [], comments = '', deliveryDate = '', location = '', service = 'lunch') => {
     const sortedItems = [...(items || [])].map(i => ({
       id: i.id,
       name: i.name,
@@ -397,7 +392,8 @@ const OrderForm = ({ user, loading }) => {
       items: sortedItems,
       responses: sortedResponses,
       comments: comments || '',
-      deliveryDate: deliveryDate || ''
+      deliveryDate: deliveryDate || '',
+      service: (service || '').toLowerCase()
     }
 
     const json = JSON.stringify(normalized)
@@ -408,12 +404,13 @@ const OrderForm = ({ user, loading }) => {
     return hash.toString(16)
   }
 
-  const buildIdempotencyStorageKey = (items = [], location = '', signature = '') => {
+  const buildIdempotencyStorageKey = (items = [], location = '', signature = '', service = 'lunch') => {
     const userPart = user?.id || 'anon'
     const itemsPart = (items || []).map(item => item.id).filter(Boolean).sort().join('-') || 'no-items'
     const locationPart = (location || 'no-location').toString().trim().toLowerCase().replace(/\s+/g, '-')
+    const servicePart = (service || 'lunch').toLowerCase()
     const signaturePart = signature || 'no-signature'
-    return `order-idempotency-${userPart}-${locationPart}-${itemsPart}-${signaturePart}`
+    return `order-idempotency-${userPart}-${locationPart}-${servicePart}-${itemsPart}-${signaturePart}`
   }
 
   const generateIdempotencyKey = () => {
@@ -538,66 +535,80 @@ const OrderForm = ({ user, loading }) => {
     tomorrow.setDate(tomorrow.getDate() + 1)
     const deliveryDate = tomorrow.toISOString().split('T')[0]
 
-    const idempotencySignature = computePayloadSignature(
-      selectedItemsList.map(item => ({ ...item, quantity: 1 })),
-      customResponsesArray,
-      formData.comments,
-      deliveryDate,
-      formData.location
-    )
+    const turnosSeleccionados = Object.entries(selectedTurns).filter(([, val]) => val).map(([k]) => k)
 
-    const idempotencyStorageKey = buildIdempotencyStorageKey(selectedItemsList, formData.location, idempotencySignature)
-    let idempotencyKey = null
+    if (dinnerEnabled && turnosSeleccionados.length === 0) {
+      setError('Elegí al menos almuerzo o cena.')
+      setSubmitting(false)
+      return
+    }
 
     try {
-      if (typeof window !== 'undefined') {
-        const existingKey = sessionStorage.getItem(idempotencyStorageKey)
-        idempotencyKey = existingKey || generateIdempotencyKey()
-        sessionStorage.setItem(idempotencyStorageKey, idempotencyKey)
-      } else {
-        idempotencyKey = generateIdempotencyKey()
-      }
+      for (const service of turnosSeleccionados) {
+        const idempotencySignature = computePayloadSignature(
+          selectedItemsList.map(item => ({ ...item, quantity: 1 })),
+          customResponsesArray,
+          formData.comments,
+          deliveryDate,
+          formData.location,
+          service
+        )
 
-      // Preparar respuestas personalizadas (solo las activas con respuesta válida)
-      const orderData = {
-        user_id: user.id,
-        location: formData.location,
-        customer_name: formData.name || user?.user_metadata?.full_name || user?.email || '',
-        customer_email: formData.email || user?.email,
-        customer_phone: formData.phone,
-        items: selectedItemsList.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: 1
-        })),
-        comments: formData.comments,
-        delivery_date: deliveryDate,
-        status: 'pending',
-        total_items: calculateTotal(),
-        custom_responses: customResponsesArray,
-        idempotency_key: idempotencyKey,
-        service: mode || 'lunch'
-      }
+        const idempotencyStorageKey = buildIdempotencyStorageKey(selectedItemsList, formData.location, idempotencySignature, service)
+        let idempotencyKey = null
 
-      const { error } = await db.createOrder(orderData)
-
-      if (error) {
-        // Mostrar el mensaje real de error de Supabase para depuración
-        let msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
-        // Verificar si es error de política de base de datos
-        if (msg.includes('dinner') || msg.toLowerCase().includes('service') || msg.includes('feature')) {
-          setError('No tenés habilitada la cena. Volvimos a almuerzo.')
-          setMode('lunch')
-        } else if (msg.includes('violates row-level security policy') || 
-            msg.includes('new row violates row-level security')) {
-          setError('Ya tienes un pedido pendiente. Espera a que se complete para crear uno nuevo.')
-        } else {
-          setError('Error al crear el pedido: ' + msg)
-        }
-      } else {
         if (typeof window !== 'undefined') {
-          sessionStorage.removeItem(idempotencyStorageKey)
+          const existingKey = sessionStorage.getItem(idempotencyStorageKey)
+          idempotencyKey = existingKey || generateIdempotencyKey()
+          sessionStorage.setItem(idempotencyStorageKey, idempotencyKey)
+        } else {
+          idempotencyKey = generateIdempotencyKey()
         }
+
+        const orderData = {
+          user_id: user.id,
+          location: formData.location,
+          customer_name: formData.name || user?.user_metadata?.full_name || user?.email || '',
+          customer_email: formData.email || user?.email,
+          customer_phone: formData.phone,
+          items: selectedItemsList.map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: 1
+          })),
+          comments: formData.comments,
+          delivery_date: deliveryDate,
+          status: 'pending',
+          total_items: calculateTotal(),
+          custom_responses: customResponsesArray,
+          idempotency_key: idempotencyKey,
+          service
+        }
+
+        const { error } = await db.createOrder(orderData)
+
+        if (error) {
+          let msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
+          if (msg.includes('dinner') || msg.toLowerCase().includes('service') || msg.includes('feature')) {
+            setError('No tenés habilitada la cena. Deja solo almuerzo o pedí alta a un admin.')
+            setSelectedTurns({ lunch: true, dinner: false })
+            break
+          } else if (msg.includes('violates row-level security policy') || 
+              msg.includes('new row violates row-level security')) {
+            setError('Ya tienes un pedido pendiente. Espera a que se complete para crear uno nuevo.')
+            break
+          } else {
+            setError('Error al crear el pedido: ' + msg)
+            break
+          }
+        } else {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem(idempotencyStorageKey)
+          }
+        }
+      }
+
+      if (!error) {
         setSuccess(true)
         setTimeout(() => {
           navigate('/')
@@ -780,25 +791,29 @@ const OrderForm = ({ user, loading }) => {
                         <option key={location} value={location}>{location}</option>
                       ))}
                     </select>
-                    {dinnerEnabled && formData.location && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="text-xs text-gray-600">Turno:</span>
-                        <div className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-1">
-                          <button
-                            type="button"
-                            onClick={() => setMode('lunch')}
-                            className={`px-3 py-1 text-xs font-semibold rounded-full ${mode === 'lunch' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
-                          >
-                            Almuerzo
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setMode('dinner')}
-                            className={`px-3 py-1 text-xs font-semibold rounded-full ${mode === 'dinner' ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-                          >
-                            Cena
-                          </button>
-                        </div>
+                    {formData.location && (
+                      <div className="mt-3 flex flex-wrap gap-3 items-center">
+                        <span className="text-xs text-gray-600 font-semibold">Turno:</span>
+                        <label className="inline-flex items-center gap-2 text-xs font-semibold text-gray-800">
+                          <input
+                            type="checkbox"
+                            checked={selectedTurns.lunch}
+                            onChange={(e) => setSelectedTurns(prev => ({ ...prev, lunch: e.target.checked }))}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded"
+                          />
+                          Almuerzo
+                        </label>
+                        {dinnerEnabled && (
+                          <label className="inline-flex items-center gap-2 text-xs font-semibold text-gray-800">
+                            <input
+                              type="checkbox"
+                              checked={selectedTurns.dinner}
+                              onChange={(e) => setSelectedTurns(prev => ({ ...prev, dinner: e.target.checked }))}
+                              className="w-4 h-4 text-primary-600 border-gray-300 rounded"
+                            />
+                            Cena (whitelist)
+                          </label>
+                        )}
                       </div>
                     )}
                   </div>
