@@ -439,6 +439,20 @@ const AdminPanel = () => {
     }))
   }
 
+  const handleCreateDinnerOptionQuick = () => {
+    setNewOption({
+      title: 'Preferencias de Cena',
+      type: 'text',
+      options: [],
+      required: false,
+      active: true,
+      company: '',
+      dinner_only: true
+    })
+    setActiveTab('options')
+    setEditingOptions(true)
+  }
+
   const handleRemoveOptionChoice = (index) => {
     setNewOption(prev => ({
       ...prev,
@@ -861,13 +875,22 @@ const AdminPanel = () => {
                 )
               })}
               
-              <button
-                onClick={addMenuItem}
-                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-all font-semibold text-sm shadow-sm"
-              >
-                <Plus className="h-5 w-5" />
-                Agregar nuevo plato
-              </button>
+              <div className="grid sm:flex sm:items-center gap-2">
+                <button
+                  onClick={addMenuItem}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 p-4 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-all font-semibold text-sm shadow-sm"
+                >
+                  <Plus className="h-5 w-5" />
+                  Agregar nuevo plato
+                </button>
+                <button
+                  onClick={handleCreateDinnerOptionQuick}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 p-4 rounded-xl bg-amber-600 text-white hover:bg-amber-700 transition-all font-semibold text-sm shadow-sm"
+                >
+                  <Plus className="h-5 w-5" />
+                  Agregar opción de cena (whitelist)
+                </button>
+              </div>
             </div>
           )}
         </div>
