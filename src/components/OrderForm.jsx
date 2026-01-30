@@ -65,7 +65,6 @@ const OrderForm = ({ user, loading }) => {
     if (typeof window === 'undefined') return false
     return localStorage.getItem('dinner_menu_enabled') === 'true'
   })
-  const [dinnerChoice, setDinnerChoice] = useState('no') // 'yes' | 'no'
   const navigate = useNavigate()
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
@@ -189,7 +188,6 @@ const OrderForm = ({ user, loading }) => {
         if (!dinner) {
           setSelectedTurns({ lunch: true, dinner: false })
           setMode('lunch')
-          setDinnerChoice('no')
         }
       }
     } catch (err) {
@@ -544,7 +542,7 @@ const OrderForm = ({ user, loading }) => {
     const turnosSeleccionados = Object.entries(selectedTurns)
       .filter(([, val]) => val)
       .map(([k]) => k)
-      .filter(t => t === 'lunch' || (t === 'dinner' && dinnerEnabled && dinnerMenuEnabled && dinnerChoice === 'yes'))
+      .filter(t => t === 'lunch' || (t === 'dinner' && dinnerEnabled && dinnerMenuEnabled))
 
     if (dinnerEnabled && dinnerMenuEnabled && turnosSeleccionados.length === 0) {
       setError('Elegí al menos almuerzo o cena.')
@@ -1077,42 +1075,30 @@ const OrderForm = ({ user, loading }) => {
                 <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Pedido de cena</h2>
-                <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Solo para usuarios habilitados (whitelist)</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Turnos del pedido</h2>
+                <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Selecciona qué turnos querés pedir hoy.</p>
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <label className="flex items-start gap-3 text-sm sm:text-base text-gray-900 font-semibold">
                 <input
-                  type="radio"
-                  name="dinner-choice"
-                  value="no"
-                  checked={dinnerChoice === 'no'}
-                  onChange={() => {
-                    setDinnerChoice('no')
-                    setSelectedTurns(prev => ({ ...prev, dinner: false }))
-                  }}
+                  type="checkbox"
+                  checked={selectedTurns.lunch}
+                  onChange={(e) => setSelectedTurns(prev => ({ ...prev, lunch: e.target.checked }))}
                   className="mt-1 h-4 w-4 text-primary-600 border-gray-300"
-                  required
                 />
-                <span>No, solo almuerzo</span>
+                <span>Almuerzo</span>
               </label>
               <label className="flex items-start gap-3 text-sm sm:text-base text-gray-900 font-semibold">
                 <input
-                  type="radio"
-                  name="dinner-choice"
-                  value="yes"
-                  checked={dinnerChoice === 'yes'}
-                  onChange={() => {
-                    setDinnerChoice('yes')
-                    setSelectedTurns(prev => ({ ...prev, dinner: true }))
-                  }}
+                  type="checkbox"
+                  checked={selectedTurns.dinner}
+                  onChange={(e) => setSelectedTurns(prev => ({ ...prev, dinner: e.target.checked }))}
                   className="mt-1 h-4 w-4 text-primary-600 border-gray-300"
-                  required
                 />
-                <span>Sí, agregar pedido de cena hoy</span>
+                <span>Cena (solo whitelist)</span>
               </label>
-              <p className="text-xs text-gray-600">Usaremos el mismo menú y opciones. Se generará un pedido adicional con turno “cena”.</p>
+              <p className="text-xs text-gray-600">Puedes pedir uno o ambos. Si marcas ambos, se crearán dos pedidos separados con el mismo menú.</p>
             </div>
           </div>
         )}
