@@ -4,9 +4,18 @@
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS service text NOT NULL DEFAULT 'lunch';
 
-ALTER TABLE public.orders
-  ADD CONSTRAINT orders_service_check
-  CHECK (service IN ('lunch', 'dinner'));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'orders_service_check'
+      AND conrelid = 'public.orders'::regclass
+  ) THEN
+    ALTER TABLE public.orders
+      ADD CONSTRAINT orders_service_check
+      CHECK (service IN ('lunch', 'dinner'));
+  END IF;
+END$$;
 
 -- 2) Tabla user_features
 CREATE TABLE IF NOT EXISTS public.user_features (
@@ -143,7 +152,8 @@ WITH candidates AS (
     'martin.amieva@gmail.com',
     'martin.calderon@gmail.com',
     'silvio.mansilla@gmail.com',
-    'agustinwojtyszyn99@gmail.com'
+    'agustinwojtyszyn99@gmail.com',
+    'sarmientoclaudia985@gmail.com'
   )
 )
 INSERT INTO public.user_features (user_id, feature, enabled)
