@@ -24,7 +24,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
-    WHERE polname = 'user_features_select_own'
+    WHERE policyname = 'user_features_select_own'
       AND tablename = 'user_features'
   ) THEN
     CREATE POLICY user_features_select_own
@@ -35,7 +35,7 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
-    WHERE polname = 'user_features_block_writes'
+    WHERE policyname = 'user_features_block_writes'
       AND tablename = 'user_features'
   ) THEN
     CREATE POLICY user_features_block_writes
@@ -53,7 +53,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
-    WHERE polname = 'orders_select_own'
+    WHERE policyname = 'orders_select_own'
       AND tablename = 'orders'
   ) THEN
     CREATE POLICY orders_select_own
@@ -64,7 +64,7 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
-    WHERE polname = 'orders_insert_own_with_dinner_gate'
+    WHERE policyname = 'orders_insert_own_with_dinner_gate'
       AND tablename = 'orders'
   ) THEN
     CREATE POLICY orders_insert_own_with_dinner_gate
@@ -88,7 +88,7 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
-    WHERE polname = 'orders_update_own_with_dinner_gate'
+    WHERE policyname = 'orders_update_own_with_dinner_gate'
       AND tablename = 'orders'
   ) THEN
     CREATE POLICY orders_update_own_with_dinner_gate

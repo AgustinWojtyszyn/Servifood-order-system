@@ -88,6 +88,24 @@ const OrderForm = ({ user, loading }) => {
     [companyConfig]
   )
 
+  const visibleOptions = useMemo(() => {
+    let opts = customOptions.filter(opt => opt.active)
+    if (mode !== 'dinner') {
+      opts = opts.filter(opt => !opt.dinner_only && !/\[cena\]/i.test(opt.title || ''))
+    }
+    if (mode === 'dinner' && dinnerEnabled) {
+      const virtualDinner = {
+        id: 'dinner-notes',
+        title: 'Preferencias para cena',
+        type: 'text',
+        active: true,
+        required: false
+      }
+      opts = [virtualDinner, ...opts]
+    }
+    return opts
+  }, [customOptions, mode, dinnerEnabled])
+
   useEffect(() => {
     if (!user?.id) return
     checkOrderDeadline()
@@ -489,9 +507,9 @@ const OrderForm = ({ user, loading }) => {
       return
     }
 
-    // Validar opciones requeridas (solo las que están activas)
-    const missingRequiredOptions = customOptions
-      .filter(opt => opt.active && (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id])
+    // Validar opciones requeridas visibles
+    const missingRequiredOptions = visibleOptions
+      .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id])
       .map(opt => opt.title)
 
     if (missingRequiredOptions.length > 0) {
@@ -500,9 +518,8 @@ const OrderForm = ({ user, loading }) => {
       return
     }
 
-    const customResponsesArray = customOptions
+    const customResponsesArray = visibleOptions
       .filter(opt => {
-        if (!opt.active) return false
         const response = customResponses[opt.id]
         // Verificar que la respuesta existe y no está vacía
         if (!response) return false
@@ -933,7 +950,7 @@ const OrderForm = ({ user, loading }) => {
         )}
 
         {/* Opciones Personalizadas - Solo mostrar opciones activas */}
-        {customOptions.filter(opt => opt.active).length > 0 && (
+        {visibleOptions.length > 0 && (
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="bg-linear-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
@@ -949,7 +966,7 @@ const OrderForm = ({ user, loading }) => {
             </div>
 
             <div className="space-y-6">
-              {customOptions.filter(opt => opt.active).map((option) => (
+              {visibleOptions.map((option) => (
                 <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50">
                   <label
                     className="block text-sm text-gray-900 mb-3"
