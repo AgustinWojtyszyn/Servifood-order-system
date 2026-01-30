@@ -65,6 +65,7 @@ const OrderForm = ({ user, loading }) => {
     if (typeof window === 'undefined') return false
     return localStorage.getItem('dinner_menu_enabled') === 'true'
   })
+  const [dinnerChoice, setDinnerChoice] = useState('no') // 'yes' | 'no'
   const navigate = useNavigate()
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
@@ -188,6 +189,7 @@ const OrderForm = ({ user, loading }) => {
         if (!dinner) {
           setSelectedTurns({ lunch: true, dinner: false })
           setMode('lunch')
+          setDinnerChoice('no')
         }
       }
     } catch (err) {
@@ -539,7 +541,10 @@ const OrderForm = ({ user, loading }) => {
     tomorrow.setDate(tomorrow.getDate() + 1)
     const deliveryDate = tomorrow.toISOString().split('T')[0]
 
-    const turnosSeleccionados = Object.entries(selectedTurns).filter(([, val]) => val).map(([k]) => k)
+    const turnosSeleccionados = Object.entries(selectedTurns)
+      .filter(([, val]) => val)
+      .map(([k]) => k)
+      .filter(t => t === 'lunch' || (t === 'dinner' && dinnerEnabled && dinnerMenuEnabled && dinnerChoice === 'yes'))
 
     if (dinnerEnabled && dinnerMenuEnabled && turnosSeleccionados.length === 0) {
       setError('Elegí al menos almuerzo o cena.')
@@ -795,31 +800,6 @@ const OrderForm = ({ user, loading }) => {
                         <option key={location} value={location}>{location}</option>
                       ))}
                     </select>
-                    {formData.location && (
-                      <div className="mt-3 flex flex-wrap gap-3 items-center">
-                        <span className="text-xs text-gray-600 font-semibold">Turno:</span>
-                        <label className="inline-flex items-center gap-2 text-xs font-semibold text-gray-800">
-                          <input
-                            type="checkbox"
-                            checked={selectedTurns.lunch}
-                            onChange={(e) => setSelectedTurns(prev => ({ ...prev, lunch: e.target.checked }))}
-                            className="w-4 h-4 text-primary-600 border-gray-300 rounded"
-                          />
-                          Almuerzo
-                        </label>
-                        {dinnerEnabled && dinnerMenuEnabled && (
-                          <label className="inline-flex items-center gap-2 text-xs font-semibold text-gray-800">
-                            <input
-                              type="checkbox"
-                              checked={selectedTurns.dinner}
-                              onChange={(e) => setSelectedTurns(prev => ({ ...prev, dinner: e.target.checked }))}
-                              className="w-4 h-4 text-primary-600 border-gray-300 rounded"
-                            />
-                            Cena (whitelist)
-                          </label>
-                        )}
-                      </div>
-                    )}
                   </div>
                   <div>
                     <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
@@ -1086,6 +1066,53 @@ const OrderForm = ({ user, loading }) => {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {dinnerEnabled && dinnerMenuEnabled && (
+          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-200">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="bg-amber-500 text-white p-2 sm:p-3 rounded-xl">
+                <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Pedido de cena</h2>
+                <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Solo para usuarios habilitados (whitelist)</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 text-sm sm:text-base text-gray-900 font-semibold">
+                <input
+                  type="radio"
+                  name="dinner-choice"
+                  value="no"
+                  checked={dinnerChoice === 'no'}
+                  onChange={() => {
+                    setDinnerChoice('no')
+                    setSelectedTurns(prev => ({ ...prev, dinner: false }))
+                  }}
+                  className="mt-1 h-4 w-4 text-primary-600 border-gray-300"
+                  required
+                />
+                <span>No, solo almuerzo</span>
+              </label>
+              <label className="flex items-start gap-3 text-sm sm:text-base text-gray-900 font-semibold">
+                <input
+                  type="radio"
+                  name="dinner-choice"
+                  value="yes"
+                  checked={dinnerChoice === 'yes'}
+                  onChange={() => {
+                    setDinnerChoice('yes')
+                    setSelectedTurns(prev => ({ ...prev, dinner: true }))
+                  }}
+                  className="mt-1 h-4 w-4 text-primary-600 border-gray-300"
+                  required
+                />
+                <span>Sí, agregar pedido de cena hoy</span>
+              </label>
+              <p className="text-xs text-gray-600">Usaremos el mismo menú y opciones. Se generará un pedido adicional con turno “cena”.</p>
             </div>
           </div>
         )}
