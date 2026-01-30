@@ -144,7 +144,8 @@ const logAudit = async ({
   target_id = null,
   target_email = null,
   target_name = null,
-  metadata = null
+  metadata = null,
+  request_id = null
 }) => {
   try {
     const { data: authUser } = await supabase.auth.getUser()
@@ -159,10 +160,11 @@ const logAudit = async ({
       target_email,
       target_name,
       metadata,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      request_id: request_id || null
     }
-    // No bloquear el flujo principal; loguear best-effort
-    await supabase.from('audit_logs').insert([payload])
+    // Idempotencia por request_id + action
+    await supabase.from('audit_logs').upsert([payload], { onConflict: 'request_id,action' })
   } catch (err) {
     if (import.meta.env.DEV) {
       console.warn('[audit][logAudit] no se pudo registrar auditoría:', err?.message || err)
@@ -589,7 +591,7 @@ export const db = {
     return { data, error }
   },
 
-  updateMenuItems: async (menuItems) => {
+  updateMenuItems: async (menuItems, requestId = null) => {
     try {
       cache.clear() // Limpiar cache al actualizar menú
       
@@ -673,7 +675,8 @@ export const db = {
           metadata: {
             summary,
             items: (menuItems || []).map(({ id, name }) => ({ id, name }))
-          }
+          },
+          request_id: requestId
         })
       }
 

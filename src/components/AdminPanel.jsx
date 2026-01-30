@@ -279,7 +279,9 @@ const AdminPanel = () => {
         return
       }
 
-      const { error } = await db.updateMenuItems(validItems)
+      const requestId = crypto.randomUUID?.() || Math.random().toString(36).slice(2)
+      console.debug('[menu][save] request_id', requestId, 'items', validItems.length)
+      const { error } = await db.updateMenuItems(validItems, requestId)
 
       if (error) {
         console.error('Error updating menu:', error)
