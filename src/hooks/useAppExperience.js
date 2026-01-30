@@ -47,7 +47,18 @@ export const useAppExperience = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [data, setData] = useState([])
+  const [ordersToday, setOrdersToday] = useState(0)
   const timer = useRef(null)
+
+  const fetchOrdersToday = async () => {
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    const { count, error } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', start.toISOString())
+    if (!error && typeof count === 'number') setOrdersToday(count || 0)
+  }
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true)
@@ -58,6 +69,7 @@ export const useAppExperience = () => {
     })
     if (error) setError(error.message)
     setData(data || [])
+    fetchOrdersToday()
     if (!silent) setLoading(false)
   }
 
@@ -142,7 +154,7 @@ export const useAppExperience = () => {
     error,
     totals,
     aggregated,
-    rawOps: ops,
+    ordersToday,
     problems,
     speedLabel,
     refetch: fetchData

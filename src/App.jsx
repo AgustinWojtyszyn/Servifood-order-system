@@ -39,7 +39,7 @@ const InternalLoader = () => (
 )
 
 function App() {
-  const { user, loading } = useAuthContext()
+  const { user, loading, isAdmin, isSuperAdmin } = useAuthContext()
 
   const ScreenMetricsListener = () => {
     useScreenMetrics()
@@ -225,7 +225,11 @@ function App() {
               !loading && (user ? <Layout user={user} loading={loading}><AuditLogs user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/experiencia" element={
-              !loading && (user ? <Layout user={user} loading={loading}><Experience user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              !loading && (user ? (
+                isAdmin || isSuperAdmin
+                  ? <Layout user={user} loading={loading}><Experience user={user} loading={loading} /></Layout>
+                  : <Navigate to="/dashboard" replace />
+              ) : <Navigate to="/login" />)
             } />
             <Route path="/dev-mode" element={
               !loading && (user ? <Layout user={user} loading={loading}><DevMode user={user} loading={loading} /></Layout> : <Navigate to="/login" />)

@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
-import { CheckCircle2, AlertTriangle, XCircle, Clock3, Activity, ClipboardList, ArrowRight, ChevronDown, ChevronRight } from 'lucide-react'
+import { useMemo } from 'react'
+import { CheckCircle2, AlertTriangle, XCircle, Activity, ClipboardList, ArrowRight } from 'lucide-react'
 import { useAppExperience } from '../hooks/useAppExperience'
 import { useAuthContext } from '../contexts/AuthContext'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 
 const statePalette = {
   green: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', bar: 'bg-emerald-500', icon: CheckCircle2 },
@@ -48,11 +48,12 @@ const ProblemRow = ({ state, message }) => {
 }
 
 const Experience = () => {
-  const { totals, problems, speedLabel, loading, error, refetch, rawOps } = useAppExperience()
-  const { isAdmin, user } = useAuthContext()
-  const [devOpen, setDevOpen] = useState(false)
+  const { totals, problems, speedLabel, loading, error, refetch, ordersToday } = useAppExperience()
+  const { isAdmin } = useAuthContext()
   const state = totals.state || 'green'
   const palette = statePalette[state]
+
+  if (!isAdmin) return <Navigate to="/dashboard" replace />
 
   const problemsToShow = useMemo(() => problems && problems.length > 0 ? problems : [{
     state: 'green',
@@ -86,6 +87,12 @@ const Experience = () => {
 
       <div className="grid gap-4 md:grid-cols-3">
         <ActionCard
+          title="Pedidos hoy"
+          value={`${ordersToday} pedidos`}
+          desc="Actualizado automáticamente"
+          state={ordersToday > 0 ? 'green' : 'amber'}
+        />
+        <ActionCard
           title="Velocidad de la app"
           value={speedLabel.title}
           desc={speedLabel.text}
@@ -93,8 +100,8 @@ const Experience = () => {
         />
         <ActionCard
           title="Uso reciente"
-          value={totals.actions ? `Se registraron ${totals.actions} acciones` : 'Sin actividad'}
-          desc="en los últimos 10 minutos"
+          value={totals.actions > 0 ? 'Hay actividad' : 'Sin actividad'}
+          desc={totals.actions > 0 ? 'Acciones en los últimos 10 minutos' : 'Sin acciones en los últimos 10 minutos'}
           state={totals.actions > 0 ? 'green' : 'amber'}
         />
         <ActionCard
@@ -124,56 +131,7 @@ const Experience = () => {
         <Link to="/auditoria" className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-semibold hover:bg-gray-50">
           Ver actividad reciente <ArrowRight className="h-4 w-4" />
         </Link>
-        {isAdmin && (user?.id === 'ae177d76-9f35-44ac-a662-1b1e4146dbe4' || user?.email === 'agustinwojtyszyn99@gmail.com') && (
-          <Link to="/dev-mode" className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-semibold hover:bg-gray-50">
-            Ver detalles técnicos <ArrowRight className="h-4 w-4" />
-          </Link>
-        )}
       </div>
-
-      {isAdmin && (
-        <div className="border border-gray-200 rounded-2xl bg-white shadow-sm">
-          <button
-            onClick={() => setDevOpen(!devOpen)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-900"
-          >
-            <span className="inline-flex items-center gap-2">
-              {devOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              Modo DEV (datos crudos)
-            </span>
-            <span className="text-gray-500">Solo admins</span>
-          </button>
-          {devOpen && (
-            <div className="overflow-auto px-4 pb-4">
-              <table className="min-w-full text-xs text-left text-gray-900">
-                <thead className="bg-gray-50 text-gray-600 border-b">
-                  <tr>
-                    <th className="px-2 py-2 font-semibold">action_type</th>
-                    <th className="px-2 py-2 font-semibold">op</th>
-                    <th className="px-2 py-2 font-semibold">p95_ms</th>
-                    <th className="px-2 py-2 font-semibold">calls</th>
-                    <th className="px-2 py-2 font-semibold">errors</th>
-                    <th className="px-2 py-2 font-semibold">last_ts</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {(rawOps || []).slice(0, 12).map((row, idx) => (
-                    <tr key={row.op + idx}>
-                      <td className="px-2 py-2 text-gray-800">{row.action_type || '—'}</td>
-                      <td className="px-2 py-2 text-gray-800">{row.op}</td>
-                      <td className="px-2 py-2 text-gray-800">{row.p95_ms?.toFixed?.(0) ?? '—'}</td>
-                      <td className="px-2 py-2 text-gray-800">{row.calls}</td>
-                      <td className="px-2 py-2 text-gray-800">{row.errors}</td>
-                      <td className="px-2 py-2 text-gray-700">{row.last_ts || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {rawOps?.length > 12 && <p className="text-xs text-gray-500 mt-2">Mostrando 12 de {rawOps.length} filas.</p>}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }

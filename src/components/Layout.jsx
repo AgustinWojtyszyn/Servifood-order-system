@@ -135,9 +135,12 @@ const Layout = ({ children, user, loading }) => {
 
   const menuItems = [
     { name: 'Panel Principal', path: '/dashboard', icon: User },
-    { name: 'Experiencia en vivo', path: '/experiencia', icon: GaugeCircle },
     { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
   ]
+
+  if (isAdmin) {
+    menuItems.splice(1, 0, { name: 'Experiencia en vivo', path: '/experiencia', icon: GaugeCircle })
+  }
 
   if (isAdmin) {
     menuItems.push({ 
