@@ -489,6 +489,7 @@ const DailyOrders = ({ user, loading }) => {
           'Guarnición': customSide || 'Sin guarnición',
           'Cantidad Items': order.total_items || 0,
           'Estado': getStatusText(order.status),
+          'Turno': (order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo',
           'Comentarios': order.comments || 'Sin comentarios',
           'Opciones Adicionales': customResponses,
           'Cliente': order.customer_name || order.user_name || 'Sin nombre'
@@ -531,6 +532,7 @@ const DailyOrders = ({ user, loading }) => {
         { header: 'Guarnición', key: 'Guarnición', width: 18 },
         { header: 'Cantidad Items', key: 'Cantidad Items', width: 14 },
         { header: 'Estado', key: 'Estado', width: 14 },
+        { header: 'Turno', key: 'Turno', width: 12 },
         { header: 'Comentarios', key: 'Comentarios', width: 30 },
         { header: 'Opciones Adicionales', key: 'Opciones Adicionales', width: 40 },
         { header: 'Cliente', key: 'Cliente', width: 20 }
@@ -604,6 +606,7 @@ const DailyOrders = ({ user, loading }) => {
           'Email': order.customer_email || order.user_email || 'Sin email',
           'Teléfono': order.customer_phone || 'Sin teléfono',
           'Estado': getStatusText(order.status),
+          'Turno': (order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo',
           'Confirmación': isConfirmed ? 'Pedido completo confirmado' : 'Pendiente de confirmación',
           'Fecha Confirmación': confirmationDate,
           'Items Detallados': itemsList.join(' | ') || 'Sin items',
