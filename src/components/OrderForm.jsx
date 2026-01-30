@@ -41,7 +41,9 @@ const OrderForm = ({ user, loading }) => {
   const [menuItems, setMenuItems] = useState([])
   const [customOptions, setCustomOptions] = useState([])
   const [customResponses, setCustomResponses] = useState({})
+  const [customResponsesDinner, setCustomResponsesDinner] = useState({})
   const [selectedItems, setSelectedItems] = useState({})
+  const [selectedItemsDinner, setSelectedItemsDinner] = useState({})
   const [formData, setFormData] = useState({
     location: '',
     name: '',
@@ -324,6 +326,29 @@ const OrderForm = ({ user, loading }) => {
     }
   }
 
+  const handleItemSelectDinner = (itemId, isSelected) => {
+    const item = menuItems.find(m => m.id === itemId)
+    if (!item) return
+    const isEnsalada = item?.name?.toLowerCase().includes('ensalada')
+
+    if (isSelected) {
+      if (isEnsalada) {
+        setSelectedItemsDinner(prev => ({ ...prev, [itemId]: true }))
+      } else {
+        const mainMenuSelected = menuItems
+          .filter(m => !m.name?.toLowerCase().includes('ensalada'))
+          .some(m => selectedItemsDinner[m.id])
+        if (mainMenuSelected && !selectedItemsDinner[itemId]) {
+          alert('Solo puedes seleccionar 1 menú por persona en cena.')
+          return
+        }
+        setSelectedItemsDinner(prev => ({ ...prev, [itemId]: true }))
+      }
+    } else {
+      setSelectedItemsDinner(prev => ({ ...prev, [itemId]: false }))
+    }
+  }
+
   const handleFormChange = (e) => {
     setFormData({
       ...formData,
@@ -377,6 +402,15 @@ const OrderForm = ({ user, loading }) => {
   const calculateTotal = () => {
     return getSelectedItemsList().length
   }
+
+  const getSelectedItemsListDinner = () => {
+    const selected = menuItems.filter(item => selectedItemsDinner[item.id] === true)
+    const principal = selected.filter(item => item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal')))
+    const others = selected.filter(item => !(item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))))
+    return [...principal, ...others]
+  }
+
+  const calculateTotalDinner = () => getSelectedItemsListDinner().length
 
   const computePayloadSignature = (items = [], responses = [], comments = '', deliveryDate = '', location = '', service = 'lunch') => {
     const sortedItems = [...(items || [])].map(i => ({
@@ -495,6 +529,7 @@ const OrderForm = ({ user, loading }) => {
     }
 
     const selectedItemsList = getSelectedItemsList()
+    const selectedItemsListDinner = getSelectedItemsListDinner()
 
     if (!formData.location) {
       setError('Por favor selecciona un lugar de trabajo')
@@ -534,6 +569,31 @@ const OrderForm = ({ user, loading }) => {
         response: customResponses[opt.id]
       }))
 
+    let customResponsesDinnerArray = []
+    if (selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled) {
+      const missingRequiredOptionsDinner = visibleOptions
+        .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id])
+        .map(opt => opt.title)
+      if (missingRequiredOptionsDinner.length > 0) {
+        setError(`Para cena completa: ${missingRequiredOptionsDinner.join(', ')}`)
+        setSubmitting(false)
+        return
+      }
+      customResponsesDinnerArray = visibleOptions
+        .filter(opt => {
+          const response = customResponsesDinner[opt.id]
+          if (!response) return false
+          if (Array.isArray(response) && response.length === 0) return false
+          if (typeof response === 'string' && response.trim() === '') return false
+          return true
+        })
+        .map(opt => ({
+          id: opt.id,
+          title: opt.title,
+          response: customResponsesDinner[opt.id]
+        }))
+    }
+
     // Calcular fecha de entrega (día siguiente)
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
@@ -552,16 +612,19 @@ const OrderForm = ({ user, loading }) => {
 
     try {
       for (const service of turnosSeleccionados) {
+        const itemsForService = service === 'dinner' ? selectedItemsListDinner : selectedItemsList
+        const responsesForService = service === 'dinner' ? customResponsesDinnerArray : customResponsesArray
+
         const idempotencySignature = computePayloadSignature(
-          selectedItemsList.map(item => ({ ...item, quantity: 1 })),
-          customResponsesArray,
+          itemsForService.map(item => ({ ...item, quantity: 1 })),
+          responsesForService,
           formData.comments,
           deliveryDate,
           formData.location,
           service
         )
 
-        const idempotencyStorageKey = buildIdempotencyStorageKey(selectedItemsList, formData.location, idempotencySignature, service)
+        const idempotencyStorageKey = buildIdempotencyStorageKey(itemsForService, formData.location, idempotencySignature, service)
         let idempotencyKey = null
 
         if (typeof window !== 'undefined') {
@@ -578,7 +641,7 @@ const OrderForm = ({ user, loading }) => {
           customer_name: formData.name || user?.user_metadata?.full_name || user?.email || '',
           customer_email: formData.email || user?.email,
           customer_phone: formData.phone,
-          items: selectedItemsList.map(item => ({
+          items: itemsForService.map(item => ({
             id: item.id,
             name: item.name,
             quantity: 1
@@ -586,8 +649,8 @@ const OrderForm = ({ user, loading }) => {
           comments: formData.comments,
           delivery_date: deliveryDate,
           status: 'pending',
-          total_items: calculateTotal(),
-          custom_responses: customResponsesArray,
+          total_items: service === 'dinner' ? calculateTotalDinner() : calculateTotal(),
+          custom_responses: responsesForService,
           idempotency_key: idempotencyKey,
           service
         }
