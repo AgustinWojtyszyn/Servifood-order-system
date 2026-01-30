@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList, Activity, GaugeCircle } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList, GaugeCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
@@ -9,9 +9,6 @@ import SupportButton from './SupportButton'
 import RequireUser from './RequireUser'
 import { useScrollLock } from '../hooks/useScrollLock'
 import { OverlayLockProvider } from '../contexts/OverlayLockContext'
-import DevPanel from './DevPanel'
-
-
 const Layout = ({ children, user, loading }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [tutorialOpen, setTutorialOpen] = useState(false)
@@ -152,10 +149,6 @@ const Layout = ({ children, user, loading }) => {
     menuItems.push({ name: 'Panel Mensual', path: '/monthly-panel', icon: Calendar })
     menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
     menuItems.push({ name: 'Auditoría', path: '/auditoria', icon: ClipboardList })
-    // Ruta de Modo Dev solo para uid/email específicos
-    if (user?.id === 'ae177d76-9f35-44ac-a662-1b1e4146dbe4' || user?.email === 'agustinwojtyszyn99@gmail.com') {
-      menuItems.push({ name: 'Modo Dev', path: '/dev-mode', icon: Activity })
-    }
   }
 
   // Add Profile option for all users
@@ -306,8 +299,6 @@ const Layout = ({ children, user, loading }) => {
 
       {/* Support Button */}
       <SupportButton />
-      {/* Panel flotante solo admins, fuera del flujo principal */}
-      <DevPanel />
       </div>
       </OverlayLockProvider>
     </RequireUser>
