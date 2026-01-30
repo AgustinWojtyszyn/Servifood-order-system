@@ -42,7 +42,8 @@ const AdminPanel = () => {
   const [newOption, setNewOption] = useState(null)
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
     if (typeof window === 'undefined') return false
-    return localStorage.getItem('dinner_menu_enabled') === 'true'
+    const stored = localStorage.getItem('dinner_menu_enabled')
+    return stored === null ? true : stored === 'true'
   })
   const { isAdmin, user, refreshSession, loading } = useAuthContext()
   

@@ -162,3 +162,66 @@ ON CONFLICT (user_id, feature) DO NOTHING;
 
 -- Si algún usuario no mapeó por email, dejar insert manual con placeholders:
 -- INSERT INTO public.user_features (user_id, feature, enabled) VALUES ('<missing-user-uuid>', 'dinner', true) ON CONFLICT DO NOTHING;
+
+-- 6) Limpieza de pedidos + refuerzo de whitelist para Claudia Sarmiento (idempotente, service role)
+DO $$
+DECLARE
+  v_user uuid;
+BEGIN
+  SELECT id INTO v_user FROM auth.users WHERE lower(email) = 'sarmientoclaudia985@gmail.com';
+
+  IF v_user IS NULL THEN
+    RAISE NOTICE 'No se encontró auth.users con email sarmientoclaudia985@gmail.com';
+    RETURN;
+  END IF;
+
+  -- Eliminar todos los pedidos asociados a la usuaria
+  DELETE FROM public.orders WHERE user_id = v_user;
+
+  -- Asegurar whitelist dinner habilitada
+  PERFORM public.enable_feature(v_user, 'dinner', true);
+END
+$$;
+
+-- 7) Sincronizar perfil y rol de Claudia + asegurar visibilidad almuerzo/cena
+DO $$
+DECLARE
+  v_auth uuid;
+BEGIN
+  SELECT id INTO v_auth FROM auth.users WHERE lower(email) = 'sarmientoclaudia985@gmail.com';
+
+  IF v_auth IS NULL THEN
+    RAISE NOTICE 'Claudia no existe en auth.users; créala desde Auth antes de volver a correr este script.';
+    RETURN;
+  END IF;
+
+  -- Upsert en public.users con rol admin y nombre
+  INSERT INTO public.users (id, email, full_name, role)
+  VALUES (v_auth, 'sarmientoclaudia985@gmail.com', 'Claudia Sarmiento', 'admin')
+  ON CONFLICT (id) DO UPDATE
+    SET email = EXCLUDED.email,
+        full_name = EXCLUDED.full_name,
+        role = 'admin';
+
+  -- Asegurar feature dinner habilitado
+  PERFORM public.enable_feature(v_auth, 'dinner', true);
+END
+$$;
+
+-- 8) Limpieza solo de pedidos pendientes de Claudia (idempotente, service role)
+DO $$
+DECLARE
+  v_auth uuid;
+BEGIN
+  SELECT id INTO v_auth FROM auth.users WHERE lower(email) = 'sarmientoclaudia985@gmail.com';
+
+  IF v_auth IS NULL THEN
+    RAISE NOTICE 'Claudia no existe en auth.users; créala desde Auth y vuelve a correr.';
+    RETURN;
+  END IF;
+
+  DELETE FROM public.orders
+  WHERE user_id = v_auth
+    AND status = 'pending';
+END
+$$;

@@ -67,7 +67,9 @@ const OrderForm = ({ user, loading }) => {
   const [suggestionSummary, setSuggestionSummary] = useState('')
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
     if (typeof window === 'undefined') return false
-    return localStorage.getItem('dinner_menu_enabled') === 'true'
+    const stored = localStorage.getItem('dinner_menu_enabled')
+    // Por defecto mostrar menú de cena si no hay preferencia previa
+    return stored === null ? true : stored === 'true'
   })
   const navigate = useNavigate()
   const { companySlug: companySlugParam } = useParams()
