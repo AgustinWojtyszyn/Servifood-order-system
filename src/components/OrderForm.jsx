@@ -97,13 +97,22 @@ const OrderForm = ({ user, loading }) => {
     [companyConfig]
   )
 
-  const visibleOptions = useMemo(() => {
-    let opts = customOptions.filter(opt => opt.active)
-    if (!dinnerEnabled) {
-      opts = opts.filter(opt => !opt.dinner_only)
-    }
-    return opts
-  }, [customOptions, dinnerEnabled])
+  const activeOptions = useMemo(
+    () => customOptions.filter(opt => opt.active),
+    [customOptions]
+  )
+
+  // Opciones visibles para almuerzo (excluye flags de solo cena)
+  const visibleLunchOptions = useMemo(
+    () => activeOptions.filter(opt => !opt.dinner_only),
+    [activeOptions]
+  )
+
+  // Opciones visibles para cena (incluye comunes + solo cena; se vacía si el usuario no tiene cena habilitada)
+  const visibleDinnerOptions = useMemo(() => {
+    if (!dinnerEnabled) return []
+    return activeOptions
+  }, [activeOptions, dinnerEnabled])
 
   useEffect(() => {
     if (!user?.id) return
@@ -418,6 +427,11 @@ const OrderForm = ({ user, loading }) => {
 
   const calculateTotalDinner = () => getSelectedItemsListDinner().length
 
+  const hasLunchSelection = selectedTurns.lunch && getSelectedItemsList().length > 0
+  const hasDinnerSelection =
+    selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled && getSelectedItemsListDinner().length > 0
+  const hasAnySelectedItems = hasLunchSelection || hasDinnerSelection
+
   const computePayloadSignature = (items = [], responses = [], comments = '', deliveryDate = '', location = '', service = 'lunch') => {
     const sortedItems = [...(items || [])].map(i => ({
       id: i.id,
@@ -572,7 +586,7 @@ const OrderForm = ({ user, loading }) => {
     // Validar opciones requeridas visibles
     let customResponsesArray = []
     if (lunchSelected) {
-      const missingRequiredOptions = visibleOptions
+      const missingRequiredOptions = visibleLunchOptions
         .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id])
         .map(opt => opt.title)
 
@@ -582,7 +596,7 @@ const OrderForm = ({ user, loading }) => {
         return
       }
 
-      customResponsesArray = visibleOptions
+      customResponsesArray = visibleLunchOptions
         .filter(opt => {
           const response = customResponses[opt.id]
           if (!response) return false
@@ -599,7 +613,7 @@ const OrderForm = ({ user, loading }) => {
 
     let customResponsesDinnerArray = []
     if (dinnerSelected) {
-      const missingRequiredOptionsDinner = visibleOptions
+      const missingRequiredOptionsDinner = visibleDinnerOptions
         .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id])
         .map(opt => opt.title)
       if (missingRequiredOptionsDinner.length > 0) {
@@ -607,7 +621,7 @@ const OrderForm = ({ user, loading }) => {
         setSubmitting(false)
         return
       }
-      customResponsesDinnerArray = visibleOptions
+      customResponsesDinnerArray = visibleDinnerOptions
         .filter(opt => {
           const response = customResponsesDinner[opt.id]
           if (!response) return false
@@ -1038,7 +1052,7 @@ const OrderForm = ({ user, loading }) => {
         )}
 
         {/* Opciones Personalizadas - Solo mostrar opciones activas */}
-        {visibleOptions.length > 0 && (
+        {visibleLunchOptions.length > 0 && (
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="bg-linear-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
@@ -1054,7 +1068,7 @@ const OrderForm = ({ user, loading }) => {
             </div>
 
             <div className="space-y-6">
-              {visibleOptions.map((option) => (
+              {visibleLunchOptions.map((option) => (
                 <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50">
                   <label
                     className="block text-sm text-gray-900 mb-3"
@@ -1239,7 +1253,7 @@ const OrderForm = ({ user, loading }) => {
               </div>
             </div>
 
-            {visibleOptions.length > 0 && (
+            {visibleDinnerOptions.length > 0 && (
               <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-200">
                 <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
                   <div className="bg-amber-500 text-white p-2 sm:p-3 rounded-xl">
@@ -1252,7 +1266,7 @@ const OrderForm = ({ user, loading }) => {
                 </div>
 
                 <div className="space-y-6">
-                  {visibleOptions.map((option) => (
+                  {visibleDinnerOptions.map((option) => (
                     <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50">
                       <label
                         className="block text-sm text-gray-900 mb-3 font-bold"
@@ -1390,7 +1404,7 @@ const OrderForm = ({ user, loading }) => {
           }}>
           <button
             type="submit"
-            disabled={loading || getSelectedItemsList().length === 0 || hasOrderToday || isPastDeadline}
+            disabled={loading || !hasAnySelectedItems || hasOrderToday || isPastDeadline}
             style={{ 
               backgroundColor: '#16a34a',
               color: '#ffffff',
