@@ -40,6 +40,10 @@ const AdminPanel = () => {
   const [newMenuItems, setNewMenuItems] = useState([])
   const [editingOptions, setEditingOptions] = useState(false)
   const [newOption, setNewOption] = useState(null)
+  const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('dinner_menu_enabled') === 'true'
+  })
   const { isAdmin, user, refreshSession, loading } = useAuthContext()
   
   // Estados para búsqueda y filtrado de usuarios
@@ -448,6 +452,13 @@ const AdminPanel = () => {
     }))
   }
 
+  const toggleDinnerMenu = (checked) => {
+    setDinnerMenuEnabled(checked)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dinner_menu_enabled', checked ? 'true' : 'false')
+    }
+  }
+
   const handleOptionChoiceChange = (index, value) => {
     setNewOption(prev => ({
       ...prev,
@@ -819,6 +830,18 @@ const AdminPanel = () => {
                 <p className="text-blue-800 font-semibold text-center text-sm leading-relaxed">
                   Podés agregar, editar o eliminar opciones del menú. Debe haber al menos un plato.
                 </p>
+                <div className="mt-3 flex items-center gap-2 justify-center">
+                  <input
+                    type="checkbox"
+                    id="dinner-menu-enabled"
+                    checked={dinnerMenuEnabled}
+                    onChange={(e) => toggleDinnerMenu(e.target.checked)}
+                    className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label htmlFor="dinner-menu-enabled" className="text-sm font-bold text-gray-900 cursor-pointer select-none">
+                    Habilitar este menú también para <span className="font-extrabold">cena</span> (solo whitelist)
+                  </label>
+                </div>
               </div>
               
               {newMenuItems.map((item, index) => {

@@ -61,6 +61,10 @@ const OrderForm = ({ user, loading }) => {
   const [suggestionVisible, setSuggestionVisible] = useState(false)
   const [suggestionLoading, setSuggestionLoading] = useState(false)
   const [suggestionSummary, setSuggestionSummary] = useState('')
+  const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('dinner_menu_enabled') === 'true'
+  })
   const navigate = useNavigate()
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
@@ -537,7 +541,7 @@ const OrderForm = ({ user, loading }) => {
 
     const turnosSeleccionados = Object.entries(selectedTurns).filter(([, val]) => val).map(([k]) => k)
 
-    if (dinnerEnabled && turnosSeleccionados.length === 0) {
+    if (dinnerEnabled && dinnerMenuEnabled && turnosSeleccionados.length === 0) {
       setError('Elegí al menos almuerzo o cena.')
       setSubmitting(false)
       return
@@ -803,7 +807,7 @@ const OrderForm = ({ user, loading }) => {
                           />
                           Almuerzo
                         </label>
-                        {dinnerEnabled && (
+                        {dinnerEnabled && dinnerMenuEnabled && (
                           <label className="inline-flex items-center gap-2 text-xs font-semibold text-gray-800">
                             <input
                               type="checkbox"
