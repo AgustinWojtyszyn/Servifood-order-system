@@ -32,7 +32,16 @@ class AuditService {
 
       const data = await supabaseService.cachedQuery(cacheKey, queryFn, 15000, force)
 
-      return { data, error: null }
+      const deduped = []
+      const seen = new Set()
+      for (const row of data) {
+        const key = row.request_id ? `${row.request_id}-${row.action}` : `${row.id}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        deduped.push(row)
+      }
+
+      return { data: deduped, error: null }
     } catch (error) {
       return { data: [], error: handleError(error, 'getAuditLogs') }
     }

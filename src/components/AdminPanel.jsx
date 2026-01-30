@@ -862,7 +862,7 @@ const AdminPanel = () => {
               
               <button
                 onClick={addMenuItem}
-                className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-primary-300 rounded-xl text-primary-600 hover:bg-primary-50 hover:border-primary-500 transition-all font-semibold text-sm"
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-all font-semibold text-sm shadow-sm"
               >
                 <Plus className="h-5 w-5" />
                 Agregar nuevo plato
@@ -875,21 +875,21 @@ const AdminPanel = () => {
       {/* Custom Options Tab */}
       {activeTab === 'options' && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Opciones Personalizables</h2>
-              <p className="text-sm text-gray-600 mt-1">Agrega preguntas, encuestas u opciones adicionales para los pedidos</p>
+            <div className="flex flex-col gap-3 mb-4 sm:mb-6">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Opciones Personalizables</h2>
+                <p className="text-sm text-gray-600 mt-1">Agrega preguntas, encuestas u opciones adicionales para los pedidos</p>
+              </div>
+              {!editingOptions && (
+                <button
+                  onClick={handleCreateOption}
+                  className="flex items-center justify-center text-sm sm:text-base w-full sm:w-auto px-4 py-3 rounded-xl bg-gray-900 text-white font-semibold shadow-sm hover:bg-gray-800 transition-all"
+                >
+                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                  Nueva Opción
+                </button>
+              )}
             </div>
-            {!editingOptions && (
-              <button
-                onClick={handleCreateOption}
-                className="btn-primary flex items-center justify-center text-sm sm:text-base w-full sm:w-auto"
-              >
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                Nueva Opción
-              </button>
-            )}
-          </div>
 
           {/* Lista de opciones existentes - Con scroll adaptativo */}
           {!editingOptions && customOptions.length > 0 && (
