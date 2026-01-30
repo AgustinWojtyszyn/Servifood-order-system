@@ -58,6 +58,8 @@ const OrderForm = ({ user, loading }) => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [hasOrderToday, setHasOrderToday] = useState(false)
+  const [pendingLunch, setPendingLunch] = useState(false)
+  const [pendingDinner, setPendingDinner] = useState(false)
   const [isPastDeadline, setIsPastDeadline] = useState(false)
   const [suggestion, setSuggestion] = useState(null) // último pedido sugerido
   const [suggestionVisible, setSuggestionVisible] = useState(false)
@@ -203,19 +205,23 @@ const OrderForm = ({ user, loading }) => {
       // Obtener solo los pedidos del usuario actual
       const { data, error } = await db.getOrders(user.id)
       if (!error && data) {
-        // Verificar si tiene algún pedido pendiente (no entregado)
-        const hasPendingOrder = data.some(order => 
-          order.status === 'pending' || 
-          order.status === 'preparing' || 
-          order.status === 'ready'
-        )
-        setHasOrderToday(hasPendingOrder)
-        
-        if (hasPendingOrder) {
-          console.log('Usuario ya tiene un pedido pendiente:', data.filter(o => 
-            o.status === 'pending' || o.status === 'preparing' || o.status === 'ready'
-          ))
-        }
+        const today = new Date()
+        today.setHours(0,0,0,0)
+    const pendingLunch = data.some(order => {
+      const d = new Date(order.created_at)
+      d.setHours(0,0,0,0)
+      const isToday = d.getTime() === today.getTime()
+      return isToday && (order.service || 'lunch') === 'lunch' && ['pending','preparing','ready'].includes(order.status)
+    })
+        const pendingDinner = data.some(order => {
+          const d = new Date(order.created_at)
+          d.setHours(0,0,0,0)
+          const isToday = d.getTime() === today.getTime()
+          return isToday && (order.service || 'lunch') === 'dinner' && ['pending','preparing','ready'].includes(order.status)
+        })
+        setPendingLunch(pendingLunch)
+        setPendingDinner(pendingDinner)
+        setHasOrderToday(pendingLunch || pendingDinner)
       }
     } catch (err) {
       console.error('Error checking today order:', err)
@@ -521,9 +527,14 @@ const OrderForm = ({ user, loading }) => {
       return
     }
 
-    // Verificar si ya tiene un pedido pendiente
-    if (hasOrderToday) {
-      setError('Ya tienes un pedido pendiente. Espera a que se complete para crear uno nuevo.')
+    // Verificar pendientes por turno
+    if (pendingLunch && (!dinnerEnabled || !dinnerMenuEnabled || !selectedTurns.dinner)) {
+      setError('Ya tienes un pedido de almuerzo pendiente. Espera a que se complete.')
+      setSubmitting(false)
+      return
+    }
+    if (selectedTurns.dinner && pendingDinner) {
+      setError('Ya tienes un pedido de cena pendiente. Espera a que se complete.')
       setSubmitting(false)
       return
     }
