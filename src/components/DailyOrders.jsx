@@ -11,7 +11,7 @@ const InternalLoader = () => (
 import { useState, useEffect, useRef } from 'react'
 import { db } from '../supabaseClient'
 import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import RequireUser from './RequireUser'
 
 const DailyOrders = ({ user, loading }) => {
@@ -423,7 +423,18 @@ const DailyOrders = ({ user, loading }) => {
 
 
 
-  const exportToExcel = () => {
+  const downloadWorkbook = async (workbook, fileName) => {
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1200)
+  }
+
+  const exportToExcel = async () => {
     const ordersToExport = filterOrdersByCompany(sortedOrders, exportCompany)
 
     if (ordersToExport.length === 0) {
@@ -506,37 +517,32 @@ const DailyOrders = ({ user, loading }) => {
         statsData.push({ Concepto: dish, Valor: count })
       })
 
-      // Crear libro de Excel
-      const wb = XLSX.utils.book_new()
-      
-      // Hoja 1: Pedidos detallados
-      const ws1 = XLSX.utils.json_to_sheet(excelData)
-      
-      // Ajustar anchos de columna
-      const columnWidths = [
-        { wch: 12 }, // Fecha Pedido
-        { wch: 10 }, // Hora Pedido
-        { wch: 20 }, // Usuario
-        { wch: 25 }, // Email
-        { wch: 15 }, // Teléfono
-        { wch: 15 }, // Ubicación
-        { wch: 25 }, // Fecha Entrega
-        { wch: 40 }, // Platillos
-        { wch: 18 }, // Guarnición
-        { wch: 12 }, // Cantidad Items
-        { wch: 12 }, // Estado
-        { wch: 30 }, // Comentarios
-        { wch: 40 }, // Opciones Adicionales
-        { wch: 20 }  // Cliente
+      const wb = new ExcelJS.Workbook()
+      const ws1 = wb.addWorksheet('Pedidos Detallados')
+      ws1.columns = [
+        { header: 'Fecha Pedido', key: 'Fecha Pedido', width: 12 },
+        { header: 'Hora Pedido', key: 'Hora Pedido', width: 10 },
+        { header: 'Usuario', key: 'Usuario', width: 20 },
+        { header: 'Email', key: 'Email', width: 25 },
+        { header: 'Teléfono', key: 'Teléfono', width: 15 },
+        { header: 'Ubicación', key: 'Ubicación', width: 15 },
+        { header: 'Fecha Entrega', key: 'Fecha Entrega', width: 25 },
+        { header: 'Platillos', key: 'Platillos', width: 40 },
+        { header: 'Guarnición', key: 'Guarnición', width: 18 },
+        { header: 'Cantidad Items', key: 'Cantidad Items', width: 14 },
+        { header: 'Estado', key: 'Estado', width: 14 },
+        { header: 'Comentarios', key: 'Comentarios', width: 30 },
+        { header: 'Opciones Adicionales', key: 'Opciones Adicionales', width: 40 },
+        { header: 'Cliente', key: 'Cliente', width: 20 }
       ]
-      ws1['!cols'] = columnWidths
-      
-      XLSX.utils.book_append_sheet(wb, ws1, 'Pedidos Detallados')
-      
-      // Hoja 2: Estadísticas
-      const ws2 = XLSX.utils.json_to_sheet(statsData)
-      ws2['!cols'] = [{ wch: 30 }, { wch: 15 }]
-      XLSX.utils.book_append_sheet(wb, ws2, 'Estadísticas')
+      ws1.addRows(excelData)
+
+      const ws2 = wb.addWorksheet('Estadísticas')
+      ws2.columns = [
+        { header: 'Concepto', key: 'Concepto', width: 30 },
+        { header: 'Valor', key: 'Valor', width: 15 }
+      ]
+      ws2.addRows(statsData)
 
       // Generar nombre de archivo
       const today = new Date().toISOString().split('T')[0]
@@ -545,12 +551,7 @@ const DailyOrders = ({ user, loading }) => {
       const companyFilter = exportCompany !== 'all' ? `_empresa_${exportCompany.replace(/\s+/g, '_')}` : ''
       const fileName = `Pedidos_ServiFood_${today}${locationFilter}${statusFilter}${companyFilter}.xlsx`
 
-      // Descargar archivo con compatibilidad Excel 2016
-      XLSX.writeFile(wb, fileName, { 
-        bookType: 'xlsx',
-        type: 'binary',
-        cellStyles: true
-      })
+      await downloadWorkbook(wb, fileName)
 
       alert(`✓ ${ordersToExport.length} pedidos exportados correctamente a ${fileName}`)
     } catch (error) {
@@ -560,7 +561,7 @@ const DailyOrders = ({ user, loading }) => {
   }
 
   // Export específico para enviar datos a la empresa con confirmación de pedido
-  const exportCompanyReport = () => {
+  const exportCompanyReport = async () => {
     const companyOrders = filterOrdersForCompanyExport(sortedOrders, exportCompany, exportStatusFilter)
 
     if (companyOrders.length === 0) {
@@ -612,36 +613,31 @@ const DailyOrders = ({ user, loading }) => {
         }
       })
 
-      const wb = XLSX.utils.book_new()
-      const ws = XLSX.utils.json_to_sheet(reportData)
-      ws['!cols'] = [
-        { wch: 12 }, // ID
-        { wch: 20 }, // Empresa
-        { wch: 16 }, // Ubicación
-        { wch: 20 }, // Cliente
-        { wch: 25 }, // Email
-        { wch: 14 }, // Teléfono
-        { wch: 14 }, // Estado
-        { wch: 26 }, // Confirmación
-        { wch: 22 }, // Fecha Confirmación
-        { wch: 40 }, // Items
-        { wch: 20 }, // Guarnición
-        { wch: 40 }, // Opciones
-        { wch: 30 }  // Comentarios
+      const wb = new ExcelJS.Workbook()
+      const ws = wb.addWorksheet('Confirmacion Empresa')
+      ws.columns = [
+        { header: 'ID Pedido', key: 'ID Pedido', width: 12 },
+        { header: 'Empresa Destino', key: 'Empresa Destino', width: 20 },
+        { header: 'Ubicación', key: 'Ubicación', width: 16 },
+        { header: 'Cliente', key: 'Cliente', width: 20 },
+        { header: 'Email', key: 'Email', width: 25 },
+        { header: 'Teléfono', key: 'Teléfono', width: 14 },
+        { header: 'Estado', key: 'Estado', width: 14 },
+        { header: 'Confirmación', key: 'Confirmación', width: 26 },
+        { header: 'Fecha Confirmación', key: 'Fecha Confirmación', width: 22 },
+        { header: 'Items Detallados', key: 'Items Detallados', width: 40 },
+        { header: 'Guarnición Seleccionada', key: 'Guarnición Seleccionada', width: 20 },
+        { header: 'Opciones Adicionales', key: 'Opciones Adicionales', width: 40 },
+        { header: 'Comentarios', key: 'Comentarios', width: 30 }
       ]
-
-      XLSX.utils.book_append_sheet(wb, ws, 'Confirmacion Empresa')
+      ws.addRows(reportData)
 
       const today = new Date().toISOString().split('T')[0]
       const companySlug = exportCompany !== 'all' ? exportCompany.replace(/\\s+/g, '_') : 'todas'
       const statusSlug = exportStatusFilter
       const fileName = `Confirmacion_Pedidos_${companySlug}_${statusSlug}_${today}.xlsx`
 
-      XLSX.writeFile(wb, fileName, {
-        bookType: 'xlsx',
-        type: 'binary',
-        cellStyles: true
-      })
+      await downloadWorkbook(wb, fileName)
 
       alert(`✓ ${companyOrders.length} pedidos exportados para la empresa (${exportCompany === 'all' ? 'todas' : exportCompany})`)
     } catch (error) {

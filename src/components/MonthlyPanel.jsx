@@ -3,7 +3,7 @@ import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Download, Package, TrendingUp, User, BarChart2 } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
 import { es } from 'date-fns/locale'
@@ -466,39 +466,64 @@ const MonthlyPanel = ({ user, loading }) => {
   }
 
   // Exportar a Excel
-  const handleExportExcel = () => {
+  const downloadWorkbook = async (workbook, fileName) => {
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1200)
+  }
+
+  const handleExportExcel = async () => {
     if (!metrics || !metrics.empresas) return
     // Exportación robusta: separar menús principales y opciones, y mostrar cantidades claras
     const rows = buildSummaryRows(metrics)
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Resumen')
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Resumen')
+    if (rows.length > 0) {
+      ws.columns = Object.keys(rows[0]).map(k => ({ header: k, key: k, width: 20 }))
+      ws.addRows(rows)
+    }
     const fileName = `panel-mensual-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
-    XLSX.writeFile(wb, fileName)
+    await downloadWorkbook(wb, fileName)
   }
 
   // Exportar desglose diario del rango
-  const handleExportDailyExcel = () => {
+  const handleExportDailyExcel = async () => {
     if (!dailyData || !dailyData.daily_breakdown) return
     const rows = buildDailyRows(dailyData, ordersByDay)
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Desglose Diario')
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Desglose Diario')
+    if (rows.length > 0) {
+      ws.columns = Object.keys(rows[0]).map(k => ({ header: k, key: k, width: 20 }))
+      ws.addRows(rows)
+    }
     const fileName = `desglose-diario-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
-    XLSX.writeFile(wb, fileName)
+    await downloadWorkbook(wb, fileName)
   }
 
-  const handleExportAllExcel = () => {
+  const handleExportAllExcel = async () => {
     if (!metrics || !metrics.empresas) return
-    const wb = XLSX.utils.book_new()
+    const wb = new ExcelJS.Workbook()
     const summaryRows = buildSummaryRows(metrics)
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Resumen')
+    const wsSummary = wb.addWorksheet('Resumen')
+    if (summaryRows.length > 0) {
+      wsSummary.columns = Object.keys(summaryRows[0]).map(k => ({ header: k, key: k, width: 20 }))
+      wsSummary.addRows(summaryRows)
+    }
     if (dailyData?.daily_breakdown) {
       const dailyRows = buildDailyRows(dailyData, ordersByDay)
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dailyRows), 'Desglose Diario')
+      const wsDaily = wb.addWorksheet('Desglose Diario')
+      if (dailyRows.length > 0) {
+        wsDaily.columns = Object.keys(dailyRows[0]).map(k => ({ header: k, key: k, width: 20 }))
+        wsDaily.addRows(dailyRows)
+      }
     }
     const fileName = `panel-completo-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
-    XLSX.writeFile(wb, fileName)
+    await downloadWorkbook(wb, fileName)
   }
 
   const buildSummaryRows = (metricsData) => {
