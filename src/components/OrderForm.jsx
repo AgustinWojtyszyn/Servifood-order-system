@@ -1172,8 +1172,161 @@ const OrderForm = ({ user, loading }) => {
                 />
                 <span>Cena (solo whitelist)</span>
               </label>
-              <p className="text-xs text-gray-600">Puedes pedir uno o ambos. Si marcas ambos, se crearán dos pedidos separados con el mismo menú.</p>
+              <p className="text-xs text-gray-600">Puedes pedir uno o ambos. Si marcas ambos, se abrirá el formulario de cena completo debajo.</p>
             </div>
+          </div>
+        )}
+
+        {dinnerEnabled && dinnerMenuEnabled && selectedTurns.dinner && (
+          <div className="space-y-4">
+            <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-300">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <div className="bg-amber-500 text-white p-2 sm:p-3 rounded-xl">
+                  <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Menú de cena</h2>
+                  <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Selecciona tu plato para la cena (whitelist).</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {menuItems.map((item) => {
+                  const isSelected = selectedItemsDinner[item.id]
+                  const itemId = `dinner-item-${item.id}`
+                  const isDisabled = item.name?.toLowerCase().includes('menú principal') || item.name?.toLowerCase().includes('plato principal')
+                    ? Object.keys(selectedItemsDinner).some(id => selectedItemsDinner[id] && (menuItems.find(mi => mi.id === id)?.name || '').toLowerCase().includes('menú principal')) && !isSelected
+                    : false
+                  return (
+                    <label key={item.id} htmlFor={itemId} className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all ${isSelected ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/60'} ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                      <input
+                        id={itemId}
+                        type="checkbox"
+                        checked={!!isSelected}
+                        disabled={isDisabled}
+                        onChange={(e) => handleItemSelectDinner(item.id, e.target.checked)}
+                        className="mt-1 h-4 w-4 text-amber-600 border-gray-300"
+                      />
+                      <div className="space-y-1">
+                        <p className="text-sm sm:text-base font-semibold text-gray-900">{item.name}</p>
+                        {item.description && <p className="text-xs text-gray-600">{item.description}</p>}
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+              <div className="border-t border-gray-200 pt-3 sm:pt-4 mt-3">
+                <div className="flex justify-between items-center text-lg sm:text-xl font-semibold">
+                  <span>Total de items (cena):</span>
+                  <span>{calculateTotalDinner()}</span>
+                </div>
+              </div>
+            </div>
+
+            {visibleOptions.length > 0 && (
+              <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-200">
+                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                  <div className="bg-amber-500 text-white p-2 sm:p-3 rounded-xl">
+                    <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Opciones adicionales (cena)</h2>
+                    <p className="text-[11px] sm:text-xs text-gray-600 font-semibold">Mismo catálogo, responde para la cena.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {visibleOptions.map((option) => (
+                    <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50">
+                      <label
+                        className="block text-sm text-gray-900 mb-3 font-bold"
+                        htmlFor={option.type === 'text' ? `dinner-custom-option-${option.id}` : undefined}
+                      >
+                        {option.title}
+                        {option.required && <span className="text-red-600 ml-1">*</span>}
+                      </label>
+
+                      {option.type === 'multiple_choice' && option.options && (
+                        <div className="space-y-2">
+                          {option.options.map((opt, index) => {
+                            const isSelected = customResponsesDinner[option.id] === opt
+                            const inputId = `dinner-option-${option.id}-choice-${index}`
+                            return (
+                            <label
+                              key={index}
+                              className={`flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer ${isSelected ? 'border-amber-500 bg-amber-50' : ''}`}
+                              htmlFor={inputId}
+                              onClick={(e) => {
+                                if (isSelected) {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  setCustomResponsesDinner(prev => ({ ...prev, [option.id]: null }))
+                                }
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                id={inputId}
+                                name={`dinner-option-${option.id}`}
+                                value={opt}
+                                checked={isSelected}
+                                onChange={(e) => setCustomResponsesDinner(prev => ({ ...prev, [option.id]: e.target.value }))}
+                                className="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500"
+                              />
+                              <span className="ml-3 text-sm text-gray-900 font-semibold">{opt}</span>
+                            </label>
+                          )})}
+                        </div>
+                      )}
+
+                      {option.type === 'checkbox' && option.options && (
+                        <div className="space-y-2">
+                          {option.options.map((opt, index) => {
+                            const inputId = `dinner-option-${option.id}-checkbox-${index}`
+                            const list = customResponsesDinner[option.id] || []
+                            const isChecked = list.includes(opt)
+                            return (
+                            <label key={index} htmlFor={inputId} className={`flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer ${isChecked ? 'border-amber-500 bg-amber-50' : ''}`}>
+                              <input
+                                type="checkbox"
+                                id={inputId}
+                                name={`dinner-option-${option.id}-checkbox`}
+                                value={opt}
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const checked = e.target.checked
+                                  setCustomResponsesDinner(prev => {
+                                    const current = prev[option.id] || []
+                                    return {
+                                      ...prev,
+                                      [option.id]: checked
+                                        ? [...current, opt]
+                                        : current.filter(v => v !== opt)
+                                    }
+                                  })
+                                }}
+                                className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                              />
+                              <span className="ml-3 text-sm text-gray-900 font-semibold">{opt}</span>
+                            </label>
+                          )})}
+                        </div>
+                      )}
+
+                      {option.type === 'text' && (
+                        <textarea
+                          id={`dinner-custom-option-${option.id}`}
+                          value={customResponsesDinner[option.id] || ''}
+                          onChange={(e) => setCustomResponsesDinner(prev => ({ ...prev, [option.id]: e.target.value }))}
+                          className="input-field"
+                          placeholder="Escribe tu respuesta para la cena..."
+                          style={{ fontWeight: '600' }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
