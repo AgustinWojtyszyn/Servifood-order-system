@@ -90,7 +90,7 @@ const OrderForm = ({ user, loading }) => {
 
   const visibleOptions = useMemo(() => {
     let opts = customOptions.filter(opt => opt.active)
-    if (mode !== 'dinner') {
+    if (mode !== 'dinner' || !dinnerEnabled) {
       opts = opts.filter(opt => !opt.dinner_only && !/\[cena\]/i.test(opt.title || ''))
     }
     if (mode === 'dinner' && dinnerEnabled) {

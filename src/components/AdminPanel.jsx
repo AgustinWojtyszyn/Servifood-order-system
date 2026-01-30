@@ -324,7 +324,8 @@ const AdminPanel = () => {
       options: [''],
       required: false,
       active: true,
-      company: ''
+      company: '',
+      dinner_only: false
     })
     setEditingOptions(true)
   }
@@ -1120,6 +1121,20 @@ const AdminPanel = () => {
                   />
                   <label htmlFor="new-option-required" className="text-sm font-bold text-gray-900 cursor-pointer select-none">
                     Campo requerido
+                  </label>
+                </div>
+
+                {/* Solo cena */}
+                <div className="flex items-center gap-2 bg-white rounded-lg p-3 border border-gray-200">
+                  <input
+                    type="checkbox"
+                    id="new-option-dinner-only"
+                    checked={newOption.dinner_only}
+                    onChange={(e) => handleOptionFieldChange('dinner_only', e.target.checked)}
+                    className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label htmlFor="new-option-dinner-only" className="text-sm font-bold text-gray-900 cursor-pointer select-none">
+                    Mostrar solo en pedidos de <span className="font-extrabold">cena</span> (usuarios habilitados)
                   </label>
                 </div>
 

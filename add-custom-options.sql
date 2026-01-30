@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.custom_options (
 
 -- Asegurar columna en instalaciones existentes
 ALTER TABLE public.custom_options ADD COLUMN IF NOT EXISTS company TEXT;
+ALTER TABLE public.custom_options ADD COLUMN IF NOT EXISTS dinner_only BOOLEAN DEFAULT false;
 
 -- Habilitar RLS
 ALTER TABLE public.custom_options ENABLE ROW LEVEL SECURITY;
