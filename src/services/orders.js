@@ -24,6 +24,7 @@ class OrdersService {
       // Añadir timestamp y estado por defecto
       const orderWithDefaults = {
         ...sanitizedData,
+        service: sanitizedData.service || 'lunch',
         status: ORDER_STATUS.PENDING,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

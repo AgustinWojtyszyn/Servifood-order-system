@@ -325,6 +325,19 @@ export const db = {
   },
 
   // Pedidos
+  getUserFeatures: async () => {
+    const cacheKey = 'user-features'
+    const cached = cache.get(cacheKey)
+    if (cached) return { data: cached, error: null }
+    const { data, error } = await supabase
+      .from('user_features')
+      .select('feature, enabled')
+    if (!error && data) {
+      cache.set(cacheKey, data, 60_000)
+    }
+    return { data, error }
+  },
+
   createOrder: async (orderData) => {
     cache.clear() // Limpiar cache al crear pedido nuevo
     const { data, error } = await supabase

@@ -49,6 +49,8 @@ const OrderForm = ({ user, loading }) => {
     phone: '',
     comments: ''
   })
+  const [mode, setMode] = useState('lunch') // lunch | dinner
+  const [dinnerEnabled, setDinnerEnabled] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -93,6 +95,7 @@ const OrderForm = ({ user, loading }) => {
     fetchCustomOptions()
     checkTodayOrder()
     loadLastOrderSuggestion()
+    fetchUserFeatures()
     // Pre-fill user data
     setFormData(prev => ({
       ...prev,
@@ -159,6 +162,19 @@ const OrderForm = ({ user, loading }) => {
       setIsPastDeadline(true)
     } else {
       setIsPastDeadline(false)
+    }
+  }
+
+  const fetchUserFeatures = async () => {
+    if (!user?.id) return
+    try {
+      const { data, error } = await db.getUserFeatures()
+      if (!error && Array.isArray(data)) {
+        const dinner = data.find(f => f.feature === 'dinner' && f.enabled)
+        setDinnerEnabled(!!dinner)
+      }
+    } catch (err) {
+      console.error('Error fetching user features', err)
     }
   }
 
@@ -542,7 +558,8 @@ const OrderForm = ({ user, loading }) => {
         status: 'pending',
         total_items: calculateTotal(),
         custom_responses: customResponsesArray,
-        idempotency_key: idempotencyKey
+        idempotency_key: idempotencyKey,
+        service: mode || 'lunch'
       }
 
       const { error } = await db.createOrder(orderData)
@@ -551,7 +568,10 @@ const OrderForm = ({ user, loading }) => {
         // Mostrar el mensaje real de error de Supabase para depuración
         let msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
         // Verificar si es error de política de base de datos
-        if (msg.includes('violates row-level security policy') || 
+        if (msg.includes('dinner') || msg.toLowerCase().includes('service') || msg.includes('feature')) {
+          setError('No tenés habilitada la cena. Volvimos a almuerzo.')
+          setMode('lunch')
+        } else if (msg.includes('violates row-level security policy') || 
             msg.includes('new row violates row-level security')) {
           setError('Ya tienes un pedido pendiente. Espera a que se complete para crear uno nuevo.')
         } else {
@@ -743,6 +763,27 @@ const OrderForm = ({ user, loading }) => {
                         <option key={location} value={location}>{location}</option>
                       ))}
                     </select>
+                    {dinnerEnabled && formData.location && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="text-xs text-gray-600">Turno:</span>
+                        <div className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-1">
+                          <button
+                            type="button"
+                            onClick={() => setMode('lunch')}
+                            className={`px-3 py-1 text-xs font-semibold rounded-full ${mode === 'lunch' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+                          >
+                            Almuerzo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setMode('dinner')}
+                            className={`px-3 py-1 text-xs font-semibold rounded-full ${mode === 'dinner' ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                          >
+                            Cena
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
