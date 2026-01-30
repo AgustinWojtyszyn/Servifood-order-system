@@ -325,6 +325,7 @@ const AdminPanel = () => {
       required: false,
       active: true,
       company: '',
+      // flag legacy, no editable control
       dinner_only: false
     })
     setEditingOptions(true)
@@ -439,19 +440,6 @@ const AdminPanel = () => {
     }))
   }
 
-  const handleCreateDinnerOptionQuick = () => {
-    setNewOption({
-      title: 'Preferencias de Cena',
-      type: 'text',
-      options: [],
-      required: false,
-      active: true,
-      company: '',
-      dinner_only: true
-    })
-    setActiveTab('options')
-    setEditingOptions(true)
-  }
 
   const handleRemoveOptionChoice = (index) => {
     setNewOption(prev => ({
@@ -875,22 +863,13 @@ const AdminPanel = () => {
                 )
               })}
               
-              <div className="grid sm:flex sm:items-center gap-2">
-                <button
-                  onClick={addMenuItem}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 p-4 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-all font-semibold text-sm shadow-sm"
-                >
-                  <Plus className="h-5 w-5" />
-                  Agregar nuevo plato
-                </button>
-                <button
-                  onClick={handleCreateDinnerOptionQuick}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 p-4 rounded-xl bg-amber-600 text-white hover:bg-amber-700 transition-all font-semibold text-sm shadow-sm"
-                >
-                  <Plus className="h-5 w-5" />
-                  Agregar opción de cena (whitelist)
-                </button>
-              </div>
+              <button
+                onClick={addMenuItem}
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-all font-semibold text-sm shadow-sm"
+              >
+                <Plus className="h-5 w-5" />
+                Agregar nuevo plato
+              </button>
             </div>
           )}
         </div>
@@ -1147,19 +1126,6 @@ const AdminPanel = () => {
                   </label>
                 </div>
 
-                {/* Solo cena */}
-                <div className="flex items-center gap-2 bg-white rounded-lg p-3 border border-gray-200">
-                  <input
-                    type="checkbox"
-                    id="new-option-dinner-only"
-                    checked={newOption.dinner_only}
-                    onChange={(e) => handleOptionFieldChange('dinner_only', e.target.checked)}
-                    className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
-                  <label htmlFor="new-option-dinner-only" className="text-sm font-bold text-gray-900 cursor-pointer select-none">
-                    Mostrar solo en pedidos de <span className="font-extrabold">cena</span> (usuarios habilitados)
-                  </label>
-                </div>
 
                 {/* Botones */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
