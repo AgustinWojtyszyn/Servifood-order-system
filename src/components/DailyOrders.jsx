@@ -1064,10 +1064,10 @@ const DailyOrders = ({ user, loading }) => {
           <div className="border-b-2 border-primary-200 px-6 py-6 dark:border-strokedark sm:px-8 xl:px-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-2xl font-black text-black dark:text-white">
+                <h3 className="text-2xl font-black text-gray-950 dark:text-white">
                   📋 Pedidos del Día ({sortedOrders.length})
                 </h3>
-                <p className="text-xl text-black dark:text-white font-semibold">
+                <p className="text-xl text-gray-950 dark:text-white font-semibold">
                   Ordenado por: {
                     sortBy === 'recent' ? 'Más recientes' :
                     sortBy === 'location' ? 'Empresa (hora asc)' :
