@@ -1074,7 +1074,7 @@ const DailyOrders = ({ user, loading }) => {
                 >
                   Ordenado por: {
                     sortBy === 'recent' ? 'Más recientes' :
-                    sortBy === 'location' ? 'Empresa (hora asc)' :
+                    sortBy === 'location' ? 'Empresa' :
                     sortBy === 'hour' ? 'Hora ascendente' :
                     'Estado'
                   }
