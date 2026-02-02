@@ -265,6 +265,12 @@
     display: none;
   }
 
+  /* Forzar encabezados de Pedidos del Día a negro sólido (previene herencia de colores globales) */
+  .orders-heading,
+  .orders-sorting {
+    color: #000 !important;
+  }
+
 }
 
 /* ===========================

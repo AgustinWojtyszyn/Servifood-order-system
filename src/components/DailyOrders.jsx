@@ -1065,14 +1065,12 @@ const DailyOrders = ({ user, loading }) => {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3
-                  className="text-2xl font-black !text-black dark:!text-white"
-                  style={{ color: '#000000' }}
+                  className="orders-heading text-2xl font-black"
                 >
                   📋 Pedidos del Día ({sortedOrders.length})
                 </h3>
                 <p
-                  className="text-xl font-semibold !text-black dark:!text-white"
-                  style={{ color: '#000000' }}
+                  className="orders-sorting text-xl font-semibold"
                 >
                   Ordenado por: {
                     sortBy === 'recent' ? 'Más recientes' :
