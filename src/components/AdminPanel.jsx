@@ -1125,13 +1125,13 @@ const AdminPanel = () => {
                     <label className="block text-sm font-bold text-gray-900 mb-2">
                       Aplicar a
                     </label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 text-gray-900">
                       {[
                         { value: 'both', label: 'Ambos' },
                         { value: 'lunch', label: 'Solo almuerzo' },
                         { value: 'dinner', label: 'Solo cena' }
                       ].map(opt => (
-                        <label key={opt.value} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer">
+                        <label key={opt.value} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer text-gray-900">
                           <input
                             type="radio"
                             name="meal-scope"
@@ -1151,8 +1151,8 @@ const AdminPanel = () => {
                     <label className="block text-sm font-bold text-gray-900 mb-2">
                       Feriados
                     </label>
-                    <div className="flex flex-col gap-2">
-                      <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer">
+                    <div className="flex flex-col gap-2 text-gray-900">
+                      <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer text-gray-900">
                         <input
                           type="checkbox"
                           checked={newOption.only_holidays}
@@ -1162,7 +1162,7 @@ const AdminPanel = () => {
                         />
                         Solo feriados
                       </label>
-                      <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer">
+                      <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer text-gray-900">
                         <input
                           type="checkbox"
                           checked={newOption.exclude_holidays}
@@ -1181,7 +1181,7 @@ const AdminPanel = () => {
                   <label className="block text-sm font-bold text-gray-900 mb-2">
                     Días de la semana (dejar vacío = todos)
                   </label>
-                  <div className="grid grid-cols-7 gap-2 text-center">
+                  <div className="grid grid-cols-7 gap-2 text-center text-gray-900">
                     {[1,2,3,4,5,6,7].map(day => {
                       const labels = ['L','M','X','J','V','S','D']
                       const active = Array.isArray(newOption.days_of_week) && newOption.days_of_week.includes(day)
@@ -1191,7 +1191,7 @@ const AdminPanel = () => {
                           key={day}
                           onClick={() => toggleDay(day)}
                           className={`rounded-lg border px-0 py-2 text-sm font-bold ${
-                            active ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-800 border-gray-200'
+                            active ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-black border-gray-200'
                           }`}
                         >
                           {labels[day - 1]}

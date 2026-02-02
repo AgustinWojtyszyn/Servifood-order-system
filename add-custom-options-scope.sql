@@ -18,16 +18,16 @@ BEGIN
     CHECK (meal_scope IN ('lunch','dinner','both'));
 EXCEPTION WHEN duplicate_object THEN NULL; END$$;
 
+-- Usar operador de contención para evitar subquery en CHECK
 DO $$
 BEGIN
+  -- eliminar versión previa si existe y no es compatible
+  ALTER TABLE public.custom_options DROP CONSTRAINT IF EXISTS custom_options_days_of_week_chk;
   ALTER TABLE public.custom_options
     ADD CONSTRAINT custom_options_days_of_week_chk
     CHECK (
       days_of_week IS NULL
-      OR (
-        SELECT bool_and(v BETWEEN 1 AND 7)
-        FROM unnest(days_of_week) v
-      )
+      OR days_of_week <@ ARRAY[1,2,3,4,5,6,7]::smallint[]
     );
 EXCEPTION WHEN duplicate_object THEN NULL; END$$;
 
@@ -114,4 +114,3 @@ COMMENT ON FUNCTION public.get_visible_custom_options IS
 
 -- 4) RLS (lectura sigue igual; escritura ya es solo admin en políticas existentes)
 -- Si se necesitan ajustes, hacerlo aquí. Este script no cambia las políticas de lectura.
-
