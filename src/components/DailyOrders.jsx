@@ -1067,7 +1067,7 @@ const DailyOrders = ({ user, loading }) => {
                 <h3 className="text-2xl font-black text-black dark:text-white">
                   📋 Pedidos del Día ({sortedOrders.length})
                 </h3>
-                <p className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
+                <p className="text-xl text-black dark:text-white font-semibold">
                   Ordenado por: {
                     sortBy === 'recent' ? 'Más recientes' :
                     sortBy === 'location' ? 'Empresa (hora asc)' :
