@@ -125,7 +125,7 @@ const Experience = () => {
       </section>
 
       <div className="grid sm:flex sm:items-center sm:gap-3 space-y-3 sm:space-y-0">
-        <Link to="/dashboard" className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow-sm hover:bg-blue-700">
+        <Link to="/daily-orders" className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow-sm hover:bg-blue-700">
           Revisar pedidos <ArrowRight className="h-4 w-4" />
         </Link>
         <Link to="/auditoria" className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-semibold hover:bg-gray-50">

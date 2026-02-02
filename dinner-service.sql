@@ -29,97 +29,66 @@ CREATE TABLE IF NOT EXISTS public.user_features (
 ALTER TABLE public.user_features ENABLE ROW LEVEL SECURITY;
 
 -- RLS user_features
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE policyname = 'user_features_select_own'
-      AND tablename = 'user_features'
-  ) THEN
-    CREATE POLICY user_features_select_own
-      ON public.user_features
-      FOR SELECT
-      USING (user_id = auth.uid());
-  END IF;
+DROP POLICY IF EXISTS user_features_select_own ON public.user_features;
+CREATE POLICY user_features_select_own
+  ON public.user_features
+  FOR SELECT
+  USING (user_id = auth.uid());
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE policyname = 'user_features_block_writes'
-      AND tablename = 'user_features'
-  ) THEN
-    CREATE POLICY user_features_block_writes
-      ON public.user_features
-      FOR ALL
-      USING (false)
-      WITH CHECK (false);
-  END IF;
-END$$;
+DROP POLICY IF EXISTS user_features_block_writes ON public.user_features;
+CREATE POLICY user_features_block_writes
+  ON public.user_features
+  FOR ALL
+  USING (false)
+  WITH CHECK (false);
 
 -- 3) RLS orders: exigir feature dinner para service='dinner'
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE policyname = 'orders_select_own'
-      AND tablename = 'orders'
-  ) THEN
-    CREATE POLICY orders_select_own
-      ON public.orders
-      FOR SELECT
-      USING (user_id = auth.uid());
-  END IF;
+DROP POLICY IF EXISTS orders_select_own ON public.orders;
+CREATE POLICY orders_select_own
+  ON public.orders
+  FOR SELECT
+  USING (user_id = auth.uid());
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE policyname = 'orders_insert_own_with_dinner_gate'
-      AND tablename = 'orders'
-  ) THEN
-    CREATE POLICY orders_insert_own_with_dinner_gate
-      ON public.orders
-      FOR INSERT
-      WITH CHECK (
-        user_id = auth.uid()
-        AND (
-          service = 'lunch'
-          OR (
-            service = 'dinner' AND EXISTS (
-              SELECT 1 FROM public.user_features uf
-              WHERE uf.user_id = auth.uid()
-                AND uf.feature = 'dinner'
-                AND uf.enabled = true
-            )
-          )
+DROP POLICY IF EXISTS orders_insert_own_with_dinner_gate ON public.orders;
+CREATE POLICY orders_insert_own_with_dinner_gate
+  ON public.orders
+  FOR INSERT
+  WITH CHECK (
+    user_id = auth.uid()
+    AND (
+      service = 'lunch'
+      OR (
+        service = 'dinner' AND EXISTS (
+          SELECT 1 FROM public.user_features uf
+          WHERE uf.user_id = auth.uid()
+            AND uf.feature = 'dinner'
+            AND uf.enabled = true
         )
-      );
-  END IF;
+      )
+    )
+  );
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE policyname = 'orders_update_own_with_dinner_gate'
-      AND tablename = 'orders'
-  ) THEN
-    CREATE POLICY orders_update_own_with_dinner_gate
-      ON public.orders
-      FOR UPDATE
-      USING (user_id = auth.uid())
-      WITH CHECK (
-        user_id = auth.uid()
-        AND (
-          service = 'lunch'
-          OR (
-            service = 'dinner' AND EXISTS (
-              SELECT 1 FROM public.user_features uf
-              WHERE uf.user_id = auth.uid()
-                AND uf.feature = 'dinner'
-                AND uf.enabled = true
-            )
-          )
+DROP POLICY IF EXISTS orders_update_own_with_dinner_gate ON public.orders;
+CREATE POLICY orders_update_own_with_dinner_gate
+  ON public.orders
+  FOR UPDATE
+  USING (user_id = auth.uid())
+  WITH CHECK (
+    user_id = auth.uid()
+    AND (
+      service = 'lunch'
+      OR (
+        service = 'dinner' AND EXISTS (
+          SELECT 1 FROM public.user_features uf
+          WHERE uf.user_id = auth.uid()
+            AND uf.feature = 'dinner'
+            AND uf.enabled = true
         )
-      );
-  END IF;
-END$$;
+      )
+    )
+  );
 
 -- 4) Helpers para habilitar/deshabilitar feature (ejecutar con service role)
 CREATE OR REPLACE FUNCTION public.enable_feature(p_user uuid, p_feature text, p_enabled boolean DEFAULT true)
