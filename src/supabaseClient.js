@@ -700,22 +700,29 @@ export const db = {
     }
   },
 
-  // Opciones personalizables
+  // Opciones personalizables (admin listing sin filtros)
   getCustomOptions: async () => {
-    // Usar cache para opciones (cambian poco)
     const cacheKey = 'custom-options'
     const cached = cache.get(cacheKey)
     if (cached) return { data: cached, error: null }
-    
+
     const { data, error } = await supabase
       .from('custom_options')
-      .select('*') // Seleccionar todos los campos
+      .select('*')
       .order('order_position', { ascending: true })
-    
-    if (!error && data) {
-      cache.set(cacheKey, data, 120000) // Cache por 2 minutos
-    }
-    
+
+    if (!error && data) cache.set(cacheKey, data, 120000)
+    return { data, error }
+  },
+
+  // Opciones visibles por contexto (usa RPC con reglas de meal/días/feriados)
+  getVisibleCustomOptions: async ({ company, meal, date, countryCode = 'AR' }) => {
+    const { data, error } = await supabase.rpc('get_visible_custom_options', {
+      p_company: company || null,
+      p_meal: meal,
+      p_date: date,
+      p_country_code: countryCode
+    })
     return { data, error }
   },
 

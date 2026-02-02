@@ -330,6 +330,11 @@ const AdminPanel = () => {
       required: false,
       active: true,
       company: '',
+      // Alcance contextual
+      meal_scope: 'both',
+      days_of_week: null,
+      only_holidays: false,
+      exclude_holidays: false,
       // flag legacy, no editable control
       dinner_only: false
     })
@@ -349,14 +354,24 @@ const AdminPanel = () => {
     }
 
     try {
+      const daysArray = Array.isArray(newOption.days_of_week) ? newOption.days_of_week.filter(Boolean) : []
       const optionData = {
         ...newOption,
-        options: (newOption.type === 'multiple_choice' || newOption.type === 'checkbox') 
-          ? newOption.options.filter(opt => opt.trim()) 
+        options: (newOption.type === 'multiple_choice' || newOption.type === 'checkbox')
+          ? newOption.options.filter(opt => opt.trim())
           : null,
         order_position: customOptions.length,
         company: newOption.company || null,
-        active: true // Asegurar que siempre esté activa
+        active: true, // Asegurar que siempre esté activa
+        days_of_week: daysArray.length === 0 ? null : daysArray,
+        only_holidays: newOption.only_holidays || false,
+        exclude_holidays: newOption.exclude_holidays || false,
+        meal_scope: newOption.meal_scope || 'both'
+      }
+
+      if (optionData.only_holidays && optionData.exclude_holidays) {
+        alert('No podés marcar "Solo feriados" y "Excluir feriados" al mismo tiempo.')
+        return
       }
 
       console.log('🔧 Creando opción:', optionData)
@@ -436,6 +451,15 @@ const AdminPanel = () => {
 
   const handleOptionFieldChange = (field, value) => {
     setNewOption(prev => ({ ...prev, [field]: value }))
+  }
+
+  const toggleDay = (dayNumber) => {
+    setNewOption(prev => {
+      const current = Array.isArray(prev.days_of_week) ? prev.days_of_week : []
+      const exists = current.includes(dayNumber)
+      const next = exists ? current.filter(d => d !== dayNumber) : [...current, dayNumber]
+      return { ...prev, days_of_week: next.length ? next : null }
+    })
   }
 
   const handleAddOptionChoice = () => {
@@ -1093,6 +1117,88 @@ const AdminPanel = () => {
                   <p className="text-xs text-gray-600 mt-1">
                     Las preguntas se mostrarán únicamente en el flujo de la empresa elegida.
                   </p>
+                </div>
+
+                {/* Alcance por comida */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
+                      Aplicar a
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'both', label: 'Ambos' },
+                        { value: 'lunch', label: 'Solo almuerzo' },
+                        { value: 'dinner', label: 'Solo cena' }
+                      ].map(opt => (
+                        <label key={opt.value} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer">
+                          <input
+                            type="radio"
+                            name="meal-scope"
+                            value={opt.value}
+                            checked={newOption.meal_scope === opt.value}
+                            onChange={() => handleOptionFieldChange('meal_scope', opt.value)}
+                            className="text-primary-600 focus:ring-primary-500"
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Feriados */}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
+                      Feriados
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newOption.only_holidays}
+                          onChange={(e) => handleOptionFieldChange('only_holidays', e.target.checked)}
+                          disabled={newOption.exclude_holidays}
+                          className="text-primary-600 focus:ring-primary-500"
+                        />
+                        Solo feriados
+                      </label>
+                      <label className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newOption.exclude_holidays}
+                          onChange={(e) => handleOptionFieldChange('exclude_holidays', e.target.checked)}
+                          disabled={newOption.only_holidays}
+                          className="text-primary-600 focus:ring-primary-500"
+                        />
+                        Excluir feriados
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Días de la semana */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Días de la semana (dejar vacío = todos)
+                  </label>
+                  <div className="grid grid-cols-7 gap-2 text-center">
+                    {[1,2,3,4,5,6,7].map(day => {
+                      const labels = ['L','M','X','J','V','S','D']
+                      const active = Array.isArray(newOption.days_of_week) && newOption.days_of_week.includes(day)
+                      return (
+                        <button
+                          type="button"
+                          key={day}
+                          onClick={() => toggleDay(day)}
+                          className={`rounded-lg border px-0 py-2 text-sm font-bold ${
+                            active ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-800 border-gray-200'
+                          }`}
+                        >
+                          {labels[day - 1]}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
 
                 {/* Opciones (solo para multiple_choice y checkbox) */}

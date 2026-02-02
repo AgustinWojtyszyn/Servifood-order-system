@@ -110,10 +110,15 @@ export default function EditOrderForm({ user, loading }) {
 
   const fetchCustomOptions = async () => {
     try {
-      const { data, error } = await db.getCustomOptions()
-      if (!error && data) {
-        setCustomOptions(data)
-      }
+      const deliveryDate = order?.delivery_date || order?.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
+      const service = order?.service || 'lunch'
+      const { data, error } = await db.getVisibleCustomOptions({
+        company: order?.company || order?.company_id || null,
+        meal: service,
+        date: deliveryDate
+      })
+      if (!error && data) setCustomOptions(data)
+      if (error) console.error('Error fetching visible custom options:', error)
     } catch (err) {
       console.error('Error fetching custom options:', err)
     }

@@ -6,40 +6,10 @@ import { ShoppingCart, X, ChefHat, User, Settings, Clock, AlertTriangle, Buildin
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
 
-const filterOptionsByCompany = (options = [], companySlug) => {
-  const normalized = companySlug?.toLowerCase()
-  if (!normalized) return options
-
-  if (normalized === 'laja') {
-    // Solo guarnición; acepta opciones sin company o con company=laja
-    return options.filter(opt => {
-      const target = (opt?.company || opt?.company_slug || opt?.target_company || '').toLowerCase()
-      const isGuarn = (opt?.title || '').toLowerCase().includes('guarn')
-      return isGuarn && (!target || target === normalized)
-    })
-  }
-
-  // Para otras empresas, solo opciones explícitamente asignadas a esa company
-  return options.filter(opt => {
-    const target = (opt?.company || opt?.company_slug || opt?.target_company || '').toLowerCase()
-    return target === normalized
-  })
-}
-
-// Evitar duplicados por título+company
-const dedupeOptions = (options = []) => {
-  const seen = new Set()
-  return options.filter(opt => {
-    const key = `${(opt.title || '').toLowerCase()}|${(opt.company || '').toLowerCase()}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-}
-
 const OrderForm = ({ user, loading }) => {
   const [menuItems, setMenuItems] = useState([])
-  const [customOptions, setCustomOptions] = useState([])
+  const [customOptionsLunch, setCustomOptionsLunch] = useState([])
+  const [customOptionsDinner, setCustomOptionsDinner] = useState([])
   const [customResponses, setCustomResponses] = useState({})
   const [customResponsesDinner, setCustomResponsesDinner] = useState({})
   const [selectedItems, setSelectedItems] = useState({})
@@ -100,21 +70,32 @@ const OrderForm = ({ user, loading }) => {
   )
 
   const activeOptions = useMemo(
-    () => customOptions.filter(opt => opt.active),
-    [customOptions]
+    () => customOptionsLunch.filter(opt => opt.active),
+    [customOptionsLunch]
   )
 
   // Opciones visibles para almuerzo (excluye flags de solo cena)
   const visibleLunchOptions = useMemo(
-    () => activeOptions.filter(opt => !opt.dinner_only),
+    () => activeOptions.filter(Boolean),
     [activeOptions]
   )
 
   // Opciones visibles para cena (incluye comunes + solo cena; se vacía si el usuario no tiene cena habilitada)
   const visibleDinnerOptions = useMemo(() => {
     if (!dinnerEnabled) return []
-    return activeOptions
-  }, [activeOptions, dinnerEnabled])
+    return customOptionsDinner.filter(opt => opt.active)
+  }, [customOptionsDinner, dinnerEnabled])
+
+  // Unificado (evitar duplicados por id)
+  const allCustomOptions = useMemo(() => {
+    const seen = new Set()
+    return [...customOptionsLunch, ...customOptionsDinner].filter(opt => {
+      if (!opt?.id) return false
+      if (seen.has(opt.id)) return false
+      seen.add(opt.id)
+      return true
+    })
+  }, [customOptionsLunch, customOptionsDinner])
 
   useEffect(() => {
     if (!user?.id) return
@@ -159,7 +140,7 @@ const OrderForm = ({ user, loading }) => {
       let changed = false
       const updated = { ...prev }
 
-      customOptions.forEach((option) => {
+      allCustomOptions.forEach((option) => {
         if (!isGenneiaPostreOption(option)) return
 
         const current = prev[option.id]
@@ -177,7 +158,7 @@ const OrderForm = ({ user, loading }) => {
 
       return changed ? updated : prev
     })
-  }, [isGenneia, isGenneiaPostreDay, customOptions])
+  }, [isGenneia, isGenneiaPostreDay, allCustomOptions])
 
   const checkOrderDeadline = () => {
     const now = new Date()
@@ -297,11 +278,20 @@ const OrderForm = ({ user, loading }) => {
 
   const fetchCustomOptions = async () => {
     try {
-      const { data, error } = await db.getCustomOptions()
-      if (!error && data) {
-        const filtered = filterOptionsByCompany(data, rawCompanySlug)
-        setCustomOptions(dedupeOptions(filtered))
-      }
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const deliveryDate = tomorrow.toISOString().split('T')[0]
+
+      const [{ data: lunchData, error: lunchError }, { data: dinnerData, error: dinnerError }] = await Promise.all([
+        db.getVisibleCustomOptions({ company: rawCompanySlug, meal: 'lunch', date: deliveryDate }),
+        db.getVisibleCustomOptions({ company: rawCompanySlug, meal: 'dinner', date: deliveryDate })
+      ])
+
+      if (lunchError) console.error('Error fetching lunch custom options:', lunchError)
+      if (dinnerError) console.error('Error fetching dinner custom options:', dinnerError)
+
+      setCustomOptionsLunch(lunchData || [])
+      setCustomOptionsDinner(dinnerData || [])
     } catch (err) {
       console.error('Error fetching custom options:', err)
     }
