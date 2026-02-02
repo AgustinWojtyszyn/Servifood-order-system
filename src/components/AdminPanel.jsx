@@ -613,10 +613,12 @@ const AdminPanel = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   id="search"
+                  name="search"
                   type="text"
                   placeholder="Buscar por nombre o email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  autoComplete="search"
                   className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900"
                 />
               </div>
@@ -631,6 +633,7 @@ const AdminPanel = () => {
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <select
                   id="roleFilter"
+                  name="roleFilter"
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium appearance-none"
@@ -859,6 +862,7 @@ const AdminPanel = () => {
                   <input
                     type="checkbox"
                     id="dinner-menu-enabled"
+                    name="dinnerMenuEnabled"
                     checked={dinnerMenuEnabled}
                     onChange={(e) => toggleDinnerMenu(e.target.checked)}
                     className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
@@ -890,6 +894,7 @@ const AdminPanel = () => {
                     <label htmlFor={nameId} className="sr-only">Nombre del plato</label>
                     <input
                       id={nameId}
+                      name={nameId}
                       type="text"
                       placeholder="Nombre del plato"
                       value={item.name}
@@ -900,6 +905,7 @@ const AdminPanel = () => {
                     <label htmlFor={descId} className="sr-only">Descripción del plato</label>
                     <input
                       id={descId}
+                      name={descId}
                       type="text"
                       placeholder="Descripción (opcional)"
                       value={item.description}
@@ -1072,11 +1078,13 @@ const AdminPanel = () => {
                   </label>
                   <input
                     id="new-option-title"
+                    name="new-option-title"
                     type="text"
                     value={newOption.title}
                     onChange={(e) => handleOptionFieldChange('title', e.target.value)}
                     className="input-field w-full bg-white text-gray-900"
                     placeholder="Ej: ¿Prefieres alguna bebida?"
+                    autoComplete="off"
                   />
                 </div>
 
@@ -1087,6 +1095,7 @@ const AdminPanel = () => {
                   </label>
                   <select
                     id="new-option-type"
+                    name="new-option-type"
                     value={newOption.type}
                     onChange={(e) => handleOptionFieldChange('type', e.target.value)}
                     className="input-field w-full bg-white text-gray-900 text-sm sm:text-base"
@@ -1103,6 +1112,7 @@ const AdminPanel = () => {
                   </label>
                   <select
                     id="new-option-company"
+                    name="new-option-company"
                     value={newOption.company || ''}
                     onChange={(e) => handleOptionFieldChange('company', e.target.value)}
                     className="input-field w-full bg-white text-gray-900 text-sm sm:text-base"
@@ -1215,6 +1225,7 @@ const AdminPanel = () => {
                           </label>
                           <input
                             id={`option-choice-${index}`}
+                            name={`option-choice-${index}`}
                             type="text"
                             value={opt}
                             onChange={(e) => handleOptionChoiceChange(index, e.target.value)}

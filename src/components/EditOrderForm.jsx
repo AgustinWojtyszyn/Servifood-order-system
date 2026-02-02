@@ -477,8 +477,10 @@ export default function EditOrderForm({ user, loading }) {
                   </div>
 
                   <div className="flex justify-end mt-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer" htmlFor={`item-${item.id}`}>
                       <input
+                        id={`item-${item.id}`}
+                        name={`item-${item.id}`}
                         type="checkbox"
                         checked={selectedItems[item.id] === true}
                         onChange={(e) => handleItemSelect(item.id, e.target.checked)}

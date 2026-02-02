@@ -148,6 +148,7 @@ const Profile = ({ user, loading }) => {
                 id="fullName"
                 name="fullName"
                 type="text"
+                autoComplete="name"
                 required
                 className="input-field pl-9 sm:pl-10 text-sm sm:text-base font-medium"
                 placeholder="Tu nombre completo"
@@ -168,6 +169,7 @@ const Profile = ({ user, loading }) => {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 className="input-field pl-9 sm:pl-10 text-sm sm:text-base font-medium"
                 placeholder="tu@email.com"
