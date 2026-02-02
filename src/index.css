@@ -265,10 +265,10 @@
     display: none;
   }
 
-  /* Forzar encabezados de Pedidos del Día a negro sólido (previene herencia de colores globales) */
+  /* Color destacado (naranja mostaza) para encabezados de Pedidos del Día */
   .orders-heading,
   .orders-sorting {
-    color: #000 !important;
+    color: #d97706 !important; /* tailwind amber-700 aprox */
   }
 
 }
