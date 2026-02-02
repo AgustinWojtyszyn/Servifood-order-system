@@ -750,7 +750,7 @@ const DailyOrders = ({ user, loading }) => {
             <h4 className="text-3xl font-black text-black dark:text-white">
               📋 Pedidos Diarios
             </h4>
-            <p className="text-lg text-gray-600 dark:text-gray-400 font-semibold">
+            <p className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
               Gestión de pedidos para entrega mañana - {getTomorrowDate()}
             </p>
           </div>
@@ -1067,7 +1067,7 @@ const DailyOrders = ({ user, loading }) => {
                 <h3 className="text-2xl font-black text-black dark:text-white">
                   📋 Pedidos del Día ({sortedOrders.length})
                 </h3>
-                <p className="text-lg text-gray-600 dark:text-gray-400 font-semibold">
+                <p className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
                   Ordenado por: {
                     sortBy === 'recent' ? 'Más recientes' :
                     sortBy === 'location' ? 'Empresa (hora asc)' :
