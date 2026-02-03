@@ -161,17 +161,8 @@ const OrderForm = ({ user, loading }) => {
   }, [isGenneia, isGenneiaPostreDay, allCustomOptions])
 
   const checkOrderDeadline = () => {
-    const now = new Date()
-    // Convertir a horario Argentina GMT-3
-    const utcHour = now.getUTCHours()
-    // Argentina GMT-3
-    const argHour = (utcHour + 21) % 24
-    // Pedidos permitidos entre las 9:00 y 22:00 del día anterior
-    if (argHour < 9 || argHour >= 22) {
-      setIsPastDeadline(true)
-    } else {
-      setIsPastDeadline(false)
-    }
+    // Horario abierto 24hs
+    setIsPastDeadline(false)
   }
 
   const fetchUserFeatures = async () => {
@@ -527,7 +518,7 @@ const OrderForm = ({ user, loading }) => {
     const utcHour = now.getUTCHours()
     const argHour = (utcHour + 21) % 24
     if (argHour < 9 || argHour >= 22) {
-      setError('Los pedidos solo pueden realizarse entre las 9:00 y las 22:00 (horario Argentina, GMT-3) el día previo a la entrega.')
+      setError('Los pedidos pueden realizarse las 24 horas.')
       setSubmitting(false)
       setIsPastDeadline(true)
       return
@@ -765,7 +756,7 @@ const OrderForm = ({ user, loading }) => {
                 <div>
                   <h3 className="text-lg font-bold text-red-900 mb-1">Horario de pedidos cerrado</h3>
                   <p className="text-red-800 mb-3">
-                    Los pedidos deben realizarse <strong>entre las 9:00 y las 22:00 horas (horario Argentina, GMT-3) del día anterior</strong> a la entrega.
+                    Los pedidos pueden realizarse <strong>las 24 horas</strong>.
                   </p>
                   <p className="text-red-700 text-sm mb-2">
                     Si necesitas realizar <b>cambios urgentes</b> fuera de horario, comunícate por WhatsApp como <b>última instancia</b> <span className="whitespace-nowrap">(hasta las 7:30)</span>:
@@ -814,7 +805,7 @@ const OrderForm = ({ user, loading }) => {
                     <Clock className="h-5 w-5 text-blue-600 shrink-0" />
                     <div>
                       <p className="text-sm sm:text-base text-blue-800 font-medium">
-                        Horario de pedidos: <strong>9:00 a 22:00 horas</strong> (horario Argentina, GMT-3) del día anterior a la entrega
+                        Horario de pedidos: <strong>24 horas</strong> (todos los días)
                       </p>
                       <p className="text-xs sm:text-sm text-blue-700 mt-1">
                         Si necesitas realizar cambios, presiona el botón <strong>"¿Necesitas ayuda?"</strong>

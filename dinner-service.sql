@@ -194,3 +194,17 @@ BEGIN
     AND status = 'pending';
 END
 $$;
+
+-- 9) Whitelist Genneia cena para Diego Gimenez (idempotente, service role)
+DO $$
+DECLARE
+  v_auth uuid := 'e0f14abf-60f7-448f-87e2-565351b847c2';
+BEGIN
+  -- Asegurar consistencia con email conocido
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_auth AND lower(email) = 'diego.gimenez@genneia.com.ar') THEN
+    PERFORM public.enable_feature(v_auth, 'dinner', true);
+  ELSE
+    RAISE NOTICE 'No se encontró usuario auth con id % y email diego.gimenez@genneia.com.ar; créalo antes de rerun.', v_auth;
+  END IF;
+END
+$$;

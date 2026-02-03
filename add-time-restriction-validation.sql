@@ -1,14 +1,14 @@
 -- ============================================
 -- VALIDACIÓN DE HORARIO LÍMITE PARA PEDIDOS
 -- ============================================
--- Este script implementa la restricción de horario en el BACKEND
--- Los pedidos solo pueden crearse antes de las 22:00 horas
+-- Este script era usado para limitar pedidos hasta las 22:00.
+-- Ahora se ajusta para permitir pedidos las 24 horas (sin bloqueo horario).
 -- Ejecuta este script en Supabase SQL Editor
 
 -- ============================================
 -- OPCIÓN 1: TRIGGER (Recomendado)
 -- ============================================
--- El trigger valida la hora antes de insertar un pedido
+-- El trigger permite todos los pedidos (24hs)
 
 -- Función que valida el horario
 CREATE OR REPLACE FUNCTION check_order_time_limit()
@@ -20,10 +20,7 @@ BEGIN
   -- Ajusta 'America/Argentina/Buenos_Aires' según tu zona horaria
   current_hour := EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires');
   
-  -- Si son las 22:00 o después, rechazar el pedido
-  IF current_hour >= 22 THEN
-    RAISE EXCEPTION 'No se pueden crear pedidos después de las 22:00 horas. El horario de pedidos es hasta las 22:00 del día anterior a la entrega.';
-  END IF;
+  -- Sin límite horario: siempre permitir
   
   -- Si pasa la validación, permitir el INSERT
   RETURN NEW;
@@ -42,8 +39,7 @@ CREATE TRIGGER enforce_order_time_limit
 -- ============================================
 -- OPCIÓN 2: POLÍTICA RLS (Alternativa)
 -- ============================================
--- Esta política también bloquea inserts después de las 22:00
--- Puedes usar ambas o solo el trigger
+-- Política abierta: permite inserts las 24 horas
 
 -- Eliminar política si existe
 DROP POLICY IF EXISTS "Block orders after 22:00" ON public.orders;
@@ -52,7 +48,7 @@ DROP POLICY IF EXISTS "Block orders after 22:00" ON public.orders;
 CREATE POLICY "Block orders after 22:00" ON public.orders
   FOR INSERT
   WITH CHECK (
-    EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires') < 22
+    EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires') < 24 -- 24hs siempre verdadero
   );
 
 -- ============================================
@@ -140,4 +136,3 @@ PARA PROBAR LA VALIDACIÓN:
 -- Ahora es IMPOSIBLE crear pedidos después de las 22:00
 -- desde cualquier parte (frontend, API, SQL directo)
 -- ============================================
-
