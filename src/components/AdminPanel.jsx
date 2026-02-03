@@ -683,6 +683,7 @@ const AdminPanel = () => {
                     <label htmlFor={`mobile-role-${user.id}`} className="block text-xs font-bold text-gray-700 mb-1">Cambiar Rol</label>
                     <select
                       id={`mobile-role-${user.id}`}
+                      name={`mobile-role-${user.id}`}
                       value={user.role || 'user'}
                       onChange={(e) => handleRoleChange(user.id, e.target.value)}
                       className="w-full text-sm border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium"
@@ -756,6 +757,7 @@ const AdminPanel = () => {
                         <label htmlFor={`table-role-${user.id}`} className="sr-only">Cambiar rol para {user.full_name || user.email || 'usuario'}</label>
                         <select
                           id={`table-role-${user.id}`}
+                          name={`table-role-${user.id}`}
                           value={user.role || 'user'}
                           onChange={(e) => handleRoleChange(user.id, e.target.value)}
                           className="text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"

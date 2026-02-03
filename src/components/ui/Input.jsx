@@ -7,12 +7,14 @@ const Input = forwardRef(({
   type = 'text',
   label,
   id,
+  name,
   error,
   helperText,
   leftIcon,
   rightIcon,
   required = false,
   disabled = false,
+  'aria-label': ariaLabelProp,
   ...props
 }, ref) => {
   const [showPassword, setShowPassword] = useState(false)
@@ -26,6 +28,9 @@ const Input = forwardRef(({
   const isPassword = type === 'password'
   const hasError = !!error
   const inputId = id || useId()
+   // Garantiza name estable (ayuda a autocompletar y session restore)
+  const inputName = name || inputId
+  const ariaLabel = ariaLabelProp || (!label ? inputName : undefined)
 
   return (
     <div className="space-y-1">
@@ -46,6 +51,8 @@ const Input = forwardRef(({
         <input
           ref={ref}
           id={inputId}
+          name={inputName}
+          aria-label={ariaLabel}
           type={inputType}
           className={cn(
             'w-full px-4 py-3 border-2 rounded-lg transition-all duration-200',
