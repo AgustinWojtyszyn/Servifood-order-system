@@ -629,7 +629,7 @@ const Dashboard = ({ user, loading }) => {
                           {serviceBadge(service)}
                         </div>
                         <p className="text-xs sm:text-sm text-gray-600 truncate flex items-center gap-2">
-                          {order.location} • {formatDate(order.created_at)}
+                          {order.location} • {formatDate(order.created_at)} • {service === 'dinner' ? 'Cena' : 'Almuerzo'}
                         </p>
                       </div>
                     </div>
@@ -792,7 +792,7 @@ const Dashboard = ({ user, loading }) => {
                           {serviceBadge(service)}
                         </div>
                         <p className="text-xs sm:text-sm text-gray-600 truncate flex items-center gap-2">
-                          {order.location} • {formatDate(order.created_at)}
+                          {order.location} • {formatDate(order.created_at)} • {service === 'dinner' ? 'Cena' : 'Almuerzo'}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">

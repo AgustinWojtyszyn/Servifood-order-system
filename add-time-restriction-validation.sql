@@ -45,6 +45,8 @@ CREATE TRIGGER enforce_order_time_limit
 
 -- Eliminar política anterior (si existía) que bloqueaba desde las 22:00
 DROP POLICY IF EXISTS "Block orders after 22:00" ON public.orders;
+-- Eliminar la política de ventana previa si ya existe para evitar el error 42710
+DROP POLICY IF EXISTS "Allow orders 09-22" ON public.orders;
 
 -- Crear política de permiso dentro de la ventana (si tienes RLS activo en orders)
 CREATE POLICY "Allow orders 09-22" ON public.orders
