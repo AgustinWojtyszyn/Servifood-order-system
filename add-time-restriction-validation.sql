@@ -1,14 +1,14 @@
 -- ============================================
--- VALIDACIÓN DE HORARIO LÍMITE PARA PEDIDOS (DESHABILITADA)
+-- VALIDACIÓN DE HORARIO LÍMITE PARA PEDIDOS (CORTE 22:00)
 -- ============================================
 -- Antes: se bloqueaban pedidos a partir de las 22:00.
--- Ahora: se permiten pedidos 24/7 (sin bloqueo horario).
+-- Ahora: se bloquean pedidos a partir de las 22:00 (hora Buenos Aires).
 -- Ejecuta este script en Supabase SQL Editor
 
 -- ============================================
 -- OPCIÓN 1: TRIGGER (Recomendado)
 -- ============================================
--- El trigger permite todos los pedidos (24hs)
+-- El trigger permite pedidos solo hasta las 22:00
 
 -- Función que valida el horario
 CREATE OR REPLACE FUNCTION check_order_time_limit()
@@ -19,8 +19,11 @@ BEGIN
   -- Obtener la hora actual (con zona configurable)
   current_hour := EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires');
 
-  -- Sin límite horario: siempre permitir (se deja la variable para futuros cambios)
-  
+  -- Bloqueo a partir de las 22:00 (inclusive)
+  IF current_hour >= 22 THEN
+    RAISE EXCEPTION 'Pedidos cerrados después de las 22:00 (hora Buenos Aires)';
+  END IF;
+
   -- Si pasa la validación, permitir el INSERT
   RETURN NEW;
 END;
@@ -38,15 +41,17 @@ CREATE TRIGGER enforce_order_time_limit
 -- ============================================
 -- OPCIÓN 2: POLÍTICA RLS (Alternativa)
 -- ============================================
--- Política abierta: permite inserts las 24 horas
+-- Política con límite: permite inserts solo antes de las 22:00
 
 -- Eliminar política anterior (si existía) que bloqueaba desde las 22:00
 DROP POLICY IF EXISTS "Block orders after 22:00" ON public.orders;
 
--- Crear política explícita de permiso 24/7 (si tienes RLS activo en orders)
-CREATE POLICY "Allow orders 24/7" ON public.orders
+-- Crear política de permiso hasta las 22:00 (si tienes RLS activo en orders)
+CREATE POLICY "Allow orders before 22:00" ON public.orders
   FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (
+    EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires') < 22
+  );
 
 -- ============================================
 -- VERIFICACIÓN

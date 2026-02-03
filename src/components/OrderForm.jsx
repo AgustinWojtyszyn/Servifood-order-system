@@ -6,6 +6,9 @@ import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2 } from 'luci
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
 
+const ORDER_CUTOFF_HOUR = 22 // 22:00 cierre
+const ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'
+
 const DINNER_FALLBACK_WHITELIST = new Set([
   'e0f14abf-60f7-448f-87e2-565351b847c2',
   '77a2c303-cf16-4358-ac6e-b4165a163c52',
@@ -568,12 +571,29 @@ const OrderForm = ({ user, loading }) => {
     setSuggestionSummary('')
   }
 
+  const isAfterCutoff = () => {
+    try {
+      const nowBA = new Date(new Date().toLocaleString('en-US', { timeZone: ORDER_TIMEZONE }))
+      return nowBA.getHours() >= ORDER_CUTOFF_HOUR
+    } catch (err) {
+      console.error('Error checking cutoff time', err)
+      return false
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     setError('')
     if (!user?.id) {
       setError('No se pudo validar el usuario. Intenta nuevamente.')
+      setSubmitting(false)
+      return
+    }
+
+    // Validar horario de corte (22:00 BA)
+    if (isAfterCutoff()) {
+      setError('Pedidos cerrados después de las 22:00 (hora Buenos Aires). Intenta mañana antes del cierre.')
       setSubmitting(false)
       return
     }
@@ -829,7 +849,7 @@ const OrderForm = ({ user, loading }) => {
                     <Clock className="h-5 w-5 text-blue-600 shrink-0" />
                     <div>
                       <p className="text-sm sm:text-base text-blue-800 font-medium">
-                        Horario de pedidos: <strong>24 horas</strong> (todos los días)
+                        Horario de pedidos: hasta las <strong>22:00</strong> (hora Buenos Aires)
                       </p>
                       <p className="text-xs sm:text-sm text-blue-700 mt-1">
                         Si necesitas realizar cambios, presiona el botón <strong>"¿Necesitas ayuda?"</strong>
