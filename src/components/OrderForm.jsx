@@ -9,6 +9,10 @@ import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
 const DINNER_FALLBACK_WHITELIST = new Set([
   'e0f14abf-60f7-448f-87e2-565351b847c2',
   '77a2c303-cf16-4358-ac6e-b4165a163c52',
+  '25b89b0d-8744-40a7-b2c6-f5034ea0a11f',
+  '3658aea9-1e69-4dcf-aeb1-58e97b635c24',
+  '27422d62-9509-42ef-aac4-b36569d669dd',
+  '3aca6f64-235c-46d5-90c6-4e87e7262a3a',
   'diego.gimenez@genneia.com.ar',
   'diego_sjrc@hotmail.com',
   'jorge.rodriguez@genneia.com.ar',
@@ -16,6 +20,7 @@ const DINNER_FALLBACK_WHITELIST = new Set([
   // Whitelist personales existentes
   'aldana.marquez@gmail.com',
   'edgardo.elizondo@gmail.com',
+  'eelizondo_2005@yahoo.com.ar',
   'german.arabel@gmail.com',
   'guillermo.alonso@gmail.com',
   'javier.pallero@gmail.com',

@@ -110,6 +110,10 @@ DO $$
 DECLARE
   v_auth uuid;
   v_email text;
+  v_user uuid := '25b89b0d-8744-40a7-b2c6-f5034ea0a11f'; -- Javier Pallero (javiksn@gmail.com)
+  v_guillermo uuid := '3658aea9-1e69-4dcf-aeb1-58e97b635c24'; -- Guillermo Alonso (galonso@genneia.com.ar)
+  v_aldana uuid := '27422d62-9509-42ef-aac4-b36569d669dd'; -- Aldana Marquez (amarquez@genneia.com.ar)
+  v_edgardo uuid := '3aca6f64-235c-46d5-90c6-4e87e7262a3a'; -- Edgardo Elizondo (eelizondo_2005@yahoo.com.ar)
 BEGIN
   -- Lista unificada de correos a habilitar (incluye personal y corporativo)
   FOR v_email IN
@@ -118,6 +122,7 @@ BEGIN
         -- Gmail / personales
         ('aldana.marquez@gmail.com'),
         ('edgardo.elizondo@gmail.com'),
+        ('eelizondo_2005@yahoo.com.ar'),
         ('german.arabel@gmail.com'),
         ('guillermo.alonso@gmail.com'),
         ('javier.pallero@gmail.com'),
@@ -154,6 +159,31 @@ BEGIN
 
     PERFORM public.enable_feature(v_auth, 'dinner', true);
   END LOOP;
+
+  -- Reforzar por UUID conocido (por si cambia el email)
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_user) THEN
+    PERFORM public.enable_feature(v_user, 'dinner', true);
+  ELSE
+    RAISE NOTICE 'No existe usuario auth con id %, crear en Auth y re-ejecutar.', v_user;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_guillermo) THEN
+    PERFORM public.enable_feature(v_guillermo, 'dinner', true);
+  ELSE
+    RAISE NOTICE 'No existe usuario auth con id %, crear en Auth y re-ejecutar.', v_guillermo;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_aldana) THEN
+    PERFORM public.enable_feature(v_aldana, 'dinner', true);
+  ELSE
+    RAISE NOTICE 'No existe usuario auth con id %, crear en Auth y re-ejecutar.', v_aldana;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_edgardo) THEN
+    PERFORM public.enable_feature(v_edgardo, 'dinner', true);
+  ELSE
+    RAISE NOTICE 'No existe usuario auth con id %, crear en Auth y re-ejecutar.', v_edgardo;
+  END IF;
 END
 $$;
 
@@ -165,6 +195,7 @@ WITH candidates AS (
   WHERE lower(au.email) IN (
     'aldana.marquez@gmail.com',
     'edgardo.elizondo@gmail.com',
+    'eelizondo_2005@yahoo.com.ar',
     'german.arabel@gmail.com',
     'guillermo.alonso@gmail.com',
     'javier.pallero@gmail.com',
