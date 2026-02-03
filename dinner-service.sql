@@ -116,6 +116,7 @@ DECLARE
   v_edgardo uuid := '3aca6f64-235c-46d5-90c6-4e87e7262a3a'; -- Edgardo Elizondo (eelizondo_2005@yahoo.com.ar)
   v_mario uuid := '75a715bc-786e-4efd-affe-edf7d89755d7'; -- Mario Ronco (mario.ronco@genneia.com.ar)
   v_martin uuid := '1daf7522-824e-499b-940f-53a7a2a04494'; -- Martín Amieva (mamieva@genneia.com.ar)
+  v_german uuid := '706dc288-ce1c-47f2-b275-66948fff6485'; -- Germán Arabel (german.arabel@genneia.com.ar)
 BEGIN
   -- Lista unificada de correos a habilitar (incluye personal y corporativo)
   FOR v_email IN
@@ -197,6 +198,12 @@ BEGIN
     PERFORM public.enable_feature(v_martin, 'dinner', true);
   ELSE
     RAISE NOTICE 'No existe usuario auth con id %, crear en Auth y re-ejecutar.', v_martin;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_german) THEN
+    PERFORM public.enable_feature(v_german, 'dinner', true);
+  ELSE
+    RAISE NOTICE 'No existe usuario auth con id %, crear en Auth y re-ejecutar.', v_german;
   END IF;
 END
 $$;
