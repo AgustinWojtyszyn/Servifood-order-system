@@ -19,6 +19,7 @@ const DINNER_FALLBACK_WHITELIST = new Set([
   'german.arabel@gmail.com',
   'guillermo.alonso@gmail.com',
   'javier.pallero@gmail.com',
+  'javiksn@gmail.com',
   'joseluis.gonzalez@gmail.com',
   'mario.ronco@gmail.com',
   'martin.amieva@gmail.com',
