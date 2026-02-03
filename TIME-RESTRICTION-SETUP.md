@@ -1,29 +1,21 @@
-# 🕐 Validación de Horario Límite - Backend
+# 🕐 Horario de pedidos 24/7
 
-## ⚠️ Problema
+## Estado actual
 
-Actualmente, el límite de horario (22:00) solo está validado en el frontend (JavaScript). Esto significa que:
+- ✅ No hay límite horario: los pedidos se aceptan las 24 horas.
+- ✅ Frontend y backend ya no bloquean por hora.
+- ✅ Script vigente: `add-time-restriction-validation.sql` crea un trigger sin restricción y una política RLS permisiva.
 
-- ❌ Usuarios avanzados pueden bypasear la validación
-- ❌ Pueden usar la API directamente
-- ❌ Pueden desactivar JavaScript
-- ❌ No hay protección real en la base de datos
+## ¿Por qué cambió?
 
-## ✅ Solución
+Antes se bloqueaba a las 22:00, pero ahora se requiere operación continua. Se dejó el trigger/política para poder revertir rápidamente si se necesita otro horario.
 
-El script `add-time-restriction-validation.sql` agrega **validación en el backend** usando:
-
-1. **TRIGGER** - Valida antes de cada INSERT
-2. **POLÍTICA RLS** - Bloquea inserts después de las 22:00
-
-### 🔒 Triple Protección:
+### Cómo funciona hoy
 
 ```
-1️⃣ Frontend (OrderForm.jsx)     ← Primera barrera
-            ↓
-2️⃣ Política RLS (Supabase)       ← Segunda barrera
-            ↓
-3️⃣ Trigger (PostgreSQL)          ← Tercera barrera (más robusta)
+1️⃣ Frontend (OrderForm.jsx)     → sin validación de horario
+2️⃣ Política RLS (Supabase)      → `Allow orders 24/7` (USING/WITH CHECK true)
+3️⃣ Trigger (PostgreSQL)         → retorna NEW sin chequear hora
 ```
 
 ## 🚀 Cómo Aplicar
@@ -45,18 +37,13 @@ El script `add-time-restriction-validation.sql` agrega **validación en el backe
 
 Deberías ver en la consola:
 - ✅ Trigger creado: `enforce_order_time_limit`
-- ✅ Política creada: `Block orders after 22:00`
+- ✅ Política creada: `Allow orders 24/7`
 
 ## 🎯 Funcionamiento
 
-### ⏰ Antes de las 22:00
+### Operación actual
 ```
-Usuario crea pedido → ✅ PERMITIDO → Pedido creado exitosamente
-```
-
-### 🚫 Después de las 22:00
-```
-Usuario crea pedido → ❌ BLOQUEADO → Error: "No se pueden crear pedidos después de las 22:00 horas..."
+Usuario crea pedido → ✅ PERMITIDO → Pedido creado exitosamente (cualquier hora)
 ```
 
 ## 🌍 Configurar Zona Horaria
@@ -81,45 +68,30 @@ SELECT name FROM pg_timezone_names WHERE name LIKE 'America%';
 
 ## 🧪 Probar que Funciona
 
-### Prueba 1: Antes de las 22:00
+### Prueba 1: App (cualquier hora)
 Intenta crear un pedido desde la app:
 - ✅ Debería funcionar normalmente
 
-### Prueba 2: Después de las 22:00
-Intenta crear un pedido desde la app:
-- ❌ Debería mostrar error: "No se pueden crear pedidos después de las 22:00 horas"
-
-### Prueba 3: Usando API directamente
-Intenta insertar directamente en SQL Editor (después de las 22:00):
+### Prueba 2: Usando API directamente
+Intenta insertar directamente en SQL Editor:
 ```sql
 INSERT INTO public.orders (user_id, location, customer_name, customer_email, items, total_items, status)
 VALUES (auth.uid(), 'Los Berros', 'Test', 'test@example.com', '[]'::jsonb, 0, 'pending');
 ```
-- ❌ Debería dar ERROR
+- ✅ Debería funcionar (sin restricciones de horario)
 
-## 🔧 Personalizar Horario Límite
+## 🔧 Volver a poner límite (si se necesita)
 
-Para cambiar de 22:00 a otra hora, edita en el script:
-
-```sql
--- Cambiar 22 por la hora deseada (formato 24h)
-IF current_hour >= 22 THEN  -- Cambia este número
-
--- También en la política:
-EXTRACT(HOUR FROM ...) < 22  -- Cambia este número
-```
-
-Ejemplos:
-- `>= 20` = Bloquear después de las 8 PM
-- `>= 23` = Bloquear después de las 11 PM
-- `>= 18` = Bloquear después de las 6 PM
+1. Edita la función `check_order_time_limit` en `add-time-restriction-validation.sql` para comparar la hora y lanzar excepción.
+2. Cambia la política `Allow orders 24/7` por otra con `WITH CHECK (EXTRACT(HOUR ...) < HORA_LIMITE)`.
+3. Reejecuta el script completo en SQL Editor.
 
 ## 🛠️ Mantenimiento
 
 ### Deshabilitar temporalmente:
 ```sql
 DROP TRIGGER enforce_order_time_limit ON public.orders;
-DROP POLICY "Block orders after 22:00" ON public.orders;
+DROP POLICY "Allow orders 24/7" ON public.orders;
 ```
 
 ### Reactivar:
@@ -133,7 +105,7 @@ WHERE trigger_name = 'enforce_order_time_limit';
 
 -- Ver política
 SELECT policyname FROM pg_policies 
-WHERE policyname = 'Block orders after 22:00';
+WHERE policyname = 'Allow orders 24/7';
 ```
 
 ## ⚡ Rendimiento
@@ -152,7 +124,7 @@ DROP TRIGGER IF EXISTS enforce_order_time_limit ON public.orders;
 
 ### Error: "policy already exists"
 ```sql
-DROP POLICY IF EXISTS "Block orders after 22:00" ON public.orders;
+DROP POLICY IF EXISTS "Allow orders 24/7" ON public.orders;
 -- Luego vuelve a ejecutar el script
 ```
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ordersService } from '../services/orders'
-import { ShoppingCart, X, ChefHat, User, Settings, Clock, AlertTriangle, Building2 } from 'lucide-react'
+import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2 } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
 
@@ -37,7 +37,6 @@ const OrderForm = ({ user, loading }) => {
   const [hasOrderToday, setHasOrderToday] = useState(false)
   const [pendingLunch, setPendingLunch] = useState(false)
   const [pendingDinner, setPendingDinner] = useState(false)
-  const [isPastDeadline, setIsPastDeadline] = useState(false)
   const [suggestion, setSuggestion] = useState(null) // último pedido sugerido
   const [suggestionVisible, setSuggestionVisible] = useState(false)
   const [suggestionLoading, setSuggestionLoading] = useState(false)
@@ -106,7 +105,6 @@ const OrderForm = ({ user, loading }) => {
 
   useEffect(() => {
     if (!user?.id) return
-    checkOrderDeadline()
     fetchMenuItems()
     fetchCustomOptions()
     checkTodayOrder()
@@ -166,11 +164,6 @@ const OrderForm = ({ user, loading }) => {
       return changed ? updated : prev
     })
   }, [isGenneia, isGenneiaPostreDay, allCustomOptions])
-
-  const checkOrderDeadline = () => {
-    // Horario abierto 24hs
-    setIsPastDeadline(false)
-  }
 
   const fetchUserFeatures = async () => {
     if (!user?.id) return
@@ -546,17 +539,6 @@ const OrderForm = ({ user, loading }) => {
       return
     }
 
-    // Verificar horario límite
-    const now = new Date()
-    const utcHour = now.getUTCHours()
-    const argHour = (utcHour + 21) % 24
-    if (argHour < 9 || argHour >= 22) {
-      setError('Los pedidos pueden realizarse las 24 horas.')
-      setSubmitting(false)
-      setIsPastDeadline(true)
-      return
-    }
-
     // Verificar pendientes por turno
     if (pendingLunch && (!dinnerEnabled || !dinnerMenuEnabled || !selectedTurns.dinner)) {
       setError('Ya tienes un pedido de almuerzo pendiente. Espera a que se complete.')
@@ -779,37 +761,7 @@ const OrderForm = ({ user, loading }) => {
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
-        {isPastDeadline ? (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 sm:p-6 shadow-lg max-w-xl w-full">
-              <div className="flex items-start gap-3">
-                <div className="shrink-0 bg-red-100 rounded-full p-2">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-red-900 mb-1">Horario de pedidos cerrado</h3>
-                  <p className="text-red-800 mb-3">
-                    Los pedidos pueden realizarse <strong>las 24 horas</strong>.
-                  </p>
-                  <p className="text-red-700 text-sm mb-2">
-                    Si necesitas realizar <b>cambios urgentes</b> fuera de horario, comunícate por WhatsApp como <b>última instancia</b> <span className="whitespace-nowrap">(hasta las 7:30)</span>:
-                  </p>
-                  <a
-                    href="https://wa.me/549XXXXXXXXX?text=Hola%2C%20necesito%20realizar%20un%20cambio%20urgente%20en%20mi%20pedido%20de%20ServiFood."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow transition-colors duration-200 text-sm"
-                  >
-                    Contactar por WhatsApp
-                  </a>
-                  <p className="text-xs text-red-500 mt-2">Solo para casos urgentes hasta las 7:30 hs. El resto de los cambios deben gestionarse en horario habitual.</p>
-                </div>
-              </div>
-            </div>
-            </div>
-        ) : (
-
-            <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
+        <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
               <div className="text-center">
                 <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/15 border-2 border-white/30 shadow-lg text-white mb-3">
                   <Building2 className="h-5 w-5" />
@@ -1420,7 +1372,7 @@ const OrderForm = ({ user, loading }) => {
           }}>
           <button
             type="submit"
-            disabled={loading || !hasAnySelectedItems || hasOrderToday || isPastDeadline}
+            disabled={loading || !hasAnySelectedItems || hasOrderToday}
             style={{ 
               backgroundColor: '#16a34a',
               color: '#ffffff',

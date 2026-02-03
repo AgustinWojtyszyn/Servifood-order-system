@@ -87,9 +87,9 @@ export const getErrorResponse = (errorCode, { screenContext, SUPPORT_PHONE, TUTO
     case 'TIME_RESTRICTION':
       return {
         intent: 'errores',
-        title: 'Horario de pedidos cerrado',
-        message: 'Los pedidos se realizan de 9:00 a 22:00 del día anterior.',
-        steps: ['Intentá nuevamente dentro del horario habilitado'],
+        title: 'Pedidos habilitados 24/7',
+        message: 'Podés realizar pedidos en cualquier momento del día.',
+        steps: ['Reintentá el envío ahora mismo'],
         tutorialUrl: null,
         contact: SUPPORT_PHONE,
         requiredPhrase: MANUAL_ORDER_TEXT,

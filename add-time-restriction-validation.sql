@@ -1,8 +1,8 @@
 -- ============================================
--- VALIDACIÓN DE HORARIO LÍMITE PARA PEDIDOS
+-- VALIDACIÓN DE HORARIO LÍMITE PARA PEDIDOS (DESHABILITADA)
 -- ============================================
--- Este script era usado para limitar pedidos hasta las 22:00.
--- Ahora se ajusta para permitir pedidos las 24 horas (sin bloqueo horario).
+-- Antes: se bloqueaban pedidos a partir de las 22:00.
+-- Ahora: se permiten pedidos 24/7 (sin bloqueo horario).
 -- Ejecuta este script en Supabase SQL Editor
 
 -- ============================================
@@ -16,11 +16,10 @@ RETURNS TRIGGER AS $$
 DECLARE
   current_hour INTEGER;
 BEGIN
-  -- Obtener la hora actual (en la zona horaria de Argentina)
-  -- Ajusta 'America/Argentina/Buenos_Aires' según tu zona horaria
+  -- Obtener la hora actual (con zona configurable)
   current_hour := EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires');
-  
-  -- Sin límite horario: siempre permitir
+
+  -- Sin límite horario: siempre permitir (se deja la variable para futuros cambios)
   
   -- Si pasa la validación, permitir el INSERT
   RETURN NEW;
@@ -41,15 +40,13 @@ CREATE TRIGGER enforce_order_time_limit
 -- ============================================
 -- Política abierta: permite inserts las 24 horas
 
--- Eliminar política si existe
+-- Eliminar política anterior (si existía) que bloqueaba desde las 22:00
 DROP POLICY IF EXISTS "Block orders after 22:00" ON public.orders;
 
--- Crear política que bloquea inserts después de las 22:00
-CREATE POLICY "Block orders after 22:00" ON public.orders
+-- Crear política explícita de permiso 24/7 (si tienes RLS activo en orders)
+CREATE POLICY "Allow orders 24/7" ON public.orders
   FOR INSERT
-  WITH CHECK (
-    EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires') < 24 -- 24hs siempre verdadero
-  );
+  WITH CHECK (true);
 
 -- ============================================
 -- VERIFICACIÓN
@@ -68,7 +65,7 @@ WHERE trigger_name = 'enforce_order_time_limit';
 -- Ver las políticas de orders
 SELECT schemaname, tablename, policyname, cmd, qual
 FROM pg_policies
-WHERE tablename = 'orders' AND policyname LIKE '%22:00%'
+WHERE tablename = 'orders'
 ORDER BY policyname;
 
 -- ============================================
@@ -78,16 +75,13 @@ ORDER BY policyname;
 /*
 PARA PROBAR LA VALIDACIÓN:
 
-1. Si ejecutas esto ANTES de las 22:00, funcionará:
+1. Ejecuta un INSERT simple (debería funcionar a cualquier hora):
    INSERT INTO public.orders (user_id, location, customer_name, customer_email, items, total_items, status)
    VALUES (auth.uid(), 'Los Berros', 'Test User', 'test@example.com', '[]'::jsonb, 0, 'pending');
 
-2. Si ejecutas esto DESPUÉS de las 22:00, dará ERROR:
-   ERROR: No se pueden crear pedidos después de las 22:00 horas...
+2. Confirma que NO hay errores por horario. Si ves un error horario, revisa si existen políticas/triggers viejos sin dropear.
 
-3. Para simular horario diferente (solo prueba):
-   -- Temporalmente cambiar hora del sistema (NO RECOMENDADO EN PRODUCCIÓN)
-   -- Usa la hora real del servidor
+3. Para reintroducir un límite horario en el futuro, cambia la lógica del trigger o ajusta la política RLS.
 */
 
 -- ============================================
@@ -110,10 +104,8 @@ PARA PROBAR LA VALIDACIÓN:
 - Incluso si alguien usa la API directamente, fallará
 
 🎯 COMPORTAMIENTO:
-- Antes de las 22:00: Pedidos se crean normalmente ✅
-- A las 22:00 o después: Pedidos son RECHAZADOS ❌
-- Error claro y descriptivo para el usuario
-- El frontend también valida (doble protección)
+- Pedidos permitidos 24/7 ✅
+- El frontend puede seguir validando, pero no hay bloqueo horario en la base
 
 📝 ORDEN DE VALIDACIÓN:
 1. Frontend valida (OrderForm.jsx) - Primera barrera
@@ -126,13 +118,12 @@ PARA PROBAR LA VALIDACIÓN:
 - Solo se ejecuta en INSERT, no en SELECT/UPDATE
 
 🔄 MANTENIMIENTO:
-- Para cambiar el horario límite, edita el número 22
-- Para deshabilitar temporalmente: DROP TRIGGER
-- Para ver si está activo: consulta information_schema.triggers
+- Para volver a poner límite horario, edita la función `check_order_time_limit` o la política `Allow orders 24/7`.
+- Para deshabilitar temporalmente: `DROP TRIGGER enforce_order_time_limit` y/o `DROP POLICY "Allow orders 24/7"`.
+- Para ver si están activos: consulta `information_schema.triggers` y `pg_policies`.
 */
 
 -- ============================================
 -- ¡COMPLETADO!
--- Ahora es IMPOSIBLE crear pedidos después de las 22:00
--- desde cualquier parte (frontend, API, SQL directo)
+-- Ahora los pedidos están habilitados 24/7 (frontend, API, SQL directo)
 -- ============================================
