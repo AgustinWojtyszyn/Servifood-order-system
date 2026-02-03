@@ -1162,6 +1162,7 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
                 <tr>
                   <th className="px-3 py-2 text-left">Hora</th>
                   <th className="px-3 py-2 text-left">Empresa</th>
+                  <th className="px-3 py-2 text-left">Turno</th>
                   <th className="px-3 py-2 text-left">Items</th>
                   <th className="px-3 py-2 text-left">Estado</th>
                 </tr>
@@ -1171,6 +1172,15 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
                   <tr key={`${o.id}-${i}`} className="border-t hover:bg-blue-50">
                     <td className="px-3 py-2">{fmtTime(o.created_at)}</td>
                     <td className="px-3 py-2">{o.location || '—'}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${
+                        (o.service || 'lunch') === 'dinner'
+                          ? 'bg-amber-100 text-amber-800 border-amber-200'
+                          : 'bg-sky-100 text-sky-800 border-sky-200'
+                      }`}>
+                        {(o.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
+                      </span>
+                    </td>
                     <td className="px-3 py-2">
                       {renderItems(o, isOption)}
                     </td>
