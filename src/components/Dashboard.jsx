@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2 } from 'lucide-react'
+import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
@@ -46,6 +46,25 @@ const summarizeOrderItems = (items = []) => {
     remaining,
     title: titleParts.join('; ')
   }
+}
+
+const serviceBadge = (service = 'lunch') => {
+  const normalized = (service || 'lunch').toLowerCase()
+  const isDinner = normalized === 'dinner'
+  const label = isDinner ? 'Cena' : 'Almuerzo'
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-[3px] text-[11px] font-semibold rounded-full border ${
+        isDinner
+          ? 'bg-amber-100 text-amber-800 border-amber-200'
+          : 'bg-sky-100 text-sky-800 border-sky-200'
+      }`}
+      title={`Servicio: ${label}`}
+    >
+      {isDinner ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+      {label}
+    </span>
+  )
 }
 
 const Dashboard = ({ user, loading }) => {
@@ -583,6 +602,7 @@ const Dashboard = ({ user, loading }) => {
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
               .map((order) => {
                 const status = order.displayStatus || order.status
+                const service = (order.service || 'lunch').toLowerCase()
                 return (
                   <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
                     <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
@@ -602,10 +622,13 @@ const Dashboard = ({ user, loading }) => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                          {isAdmin ? `${order.user_name} - ` : ''}Pedido #{order.id.slice(-8)}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                            {isAdmin ? `${order.user_name} - ` : ''}Pedido #{order.id.slice(-8)}
+                          </p>
+                          {serviceBadge(service)}
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate flex items-center gap-2">
                           {order.location} • {formatDate(order.created_at)}
                         </p>
                       </div>
@@ -754,6 +777,7 @@ const Dashboard = ({ user, loading }) => {
               {pastOrders.slice(0, 20).map(order => {
                 const summary = summarizeOrderItems(order.items)
                 const customSide = getCustomSideFromResponses(order.custom_responses)
+                const service = (order.service || 'lunch').toLowerCase()
                 return (
                   <div
                     key={order.id}
@@ -761,10 +785,13 @@ const Dashboard = ({ user, loading }) => {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                          Pedido #{order.id.slice(-8)}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                            Pedido #{order.id.slice(-8)}
+                          </p>
+                          {serviceBadge(service)}
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate flex items-center gap-2">
                           {order.location} • {formatDate(order.created_at)}
                         </p>
                       </div>

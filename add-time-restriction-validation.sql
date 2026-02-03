@@ -109,8 +109,8 @@ PARA PROBAR LA VALIDACIÓN:
 - Incluso si alguien usa la API directamente, fallará
 
 🎯 COMPORTAMIENTO:
-- Pedidos permitidos 24/7 ✅
-- El frontend puede seguir validando, pero no hay bloqueo horario en la base
+- Pedidos permitidos solo de 09:00 a 22:00 (hora Buenos Aires) ✅
+- El frontend valida y el backend bloquea fuera de ventana
 
 📝 ORDEN DE VALIDACIÓN:
 1. Frontend valida (OrderForm.jsx) - Primera barrera
@@ -130,5 +130,5 @@ PARA PROBAR LA VALIDACIÓN:
 
 -- ============================================
 -- ¡COMPLETADO!
--- Ahora los pedidos están habilitados 24/7 (frontend, API, SQL directo)
+-- Ahora los pedidos están habilitados de 09:00 a 22:00 (frontend, API, SQL directo)
 -- ============================================
