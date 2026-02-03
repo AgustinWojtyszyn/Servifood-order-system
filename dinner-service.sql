@@ -122,7 +122,9 @@ WITH candidates AS (
     'martin.calderon@gmail.com',
     'silvio.mansilla@gmail.com',
     'agustinwojtyszyn99@gmail.com',
-    'sarmientoclaudia985@gmail.com'
+    'sarmientoclaudia985@gmail.com',
+    'diego.gimenez@genneia.com.ar',
+    'diego_sjrc@hotmail.com'
   )
 )
 INSERT INTO public.user_features (user_id, feature, enabled)
@@ -205,6 +207,42 @@ BEGIN
     PERFORM public.enable_feature(v_auth, 'dinner', true);
   ELSE
     RAISE NOTICE 'No se encontró usuario auth con id % y email diego.gimenez@genneia.com.ar; créalo antes de rerun.', v_auth;
+  END IF;
+END
+$$;
+
+-- 10) Asegurar perfil y rol admin de Diego Gimenez (idempotente, service role)
+DO $$
+DECLARE
+  v_auth uuid := 'e0f14abf-60f7-448f-87e2-565351b847c2';
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = v_auth AND lower(email) = 'diego.gimenez@genneia.com.ar') THEN
+    RAISE NOTICE 'Diego Gimenez no existe en auth.users; créalo antes de rerun.';
+    RETURN;
+  END IF;
+
+  -- Upsert en public.users con rol admin y nombre
+  INSERT INTO public.users (id, email, full_name, role)
+  VALUES (v_auth, 'diego.gimenez@genneia.com.ar', 'Diego Gimenez', 'admin')
+  ON CONFLICT (id) DO UPDATE
+    SET email = EXCLUDED.email,
+        full_name = EXCLUDED.full_name,
+        role = 'admin';
+
+  -- Reforzar whitelist cena
+  PERFORM public.enable_feature(v_auth, 'dinner', true);
+END
+$$;
+
+-- 11) Whitelist Genneia cena para Diego Gimenez (hotmail) (idempotente, service role)
+DO $$
+DECLARE
+  v_auth uuid := '77a2c303-cf16-4358-ac6e-b4165a163c52';
+BEGIN
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_auth AND lower(email) = 'diego_sjrc@hotmail.com') THEN
+    PERFORM public.enable_feature(v_auth, 'dinner', true);
+  ELSE
+    RAISE NOTICE 'No se encontró usuario auth con id % y email diego_sjrc@hotmail.com; créalo antes de rerun.', v_auth;
   END IF;
 END
 $$;

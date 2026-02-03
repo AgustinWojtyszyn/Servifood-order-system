@@ -6,6 +6,13 @@ import { ShoppingCart, X, ChefHat, User, Settings, Clock, AlertTriangle, Buildin
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
 
+const DINNER_FALLBACK_WHITELIST = new Set([
+  'e0f14abf-60f7-448f-87e2-565351b847c2',
+  '77a2c303-cf16-4358-ac6e-b4165a163c52',
+  'diego.gimenez@genneia.com.ar',
+  'diego_sjrc@hotmail.com'
+])
+
 const OrderForm = ({ user, loading }) => {
   const [menuItems, setMenuItems] = useState([])
   const [customOptionsLunch, setCustomOptionsLunch] = useState([])
@@ -171,10 +178,17 @@ const OrderForm = ({ user, loading }) => {
       const { data, error } = await db.getUserFeatures()
       if (!error && Array.isArray(data)) {
         const dinner = data.find(f => f.feature === 'dinner' && f.enabled)
-        setDinnerEnabled(!!dinner)
-        if (!dinner) {
-          setSelectedTurns({ lunch: true, dinner: false })
-          setMode('lunch')
+        if (dinner) {
+          setDinnerEnabled(true)
+        } else {
+          const lowerId = (user?.id || '').toLowerCase()
+          const lowerEmail = (user?.email || '').toLowerCase()
+          const fallback = DINNER_FALLBACK_WHITELIST.has(lowerId) || DINNER_FALLBACK_WHITELIST.has(lowerEmail)
+          setDinnerEnabled(fallback)
+          if (!fallback) {
+            setSelectedTurns({ lunch: true, dinner: false })
+            setMode('lunch')
+          }
         }
       }
     } catch (err) {
@@ -235,13 +249,32 @@ const OrderForm = ({ user, loading }) => {
     }
   }
 
-  const extractNumber = (name) => {
-    const match = name?.match(/(\d+)/)
+  const extractNumber = (name = '') => {
+    const match = name.match(/(\d+)/)
     return match ? parseInt(match[1], 10) : Infinity
   }
 
+  const isMainMenu = (name = '') => {
+    const normalized = name.toLowerCase()
+    return normalized.includes('menú principal') || normalized.includes('menu principal') || normalized.includes('plato principal')
+  }
+
   const sortMenuItems = (items) => {
-    return [...items].sort((a, b) => extractNumber(a.name) - extractNumber(b.name))
+    return [...items].sort((a, b) => {
+      const aMain = isMainMenu(a.name)
+      const bMain = isMainMenu(b.name)
+      if (aMain !== bMain) return aMain ? -1 : 1
+
+      const aNum = extractNumber(a.name)
+      const bNum = extractNumber(b.name)
+      const aHasNum = Number.isFinite(aNum) && aNum !== Infinity
+      const bHasNum = Number.isFinite(bNum) && bNum !== Infinity
+
+      if (aHasNum && bHasNum) return aNum - bNum
+      if (aHasNum !== bHasNum) return aHasNum ? -1 : 1
+
+      return (a.name || '').localeCompare(b.name || '')
+    })
   }
 
   const fetchMenuItems = async () => {
@@ -1199,8 +1232,8 @@ const OrderForm = ({ user, loading }) => {
                   <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Menú de cena</h2>
-                  <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Selecciona tu plato para la cena (whitelist).</p>
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Menú de cena</h2>
+                  <p className="text-sm sm:text-base text-gray-700 font-semibold mt-1">Selecciona tu plato para la cena (whitelist).</p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -1211,7 +1244,7 @@ const OrderForm = ({ user, loading }) => {
                     ? Object.keys(selectedItemsDinner).some(id => selectedItemsDinner[id] && (menuItems.find(mi => mi.id === id)?.name || '').toLowerCase().includes('menú principal')) && !isSelected
                     : false
                   return (
-                    <label key={item.id} htmlFor={itemId} className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all ${isSelected ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/60'} ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    <label key={item.id} htmlFor={itemId} className={`flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${isSelected ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/60'} ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
                       <input
                         id={itemId}
                         type="checkbox"
@@ -1221,8 +1254,8 @@ const OrderForm = ({ user, loading }) => {
                         className="mt-1 h-4 w-4 text-amber-600 border-gray-300"
                       />
                       <div className="space-y-1">
-                        <p className="text-sm sm:text-base font-semibold text-gray-900">{item.name}</p>
-                        {item.description && <p className="text-xs text-gray-600">{item.description}</p>}
+                        <p className="text-base sm:text-lg font-semibold text-gray-900">{item.name}</p>
+                        {item.description && <p className="text-sm sm:text-base text-gray-700">{item.description}</p>}
                       </div>
                     </label>
                   )
@@ -1243,8 +1276,8 @@ const OrderForm = ({ user, loading }) => {
                     <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Opciones adicionales (cena)</h2>
-                    <p className="text-[11px] sm:text-xs text-gray-600 font-semibold">Mismo catálogo, responde para la cena.</p>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Opciones adicionales (cena)</h2>
+                    <p className="text-sm sm:text-base text-gray-700 font-semibold">Mismo catálogo, responde para la cena.</p>
                   </div>
                 </div>
 
@@ -1252,7 +1285,7 @@ const OrderForm = ({ user, loading }) => {
                   {visibleDinnerOptions.map((option) => (
                     <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50">
                       <label
-                        className="block text-sm text-gray-900 mb-3 font-bold"
+                        className="block text-base sm:text-lg text-gray-900 mb-3 font-bold"
                         htmlFor={option.type === 'text' ? `dinner-custom-option-${option.id}` : undefined}
                       >
                         {option.title}
@@ -1286,7 +1319,7 @@ const OrderForm = ({ user, loading }) => {
                                 onChange={(e) => setCustomResponsesDinner(prev => ({ ...prev, [option.id]: e.target.value }))}
                                 className="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500"
                               />
-                              <span className="ml-3 text-sm text-gray-900 font-semibold">{opt}</span>
+                              <span className="ml-3 text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
                             </label>
                           )})}
                         </div>
@@ -1320,7 +1353,7 @@ const OrderForm = ({ user, loading }) => {
                                 }}
                                 className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
                               />
-                              <span className="ml-3 text-sm text-gray-900 font-semibold">{opt}</span>
+                              <span className="ml-3 text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
                             </label>
                           )})}
                         </div>
