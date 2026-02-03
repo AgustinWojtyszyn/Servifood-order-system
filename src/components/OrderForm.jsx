@@ -10,7 +10,8 @@ const DINNER_FALLBACK_WHITELIST = new Set([
   'e0f14abf-60f7-448f-87e2-565351b847c2',
   '77a2c303-cf16-4358-ac6e-b4165a163c52',
   'diego.gimenez@genneia.com.ar',
-  'diego_sjrc@hotmail.com'
+  'diego_sjrc@hotmail.com',
+  'jorge.rodriguez@genneia.com.ar'
 ])
 
 const OrderForm = ({ user, loading }) => {
