@@ -30,16 +30,18 @@ export const formatDate = (dateString, options = {}) => {
 export const timeAgo = (dateString) => {
   if (!dateString) return null
   const diffMs = Date.now() - new Date(dateString).getTime()
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 1) return 'just now'
-  if (minutes === 1) return 'hace 1 min'
-  if (minutes < 60) return `hace ${minutes} min`
+  const seconds = Math.floor(diffMs / 1000)
+  if (seconds < 10) return 'Recién'
+  if (seconds < 60) return `Hace ${seconds} s`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes === 1) return 'Hace 1 min'
+  if (minutes < 60) return `Hace ${minutes} min`
   const hours = Math.floor(minutes / 60)
-  if (hours === 1) return 'hace 1 hora'
-  if (hours < 24) return `hace ${hours} horas`
+  if (hours === 1) return 'Hace 1 hora'
+  if (hours < 24) return `Hace ${hours} horas`
   const days = Math.floor(hours / 24)
-  if (days === 1) return 'ayer'
-  return `hace ${days} días`
+  if (days === 1) return 'Ayer'
+  return `Hace ${days} días`
 }
 
 export const formatCurrency = (amount, currency = 'ARS') => {

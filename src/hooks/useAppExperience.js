@@ -3,7 +3,7 @@ import { supabase } from '../services/supabase'
 
 // Ventanas alineadas a la necesidad del módulo (sin exponerlas en UI)
 const WINDOW_SECONDS = 3600 // traemos hasta 60 min para tener errores recientes
-const REFRESH_MS = 5000
+const REFRESH_MS = 60000 // refresco pasivo más liviano
 const USAGE_WINDOW_MS = 10 * 60 * 1000
 const PROBLEM_WINDOW_MS = 30 * 60 * 1000
 const ERROR_WINDOW_MS = 60 * 60 * 1000
@@ -51,6 +51,9 @@ export const useAppExperience = () => {
   const [data, setData] = useState([])
   const [ordersToday, setOrdersToday] = useState(0)
   const [supabaseStatus, setSupabaseStatus] = useState({ state: 'unknown', latencyMs: null, message: null })
+  const [summary, setSummary] = useState(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(null)
   const timer = useRef(null)
   const connectivityTimer = useRef(null)
 
@@ -77,7 +80,8 @@ export const useAppExperience = () => {
     if (!silent) setLoading(false)
   }
 
-  const pingSupabase = async (log = false) => {
+  const pingSupabase = async (reason = 'auto') => {
+    const metaBase = { source: 'ping', reason, ts_client: new Date().toISOString() }
     const start = performance.now()
     try {
       // Consulta liviana para verificar conectividad y latencia real
@@ -88,65 +92,72 @@ export const useAppExperience = () => {
       const latency = Math.round(performance.now() - start)
       if (error) {
         setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
-        if (log) {
-          await supabase.rpc('log_system_metric', {
-            kind: 'error',
-            ok: false,
-            latency_ms: latency,
-            path: '/experiencia',
-            status_code: error?.code ? parseInt(error.code, 10) : null,
-            message: error.message?.slice(0, 120) || 'Supabase error',
-            meta: { source: 'ping' }
-          })
-        }
-      } else {
-        let state = 'green'
-        if (latency > 1500) state = 'red'
-        else if (latency > 500) state = 'amber'
-        setSupabaseStatus({ state, latencyMs: latency, message: null })
-        if (log) {
-          await supabase.rpc('log_system_metric', {
-            kind: 'health_ping',
-            ok: true,
-            latency_ms: latency,
-            path: '/experiencia',
-            status_code: 200,
-            message: null,
-            meta: { source: 'ping' }
-          })
-        }
-      }
-    } catch (err) {
-      const latency = Math.round(performance.now() - start)
-      setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
-      if (log) {
         await supabase.rpc('log_system_metric', {
           kind: 'error',
           ok: false,
           latency_ms: latency,
           path: '/experiencia',
-          status_code: null,
-          message: (err?.message || 'Ping error').slice(0, 120),
-          meta: { source: 'ping' }
+          status_code: error?.code ? parseInt(error.code, 10) : null,
+          message: error.message?.slice(0, 120) || 'Supabase error',
+          meta: metaBase
+        })
+      } else {
+        let state = 'green'
+        if (latency > 1500) state = 'red'
+        else if (latency > 500) state = 'amber'
+        setSupabaseStatus({ state, latencyMs: latency, message: null })
+        await supabase.rpc('log_system_metric', {
+          kind: 'health_ping',
+          ok: true,
+          latency_ms: latency,
+          path: '/experiencia',
+          status_code: 200,
+          message: null,
+          meta: metaBase
         })
       }
+    } catch (err) {
+      const latency = Math.round(performance.now() - start)
+      setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
+      await supabase.rpc('log_system_metric', {
+        kind: 'error',
+        ok: false,
+        latency_ms: latency,
+        path: '/experiencia',
+        status_code: null,
+        message: (err?.message || 'Ping error').slice(0, 120),
+        meta: metaBase
+      })
+    }
+  }
+
+  const refreshExperienceStatus = async ({ reason = 'manual' } = {}) => {
+    if (isRefreshing) return
+    setIsRefreshing(true)
+    try {
+      await pingSupabase(reason)
+      const { data: statusData, error: summaryError } = await supabase.rpc('get_system_status_summary', { window_minutes: 60 })
+      if (!summaryError && statusData) setSummary(statusData)
+    } catch (err) {
+      console.error('Refresh experience status error', err)
+    } finally {
+      setIsRefreshing(false)
+      setLastRefreshedAt(new Date().toISOString())
     }
   }
 
   useEffect(() => {
     fetchData()
     timer.current = setInterval(() => fetchData(true), REFRESH_MS)
-    // Evitar múltiples pings por render: solo uno inicial logueado y luego cada CONNECTIVITY_REFRESH_MS
     if (!sessionStorage.getItem(PING_ONCE_KEY)) {
-      pingSupabase(true)
+      refreshExperienceStatus({ reason: 'auto' })
       sessionStorage.setItem(PING_ONCE_KEY, '1')
     } else {
-      pingSupabase(false)
+      // solo medir sin log en montajes repetidos
+      pingSupabase('auto')
     }
-    connectivityTimer.current = setInterval(() => pingSupabase(true), CONNECTIVITY_REFRESH_MS)
     return () => {
       timer.current && clearInterval(timer.current)
-      connectivityTimer.current && clearInterval(connectivityTimer.current)
     }
   }, [])
 
@@ -200,13 +211,21 @@ export const useAppExperience = () => {
   }, [aggregated, now])
 
   const latencyMs = useMemo(() => {
+    if (summary?.avg_latency_ms) return summary.avg_latency_ms
+    if (summary?.last_ping_latency_ms) return summary.last_ping_latency_ms
     const totalCalls = aggregated.reduce((acc, g) => acc + g.calls, 0)
     if (totalCalls === 0) return null
     const weighted = aggregated.reduce((acc, g) => acc + (g.maxP95 || 0) * (g.calls || 1), 0)
     return Math.round(weighted / Math.max(totalCalls, 1))
-  }, [aggregated])
+  }, [aggregated, summary])
 
   const lastError = useMemo(() => {
+    if (summary?.last_error_at) {
+      return {
+        type: summary.last_error_message || 'Sin fallos',
+        at: summary.last_error_at
+      }
+    }
     const withErrors = aggregated.filter(g => g.errors > 0 && g.last_ts)
     if (!withErrors.length) return null
     const latest = withErrors.sort((a, b) => (b.last_ts || 0) - (a.last_ts || 0))[0]
@@ -214,7 +233,7 @@ export const useAppExperience = () => {
       type: ACTION_LABEL[latest.action] || 'Acción',
       at: latest.last_ts
     }
-  }, [aggregated])
+  }, [aggregated, summary])
 
   const problems = useMemo(() => {
     const recent = aggregated.filter(g => g.last_ts && now - g.last_ts <= PROBLEM_WINDOW_MS)
@@ -248,6 +267,10 @@ export const useAppExperience = () => {
     latencyMs,
     lastError,
     supabaseStatus,
+    summary,
+    isRefreshing,
+    lastRefreshedAt,
+    refreshExperienceStatus,
     refetch: fetchData
   }
 }

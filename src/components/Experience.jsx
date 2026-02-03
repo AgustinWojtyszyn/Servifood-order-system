@@ -76,9 +76,18 @@ const Experience = () => {
                 {stateLabel[state]}
               </span>
               <span className="text-gray-400">•</span>
-              <button onClick={() => refetch()} className="text-blue-700 font-semibold hover:underline">
-                Actualizar ahora
+              <button
+                onClick={() => refreshExperienceStatus({ reason: 'manual' })}
+                disabled={isRefreshing}
+                className="text-blue-700 font-semibold hover:underline disabled:opacity-50"
+              >
+                {isRefreshing ? 'Actualizando…' : 'Actualizar ahora'}
               </button>
+              {lastRefreshedAt && (
+                <span className="text-xs text-gray-500">
+                  Actualizado: {timeAgo(lastRefreshedAt)} · {new Date(lastRefreshedAt).toLocaleString('es-AR')}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -120,7 +129,13 @@ const Experience = () => {
         <ActionCard
           title="Último error"
           value={lastError ? `${lastError.type}` : 'Sin fallos'}
-          desc={lastError ? timeAgo(lastError.at) : (supabaseStatus?.latencyMs ? `Último ping OK ${timeAgo(new Date())}` : 'Sin fallos')}
+          desc={
+            lastError
+              ? `${timeAgo(lastError.at)} · ${new Date(lastError.at).toLocaleString('es-AR')}`
+              : (supabaseStatus?.latencyMs && supabaseStatus.latencyMs !== null)
+                ? `Último ping OK: ${timeAgo(lastRefreshedAt || new Date())} · ${new Date(lastRefreshedAt || new Date()).toLocaleString('es-AR')}`
+                : 'Sin fallos'
+          }
           state={lastError ? 'amber' : 'green'}
         />
         <ActionCard
