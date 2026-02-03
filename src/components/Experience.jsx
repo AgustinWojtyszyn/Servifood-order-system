@@ -49,7 +49,20 @@ const ProblemRow = ({ state, message }) => {
 }
 
 const Experience = () => {
-  const { totals, problems, speedLabel, loading, error, refetch, ordersToday, latencyMs, lastError, supabaseStatus } = useAppExperience()
+  const {
+    totals,
+    problems,
+    speedLabel,
+    loading,
+    error,
+    ordersToday,
+    latencyMs,
+    lastError,
+    supabaseStatus,
+    isRefreshing,
+    lastRefreshedAt,
+    refreshExperienceStatus
+  } = useAppExperience()
   const { isAdmin } = useAuthContext()
   const state = totals.state || 'green'
   const palette = statePalette[state]
