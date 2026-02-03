@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
-import { CheckCircle2, AlertTriangle, XCircle, Activity, ClipboardList, ArrowRight } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, XCircle, Activity, ClipboardList, ArrowRight, Server, Zap } from 'lucide-react'
 import { useAppExperience } from '../hooks/useAppExperience'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Link, Navigate } from 'react-router-dom'
+import { timeAgo } from '../utils'
 
 const statePalette = {
   green: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', bar: 'bg-emerald-500', icon: CheckCircle2 },
@@ -48,7 +49,7 @@ const ProblemRow = ({ state, message }) => {
 }
 
 const Experience = () => {
-  const { totals, problems, speedLabel, loading, error, refetch, ordersToday } = useAppExperience()
+  const { totals, problems, speedLabel, loading, error, refetch, ordersToday, latencyMs, lastError, supabaseStatus } = useAppExperience()
   const { isAdmin } = useAuthContext()
   const state = totals.state || 'green'
   const palette = statePalette[state]
@@ -85,30 +86,46 @@ const Experience = () => {
         {loading && <p className="text-sm text-gray-600">Actualizando…</p>}
       </header>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <ActionCard
-          title="Pedidos hoy"
-          value={`${ordersToday} pedidos`}
-          desc="Actualizado automáticamente"
-          state={ordersToday > 0 ? 'green' : 'amber'}
-        />
-        <ActionCard
-          title="Velocidad de la app"
-          value={speedLabel.title}
-          desc={speedLabel.text}
+          title="Estado del sistema"
+          value={state === 'green' ? 'Sistema operativo' : state === 'amber' ? 'Sistema degradado' : 'Sistema caído'}
+          desc="Señales combinadas de uso, errores y latencia"
           state={state}
         />
         <ActionCard
-          title="Uso reciente"
-          value={totals.actions > 0 ? 'Hay actividad' : 'Sin actividad'}
-          desc={totals.actions > 0 ? 'Acciones en los últimos 10 minutos' : 'Sin acciones en los últimos 10 minutos'}
-          state={totals.actions > 0 ? 'green' : 'amber'}
+          title="Latencia promedio"
+          value={latencyMs ? `${latencyMs} ms` : 'Sin datos recientes'}
+          desc={latencyMs ? (latencyMs < 500 ? 'Dentro de lo normal' : latencyMs < 1500 ? 'Un poco alta' : 'Alta, revisar') : 'Aún no hay mediciones'}
+          state={
+            !latencyMs ? 'amber'
+            : latencyMs >= 1500 ? 'red'
+            : latencyMs >= 500 ? 'amber'
+            : 'green'
+          }
         />
         <ActionCard
-          title="Errores reales"
-          value={totals.errors ? `${totals.errors} acciones fallidas` : '0 acciones fallidas'}
-          desc={totals.errors ? 'Detectados en los últimos 60 minutos.' : 'No hubo fallos en la última hora.'}
-          state={totals.errors >= 2 ? 'red' : totals.errors === 1 ? 'amber' : 'green'}
+          title="Último error"
+          value={lastError ? `${lastError.type}` : 'No hay datos recientes'}
+          desc={lastError ? timeAgo(lastError.at) : 'Sin fallos en la última hora'}
+          state={lastError ? 'amber' : 'green'}
+        />
+        <ActionCard
+          title="Supabase / API"
+          value={
+            supabaseStatus.state === 'green' ? 'Conectado' :
+            supabaseStatus.state === 'amber' ? 'Lento' :
+            supabaseStatus.state === 'red' ? 'No disponible' : 'Sin datos'
+          }
+          desc={
+            supabaseStatus.latencyMs ? `${supabaseStatus.latencyMs} ms` :
+            supabaseStatus.message || 'Sin mediciones'
+          }
+          state={
+            supabaseStatus.state === 'red' ? 'red' :
+            supabaseStatus.state === 'amber' ? 'amber' :
+            supabaseStatus.state === 'green' ? 'green' : 'amber'
+          }
         />
       </div>
 

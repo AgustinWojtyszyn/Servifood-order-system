@@ -7,6 +7,7 @@ const REFRESH_MS = 5000
 const USAGE_WINDOW_MS = 10 * 60 * 1000
 const PROBLEM_WINDOW_MS = 30 * 60 * 1000
 const ERROR_WINDOW_MS = 60 * 60 * 1000
+const CONNECTIVITY_REFRESH_MS = 12000
 
 // Umbrales deterministas (no se muestran en UI)
 const THRESHOLDS = {
@@ -48,7 +49,9 @@ export const useAppExperience = () => {
   const [error, setError] = useState(null)
   const [data, setData] = useState([])
   const [ordersToday, setOrdersToday] = useState(0)
+  const [supabaseStatus, setSupabaseStatus] = useState({ state: 'unknown', latencyMs: null, message: null })
   const timer = useRef(null)
+  const connectivityTimer = useRef(null)
 
   const fetchOrdersToday = async () => {
     const start = new Date()
@@ -73,9 +76,34 @@ export const useAppExperience = () => {
     if (!silent) setLoading(false)
   }
 
+  const pingSupabase = async () => {
+    const start = performance.now()
+    try {
+      // Consulta liviana para verificar conectividad y latencia real
+      const { error } = await supabase
+        .from('orders')
+        .select('id', { head: true, limit: 1 })
+        .limit(1)
+      const latency = Math.round(performance.now() - start)
+      if (error) {
+        setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
+      } else {
+        let state = 'green'
+        if (latency > 1500) state = 'red'
+        else if (latency > 500) state = 'amber'
+        setSupabaseStatus({ state, latencyMs: latency, message: null })
+      }
+    } catch (err) {
+      const latency = Math.round(performance.now() - start)
+      setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
+    }
+  }
+
   useEffect(() => {
     fetchData()
     timer.current = setInterval(() => fetchData(true), REFRESH_MS)
+    pingSupabase()
+    connectivityTimer.current = setInterval(() => pingSupabase(), CONNECTIVITY_REFRESH_MS)
     return () => timer.current && clearInterval(timer.current)
   }, [])
 
@@ -128,6 +156,23 @@ export const useAppExperience = () => {
     return { actions: usageActions, errors: errors60m, state, slowGroups, slowRate }
   }, [aggregated, now])
 
+  const latencyMs = useMemo(() => {
+    const totalCalls = aggregated.reduce((acc, g) => acc + g.calls, 0)
+    if (totalCalls === 0) return null
+    const weighted = aggregated.reduce((acc, g) => acc + (g.maxP95 || 0) * (g.calls || 1), 0)
+    return Math.round(weighted / Math.max(totalCalls, 1))
+  }, [aggregated])
+
+  const lastError = useMemo(() => {
+    const withErrors = aggregated.filter(g => g.errors > 0 && g.last_ts)
+    if (!withErrors.length) return null
+    const latest = withErrors.sort((a, b) => (b.last_ts || 0) - (a.last_ts || 0))[0]
+    return {
+      type: ACTION_LABEL[latest.action] || 'Acción',
+      at: latest.last_ts
+    }
+  }, [aggregated])
+
   const problems = useMemo(() => {
     const recent = aggregated.filter(g => g.last_ts && now - g.last_ts <= PROBLEM_WINDOW_MS)
     const items = []
@@ -157,6 +202,9 @@ export const useAppExperience = () => {
     ordersToday,
     problems,
     speedLabel,
+    latencyMs,
+    lastError,
+    supabaseStatus,
     refetch: fetchData
   }
 }
