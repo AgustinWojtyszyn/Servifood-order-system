@@ -1123,6 +1123,9 @@ const DailyOrders = ({ user, loading }) => {
                     <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
                       🥤 Bebidas
                     </th>
+                    <th className="min-w-[110px] px-6 py-5 font-bold text-black text-lg">
+                      🍽️ Turno
+                    </th>
                     <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
                       🕐 Hora
                     </th>
@@ -1200,6 +1203,15 @@ const DailyOrders = ({ user, loading }) => {
                         </span>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold border ${
+                          (order.service || 'lunch') === 'dinner'
+                            ? 'bg-amber-100 text-amber-800 border-amber-200'
+                            : 'bg-sky-100 text-sky-800 border-sky-200'
+                        }`}>
+                          {(order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
+                        </span>
+                      </td>
+                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
                         <p className="text-base font-mono font-bold text-black">
                           {formatTime(order.created_at)}
                         </p>
@@ -1242,6 +1254,15 @@ const DailyOrders = ({ user, loading }) => {
                         className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${getLocationBadgeColor(order.location)}`}
                       >
                         {order.location}
+                      </span>
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${
+                          (order.service || 'lunch') === 'dinner'
+                            ? 'bg-amber-100 text-amber-800 border-amber-200'
+                            : 'bg-sky-100 text-sky-800 border-sky-200'
+                        }`}
+                      >
+                        {(order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
                       </span>
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold border ${getStatusColor(order.status)}`}
