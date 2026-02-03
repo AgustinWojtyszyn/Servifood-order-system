@@ -8,6 +8,7 @@ const USAGE_WINDOW_MS = 10 * 60 * 1000
 const PROBLEM_WINDOW_MS = 30 * 60 * 1000
 const ERROR_WINDOW_MS = 60 * 60 * 1000
 const CONNECTIVITY_REFRESH_MS = 12000
+const PING_ONCE_KEY = 'exp_ping_once' // evita spam por render
 
 // Umbrales deterministas (no se muestran en UI)
 const THRESHOLDS = {
@@ -76,7 +77,7 @@ export const useAppExperience = () => {
     if (!silent) setLoading(false)
   }
 
-  const pingSupabase = async () => {
+  const pingSupabase = async (log = false) => {
     const start = performance.now()
     try {
       // Consulta liviana para verificar conectividad y latencia real
@@ -87,24 +88,66 @@ export const useAppExperience = () => {
       const latency = Math.round(performance.now() - start)
       if (error) {
         setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
+        if (log) {
+          await supabase.rpc('log_system_metric', {
+            kind: 'error',
+            ok: false,
+            latency_ms: latency,
+            path: '/experiencia',
+            status_code: error?.code ? parseInt(error.code, 10) : null,
+            message: error.message?.slice(0, 120) || 'Supabase error',
+            meta: { source: 'ping' }
+          })
+        }
       } else {
         let state = 'green'
         if (latency > 1500) state = 'red'
         else if (latency > 500) state = 'amber'
         setSupabaseStatus({ state, latencyMs: latency, message: null })
+        if (log) {
+          await supabase.rpc('log_system_metric', {
+            kind: 'health_ping',
+            ok: true,
+            latency_ms: latency,
+            path: '/experiencia',
+            status_code: 200,
+            message: null,
+            meta: { source: 'ping' }
+          })
+        }
       }
     } catch (err) {
       const latency = Math.round(performance.now() - start)
       setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
+      if (log) {
+        await supabase.rpc('log_system_metric', {
+          kind: 'error',
+          ok: false,
+          latency_ms: latency,
+          path: '/experiencia',
+          status_code: null,
+          message: (err?.message || 'Ping error').slice(0, 120),
+          meta: { source: 'ping' }
+        })
+      }
     }
   }
 
   useEffect(() => {
     fetchData()
     timer.current = setInterval(() => fetchData(true), REFRESH_MS)
-    pingSupabase()
-    connectivityTimer.current = setInterval(() => pingSupabase(), CONNECTIVITY_REFRESH_MS)
-    return () => timer.current && clearInterval(timer.current)
+    // Evitar múltiples pings por render: solo uno inicial logueado y luego cada CONNECTIVITY_REFRESH_MS
+    if (!sessionStorage.getItem(PING_ONCE_KEY)) {
+      pingSupabase(true)
+      sessionStorage.setItem(PING_ONCE_KEY, '1')
+    } else {
+      pingSupabase(false)
+    }
+    connectivityTimer.current = setInterval(() => pingSupabase(true), CONNECTIVITY_REFRESH_MS)
+    return () => {
+      timer.current && clearInterval(timer.current)
+      connectivityTimer.current && clearInterval(connectivityTimer.current)
+    }
   }, [])
 
   const ops = useMemo(() => data.filter(d => d.kind === 'op'), [data])

@@ -95,19 +95,32 @@ const Experience = () => {
         />
         <ActionCard
           title="Latencia promedio"
-          value={latencyMs ? `${latencyMs} ms` : 'Sin datos recientes'}
-          desc={latencyMs ? (latencyMs < 500 ? 'Dentro de lo normal' : latencyMs < 1500 ? 'Un poco alta' : 'Alta, revisar') : 'Aún no hay mediciones'}
+          value={
+            latencyMs
+              ? `${latencyMs} ms`
+              : supabaseStatus?.latencyMs
+                ? `${supabaseStatus.latencyMs} ms (última medición)`
+                : 'Aún no hay mediciones'
+          }
+          desc={
+            latencyMs
+              ? (latencyMs < 500 ? 'Dentro de lo normal' : latencyMs < 1500 ? 'Un poco alta' : 'Alta, revisar')
+              : supabaseStatus?.latencyMs
+                ? 'Basado en el último ping'
+                : 'Sin datos recientes'
+          }
           state={
-            !latencyMs ? 'amber'
-            : latencyMs >= 1500 ? 'red'
-            : latencyMs >= 500 ? 'amber'
-            : 'green'
+            latencyMs
+              ? (latencyMs >= 1500 ? 'red' : latencyMs >= 500 ? 'amber' : 'green')
+              : supabaseStatus?.latencyMs
+                ? (supabaseStatus.latencyMs >= 1500 ? 'red' : supabaseStatus.latencyMs >= 500 ? 'amber' : 'green')
+                : 'amber'
           }
         />
         <ActionCard
           title="Último error"
-          value={lastError ? `${lastError.type}` : 'No hay datos recientes'}
-          desc={lastError ? timeAgo(lastError.at) : 'Sin fallos en la última hora'}
+          value={lastError ? `${lastError.type}` : 'Sin fallos'}
+          desc={lastError ? timeAgo(lastError.at) : (supabaseStatus?.latencyMs ? `Último ping OK ${timeAgo(new Date())}` : 'Sin fallos')}
           state={lastError ? 'amber' : 'green'}
         />
         <ActionCard
