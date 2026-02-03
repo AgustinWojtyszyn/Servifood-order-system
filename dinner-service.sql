@@ -105,6 +105,64 @@ BEGIN
 END;
 $$;
 
+-- 12) Habilitar whitelist con doble email (personal Gmail + corporativo genneia.com) - idempotente
+DO $$
+DECLARE
+  v_auth uuid;
+  v_email text;
+BEGIN
+  -- Lista unificada de correos a habilitar (incluye personal y corporativo)
+  FOR v_email IN
+    SELECT lower(e) AS email FROM (
+      VALUES
+        -- Gmail / personales
+        ('aldana.marquez@gmail.com'),
+        ('edgardo.elizondo@gmail.com'),
+        ('german.arabel@gmail.com'),
+        ('guillermo.alonso@gmail.com'),
+        ('javier.pallero@gmail.com'),
+        ('joseluis.gonzalez@gmail.com'),
+        ('mario.ronco@gmail.com'),
+        ('martin.amieva@gmail.com'),
+        ('martin.calderon@gmail.com'),
+        ('silvio.mansilla@gmail.com'),
+        ('agustinwojtyszyn99@gmail.com'),
+        ('sarmientoclaudia985@gmail.com'),
+        ('diego_sjrc@hotmail.com'), -- personal Diego
+
+        -- Corporativos genneia.com (mismo local-part)
+        ('aldana.marquez@genneia.com'),
+        ('edgardo.elizondo@genneia.com'),
+        ('german.arabel@genneia.com'),
+        ('guillermo.alonso@genneia.com'),
+        ('javier.pallero@genneia.com'),
+        ('joseluis.gonzalez@genneia.com'),
+        ('mario.ronco@genneia.com'),
+        ('martin.amieva@genneia.com'),
+        ('martin.calderon@genneia.com'),
+        ('silvio.mansilla@genneia.com'),
+        ('agustinwojtyszyn99@genneia.com'),
+        ('sarmientoclaudia985@genneia.com'),
+        ('diego.gimenez@genneia.com'),
+        ('jorge.rodriguez@genneia.com')
+
+        -- Compatibilidad: corporativos previos .com.ar
+        ,('diego.gimenez@genneia.com.ar')
+        ,('jorge.rodriguez@genneia.com.ar')
+    ) AS t(e)
+  LOOP
+    SELECT id INTO v_auth FROM auth.users WHERE lower(email) = v_email;
+
+    IF v_auth IS NULL THEN
+      RAISE NOTICE 'No existe usuario en auth.users con email %; crear en Auth y re-ejecutar.', v_email;
+      CONTINUE;
+    END IF;
+
+    PERFORM public.enable_feature(v_auth, 'dinner', true);
+  END LOOP;
+END
+$$;
+
 -- 5) Seed inicial whitelist dinner (idempotente)
 -- Intenta mapear por email (public.users.email -> auth.users.email)
 WITH candidates AS (
