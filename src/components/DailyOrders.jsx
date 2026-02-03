@@ -79,6 +79,22 @@ const DailyOrders = ({ user, loading }) => {
     return count
   }
 
+  const getBeverageLabel = (customResponses) => {
+    if (!Array.isArray(customResponses)) return '—'
+    const names = []
+    customResponses.forEach(resp => {
+      if (isBeverage(resp?.response)) names.push(resp.response)
+      if (Array.isArray(resp?.options)) {
+        resp.options.forEach(opt => { if (isBeverage(opt)) names.push(opt) })
+      }
+    })
+    if (names.length === 0) return '—'
+    // Dedup y acorta si hay muchas
+    const unique = [...new Set(names.map(n => (n || '').trim()))].filter(Boolean)
+    const joined = unique.slice(0, 3).join(', ')
+    return unique.length > 3 ? `${joined} (+${unique.length - 3})` : joined || '—'
+  }
+
   useEffect(() => {
     if (!user?.id) return
     checkIfAdmin()
@@ -1121,7 +1137,7 @@ const DailyOrders = ({ user, loading }) => {
                       🍽️ Platillos
                     </th>
                     <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
-                      🥤 Bebidas
+                      🥤 Bebida
                     </th>
                     <th className="min-w-[110px] px-6 py-5 font-bold text-black text-lg">
                       🍽️ Turno
@@ -1198,8 +1214,8 @@ const DailyOrders = ({ user, loading }) => {
                         </div>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
-                        <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-base font-bold text-blue-800">
-                          {getBeverageCount(order.custom_responses)} bebidas
+                        <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-base font-bold text-blue-800 max-w-[200px] truncate">
+                          {getBeverageLabel(order.custom_responses)}
                         </span>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
@@ -1273,7 +1289,7 @@ const DailyOrders = ({ user, loading }) => {
                         {order.total_items} items
                       </span>
                       <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
-                        {getBeverageCount(order.custom_responses)} bebidas
+                        {getBeverageLabel(order.custom_responses)}
                       </span>
                     </div>
 
