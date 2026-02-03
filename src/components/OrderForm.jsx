@@ -903,7 +903,7 @@ const OrderForm = ({ user, loading }) => {
                 </div>
               )}
             </div>
-                   )}
+              
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Información Personal */}
               <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
