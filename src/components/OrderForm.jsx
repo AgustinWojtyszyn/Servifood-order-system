@@ -6,6 +6,7 @@ import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2 } from 'luci
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
 
+const ORDER_START_HOUR = 9  // 09:00 apertura
 const ORDER_CUTOFF_HOUR = 22 // 22:00 cierre
 const ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'
 
@@ -571,10 +572,11 @@ const OrderForm = ({ user, loading }) => {
     setSuggestionSummary('')
   }
 
-  const isAfterCutoff = () => {
+  const isOutsideWindow = () => {
     try {
       const nowBA = new Date(new Date().toLocaleString('en-US', { timeZone: ORDER_TIMEZONE }))
-      return nowBA.getHours() >= ORDER_CUTOFF_HOUR
+      const hour = nowBA.getHours()
+      return hour < ORDER_START_HOUR || hour >= ORDER_CUTOFF_HOUR
     } catch (err) {
       console.error('Error checking cutoff time', err)
       return false
@@ -591,9 +593,9 @@ const OrderForm = ({ user, loading }) => {
       return
     }
 
-    // Validar horario de corte (22:00 BA)
-    if (isAfterCutoff()) {
-      setError('Pedidos cerrados después de las 22:00 (hora Buenos Aires). Intenta mañana antes del cierre.')
+    // Validar ventana horaria (09:00-22:00 BA)
+    if (isOutsideWindow()) {
+      setError('Pedidos disponibles de 09:00 a 22:00 (hora Buenos Aires). Intenta dentro del horario.')
       setSubmitting(false)
       return
     }
@@ -849,7 +851,7 @@ const OrderForm = ({ user, loading }) => {
                     <Clock className="h-5 w-5 text-blue-600 shrink-0" />
                     <div>
                       <p className="text-sm sm:text-base text-blue-800 font-medium">
-                        Horario de pedidos: hasta las <strong>22:00</strong> (hora Buenos Aires)
+                        Horario de pedidos: <strong>09:00 a 22:00</strong> (hora Buenos Aires)
                       </p>
                       <p className="text-xs sm:text-sm text-blue-700 mt-1">
                         Si necesitas realizar cambios, presiona el botón <strong>"¿Necesitas ayuda?"</strong>

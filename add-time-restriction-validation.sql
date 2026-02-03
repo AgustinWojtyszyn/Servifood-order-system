@@ -1,14 +1,14 @@
 -- ============================================
--- VALIDACIÓN DE HORARIO LÍMITE PARA PEDIDOS (CORTE 22:00)
+-- VALIDACIÓN DE HORARIO LÍMITE PARA PEDIDOS (VENTANA 09:00 a 22:00)
 -- ============================================
 -- Antes: se bloqueaban pedidos a partir de las 22:00.
--- Ahora: se bloquean pedidos a partir de las 22:00 (hora Buenos Aires).
+-- Ahora: solo se permiten pedidos entre las 09:00 y las 22:00 (hora Buenos Aires).
 -- Ejecuta este script en Supabase SQL Editor
 
 -- ============================================
 -- OPCIÓN 1: TRIGGER (Recomendado)
 -- ============================================
--- El trigger permite pedidos solo hasta las 22:00
+-- El trigger permite pedidos solo de 09:00 a 22:00
 
 -- Función que valida el horario
 CREATE OR REPLACE FUNCTION check_order_time_limit()
@@ -19,9 +19,9 @@ BEGIN
   -- Obtener la hora actual (con zona configurable)
   current_hour := EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires');
 
-  -- Bloqueo a partir de las 22:00 (inclusive)
-  IF current_hour >= 22 THEN
-    RAISE EXCEPTION 'Pedidos cerrados después de las 22:00 (hora Buenos Aires)';
+  -- Bloqueo fuera de la ventana 09:00-21:59
+  IF current_hour < 9 OR current_hour >= 22 THEN
+    RAISE EXCEPTION 'Pedidos disponibles de 09:00 a 22:00 (hora Buenos Aires)';
   END IF;
 
   -- Si pasa la validación, permitir el INSERT
@@ -41,16 +41,16 @@ CREATE TRIGGER enforce_order_time_limit
 -- ============================================
 -- OPCIÓN 2: POLÍTICA RLS (Alternativa)
 -- ============================================
--- Política con límite: permite inserts solo antes de las 22:00
+-- Política con ventana: permite inserts solo 09:00-22:00
 
 -- Eliminar política anterior (si existía) que bloqueaba desde las 22:00
 DROP POLICY IF EXISTS "Block orders after 22:00" ON public.orders;
 
--- Crear política de permiso hasta las 22:00 (si tienes RLS activo en orders)
-CREATE POLICY "Allow orders before 22:00" ON public.orders
+-- Crear política de permiso dentro de la ventana (si tienes RLS activo en orders)
+CREATE POLICY "Allow orders 09-22" ON public.orders
   FOR INSERT
   WITH CHECK (
-    EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires') < 22
+    EXTRACT(HOUR FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires') BETWEEN 9 AND 21
   );
 
 -- ============================================
