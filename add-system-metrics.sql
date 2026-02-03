@@ -1,5 +1,8 @@
 -- System metrics storage for Experiencia en vivo
 
+-- Extensión para gen_random_uuid (si no estuviera habilitada)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- 1) Tabla
 CREATE TABLE IF NOT EXISTS public.system_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -51,6 +54,7 @@ CREATE OR REPLACE FUNCTION public.log_system_metric(
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   IF p_kind NOT IN ('health_ping','error') THEN
@@ -74,6 +78,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_window interval := make_interval(mins => COALESCE(p_window_minutes, 60));
@@ -115,3 +120,11 @@ BEGIN
     AND created_at >= now() - v_window;
 END;
 $$;
+
+-- 6) Grants de ejecución para PostgREST (anon/authenticated/service_role)
+GRANT EXECUTE ON FUNCTION public.log_system_metric(
+  text, boolean, integer, text, integer, text, jsonb
+) TO anon, authenticated, service_role;
+
+GRANT EXECUTE ON FUNCTION public.get_system_status_summary(integer)
+TO anon, authenticated, service_role;

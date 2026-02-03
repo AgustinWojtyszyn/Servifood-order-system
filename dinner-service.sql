@@ -119,6 +119,7 @@ DECLARE
   v_german uuid := '706dc288-ce1c-47f2-b275-66948fff6485'; -- Germán Arabel (german.arabel@genneia.com.ar)
   v_jorge uuid := 'cf771398-f240-4c18-9a45-2d12d5b16467'; -- Jorge Rodriguez (jorge.rodriguez@genneia.com.ar)
   v_jose uuid := 'adccf325-8e30-469a-9255-d807eb0b0531'; -- Jose Luis Gonzalez (jlgonzalez@genneia.com.ar)
+  v_martin_calderon uuid := '8a37367c-8386-42fb-8fab-4c4e889dd1da'; -- Hugo Martín Calderón (martin.calderon@genneia.com.ar)
 BEGIN
   -- Lista unificada de correos a habilitar (incluye personal y corporativo)
   FOR v_email IN
@@ -151,6 +152,7 @@ BEGIN
         ('mario.ronco@genneia.com'),
         ('mario.ronco@genneia.com.ar'),
         ('mamieva@genneia.com.ar'),
+        ('martin.calderon@genneia.com.ar'),
         ('silvio.mansilla@genneia.com.ar'),
         ('diego.gimenez@genneia.com.ar'),
         ('jorge.rodriguez@genneia.com.ar')
@@ -220,6 +222,12 @@ BEGIN
   ELSE
     RAISE NOTICE 'No existe usuario auth con id %, crear en Auth y re-ejecutar.', v_jose;
   END IF;
+
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_martin_calderon) THEN
+    PERFORM public.enable_feature(v_martin_calderon, 'dinner', true);
+  ELSE
+    RAISE NOTICE 'No existe usuario auth con id %, crear en Auth y re-ejecutar.', v_martin_calderon;
+  END IF;
 END
 $$;
 
@@ -240,6 +248,7 @@ WITH candidates AS (
     'mario.ronco@gmail.com',
     'martin.amieva@gmail.com',
     'martin.calderon@gmail.com',
+    'martin.calderon@genneia.com.ar',
     'silvio.mansilla@gmail.com',
     'agustinwojtyszyn99@gmail.com',
     'sarmientoclaudia985@gmail.com',
