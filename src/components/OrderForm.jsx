@@ -13,6 +13,7 @@ const DINNER_FALLBACK_WHITELIST = new Set([
   '3658aea9-1e69-4dcf-aeb1-58e97b635c24',
   '27422d62-9509-42ef-aac4-b36569d669dd',
   '3aca6f64-235c-46d5-90c6-4e87e7262a3a',
+  '75a715bc-786e-4efd-affe-edf7d89755d7',
   'diego.gimenez@genneia.com.ar',
   'diego_sjrc@hotmail.com',
   'jorge.rodriguez@genneia.com.ar',
