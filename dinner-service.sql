@@ -130,25 +130,18 @@ BEGIN
         ('sarmientoclaudia985@gmail.com'),
         ('diego_sjrc@hotmail.com'), -- personal Diego
 
-        -- Corporativos genneia.com (mismo local-part)
-        ('aldana.marquez@genneia.com'),
-        ('edgardo.elizondo@genneia.com'),
-        ('german.arabel@genneia.com'),
-        ('guillermo.alonso@genneia.com'),
-        ('javier.pallero@genneia.com'),
-        ('joseluis.gonzalez@genneia.com'),
+        -- Corporativos genneia.* SOLO de los ya whitelisted
+        ('amarquez@genneia.com.ar'),
+        ('german.arabel@genneia.com.ar'),
+        ('galonso@genneia.com'),
+        ('galonso@genneia.com.ar'),
+        ('jpallero@genneia.com'),
+        ('jlgonzalez@genneia.com.ar'),
         ('mario.ronco@genneia.com'),
-        ('martin.amieva@genneia.com'),
-        ('martin.calderon@genneia.com'),
-        ('silvio.mansilla@genneia.com'),
-        ('agustinwojtyszyn99@genneia.com'),
-        ('sarmientoclaudia985@genneia.com'),
-        ('diego.gimenez@genneia.com'),
-        ('jorge.rodriguez@genneia.com')
-
-        -- Compatibilidad: corporativos previos .com.ar
-        ,('diego.gimenez@genneia.com.ar')
-        ,('jorge.rodriguez@genneia.com.ar')
+        ('mario.ronco@genneia.com.ar'),
+        ('mamieva@genneia.com.ar'),
+        ('silvio.mansilla@genneia.com.ar'),
+        ('diego.gimenez@genneia.com.ar')
     ) AS t(e)
   LOOP
     SELECT id INTO v_auth FROM auth.users WHERE lower(email) = v_email;

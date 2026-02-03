@@ -11,7 +11,34 @@ const DINNER_FALLBACK_WHITELIST = new Set([
   '77a2c303-cf16-4358-ac6e-b4165a163c52',
   'diego.gimenez@genneia.com.ar',
   'diego_sjrc@hotmail.com',
-  'jorge.rodriguez@genneia.com.ar'
+  'jorge.rodriguez@genneia.com.ar',
+
+  // Whitelist personales existentes
+  'aldana.marquez@gmail.com',
+  'edgardo.elizondo@gmail.com',
+  'german.arabel@gmail.com',
+  'guillermo.alonso@gmail.com',
+  'javier.pallero@gmail.com',
+  'joseluis.gonzalez@gmail.com',
+  'mario.ronco@gmail.com',
+  'martin.amieva@gmail.com',
+  'martin.calderon@gmail.com',
+  'silvio.mansilla@gmail.com',
+  'agustinwojtyszyn99@gmail.com',
+  'sarmientoclaudia985@gmail.com',
+
+  // Correos corporativos genneia.* para los mismos usuarios whitelisted
+  'amarquez@genneia.com.ar',
+  'german.arabel@genneia.com.ar',
+  'galonso@genneia.com',
+  'galonso@genneia.com.ar',
+  'jpallero@genneia.com',
+  'jlgonzalez@genneia.com.ar',
+  'mario.ronco@genneia.com',
+  'mario.ronco@genneia.com.ar',
+  'mamieva@genneia.com.ar',
+  'silvio.mansilla@genneia.com.ar',
+  'diego.gimenez@genneia.com.ar'
 ])
 
 const OrderForm = ({ user, loading }) => {
