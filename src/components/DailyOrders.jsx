@@ -762,17 +762,41 @@ const DailyOrders = ({ user, loading }) => {
   const exportableOrdersCount = filterOrdersByCompany(sortedOrders, exportCompany).length
   const companyExportableOrdersCount = filterOrdersForCompanyExport(sortedOrders, exportCompany, exportStatusFilter).length
 
+  const printAggregates = (() => {
+    const statusCounts = {}
+    const serviceCounts = { lunch: 0, dinner: 0 }
+    const beverageCounts = {}
+    sortedOrders.forEach(order => {
+      statusCounts[order.status] = (statusCounts[order.status] || 0) + 1
+      const serviceKey = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
+      serviceCounts[serviceKey] += 1
+
+      const bevLabel = getBeverageLabel(order.custom_responses)
+      if (bevLabel && bevLabel !== '—') {
+        bevLabel.split(',').forEach(raw => {
+          const k = raw.trim()
+          if (!k) return
+          beverageCounts[k] = (beverageCounts[k] || 0) + 1
+        })
+      }
+    })
+    return { statusCounts, serviceCounts, beverageCounts }
+  })()
+
   return (
     <RequireUser user={user} loading={loading}>
       <style>{`
         @media print {
-          @page { size: A4 portrait; margin: 8mm; }
-          body { background: white !important; }
+          @page { size: A4 portrait; margin: 10mm; }
+          body { background: white !important; font-size: 11px; line-height: 1.35; }
           .print-hide { display: none !important; }
           .print-only { display: block !important; }
           .print-wrap { padding: 0 !important; max-width: 100% !important; }
-          .print-content { zoom: 0.82; } /* compacta para caber en 1 página */
-          .card, .bg-white, .bg-gray-50 { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+          .print-content { zoom: 0.9; }
+          .print-table { border-collapse: collapse; width: 100%; }
+          .print-table th, .print-table td { border: 1px solid #d1d5db; padding: 4px 6px; text-align: left; }
+          .print-table th { background: #f3f4f6; font-weight: 700; }
+          h1,h2,h3,h4,h5 { margin: 0 0 6px 0; }
         }
         @media screen {
           .print-only { display: none; }
@@ -781,41 +805,76 @@ const DailyOrders = ({ user, loading }) => {
       <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10 print-wrap print-content">
         {/* Resumen compacto solo para impresión (cantidades y detalles agregados) */}
         <div className="print-only mb-4">
-          <h2 className="text-2xl font-black mb-2">📋 Resumen de pedidos diarios</h2>
-          <p className="text-sm text-gray-700 mb-2">Fecha de entrega: {getTomorrowDate()}</p>
-          <div className="grid grid-cols-2 gap-2 text-sm font-semibold text-gray-900">
-            <div>Total pedidos: {stats.total}</div>
-            <div>Completados: {stats.completed}</div>
-            <div>Pendientes: {stats.pending}</div>
-            <div>Cancelados: {stats.cancelled}</div>
-            <div>Total ítems: {stats.totalItems}</div>
-          </div>
-          <div className="mt-3">
-            <h3 className="font-bold text-gray-900">Por ubicación</h3>
-            <table className="w-full text-sm border border-gray-300">
-              <tbody>
-                {Object.entries(stats.byLocation).map(([loc, count]) => (
-                  <tr key={loc} className="border-t border-gray-200">
-                    <td className="px-2 py-1 font-semibold">{loc || 'Sin ubicación'}</td>
-                    <td className="px-2 py-1 text-right">{count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-3">
-            <h3 className="font-bold text-gray-900">Por platillo</h3>
-            <table className="w-full text-sm border border-gray-300">
-              <tbody>
-                {Object.entries(stats.byDish).map(([dish, count]) => (
-                  <tr key={dish} className="border-t border-gray-200">
-                    <td className="px-2 py-1 font-semibold">{dish || 'Sin nombre'}</td>
-                    <td className="px-2 py-1 text-right">{count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <h2 className="text-lg font-black mb-1">📋 Resumen diario compacto</h2>
+          <p className="text-[12px] text-gray-700 mb-2">Entrega: {getTomorrowDate()}</p>
+
+          <table className="print-table text-[11px] mb-3">
+            <tbody>
+              <tr><th>Total pedidos</th><td>{stats.total}</td></tr>
+              <tr><th>Completados</th><td>{stats.completed}</td></tr>
+              <tr><th>Pendientes</th><td>{stats.pending}</td></tr>
+              <tr><th>Cancelados</th><td>{stats.cancelled}</td></tr>
+              <tr><th>Total ítems</th><td>{stats.totalItems}</td></tr>
+              <tr><th>Almuerzos</th><td>{printAggregates.serviceCounts.lunch}</td></tr>
+              <tr><th>Cenas</th><td>{printAggregates.serviceCounts.dinner}</td></tr>
+            </tbody>
+          </table>
+
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Por ubicación</h3>
+          <table className="print-table text-[11px] mb-3">
+            <tbody>
+              {Object.entries(stats.byLocation).map(([loc, count]) => (
+                <tr key={loc}>
+                  <td>{loc || 'Sin ubicación'}</td>
+                  <td className="text-right">{count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Por platillo</h3>
+          <table className="print-table text-[11px] mb-3">
+            <tbody>
+              {Object.entries(stats.byDish).map(([dish, count]) => (
+                <tr key={dish}>
+                  <td>{dish || 'Sin nombre'}</td>
+                  <td className="text-right">{count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {Object.keys(printAggregates.statusCounts).length > 0 && (
+            <>
+              <h3 className="text-sm font-bold text-gray-900 mb-1">Por estado</h3>
+              <table className="print-table text-[11px] mb-3">
+                <tbody>
+                  {Object.entries(printAggregates.statusCounts).map(([st, count]) => (
+                    <tr key={st}>
+                      <td>{getStatusText(st)}</td>
+                      <td className="text-right">{count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          {Object.keys(printAggregates.beverageCounts).length > 0 && (
+            <>
+              <h3 className="text-sm font-bold text-gray-900 mb-1">Bebidas (conteo)</h3>
+              <table className="print-table text-[11px]">
+                <tbody>
+                  {Object.entries(printAggregates.beverageCounts).map(([bev, count]) => (
+                    <tr key={bev}>
+                      <td>{bev}</td>
+                      <td className="text-right">{count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
         </div>
         {/* Page Header */}
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4 print-hide">
