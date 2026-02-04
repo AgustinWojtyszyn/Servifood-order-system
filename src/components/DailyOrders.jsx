@@ -764,9 +764,19 @@ const DailyOrders = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 8mm; }
+          body { background: white !important; }
+          .print-hide { display: none !important; }
+          .print-wrap { padding: 0 !important; max-width: 100% !important; }
+          .print-content { zoom: 0.82; } /* compacta para caber en 1 página */
+          .card, .bg-white, .bg-gray-50 { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+        }
+      `}</style>
+      <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10 print-wrap print-content">
         {/* Page Header */}
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 print-hide">
           <div>
             <h4 className="text-3xl font-black text-black dark:text-white">
               📋 Pedidos Diarios
