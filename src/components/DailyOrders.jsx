@@ -10,7 +10,7 @@ const InternalLoader = () => (
 // import { useRef } from 'react' // Ya está importado arriba
 import { useState, useEffect, useRef } from 'react'
 import { db } from '../supabaseClient'
-import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon } from 'lucide-react'
+import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon, Printer } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import RequireUser from './RequireUser'
 
@@ -578,6 +578,11 @@ const DailyOrders = ({ user, loading }) => {
     }
   }
 
+  const exportToPdf = () => {
+    // Usa la impresión del navegador; el usuario puede elegir “Guardar como PDF”.
+    window.print()
+  }
+
   // Export específico para enviar datos a la empresa con confirmación de pedido
   const exportCompanyReport = async () => {
     const companyOrders = filterOrdersForCompanyExport(sortedOrders, exportCompany, exportStatusFilter)
@@ -831,6 +836,15 @@ const DailyOrders = ({ user, loading }) => {
             >
               <Mail className="mr-3 h-6 w-6" />
               🏢 Exportar a Empresa ({companyExportableOrdersCount})
+            </button>
+
+            <button
+              onClick={exportToPdf}
+              disabled={sortedOrders.length === 0}
+              className="inline-flex items-center justify-center rounded-xl bg-gray-900 px-6 py-4 text-lg font-bold text-white shadow-xl hover:bg-black hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
+            >
+              <Printer className="mr-3 h-6 w-6" />
+              🖨️ Exportar / Imprimir PDF
             </button>
 
             <button

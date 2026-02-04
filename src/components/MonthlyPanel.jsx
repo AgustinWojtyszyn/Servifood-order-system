@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Download, Package, TrendingUp, User, BarChart2 } from 'lucide-react'
+import { Calendar, Download, Package, TrendingUp, User, BarChart2, Printer } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
@@ -113,6 +113,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const palette = ['#2563eb']
   const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
   const isDraftValid = draftRange.start && draftRange.end && draftRange.start <= draftRange.end
+  const handlePrintPdf = () => window.print()
 
   useEffect(() => {
     // Control de acceso: solo admin
@@ -781,7 +782,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
       {/* Exportar a Excel */}
       {metrics && (
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-end mb-2 flex-wrap gap-2">
           <button
             onClick={handleExportAllExcel}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
@@ -805,6 +806,13 @@ const MonthlyPanel = ({ user, loading }) => {
               Exportar rango (diario)
             </button>
           )}
+          <button
+            onClick={handlePrintPdf}
+            className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
+          >
+            <Printer className="h-5 w-5" />
+            Imprimir / PDF
+          </button>
         </div>
       )}
       {/* Métricas y tabla */}
