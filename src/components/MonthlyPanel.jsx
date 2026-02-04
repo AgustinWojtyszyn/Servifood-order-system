@@ -683,7 +683,7 @@ const MonthlyPanel = ({ user, loading }) => {
   return (
     <RequireUser user={user} loading={loading}>
     <div
-      className="w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto pb-32"
+      className="monthly-container w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto pb-32"
       style={{
         overflowY: 'auto',
         overflowX: 'hidden',
@@ -691,6 +691,30 @@ const MonthlyPanel = ({ user, loading }) => {
         WebkitOverflowScrolling: 'touch'
       }}
     >
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 10mm; }
+          body { background: #fff !important; }
+          .monthly-container {
+            max-width: 100% !important;
+            width: 100% !important;
+            overflow: visible !important;
+            height: auto !important;
+            padding: 0 !important;
+          }
+          .monthly-container * {
+            box-shadow: none !important;
+          }
+          .print-hide { display: none !important; }
+          .print-no-break { page-break-inside: avoid; }
+          .print-break { page-break-before: always; }
+          .print-full-width { width: 100% !important; max-width: 100% !important; }
+          .print-unclamp { overflow: visible !important; height: auto !important; }
+        }
+        @media screen {
+          .print-only { display: none; }
+        }
+      `}</style>
       {/* Título arriba de los tips */}
       <div className="bg-linear-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
         <div className="flex flex-col gap-4">
@@ -753,7 +777,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
       {/* Panel de logs (solo si debug=1 en query) */}
       {debugEnabled && (
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 md:p-4 shadow mb-4">
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 md:p-4 shadow mb-4 print-hide">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-amber-900">Logs de Panel Mensual</p>
@@ -832,15 +856,15 @@ const MonthlyPanel = ({ user, loading }) => {
         <div className="space-y-6">
           {/* Gráficos rápidos (siempre visibles cuando hay datos) */}
           {dailyData?.daily_breakdown && (
-            <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full">
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart2 className="h-5 w-5 text-blue-600" />
-                <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
-              </div>
-              <p className="text-sm text-gray-700 mb-3">
-                {dailyData.daily_breakdown.length} días en el rango seleccionado.
-              </p>
-              <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-1">
+          <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break">
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart2 className="h-5 w-5 text-blue-600" />
+              <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
+            </div>
+            <p className="text-sm text-gray-700 mb-3">
+              {dailyData.daily_breakdown.length} días en el rango seleccionado.
+            </p>
+            <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-1 print-unclamp">
                 {dailyData.daily_breakdown.map((d, idx) => {
                   const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
                   const height = `${heightPx}px`
@@ -871,7 +895,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
           {/* Desglose diario del rango */}
           {dailyData?.daily_breakdown && (
-            <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full">
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="h-5 w-5 text-blue-600" />
                 <div className="font-bold text-blue-900 text-lg">Desglose diario del rango</div>
@@ -897,7 +921,7 @@ const MonthlyPanel = ({ user, loading }) => {
               </div>
 
               {showDailyTable && (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto print-unclamp">
                   <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
                     <thead className="bg-blue-50">
                       <tr>
@@ -924,7 +948,7 @@ const MonthlyPanel = ({ user, loading }) => {
           )}
 
           {/* Tarjetas de métricas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full print-no-break">
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
               <div className="text-center">
                 <img
@@ -1011,7 +1035,7 @@ const MonthlyPanel = ({ user, loading }) => {
           {metrics.empresas.length === 0 ? (
             <div className="text-gray-600 text-center">No hay datos para el rango seleccionado.</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto print-unclamp">
               <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
                 <thead className="bg-blue-50">
                   <tr>
