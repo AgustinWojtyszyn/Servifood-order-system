@@ -769,12 +769,54 @@ const DailyOrders = ({ user, loading }) => {
           @page { size: A4 portrait; margin: 8mm; }
           body { background: white !important; }
           .print-hide { display: none !important; }
+          .print-only { display: block !important; }
           .print-wrap { padding: 0 !important; max-width: 100% !important; }
           .print-content { zoom: 0.82; } /* compacta para caber en 1 página */
           .card, .bg-white, .bg-gray-50 { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
         }
+        @media screen {
+          .print-only { display: none; }
+        }
       `}</style>
       <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10 print-wrap print-content">
+        {/* Resumen compacto solo para impresión (cantidades y detalles agregados) */}
+        <div className="print-only mb-4">
+          <h2 className="text-2xl font-black mb-2">📋 Resumen de pedidos diarios</h2>
+          <p className="text-sm text-gray-700 mb-2">Fecha de entrega: {getTomorrowDate()}</p>
+          <div className="grid grid-cols-2 gap-2 text-sm font-semibold text-gray-900">
+            <div>Total pedidos: {stats.total}</div>
+            <div>Completados: {stats.completed}</div>
+            <div>Pendientes: {stats.pending}</div>
+            <div>Cancelados: {stats.cancelled}</div>
+            <div>Total ítems: {stats.totalItems}</div>
+          </div>
+          <div className="mt-3">
+            <h3 className="font-bold text-gray-900">Por ubicación</h3>
+            <table className="w-full text-sm border border-gray-300">
+              <tbody>
+                {Object.entries(stats.byLocation).map(([loc, count]) => (
+                  <tr key={loc} className="border-t border-gray-200">
+                    <td className="px-2 py-1 font-semibold">{loc || 'Sin ubicación'}</td>
+                    <td className="px-2 py-1 text-right">{count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3">
+            <h3 className="font-bold text-gray-900">Por platillo</h3>
+            <table className="w-full text-sm border border-gray-300">
+              <tbody>
+                {Object.entries(stats.byDish).map(([dish, count]) => (
+                  <tr key={dish} className="border-t border-gray-200">
+                    <td className="px-2 py-1 font-semibold">{dish || 'Sin nombre'}</td>
+                    <td className="px-2 py-1 text-right">{count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
         {/* Page Header */}
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4 print-hide">
           <div>
@@ -1100,7 +1142,7 @@ const DailyOrders = ({ user, loading }) => {
         </div>
 
         {/* Orders Table / Mobile Cards */}
-        <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+        <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark print-hide">
           <div className="border-b-2 border-primary-200 px-6 py-6 dark:border-strokedark sm:px-8 xl:px-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
