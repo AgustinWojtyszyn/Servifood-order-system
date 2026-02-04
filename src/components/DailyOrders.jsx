@@ -764,24 +764,30 @@ const DailyOrders = ({ user, loading }) => {
   const exportableOrdersCount = filterOrdersByCompany(sortedOrders, exportCompany).length
   const companyExportableOrdersCount = filterOrdersForCompanyExport(sortedOrders, exportCompany, exportStatusFilter).length
 
-  const printAggregates = (() => {
-    const serviceCounts = { lunch: 0, dinner: 0 }
-    const beverageCounts = {}
+  // Datos agregados específicos para la impresión/PDF
+  const printStats = (() => {
+    const sideCounts = {}
+    const optionCounts = {}
+
     allOrders.forEach(order => {
       if (!order) return
-      const serviceKey = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
-      serviceCounts[serviceKey] += 1
+      const customResponses = Array.isArray(order.custom_responses) ? order.custom_responses : []
 
-      const bevLabel = getBeverageLabel(order.custom_responses)
-      if (bevLabel && bevLabel !== '—') {
-        bevLabel.split(',').forEach(raw => {
-          const k = raw.trim()
-          if (!k) return
-          beverageCounts[k] = (beverageCounts[k] || 0) + 1
-        })
+      // Guarniciones
+      const side = getCustomSideFromResponses(customResponses)
+      if (side) {
+        sideCounts[side] = (sideCounts[side] || 0) + 1
       }
+
+      // Otras opciones (titular + respuesta)
+      getOtherCustomResponses(customResponses).forEach(r => {
+        const response = Array.isArray(r.response) ? r.response.join(', ') : r.response
+        const key = `${r.title}: ${response || '—'}`
+        optionCounts[key] = (optionCounts[key] || 0) + 1
+      })
     })
-    return { serviceCounts, beverageCounts }
+
+    return { sideCounts, optionCounts }
   })()
 
   return (
@@ -807,22 +813,10 @@ const DailyOrders = ({ user, loading }) => {
       <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10 print-wrap print-content">
         {/* Resumen compacto solo para impresión (cantidades y detalles agregados) */}
         <div className="print-only mb-4">
-          <h2 className="text-lg font-black mb-1">📋 Resumen diario compacto</h2>
+          <h2 className="text-lg font-black mb-1">📋 Resumen estadístico para PDF</h2>
           <p className="text-[12px] text-gray-700 mb-2">Entrega: {getTomorrowDate()}</p>
 
-          <table className="print-table text-[11px] mb-2 print-block">
-            <tbody>
-              <tr><th>Total pedidos</th><td>{stats.total}</td></tr>
-              {/* Completados oculto en impresión */}
-              <tr><th>Pendientes</th><td>{stats.pending}</td></tr>
-              {/* Cancelados oculto en impresión */}
-              <tr><th>Total ítems</th><td>{stats.totalItems}</td></tr>
-              <tr><th>Almuerzos</th><td>{printAggregates.serviceCounts.lunch}</td></tr>
-              <tr><th>Cenas</th><td>{printAggregates.serviceCounts.dinner}</td></tr>
-            </tbody>
-          </table>
-
-          <h3 className="text-sm font-bold text-gray-900 mb-1">Por ubicación</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Pedidos por empresa</h3>
           <table className="print-table text-[11px] mb-2 print-block">
             <tbody>
               {Object.entries(stats.byLocation).map(([loc, count]) => (
@@ -834,7 +828,7 @@ const DailyOrders = ({ user, loading }) => {
             </tbody>
           </table>
 
-          <h3 className="text-sm font-bold text-gray-900 mb-1">Por platillo</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Menús (platillos)</h3>
           <table className="print-table text-[11px] mb-2 print-block">
             <tbody>
               {Object.entries(stats.byDish).map(([dish, count]) => (
@@ -843,6 +837,38 @@ const DailyOrders = ({ user, loading }) => {
                   <td className="text-right">{count}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Opciones adicionales</h3>
+          <table className="print-table text-[11px] mb-2 print-block">
+            <tbody>
+              {Object.keys(printStats.optionCounts).length === 0 ? (
+                <tr><td colSpan={2}>Sin opciones</td></tr>
+              ) : (
+                Object.entries(printStats.optionCounts).map(([opt, count]) => (
+                  <tr key={opt}>
+                    <td>{opt}</td>
+                    <td className="text-right">{count}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Guarniciones</h3>
+          <table className="print-table text-[11px] print-block">
+            <tbody>
+              {Object.keys(printStats.sideCounts).length === 0 ? (
+                <tr><td colSpan={2}>Sin guarniciones</td></tr>
+              ) : (
+                Object.entries(printStats.sideCounts).map(([side, count]) => (
+                  <tr key={side}>
+                    <td>{side}</td>
+                    <td className="text-right">{count}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
