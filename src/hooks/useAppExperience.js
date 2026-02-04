@@ -52,7 +52,8 @@ const experienceCache = {
   summary: null,
   supabaseStatus: null,
   lastRefreshedAt: null,
-  skipSummary: false
+  skipSummary: false,
+  skipLog: false
 }
 
 const startAbortable = (ref, timeoutMs = 12000) => {
@@ -150,6 +151,15 @@ export const useAppExperience = () => {
   }
 
   const pingSupabase = async (reason = 'auto') => {
+    if (experienceCache.skipLog) {
+      const health = await healthCheck(4000)
+      const state = !health.healthy || health.latencyMs > 1500 ? 'red' : health.latencyMs > 500 ? 'amber' : 'green'
+      const status = { state, latencyMs: health.latencyMs, message: health.error || null }
+      setSupabaseStatus(status)
+      experienceCache.supabaseStatus = status
+      return
+    }
+
     const metaBase = { source: 'ping', reason, ts_client: new Date().toISOString() }
     const { controller, clear } = startAbortable(healthControllerRef, 5000)
     try {
@@ -174,8 +184,11 @@ export const useAppExperience = () => {
           message: health.error?.slice(0, 120) || null,
           meta: metaBase
         }).abortSignal(controller.signal)
-      } catch (_) {
-        // No hacer nada si falla el log; evitar romper la UI
+      } catch (logError) {
+        if (logError?.code === 'PGRST116' || logError?.status === 404) {
+          experienceCache.skipLog = true // no volver a intentar si la RPC no está expuesta
+        }
+        // No romper UI si falla el log
       }
     } catch (err) {
       clear()
