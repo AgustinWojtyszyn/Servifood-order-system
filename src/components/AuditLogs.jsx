@@ -76,8 +76,9 @@ const AuditLogs = () => {
     loadHealthProbes()
 
     const interval = setInterval(() => {
+      if (document?.visibilityState === 'hidden') return
       loadOrdersCount(true)
-    }, 10000) // 10s para pseudo tiempo real ligero
+    }, 10000) // 10s para pseudo tiempo real ligero sin gastar en background
 
     return () => clearInterval(interval)
   }, [])

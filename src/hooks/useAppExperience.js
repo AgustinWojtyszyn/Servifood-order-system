@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../services/supabase'
+import { supabase, healthCheck } from '../services/supabase'
 
 // Ventanas alineadas a la necesidad del módulo (sin exponerlas en UI)
 const WINDOW_SECONDS = 3600 // traemos hasta 60 min para tener errores recientes
@@ -45,6 +45,28 @@ export const detectAction = (op = '', actionType = '', path = '') => {
 
 const stateOrder = { red: 2, amber: 1, green: 0 }
 
+// Cache en memoria (SWR) para evitar pantallas en blanco y reducir requests
+const experienceCache = {
+  data: null,
+  ordersToday: null,
+  summary: null,
+  supabaseStatus: null,
+  lastRefreshedAt: null
+}
+
+const startAbortable = (ref, timeoutMs = 12000) => {
+  if (ref.current) {
+    ref.current.abort('cancelled')
+  }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort('timeout'), timeoutMs)
+  ref.current = controller
+  return {
+    controller,
+    clear: () => clearTimeout(timer)
+  }
+}
+
 export const useAppExperience = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -56,99 +78,158 @@ export const useAppExperience = () => {
   const [lastRefreshedAt, setLastRefreshedAt] = useState(null)
   const timer = useRef(null)
   const connectivityTimer = useRef(null)
+  const fetchingRef = useRef(false)
+  const dataControllerRef = useRef(null)
+  const healthControllerRef = useRef(null)
+  const summaryControllerRef = useRef(null)
+  const ordersControllerRef = useRef(null)
 
   const fetchOrdersToday = async () => {
+    const { controller, clear } = startAbortable(ordersControllerRef, 12000)
     const start = new Date()
     start.setHours(0, 0, 0, 0)
-    const { count, error } = await supabase
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', start.toISOString())
-    if (!error && typeof count === 'number') setOrdersToday(count || 0)
+    try {
+      const { count, error } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', start.toISOString())
+        .abortSignal(controller.signal)
+
+      if (!error && typeof count === 'number') {
+        setOrdersToday(count || 0)
+        experienceCache.ordersToday = count || 0
+      }
+    } finally {
+      clear()
+    }
   }
 
   const fetchData = async (silent = false) => {
+    if (document?.visibilityState === 'hidden') return
+    if (fetchingRef.current) return
+    fetchingRef.current = true
+
+    if (experienceCache.data && !silent) {
+      setData(experienceCache.data)
+      setOrdersToday(experienceCache.ordersToday ?? 0)
+      setSummary(experienceCache.summary)
+      if (experienceCache.supabaseStatus) setSupabaseStatus(experienceCache.supabaseStatus)
+      if (experienceCache.lastRefreshedAt) setLastRefreshedAt(experienceCache.lastRefreshedAt)
+    }
+
     if (!silent) setLoading(true)
     setError(null)
-    const { data, error } = await supabase.rpc('get_metrics_summary', {
-      p_window_seconds: WINDOW_SECONDS,
-      p_limit: 50
-    })
-    if (error) setError(error.message)
-    setData(data || [])
-    fetchOrdersToday()
-    if (!silent) setLoading(false)
+
+    const { controller, clear } = startAbortable(dataControllerRef, 15000)
+    try {
+      const { data: metrics, error } = await supabase.rpc('get_metrics_summary', {
+        p_window_seconds: WINDOW_SECONDS,
+        p_limit: 50
+      }).abortSignal(controller.signal)
+
+      if (error) throw error
+
+      setData(metrics || [])
+      experienceCache.data = metrics || []
+      experienceCache.lastRefreshedAt = new Date().toISOString()
+      setLastRefreshedAt(experienceCache.lastRefreshedAt)
+
+      if (!ordersControllerRef.current || ordersControllerRef.current.signal.aborted) {
+        fetchOrdersToday()
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        setError(err?.message || 'No se pudieron cargar las métricas')
+      }
+    } finally {
+      clear()
+      fetchingRef.current = false
+      if (!silent) setLoading(false)
+    }
   }
 
   const pingSupabase = async (reason = 'auto') => {
     const metaBase = { source: 'ping', reason, ts_client: new Date().toISOString() }
-    const start = performance.now()
+    const { controller, clear } = startAbortable(healthControllerRef, 5000)
     try {
-      // Consulta liviana para verificar conectividad y latencia real
-      const { error } = await supabase
-        .from('orders')
-        .select('id', { head: true, limit: 1 })
-        .limit(1)
-      const latency = Math.round(performance.now() - start)
-      if (error) {
-        setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
-        await supabase.rpc('log_system_metric', {
-          kind: 'error',
-          ok: false,
-          latency_ms: latency,
-          path: '/experiencia',
-          status_code: error?.code ? parseInt(error.code, 10) : null,
-          message: error.message?.slice(0, 120) || 'Supabase error',
-          meta: metaBase
-        })
-      } else {
-        let state = 'green'
-        if (latency > 1500) state = 'red'
-        else if (latency > 500) state = 'amber'
-        setSupabaseStatus({ state, latencyMs: latency, message: null })
-        await supabase.rpc('log_system_metric', {
-          kind: 'health_ping',
-          ok: true,
-          latency_ms: latency,
-          path: '/experiencia',
-          status_code: 200,
-          message: null,
-          meta: metaBase
-        })
-      }
-    } catch (err) {
-      const latency = Math.round(performance.now() - start)
-      setSupabaseStatus({ state: 'red', latencyMs: latency, message: 'No disponible' })
-      await supabase.rpc('log_system_metric', {
-        kind: 'error',
-        ok: false,
-        latency_ms: latency,
+      const health = await healthCheck(4000)
+      clear()
+
+      let state = 'green'
+      if (!health.healthy || health.latencyMs > 1500) state = 'red'
+      else if (health.latencyMs > 500) state = 'amber'
+
+      const status = { state, latencyMs: health.latencyMs, message: health.error || null }
+      setSupabaseStatus(status)
+      experienceCache.supabaseStatus = status
+
+      supabase.rpc('log_system_metric', {
+        kind: 'health_ping',
+        ok: health.healthy,
+        latency_ms: health.latencyMs,
         path: '/experiencia',
-        status_code: null,
-        message: (err?.message || 'Ping error').slice(0, 120),
+        status_code: health.healthy ? 200 : null,
+        message: health.error?.slice(0, 120) || null,
         meta: metaBase
-      })
+      }).abortSignal(controller.signal).catch(() => {})
+    } catch (err) {
+      clear()
+      if (err?.name === 'AbortError') return
+      const latency = err?.latencyMs || null
+      const status = { state: 'red', latencyMs: latency, message: err?.message || 'No disponible' }
+      setSupabaseStatus(status)
+      experienceCache.supabaseStatus = status
     }
   }
 
   const refreshExperienceStatus = async ({ reason = 'manual' } = {}) => {
     if (isRefreshing) return
+    if (document?.visibilityState === 'hidden') return
     setIsRefreshing(true)
+    const { controller, clear } = startAbortable(summaryControllerRef, 12000)
     try {
       await pingSupabase(reason)
-      const { data: statusData, error: summaryError } = await supabase.rpc('get_system_status_summary', { window_minutes: 60 })
-      if (!summaryError && statusData) setSummary(statusData)
+      const { data: statusData, error: summaryError } = await supabase
+        .rpc('get_system_status_summary', { window_minutes: 60 })
+        .abortSignal(controller.signal)
+      if (!summaryError && statusData) {
+        setSummary(statusData)
+        experienceCache.summary = statusData
+      }
     } catch (err) {
       console.error('Refresh experience status error', err)
     } finally {
+      clear()
       setIsRefreshing(false)
       setLastRefreshedAt(new Date().toISOString())
+      experienceCache.lastRefreshedAt = new Date().toISOString()
     }
   }
 
   useEffect(() => {
+    // Mostrar cache inmediato (SWR)
+    if (experienceCache.data) {
+      setData(experienceCache.data)
+      setOrdersToday(experienceCache.ordersToday ?? 0)
+      setSummary(experienceCache.summary)
+      if (experienceCache.supabaseStatus) setSupabaseStatus(experienceCache.supabaseStatus)
+      if (experienceCache.lastRefreshedAt) setLastRefreshedAt(experienceCache.lastRefreshedAt)
+    }
+
     fetchData()
-    timer.current = setInterval(() => fetchData(true), REFRESH_MS)
+    timer.current = setInterval(() => {
+      if (document?.visibilityState !== 'hidden') {
+        fetchData(true)
+      }
+    }, REFRESH_MS)
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData(true)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
     if (!sessionStorage.getItem(PING_ONCE_KEY)) {
       refreshExperienceStatus({ reason: 'auto' })
       sessionStorage.setItem(PING_ONCE_KEY, '1')
@@ -158,6 +239,11 @@ export const useAppExperience = () => {
     }
     return () => {
       timer.current && clearInterval(timer.current)
+      document.removeEventListener('visibilitychange', onVisibility)
+      dataControllerRef.current?.abort('unmount')
+      healthControllerRef.current?.abort('unmount')
+      summaryControllerRef.current?.abort('unmount')
+      ordersControllerRef.current?.abort('unmount')
     }
   }, [])
 
@@ -219,6 +305,8 @@ export const useAppExperience = () => {
     return Math.round(weighted / Math.max(totalCalls, 1))
   }, [aggregated, summary])
 
+  const lastPingAt = useMemo(() => summary?.last_ping_at || lastRefreshedAt, [summary, lastRefreshedAt])
+
   const lastError = useMemo(() => {
     if (summary?.last_error_at) {
       return {
@@ -270,6 +358,7 @@ export const useAppExperience = () => {
     summary,
     isRefreshing,
     lastRefreshedAt,
+    lastPingAt,
     refreshExperienceStatus,
     refetch: fetchData
   }

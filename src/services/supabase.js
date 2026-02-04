@@ -125,6 +125,26 @@ class SupabaseService {
     this.retryDelay = 1000
   }
 
+  isTransientError(error) {
+    if (!error) return false
+
+    const transientStatus = [502, 503, 504]
+    if (transientStatus.includes(error.status)) return true
+
+    const message = (error.message || '').toLowerCase()
+    return message.includes('network') || message.includes('fetch') || message.includes('timeout')
+  }
+
+  isTransientError(error) {
+    if (!error) return false
+
+    const transientStatus = [502, 503, 504]
+    if (transientStatus.includes(error.status)) return true
+
+    const message = (error.message || '').toLowerCase()
+    return message.includes('network') || message.includes('fetch') || message.includes('timeout')
+  }
+
   async withRetry(operation, context = '') {
     let lastError
 
@@ -134,7 +154,9 @@ class SupabaseService {
       } catch (error) {
         lastError = error
 
-        if (attempt === this.maxRetries) {
+        const shouldRetry = this.isTransientError(error)
+
+        if (!shouldRetry || attempt === this.maxRetries) {
           console.error(`Operation failed after ${this.maxRetries} attempts${context ? ` in ${context}` : ''}:`, error)
           throw error
         }
@@ -191,23 +213,41 @@ export const sanitizeQuery = (query) => {
   return query
 }
 
-// Health check del servicio
-export const healthCheck = async () => {
+const createTimedAbort = (timeoutMs = 5000) => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(new Error('timeout')), timeoutMs)
+  return {
+    controller,
+    clear: () => clearTimeout(timer)
+  }
+}
+
+// Health check del servicio (HEAD liviano, sin lógica de negocio)
+export const healthCheck = async (timeoutMs = 4000) => {
+  const startedAt = performance.now()
+  const { controller, clear } = createTimedAbort(timeoutMs)
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('count', { count: 'exact', head: true })
-      .limit(1)
+    const { error } = await supabase
+      .from('user_features') // tabla liviana
+      .select('user_id', { head: true, limit: 1 })
+      .abortSignal(controller.signal)
+
+    clear()
+    const latency = Math.round(performance.now() - startedAt)
 
     return {
       healthy: !error,
       timestamp: new Date().toISOString(),
+      latencyMs: latency,
       error: error?.message
     }
   } catch (error) {
+    clear()
+    const latency = Math.round(performance.now() - startedAt)
     return {
       healthy: false,
       timestamp: new Date().toISOString(),
+      latencyMs: latency,
       error: error.message
     }
   }

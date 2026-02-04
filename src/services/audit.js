@@ -15,7 +15,7 @@ class AuditService {
       const queryFn = async () => {
         let query = supabase
           .from('audit_logs')
-          .select('*')
+          .select('id, action, details, actor_id, actor_email, actor_name, target_id, target_email, target_name, metadata, created_at, request_id')
           .order('created_at', { ascending: false })
           .limit(limit)
 
