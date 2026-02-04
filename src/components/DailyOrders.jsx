@@ -322,9 +322,11 @@ const DailyOrders = ({ user, loading }) => {
     return 'bg-white text-black border-gray-300'
   }
 
+  const allOrders = Array.isArray(orders) ? orders : []
+
   const filteredOrders = selectedLocation === 'all' 
-    ? Array.isArray(orders) ? orders : []
-    : Array.isArray(orders) ? orders.filter(order => order && order.location === selectedLocation) : []
+    ? allOrders
+    : allOrders.filter(order => order && order.location === selectedLocation)
 
   // Aplicar filtro por estado
   const statusFilteredOrders = selectedStatus === 'all'
@@ -766,8 +768,11 @@ const DailyOrders = ({ user, loading }) => {
     const statusCounts = {}
     const serviceCounts = { lunch: 0, dinner: 0 }
     const beverageCounts = {}
-    sortedOrders.forEach(order => {
-      statusCounts[order.status] = (statusCounts[order.status] || 0) + 1
+    allOrders.forEach(order => {
+      if (!order) return
+      if (!['completed', 'cancelled'].includes(order.status)) {
+        statusCounts[order.status] = (statusCounts[order.status] || 0) + 1
+      }
       const serviceKey = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
       serviceCounts[serviceKey] += 1
 
@@ -811,9 +816,9 @@ const DailyOrders = ({ user, loading }) => {
           <table className="print-table text-[11px] mb-3">
             <tbody>
               <tr><th>Total pedidos</th><td>{stats.total}</td></tr>
-              <tr><th>Completados</th><td>{stats.completed}</td></tr>
+              {/* Completados oculto en impresión */}
               <tr><th>Pendientes</th><td>{stats.pending}</td></tr>
-              <tr><th>Cancelados</th><td>{stats.cancelled}</td></tr>
+              {/* Cancelados oculto en impresión */}
               <tr><th>Total ítems</th><td>{stats.totalItems}</td></tr>
               <tr><th>Almuerzos</th><td>{printAggregates.serviceCounts.lunch}</td></tr>
               <tr><th>Cenas</th><td>{printAggregates.serviceCounts.dinner}</td></tr>
@@ -849,12 +854,15 @@ const DailyOrders = ({ user, loading }) => {
               <h3 className="text-sm font-bold text-gray-900 mb-1">Por estado</h3>
               <table className="print-table text-[11px] mb-3">
                 <tbody>
-                  {Object.entries(printAggregates.statusCounts).map(([st, count]) => (
-                    <tr key={st}>
-                      <td>{getStatusText(st)}</td>
-                      <td className="text-right">{count}</td>
-                    </tr>
-                  ))}
+                  {Object.entries(printAggregates.statusCounts).map(([st, count]) => {
+                    if (['completed', 'cancelled'].includes(st)) return null
+                    return (
+                      <tr key={st}>
+                        <td>{getStatusText(st)}</td>
+                        <td className="text-right">{count}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </>
@@ -1107,7 +1115,7 @@ const DailyOrders = ({ user, loading }) => {
               <option value="recent">Recientes</option>
               <option value="location">Empresa</option>
               <option value="hour">Hora (asc)</option>
-              <option value="status">Estado</option>
+                    {/* Estado oculto en vista principal */}
             </select>
           </div>
         </div>
@@ -1253,9 +1261,6 @@ const DailyOrders = ({ user, loading }) => {
                       📍 Ubicación
                     </th>
                     <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
-                      📊 Estado
-                    </th>
-                    <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
                       📦 Items
                     </th>
                     <th className="min-w-[150px] px-6 py-5 font-bold text-black text-lg">
@@ -1294,11 +1299,6 @@ const DailyOrders = ({ user, loading }) => {
                         <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold border ${getLocationBadgeColor(order.location)}`}
                           title={`Ubicación: ${order.location}`}>
                           {order.location}
-                        </span>
-                      </td>
-                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-sm font-bold border ${getStatusColor(order.status)}`} title={getStatusText(order.status)}>
-                          {getStatusText(order.status)}
                         </span>
                       </td>
                       <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
