@@ -51,7 +51,8 @@ const experienceCache = {
   ordersToday: null,
   summary: null,
   supabaseStatus: null,
-  lastRefreshedAt: null
+  lastRefreshedAt: null,
+  skipSummary: false
 }
 
 const startAbortable = (ref, timeoutMs = 12000) => {
@@ -163,15 +164,19 @@ export const useAppExperience = () => {
       setSupabaseStatus(status)
       experienceCache.supabaseStatus = status
 
-      supabase.rpc('log_system_metric', {
-        kind: 'health_ping',
-        ok: health.healthy,
-        latency_ms: health.latencyMs,
-        path: '/experiencia',
-        status_code: health.healthy ? 200 : null,
-        message: health.error?.slice(0, 120) || null,
-        meta: metaBase
-      }).abortSignal(controller.signal).catch(() => {})
+      try {
+        await supabase.rpc('log_system_metric', {
+          kind: 'health_ping',
+          ok: health.healthy,
+          latency_ms: health.latencyMs,
+          path: '/experiencia',
+          status_code: health.healthy ? 200 : null,
+          message: health.error?.slice(0, 120) || null,
+          meta: metaBase
+        }).abortSignal(controller.signal)
+      } catch (_) {
+        // No hacer nada si falla el log; evitar romper la UI
+      }
     } catch (err) {
       clear()
       if (err?.name === 'AbortError') return
@@ -185,6 +190,7 @@ export const useAppExperience = () => {
   const refreshExperienceStatus = async ({ reason = 'manual' } = {}) => {
     if (isRefreshing) return
     if (document?.visibilityState === 'hidden') return
+    if (experienceCache.skipSummary) return
     setIsRefreshing(true)
     const { controller, clear } = startAbortable(summaryControllerRef, 12000)
     try {
@@ -195,9 +201,15 @@ export const useAppExperience = () => {
       if (!summaryError && statusData) {
         setSummary(statusData)
         experienceCache.summary = statusData
+      } else if (summaryError && (summaryError.code === 'PGRST116' || summaryError.status === 404)) {
+        // RPC no publicada; no seguir llamando para evitar 404s
+        setSummary(null)
+        experienceCache.skipSummary = true
       }
     } catch (err) {
-      console.error('Refresh experience status error', err)
+      if (err?.name !== 'AbortError') {
+        console.error('Refresh experience status error', err)
+      }
     } finally {
       clear()
       setIsRefreshing(false)

@@ -135,16 +135,6 @@ class SupabaseService {
     return message.includes('network') || message.includes('fetch') || message.includes('timeout')
   }
 
-  isTransientError(error) {
-    if (!error) return false
-
-    const transientStatus = [502, 503, 504]
-    if (transientStatus.includes(error.status)) return true
-
-    const message = (error.message || '').toLowerCase()
-    return message.includes('network') || message.includes('fetch') || message.includes('timeout')
-  }
-
   async withRetry(operation, context = '') {
     let lastError
 
