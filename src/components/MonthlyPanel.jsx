@@ -694,16 +694,22 @@ const MonthlyPanel = ({ user, loading }) => {
       <style>{`
         @media print {
           @page { size: A4 portrait; margin: 10mm; }
-          body { background: #fff !important; }
+          html, body { width: 100%; margin: 0; padding: 0; background: #fff !important; }
           .monthly-container {
             max-width: 100% !important;
             width: 100% !important;
             overflow: visible !important;
             height: auto !important;
             padding: 0 !important;
+            zoom: 0.9;
           }
+          .monthly-container table { width: 100% !important; table-layout: fixed; }
+          .monthly-container th, .monthly-container td { word-break: break-word; }
+          .monthly-container img { max-width: 100% !important; height: auto !important; }
+          .monthly-container .w-full, .monthly-container .max-w-full { max-width: 100% !important; }
           .monthly-container * {
             box-shadow: none !important;
+            overflow: visible !important;
           }
           .print-hide { display: none !important; }
           .print-no-break { page-break-inside: avoid; }
@@ -856,7 +862,7 @@ const MonthlyPanel = ({ user, loading }) => {
         <div className="space-y-6">
           {/* Gráficos rápidos (siempre visibles cuando hay datos) */}
           {dailyData?.daily_breakdown && (
-          <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break">
+          <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break print-full-width">
             <div className="flex items-center gap-2 mb-3">
               <BarChart2 className="h-5 w-5 text-blue-600" />
               <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
@@ -864,7 +870,7 @@ const MonthlyPanel = ({ user, loading }) => {
             <p className="text-sm text-gray-700 mb-3">
               {dailyData.daily_breakdown.length} días en el rango seleccionado.
             </p>
-            <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-1 print-unclamp">
+            <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-1 print-unclamp print-full-width">
                 {dailyData.daily_breakdown.map((d, idx) => {
                   const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
                   const height = `${heightPx}px`
@@ -895,7 +901,7 @@ const MonthlyPanel = ({ user, loading }) => {
 
           {/* Desglose diario del rango */}
           {dailyData?.daily_breakdown && (
-            <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break">
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break print-full-width">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="h-5 w-5 text-blue-600" />
                 <div className="font-bold text-blue-900 text-lg">Desglose diario del rango</div>
@@ -921,7 +927,7 @@ const MonthlyPanel = ({ user, loading }) => {
               </div>
 
               {showDailyTable && (
-                <div className="overflow-x-auto print-unclamp">
+                <div className="overflow-x-auto print-unclamp print-full-width">
                   <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
                     <thead className="bg-blue-50">
                       <tr>
@@ -948,7 +954,7 @@ const MonthlyPanel = ({ user, loading }) => {
           )}
 
           {/* Tarjetas de métricas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full print-no-break">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full print-no-break print-full-width">
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
               <div className="text-center">
                 <img
@@ -1035,7 +1041,7 @@ const MonthlyPanel = ({ user, loading }) => {
           {metrics.empresas.length === 0 ? (
             <div className="text-gray-600 text-center">No hay datos para el rango seleccionado.</div>
           ) : (
-            <div className="overflow-x-auto print-unclamp">
+            <div className="overflow-x-auto print-unclamp print-full-width">
               <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
                 <thead className="bg-blue-50">
                   <tr>
