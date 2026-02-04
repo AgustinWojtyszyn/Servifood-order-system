@@ -92,7 +92,10 @@ const Experience = () => {
               <button
                 onClick={() => refreshExperienceStatus({ reason: 'manual' })}
                 disabled={isRefreshing}
-                className="text-blue-700 font-semibold hover:underline disabled:opacity-50"
+                className={`inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all
+                  ${isRefreshing
+                    ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                    : 'bg-gray-900 text-white hover:bg-black hover:shadow-lg focus:ring-2 focus:ring-offset-2 focus:ring-gray-800'}`}
               >
                 {isRefreshing ? 'Actualizando…' : 'Actualizar ahora'}
               </button>
