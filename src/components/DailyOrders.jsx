@@ -1548,9 +1548,9 @@ const DailyOrders = ({ user, loading }) => {
             </div>
             <button
               onClick={() => setShowPreviewModal(false)}
-              className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-bold text-white hover:bg-white/20 border border-white/20"
+              className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-bold text-black hover:bg-gray-100 border border-gray-300 shadow-sm"
             >
-              <XCircle className="h-5 w-5" />
+              <XCircle className="h-5 w-5 text-black" style={{ color: '#000', stroke: '#000' }} />
               Cerrar
             </button>
           </div>
