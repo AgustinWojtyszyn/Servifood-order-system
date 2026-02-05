@@ -344,6 +344,12 @@ const OrderForm = ({ user, loading }) => {
       tomorrow.setDate(tomorrow.getDate() + 1)
       const deliveryDate = tomorrow.toISOString().split('T')[0]
 
+      const filterByMealScope = (options = [], meal) =>
+        (options || []).filter(opt => {
+          const scope = opt?.meal_scope || (opt?.dinner_only ? 'dinner' : 'both')
+          return scope === 'both' || scope === meal
+        })
+
       const [{ data: lunchData, error: lunchError }, { data: dinnerData, error: dinnerError }] = await Promise.all([
         db.getVisibleCustomOptions({ company: rawCompanySlug, meal: 'lunch', date: deliveryDate }),
         db.getVisibleCustomOptions({ company: rawCompanySlug, meal: 'dinner', date: deliveryDate })
@@ -352,8 +358,9 @@ const OrderForm = ({ user, loading }) => {
       if (lunchError) console.error('Error fetching lunch custom options:', lunchError)
       if (dinnerError) console.error('Error fetching dinner custom options:', dinnerError)
 
-      setCustomOptionsLunch(lunchData || [])
-      setCustomOptionsDinner(dinnerData || [])
+      // Filtro defensivo por alcance de comida: asegura que cada opción solo aparezca en el turno elegido
+      setCustomOptionsLunch(filterByMealScope(lunchData, 'lunch'))
+      setCustomOptionsDinner(filterByMealScope(dinnerData, 'dinner'))
     } catch (err) {
       console.error('Error fetching custom options:', err)
     }
@@ -479,11 +486,33 @@ const OrderForm = ({ user, loading }) => {
     return [...principal, ...others]
   }
 
-  const calculateTotalDinner = () => getSelectedItemsListDinner().length
+  const matchesOverrideKeyword = (val = '') => {
+    const t = (val || '').toString().toLowerCase()
+    return t.includes('mp') || t.includes('menú principal') || t.includes('menu principal') || t.includes('veggie') || t.includes('vegetar')
+  }
+
+  const getDinnerOverrideChoice = () => {
+    const responses = customResponsesDinner || {}
+    for (const value of Object.values(responses)) {
+      if (Array.isArray(value)) {
+        const match = value.find(v => matchesOverrideKeyword(v))
+        if (match) return match
+      } else if (matchesOverrideKeyword(value)) {
+        return value
+      }
+    }
+    return null
+  }
+
+  const calculateTotalDinner = () => {
+    const base = getSelectedItemsListDinner().length
+    if (base > 0) return base
+    return getDinnerOverrideChoice() ? 1 : 0
+  }
 
   const hasLunchSelection = selectedTurns.lunch && getSelectedItemsList().length > 0
   const hasDinnerSelection =
-    selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled && getSelectedItemsListDinner().length > 0
+    selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled && (getSelectedItemsListDinner().length > 0 || !!getDinnerOverrideChoice())
   const hasAnySelectedItems = hasLunchSelection || hasDinnerSelection
 
   const computePayloadSignature = (items = [], responses = [], comments = '', deliveryDate = '', location = '', service = 'lunch') => {
@@ -638,8 +667,10 @@ const OrderForm = ({ user, loading }) => {
       return
     }
 
-    if (dinnerSelected && selectedItemsListDinner.length === 0) {
-      setError('Selecciona al menos un plato para cena.')
+    const dinnerOverrideChoice = getDinnerOverrideChoice()
+
+    if (dinnerSelected && selectedItemsListDinner.length === 0 && !dinnerOverrideChoice) {
+      setError('Selecciona al menos un plato para cena o marca la opción MP/veggie.')
       setSubmitting(false)
       return
     }
@@ -715,11 +746,16 @@ const OrderForm = ({ user, loading }) => {
 
     try {
       for (const service of turnosSeleccionados) {
-        const itemsForService = service === 'dinner' ? selectedItemsListDinner : selectedItemsList
-        const responsesForService = service === 'dinner' ? customResponsesDinnerArray : customResponsesArray
+        const isDinner = service === 'dinner'
+        const overrideChoice = isDinner ? getDinnerOverrideChoice() : null
+        const itemsForService = isDinner ? selectedItemsListDinner : selectedItemsList
+        const responsesForService = isDinner ? customResponsesDinnerArray : customResponsesArray
+        const itemsToSend = (isDinner && overrideChoice && itemsForService.length === 0)
+          ? [{ id: 'dinner-override', name: `Cena: ${overrideChoice}`, quantity: 1 }]
+          : itemsForService
 
         const idempotencySignature = computePayloadSignature(
-          itemsForService.map(item => ({ ...item, quantity: 1 })),
+          itemsToSend.map(item => ({ ...item, quantity: 1 })),
           responsesForService,
           formData.comments,
           deliveryDate,
@@ -738,25 +774,25 @@ const OrderForm = ({ user, loading }) => {
           idempotencyKey = generateIdempotencyKey()
         }
 
-        const orderData = {
-          user_id: user.id,
-          location: formData.location,
-          customer_name: formData.name || user?.user_metadata?.full_name || user?.email || '',
-          customer_email: formData.email || user?.email,
-          customer_phone: formData.phone,
-          items: itemsForService.map(item => ({
-            id: item.id,
-            name: item.name,
-            quantity: 1
-          })),
-          comments: formData.comments,
-          delivery_date: deliveryDate,
-          status: 'pending',
-          total_items: service === 'dinner' ? calculateTotalDinner() : calculateTotal(),
-          custom_responses: responsesForService,
-          idempotency_key: idempotencyKey,
-          service
-        }
+          const orderData = {
+            user_id: user.id,
+            location: formData.location,
+            customer_name: formData.name || user?.user_metadata?.full_name || user?.email || '',
+            customer_email: formData.email || user?.email,
+            customer_phone: formData.phone,
+            items: itemsToSend.map(item => ({
+              id: item.id,
+              name: item.name,
+              quantity: 1
+            })),
+            comments: formData.comments,
+            delivery_date: deliveryDate,
+            status: 'pending',
+            total_items: service === 'dinner' ? calculateTotalDinner() : calculateTotal(),
+            custom_responses: responsesForService,
+            idempotency_key: idempotencyKey,
+            service
+          }
 
         const { error } = await db.createOrder(orderData)
 

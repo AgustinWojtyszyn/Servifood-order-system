@@ -112,12 +112,17 @@ export default function EditOrderForm({ user, loading }) {
     try {
       const deliveryDate = order?.delivery_date || order?.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
       const service = order?.service || 'lunch'
+      const filterByMealScope = (options = [], meal) =>
+        (options || []).filter(opt => {
+          const scope = opt?.meal_scope || (opt?.dinner_only ? 'dinner' : 'both')
+          return scope === 'both' || scope === meal
+        })
       const { data, error } = await db.getVisibleCustomOptions({
         company: order?.company || order?.company_id || null,
         meal: service,
         date: deliveryDate
       })
-      if (!error && data) setCustomOptions(data)
+      if (!error && data) setCustomOptions(filterByMealScope(data, service))
       if (error) console.error('Error fetching visible custom options:', error)
     } catch (err) {
       console.error('Error fetching custom options:', err)
