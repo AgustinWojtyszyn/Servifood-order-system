@@ -414,6 +414,38 @@ const DailyOrders = ({ user, loading }) => {
     }
   }
 
+  // Vista previa (similar a Excel) para cada pedido
+  const buildOrderPreview = (order) => {
+    const items = []
+    if (Array.isArray(order?.items)) {
+      const principal = order.items.filter(
+        item => item && item.name && item.name.toLowerCase().includes('menú principal')
+      )
+      const others = order.items.filter(
+        item => item && item.name && !item.name.toLowerCase().includes('menú principal')
+      )
+      if (principal.length > 0) {
+        const totalPrincipal = principal.reduce((sum, i) => sum + (i.quantity || 1), 0)
+        items.push(`Plato Principal: ${totalPrincipal}`)
+      }
+      others.forEach(i => items.push(`${normalizeDishName(i.name)} (x${i.quantity || 1})`))
+    }
+
+    const customSide = getCustomSideFromResponses(order?.custom_responses || [])
+    if (customSide) items.push(`Guarnición: ${customSide}`)
+
+    const otherResponses = getOtherCustomResponses(order?.custom_responses || [])
+    const customStrings = otherResponses.map(r => {
+      const response = Array.isArray(r.response) ? r.response.join(', ') : r.response
+      return `${r.title}: ${response}`
+    })
+
+    return {
+      itemsText: items.length ? items.join(' | ') : 'Sin items',
+      optionsText: customStrings.length ? customStrings.join(' | ') : 'Sin opciones adicionales'
+    }
+  }
+
   // Filtrar pedidos por empresa/ubicación para exportar
   const filterOrdersByCompany = (ordersList, company) => {
     if (company === 'all') return ordersList
@@ -1427,6 +1459,20 @@ const DailyOrders = ({ user, loading }) => {
                           Guarnición: {customSide}
                         </div>
                       )}
+                    </div>
+
+                    {/* Vista previa tipo Excel */}
+                    <div className="mt-3 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                      {(() => {
+                        const preview = buildOrderPreview(order)
+                        return (
+                          <div className="text-xs text-gray-800 space-y-1">
+                            <div className="font-semibold text-gray-900">Vista previa (exportable):</div>
+                            <div><span className="font-semibold">Menú:</span> {preview.itemsText}</div>
+                            <div><span className="font-semibold">Opciones:</span> {preview.optionsText}</div>
+                          </div>
+                        )
+                      })()}
                     </div>
 
                     <div className="flex justify-end pt-1">
