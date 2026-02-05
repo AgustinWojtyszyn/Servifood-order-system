@@ -341,6 +341,20 @@ const AdminPanel = () => {
     setEditingOptions(true)
   }
 
+  const handleEditOption = (option) => {
+    if (!option) return
+    setNewOption({
+      ...option,
+      options: Array.isArray(option.options) && option.options.length > 0 ? option.options : [''],
+      meal_scope: option.meal_scope || (option.dinner_only ? 'dinner' : 'both'),
+      days_of_week: option.days_of_week || null,
+      company: option.company || '',
+      only_holidays: option.only_holidays || false,
+      exclude_holidays: option.exclude_holidays || false
+    })
+    setEditingOptions(true)
+  }
+
   const handleSaveOption = async () => {
     if (!newOption.title.trim()) {
       alert('El título es requerido')
@@ -355,18 +369,24 @@ const AdminPanel = () => {
 
     try {
       const daysArray = Array.isArray(newOption.days_of_week) ? newOption.days_of_week.filter(Boolean) : []
+      const filteredOptions = (newOption.type === 'multiple_choice' || newOption.type === 'checkbox')
+        ? newOption.options.filter(opt => opt.trim())
+        : null
+
+      const existing = newOption.id ? customOptions.find(opt => opt.id === newOption.id) : null
+
       const optionData = {
-        ...newOption,
-        options: (newOption.type === 'multiple_choice' || newOption.type === 'checkbox')
-          ? newOption.options.filter(opt => opt.trim())
-          : null,
-        order_position: customOptions.length,
+        title: newOption.title,
+        type: newOption.type,
+        options: filteredOptions,
+        order_position: existing?.order_position ?? customOptions.length,
         company: newOption.company || null,
-        active: true, // Asegurar que siempre esté activa
+        active: newOption.active ?? true,
         days_of_week: daysArray.length === 0 ? null : daysArray,
         only_holidays: newOption.only_holidays || false,
         exclude_holidays: newOption.exclude_holidays || false,
-        meal_scope: newOption.meal_scope || 'both'
+        meal_scope: newOption.meal_scope || (newOption.dinner_only ? 'dinner' : 'both'),
+        required: !!newOption.required
       }
 
       if (optionData.only_holidays && optionData.exclude_holidays) {
@@ -374,29 +394,22 @@ const AdminPanel = () => {
         return
       }
 
-      console.log('🔧 Creando opción:', optionData)
-
-      const { data, error } = await db.createCustomOption(optionData)
+      const { error } = newOption.id
+        ? await db.updateCustomOption(newOption.id, optionData)
+        : await db.createCustomOption(optionData)
       
       if (error) {
-        console.error('❌ Error al crear opción:', error)
-        alert('Error al crear la opción: ' + error.message)
+        console.error('❌ Error al guardar opción:', error)
+        alert('Error al guardar la opción: ' + error.message)
       } else {
-        console.log('✅ Opción creada exitosamente:', data)
         setNewOption(null)
         setEditingOptions(false)
-        
-        // Forzar refresh completo esperando que termine
-        setTimeout(async () => {
-          await fetchData()
-          console.log('🔄 Datos refrescados, opciones actuales:', customOptions.length)
-        }, 500)
-        
-        alert('Opción creada exitosamente. Refrescando...')
+        await fetchData()
+        alert('Opción guardada exitosamente.')
       }
     } catch (err) {
       console.error('❌ Error:', err)
-      alert('Error al crear la opción')
+      alert('Error al guardar la opción')
     }
   }
 
@@ -1022,6 +1035,14 @@ const AdminPanel = () => {
                     
                     {/* Toggle y eliminar */}
                     <div className="flex gap-2 order-1 sm:order-2 sm:ml-auto">
+                      <button
+                        onClick={() => handleEditOption(option)}
+                        className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold text-sm flex items-center gap-1"
+                        title="Editar opción"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Editar</span>
+                      </button>
                       <button
                         onClick={() => handleToggleOption(option.id, option.active)}
                         className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
