@@ -969,12 +969,11 @@ const DailyOrders = ({ user, loading }) => {
             </button>
 
             <button
-              onClick={exportCompanyReport}
-              disabled={companyExportableOrdersCount === 0}
-              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-700 hover:to-blue-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-700 hover:to-blue-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200"
             >
               <Mail className="mr-3 h-6 w-6" />
-              🏢 Exportar a Empresa ({companyExportableOrdersCount})
+              📄 Vista Previa
             </button>
 
             <button
