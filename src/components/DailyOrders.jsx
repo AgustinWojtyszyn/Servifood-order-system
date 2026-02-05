@@ -28,6 +28,7 @@ const DailyOrders = ({ user, loading }) => {
   const [sortBy, setSortBy] = useState('recent') // recent, location, hour, status
   const [availableDishes, setAvailableDishes] = useState([])
   const [refreshing, setRefreshing] = useState(false)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
     byLocation: {},
@@ -969,8 +970,9 @@ const DailyOrders = ({ user, loading }) => {
             </button>
 
             <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-700 hover:to-blue-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200"
+              onClick={() => setShowPreviewModal(true)}
+              disabled={sortedOrders.length === 0}
+              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-700 hover:to-blue-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
             >
               <Mail className="mr-3 h-6 w-6" />
               📄 Vista Previa
@@ -1532,6 +1534,73 @@ const DailyOrders = ({ user, loading }) => {
             </div>
           </div>
         )}
+    {/* Modal Vista Previa */}
+    {showPreviewModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div className="bg-white rounded-2xl shadow-3xl max-w-5xl w-full max-h-[80vh] overflow-hidden border-2 border-primary-200">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-linear-to-r from-primary-600 to-primary-800">
+            <div className="flex items-center gap-3">
+              <Mail className="h-6 w-6 text-white" />
+              <div>
+                <h3 className="text-xl font-black text-white">Vista previa de exportación</h3>
+                <p className="text-sm text-white/80">Así se verán los datos en Excel/PDF</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowPreviewModal(false)}
+              className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-bold text-white hover:bg-white/20 border border-white/20"
+            >
+              <XCircle className="h-5 w-5" />
+              Cerrar
+            </button>
+          </div>
+
+          <div className="overflow-auto max-h-[65vh]">
+            <table className="w-full text-left border-separate border-spacing-0">
+              <thead className="bg-gray-100 sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Cliente</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Ubicación</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Estado</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Menú</th>
+                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Opciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedOrders.map(order => {
+                  const preview = buildOrderPreview(order)
+                  return (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 border-b border-gray-100">
+                        {order.customer_name || order.user_name || 'Usuario'}
+                        <div className="text-xs text-gray-600">{order.user_email || order.customer_email || ''}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 border-b border-gray-100">{order.location || '—'}</td>
+                      <td className="px-4 py-3 text-sm font-semibold border-b border-gray-100">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          order.status === 'completed' || order.status === 'delivered'
+                            ? 'bg-green-100 text-green-800'
+                            : order.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {getStatusText(order.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 border-b border-gray-100">{preview.itemsText}</td>
+                      <td className="px-4 py-3 text-sm text-gray-800 border-b border-gray-100">{preview.optionsText}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            {sortedOrders.length === 0 && (
+              <div className="p-6 text-center text-gray-600">No hay pedidos para mostrar.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   </RequireUser>
   )
