@@ -614,8 +614,77 @@ const DailyOrders = ({ user, loading }) => {
   }
 
   const exportToPdf = () => {
-    // Usa la impresión del navegador; el usuario puede elegir “Guardar como PDF”.
-    window.print()
+    if (!sortedOrders.length) {
+      alert('No hay pedidos para exportar.')
+      return
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    const rowsHtml = sortedOrders.map(order => {
+      const preview = buildOrderPreview(order)
+      return `
+        <tr>
+          <td>${order.customer_name || order.user_name || 'Usuario'}</td>
+          <td>${order.user_email || order.customer_email || ''}</td>
+          <td>${order.location || '—'}</td>
+          <td>${getStatusText(order.status)}</td>
+          <td>${preview.itemsText}</td>
+          <td>${preview.optionsText}</td>
+          <td>${getTomorrowDate()}</td>
+        </tr>
+      `
+    }).join('')
+
+    const html = `
+      <!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8" />
+          <title>Pedidos diarios - ${today}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
+            h1 { margin: 0 0 8px; }
+            h2 { margin: 4px 0 16px; font-size: 16px; color: #444; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #ccc; padding: 6px 8px; vertical-align: top; }
+            th { background: #f3f4f6; text-align: left; }
+            tr:nth-child(every) { background: #fafafa; }
+            .meta { margin-bottom: 12px; font-size: 12px; color: #555; }
+          </style>
+        </head>
+        <body>
+          <h1>Pedidos diarios</h1>
+          <h2>Fecha de generación: ${today} · Entrega: ${getTomorrowDate()}</h2>
+          <div class="meta">Total pedidos: ${sortedOrders.length}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Email</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+                <th>Menú</th>
+                <th>Opciones</th>
+                <th>Entrega</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>window.print(); setTimeout(() => window.close(), 300);</script>
+        </body>
+      </html>
+    `
+
+    const w = window.open('', '_blank')
+    if (!w) {
+      alert('No se pudo abrir la vista de impresión. Permite popups e inténtalo de nuevo.')
+      return
+    }
+    w.document.open()
+    w.document.write(html)
+    w.document.close()
   }
 
   // Export específico para enviar datos a la empresa con confirmación de pedido
