@@ -1023,33 +1023,42 @@ const AdminPanel = () => {
             {/* Override de Postre por fecha */}
             {dessertOption && !editingOptions && (
               <div className="mb-4 sm:mb-6 border-2 border-amber-200 bg-amber-50 rounded-xl p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-amber-800">Postre bloqueado en fines de semana por defecto</p>
-                    <p className="text-sm text-amber-900/80">Si un sábado o domingo hay postre, habilítalo para la fecha.</p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                    <input
-                      type="date"
-                      value={dessertOverrideDate}
-                      onChange={(e) => setDessertOverrideDate(e.target.value)}
-                      className="input-field bg-white text-gray-900"
-                    />
-                    <button
-                      onClick={handleToggleDessertOverride}
-                      disabled={loadingDessertOverride}
-                      className={`px-4 py-3 rounded-lg font-semibold text-sm shadow-sm border ${
-                        dessertOverrideEnabled
-                          ? 'bg-green-600 text-white border-green-700 hover:bg-green-500'
-                          : 'bg-white text-amber-900 border-amber-300 hover:bg-amber-100'
-                      }`}
-                    >
-                      {loadingDessertOverride ? 'Guardando...' : dessertOverrideEnabled ? 'Postre habilitado' : 'Habilitar postre'}
-                    </button>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-amber-800">Postre bloqueado en fines de semana por defecto</p>
+                      <p className="text-sm text-amber-900/80">Si un sábado o domingo hay postre, habilítalo para la fecha.</p>
+                      {dessertOverrideEnabled && (
+                        <span className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-green-900 bg-green-100 border border-green-300 px-3 py-1 rounded-full">
+                          ● Postre habilitado
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                      <input
+                        type="date"
+                        value={dessertOverrideDate}
+                        onChange={(e) => setDessertOverrideDate(e.target.value)}
+                        className="input-field bg-white text-gray-900"
+                      />
+                      <button
+                        onClick={handleToggleDessertOverride}
+                        disabled={loadingDessertOverride}
+                        className={`px-4 py-3 rounded-lg font-semibold text-sm shadow-sm border ${
+                          dessertOverrideEnabled
+                            ? 'bg-green-600 text-white border-green-700 hover:bg-green-500'
+                            : 'bg-white text-amber-900 border-amber-300 hover:bg-amber-100'
+                        }`}
+                      >
+                        {loadingDessertOverride
+                          ? 'Guardando...'
+                          : dessertOverrideEnabled
+                            ? 'Deshabilitar postre'
+                            : 'Habilitar postre'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
           {/* Lista de opciones existentes - Con scroll adaptativo */}
           {!editingOptions && customOptions.length > 0 && (
