@@ -109,6 +109,13 @@ const AdminPanel = () => {
   const handleToggleDessertOverride = async () => {
     if (!dessertOption) return
     const newValue = !dessertOverrideEnabled
+
+    // Confirmación antes de deshabilitar
+    if (dessertOverrideEnabled) {
+      const ok = window.confirm('¿Deshabilitar el postre para la fecha seleccionada?')
+      if (!ok) return
+    }
+
     setLoadingDessertOverride(true)
     try {
       const { error } = await db.setCustomOptionOverride({
@@ -1045,8 +1052,8 @@ const AdminPanel = () => {
                         disabled={loadingDessertOverride}
                         className={`px-4 py-3 rounded-lg font-semibold text-sm shadow-sm border ${
                           dessertOverrideEnabled
-                            ? 'bg-green-600 text-white border-green-700 hover:bg-green-500'
-                            : 'bg-white text-amber-900 border-amber-300 hover:bg-amber-100'
+                            ? 'bg-red-600 text-white border-red-700 hover:bg-red-500'
+                            : 'bg-green-600 text-white border-green-700 hover:bg-green-500'
                         }`}
                       >
                         {loadingDessertOverride
