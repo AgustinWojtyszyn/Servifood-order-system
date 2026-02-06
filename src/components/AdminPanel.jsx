@@ -50,6 +50,7 @@ const AdminPanel = () => {
   const [dessertOverrideDate, setDessertOverrideDate] = useState(todayISO)
   const [dessertOverrideEnabled, setDessertOverrideEnabled] = useState(false)
   const [loadingDessertOverride, setLoadingDessertOverride] = useState(false)
+  const [showDessertConfirm, setShowDessertConfirm] = useState(false)
   const { isAdmin, user, refreshSession, loading } = useAuthContext()
   
   // Estados para búsqueda y filtrado de usuarios
@@ -106,14 +107,14 @@ const AdminPanel = () => {
     }
   }
 
-  const handleToggleDessertOverride = async () => {
+  const handleToggleDessertOverride = async ({ skipConfirm = false } = {}) => {
     if (!dessertOption) return
     const newValue = !dessertOverrideEnabled
 
-    // Confirmación antes de deshabilitar
-    if (dessertOverrideEnabled) {
-      const ok = window.confirm('¿Deshabilitar el postre para la fecha seleccionada?')
-      if (!ok) return
+    // Confirmación visual antes de deshabilitar
+    if (dessertOverrideEnabled && !skipConfirm) {
+      setShowDessertConfirm(true)
+      return
     }
 
     setLoadingDessertOverride(true)
@@ -135,6 +136,7 @@ const AdminPanel = () => {
       alert('No se pudo actualizar el postre para esa fecha')
     } finally {
       setLoadingDessertOverride(false)
+      setShowDessertConfirm(false)
     }
   }
 
@@ -1048,7 +1050,7 @@ const AdminPanel = () => {
                         className="input-field bg-white text-gray-900"
                       />
                       <button
-                        onClick={handleToggleDessertOverride}
+                        onClick={() => handleToggleDessertOverride()}
                         disabled={loadingDessertOverride}
                         className={`px-4 py-3 rounded-lg font-semibold text-sm shadow-sm border ${
                           dessertOverrideEnabled
@@ -1061,6 +1063,32 @@ const AdminPanel = () => {
                           : dessertOverrideEnabled
                             ? 'Deshabilitar postre'
                             : 'Habilitar postre'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showDessertConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-red-200">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Deshabilitar postre</h3>
+                    <p className="text-sm text-gray-700 mb-4">
+                      ¿Seguro que deseas deshabilitar el postre para la fecha seleccionada? Los usuarios dejarán de ver la opción.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-end">
+                      <button
+                        onClick={() => setShowDessertConfirm(false)}
+                        className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => handleToggleDessertOverride({ skipConfirm: true })}
+                        disabled={loadingDessertOverride}
+                        className="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-500 shadow-sm disabled:opacity-50"
+                      >
+                        Sí, deshabilitar
                       </button>
                     </div>
                   </div>
