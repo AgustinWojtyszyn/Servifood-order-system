@@ -488,7 +488,17 @@ const OrderForm = ({ user, loading }) => {
 
   const matchesOverrideKeyword = (val = '') => {
     const t = (val || '').toString().toLowerCase()
-    return t.includes('mp') || t.includes('menú principal') || t.includes('menu principal') || t.includes('veggie') || t.includes('vegetar')
+    return (
+      t.includes('mp') ||
+      t.includes('mp cena') ||
+      t.includes('menú principal') ||
+      t.includes('menu principal') ||
+      t.includes('menú cena') ||
+      t.includes('menu cena') ||
+      t.includes('veggie') ||
+      t.includes('veg') ||
+      t.includes('vegetar')
+    )
   }
 
   const getDinnerOverrideChoice = () => {
