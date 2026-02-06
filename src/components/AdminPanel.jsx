@@ -1070,8 +1070,8 @@ const AdminPanel = () => {
               )}
 
               {showDessertConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                  <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-red-200">
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 sm:p-6">
+                  <div className="mt-6 sm:mt-10 bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-red-200">
                     <h3 className="text-lg font-bold text-gray-900 mb-2">Deshabilitar postre</h3>
                     <p className="text-sm text-gray-700 mb-4">
                       ¿Seguro que deseas deshabilitar el postre para la fecha seleccionada? Los usuarios dejarán de ver la opción.
