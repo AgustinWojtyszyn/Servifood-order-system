@@ -546,6 +546,17 @@ const OrderForm = ({ user, loading }) => {
     return null
   }
 
+  const hasDinnerOverrideInResponses = (responses = []) => {
+    if (!Array.isArray(responses)) return false
+    return responses.some(r => {
+      if (!r) return false
+      const resp = r.response
+      if (isDinnerOverrideValue(resp)) return true
+      if (matchesOverrideKeyword(r.title || '')) return true
+      return false
+    })
+  }
+
   const calculateTotalDinner = () => {
     const base = getSelectedItemsListDinner().length
     if (base > 0) return base
@@ -813,6 +824,20 @@ const OrderForm = ({ user, loading }) => {
         const overrideChoice = isDinner ? getDinnerOverrideChoice() : null
         const itemsForService = isDinner ? selectedItemsListDinner : selectedItemsList
         const responsesForService = isDinner ? customResponsesDinnerArray : customResponsesArray
+
+        if (isDinner) {
+          const hasOverride = hasDinnerOverrideInResponses(responsesForService)
+          if (itemsForService.length > 0 && hasOverride) {
+            setError('Para cena elegí menú o la opción adicional (MP/veggie), no ambas.')
+            setSubmitting(false)
+            break
+          }
+          if (itemsForService.length > 1) {
+            setError('Solo un menú por persona en cena.')
+            setSubmitting(false)
+            break
+          }
+        }
         const itemsToSend = (isDinner && overrideChoice && itemsForService.length === 0)
           ? [{ id: 'dinner-override', name: `Cena: ${overrideChoice}`, quantity: 1 }]
           : itemsForService
