@@ -405,21 +405,17 @@ const OrderForm = ({ user, loading }) => {
   const handleItemSelectDinner = (itemId, isSelected) => {
     const item = menuItems.find(m => m.id === itemId)
     if (!item) return
-    const isEnsalada = item?.name?.toLowerCase().includes('ensalada')
+    const anySelected = Object.values(selectedItemsDinner).some(Boolean)
 
     if (isSelected) {
-      if (isEnsalada) {
-        setSelectedItemsDinner(prev => ({ ...prev, [itemId]: true }))
-      } else {
-        const mainMenuSelected = menuItems
-          .filter(m => !m.name?.toLowerCase().includes('ensalada'))
-          .some(m => selectedItemsDinner[m.id])
-        if (mainMenuSelected && !selectedItemsDinner[itemId]) {
-          alert('Solo puedes seleccionar 1 menú por persona en cena.')
-          return
-        }
-        setSelectedItemsDinner(prev => ({ ...prev, [itemId]: true }))
+      // Si ya hay algo elegido (menú u otra opción), bloquear
+      if (anySelected && !selectedItemsDinner[itemId]) {
+        alert('Solo puedes seleccionar 1 menú por persona en cena.')
+        return
       }
+      // Limpiar overrides de cena si elige un plato
+      clearDinnerOverrideResponses()
+      setSelectedItemsDinner(prev => ({ ...prev, [itemId]: true }))
     } else {
       setSelectedItemsDinner(prev => ({ ...prev, [itemId]: false }))
     }
@@ -502,6 +498,25 @@ const OrderForm = ({ user, loading }) => {
       t.includes('veg') ||
       t.includes('vegetar')
     )
+  }
+
+  const isDinnerOverrideValue = (val) => {
+    if (Array.isArray(val)) return val.some(v => matchesOverrideKeyword(v))
+    return matchesOverrideKeyword(val)
+  }
+
+  const clearDinnerOverrideResponses = () => {
+    setCustomResponsesDinner(prev => {
+      const next = {}
+      Object.entries(prev || {}).forEach(([k, v]) => {
+        if (!isDinnerOverrideValue(v)) next[k] = v
+      })
+      return next
+    })
+  }
+
+  const clearDinnerMenuSelections = () => {
+    setSelectedItemsDinner({})
   }
 
   const getDinnerOverrideChoice = () => {
@@ -1370,36 +1385,54 @@ const OrderForm = ({ user, loading }) => {
                         {option.required && <span className="text-red-600 ml-1">*</span>}
                       </label>
 
-                      {option.type === 'multiple_choice' && option.options && (
-                        <div className="space-y-2">
-                          {option.options.map((opt, index) => {
-                            const isSelected = customResponsesDinner[option.id] === opt
-                            const inputId = `dinner-option-${option.id}-choice-${index}`
-                            return (
-                            <label
-                              key={index}
-                              className={`flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer ${isSelected ? 'border-amber-500 bg-amber-50' : ''}`}
-                              htmlFor={inputId}
-                              onClick={(e) => {
-                                if (isSelected) {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  setCustomResponsesDinner(prev => ({ ...prev, [option.id]: null }))
-                                }
-                              }}
-                            >
-                              <input
-                                type="radio"
-                                id={inputId}
-                                name={`dinner-option-${option.id}`}
-                                value={opt}
-                                checked={isSelected}
-                                onChange={(e) => setCustomResponsesDinner(prev => ({ ...prev, [option.id]: e.target.value }))}
-                                className="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500"
-                              />
-                              <span className="ml-3 text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
-                            </label>
-                          )})}
+      {option.type === 'multiple_choice' && option.options && (
+        <div className="space-y-2">
+          {option.options.map((opt, index) => {
+            const isSelected = customResponsesDinner[option.id] === opt
+            const inputId = `dinner-option-${option.id}-choice-${index}`
+            return (
+            <label
+              key={index}
+              className={`flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer ${isSelected ? 'border-amber-500 bg-amber-50' : ''}`}
+              htmlFor={inputId}
+              onClick={(e) => {
+                if (isSelected) {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setCustomResponsesDinner(prev => ({ ...prev, [option.id]: null }))
+                }
+              }}
+            >
+              <input
+                type="radio"
+                id={inputId}
+                name={`dinner-option-${option.id}`}
+                value={opt}
+                checked={isSelected}
+                onChange={(e) => {
+                  const value = e.target.value
+                  // Si es override, limpia platos de cena y otros overrides
+                  if (isDinnerOverrideValue(value)) {
+                    clearDinnerMenuSelections()
+                  }
+                  setCustomResponsesDinner(prev => {
+                    // Si se selecciona override, limpiar cualquier otra respuesta override previa
+                    if (isDinnerOverrideValue(value)) {
+                      const next = {}
+                      Object.entries(prev || {}).forEach(([k, v]) => {
+                        if (!isDinnerOverrideValue(v)) next[k] = v
+                      })
+                      next[option.id] = value
+                      return next
+                    }
+                    return { ...prev, [option.id]: prev[option.id] === value ? null : value }
+                  })
+                }}
+                className="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500"
+              />
+              <span className="ml-3 text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
+            </label>
+          )})}
                         </div>
                       )}
 
