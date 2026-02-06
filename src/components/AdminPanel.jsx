@@ -45,6 +45,11 @@ const AdminPanel = () => {
     const stored = localStorage.getItem('dinner_menu_enabled')
     return stored === null ? true : stored === 'true'
   })
+  const todayISO = new Date().toISOString().split('T')[0]
+  const [dessertOption, setDessertOption] = useState(null)
+  const [dessertOverrideDate, setDessertOverrideDate] = useState(todayISO)
+  const [dessertOverrideEnabled, setDessertOverrideEnabled] = useState(false)
+  const [loadingDessertOverride, setLoadingDessertOverride] = useState(false)
   const { isAdmin, user, refreshSession, loading } = useAuthContext()
   
   // Estados para búsqueda y filtrado de usuarios
@@ -79,6 +84,52 @@ const AdminPanel = () => {
       fetchCompletedOrdersCount()
     }
   }, [activeTab, isAdmin, user])
+
+  useEffect(() => {
+    if (!dessertOption || !dessertOption.id) return
+    fetchDessertOverride(dessertOption.id, dessertOverrideDate)
+  }, [dessertOption, dessertOverrideDate])
+
+  const fetchDessertOverride = async (optionId, date) => {
+    try {
+      setLoadingDessertOverride(true)
+      const { data, error } = await db.getCustomOptionOverride({ optionId, date })
+      if (error) {
+        console.error('Error fetching dessert override', error)
+        return
+      }
+      setDessertOverrideEnabled(!!data?.enabled)
+    } catch (err) {
+      console.error('Error fetching dessert override', err)
+    } finally {
+      setLoadingDessertOverride(false)
+    }
+  }
+
+  const handleToggleDessertOverride = async () => {
+    if (!dessertOption) return
+    const newValue = !dessertOverrideEnabled
+    setLoadingDessertOverride(true)
+    try {
+      const { error } = await db.setCustomOptionOverride({
+        optionId: dessertOption.id,
+        date: dessertOverrideDate,
+        enabled: newValue
+      })
+      if (error) {
+        console.error('Error toggling dessert override', error)
+        alert('No se pudo actualizar el postre para esa fecha')
+      } else {
+        setDessertOverrideEnabled(newValue)
+        alert(newValue ? '✅ Postre habilitado para la fecha seleccionada' : 'Postre deshabilitado para esa fecha')
+      }
+    } catch (err) {
+      console.error('Error toggling dessert override', err)
+      alert('No se pudo actualizar el postre para esa fecha')
+    } finally {
+      setLoadingDessertOverride(false)
+    }
+  }
 
   const fetchData = async () => {
     setDataLoading(true)
@@ -132,7 +183,13 @@ const AdminPanel = () => {
         console.error('Error fetching custom options:', optionsResult.error)
       } else {
         console.log('📋 Opciones personalizadas recuperadas:', optionsResult.data)
-        setCustomOptions(optionsResult.data || [])
+        const opts = optionsResult.data || []
+        setCustomOptions(opts)
+        const dessert = Array.isArray(opts) ? opts.find(o => o?.title && o.title.toLowerCase().includes('postre')) : null
+        setDessertOption(dessert || null)
+        if (dessert) {
+          await fetchDessertOverride(dessert.id, dessertOverrideDate)
+        }
       }
     } catch (err) {
       console.error('Error:', err)
@@ -962,6 +1019,37 @@ const AdminPanel = () => {
                 </button>
               )}
             </div>
+
+            {/* Override de Postre por fecha */}
+            {dessertOption && !editingOptions && (
+              <div className="mb-4 sm:mb-6 border-2 border-amber-200 bg-amber-50 rounded-xl p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-amber-800">Postre bloqueado en fines de semana por defecto</p>
+                    <p className="text-sm text-amber-900/80">Si un sábado o domingo hay postre, habilítalo para la fecha.</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                    <input
+                      type="date"
+                      value={dessertOverrideDate}
+                      onChange={(e) => setDessertOverrideDate(e.target.value)}
+                      className="input-field bg-white text-gray-900"
+                    />
+                    <button
+                      onClick={handleToggleDessertOverride}
+                      disabled={loadingDessertOverride}
+                      className={`px-4 py-3 rounded-lg font-semibold text-sm shadow-sm border ${
+                        dessertOverrideEnabled
+                          ? 'bg-green-600 text-white border-green-700 hover:bg-green-500'
+                          : 'bg-white text-amber-900 border-amber-300 hover:bg-amber-100'
+                      }`}
+                    >
+                      {loadingDessertOverride ? 'Guardando...' : dessertOverrideEnabled ? 'Postre habilitado' : 'Habilitar postre'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
           {/* Lista de opciones existentes - Con scroll adaptativo */}
           {!editingOptions && customOptions.length > 0 && (

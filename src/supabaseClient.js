@@ -766,5 +766,38 @@ export const db = {
     const results = await Promise.all(promises)
     const error = results.find(r => r.error)?.error
     return { error }
+  },
+
+  // Overrides para opciones (ej: habilitar postre en fin de semana)
+  getCustomOptionOverride: async ({ optionId, date }) => {
+    const { data, error } = await supabase
+      .from('custom_option_overrides')
+      .select('enabled, date')
+      .eq('option_id', optionId)
+      .eq('date', date)
+      .maybeSingle()
+
+    // fallback para clientes sin maybeSingle (por compatibilidad)
+    if (!data && !error) {
+      const { data: rows, error: err } = await supabase
+        .from('custom_option_overrides')
+        .select('enabled, date')
+        .eq('option_id', optionId)
+        .eq('date', date)
+        .limit(1)
+      return { data: rows?.[0] || null, error: err }
+    }
+
+    return { data, error }
+  },
+
+  setCustomOptionOverride: async ({ optionId, date, enabled }) => {
+    cache.clear()
+    const payload = { option_id: optionId, date, enabled }
+    const { data, error } = await supabase
+      .from('custom_option_overrides')
+      .upsert(payload, { onConflict: 'option_id,date' })
+      .select()
+    return { data, error }
   }
 }
