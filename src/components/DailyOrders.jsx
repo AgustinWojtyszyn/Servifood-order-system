@@ -52,6 +52,41 @@ const DailyOrders = ({ user, loading }) => {
     return null;
   }
 
+  const matchesDinnerOverrideKeyword = (val = '') => {
+    const t = (val || '').toString().toLowerCase()
+    return ['menu cena', 'menú cena', 'mp', 'menú principal', 'menu principal', 'veggie', 'veg', 'vegetar'].some(k => t.includes(k))
+  }
+
+  const isDinnerOverrideResponse = (resp = {}) => {
+    const val = resp?.response ?? resp?.answer ?? null
+    if (Array.isArray(val)) return val.some(v => matchesDinnerOverrideKeyword(v))
+    return matchesDinnerOverrideKeyword(val)
+  }
+
+  const getDinnerOverrideSelection = (order) => {
+    if (!order || (order.service || 'lunch') !== 'dinner') return null
+
+    if (Array.isArray(order.items)) {
+      const overrideItem = order.items.find(it => it?.id === 'dinner-override' || matchesDinnerOverrideKeyword(it?.name))
+      if (overrideItem?.name) return overrideItem.name.replace(/^cena:\s*/i, '').trim() || overrideItem.name
+    }
+
+    if (Array.isArray(order.custom_responses)) {
+      for (const resp of order.custom_responses) {
+        if (isDinnerOverrideResponse(resp)) {
+          const val = resp?.response ?? resp?.answer
+          if (Array.isArray(val)) {
+            const match = val.find(v => matchesDinnerOverrideKeyword(v))
+            if (match) return match
+          }
+          return val || null
+        }
+      }
+    }
+
+    return null
+  }
+
   // Función helper para obtener otras opciones (sin guarniciones)
   const getOtherCustomResponses = (customResponses) => {
     if (!customResponses || !Array.isArray(customResponses)) return []
@@ -59,7 +94,8 @@ const DailyOrders = ({ user, loading }) => {
     return customResponses.filter(r =>
       r.response &&
       !r.title?.toLowerCase().includes('guarnición') &&
-      !r.title?.toLowerCase().includes('guarnicion')
+      !r.title?.toLowerCase().includes('guarnicion') &&
+      !isDinnerOverrideResponse(r)
     )
   }
 
@@ -495,8 +531,11 @@ const DailyOrders = ({ user, loading }) => {
 
     try {
       const excelData = ordersToExport.map(order => {
+        const overrideChoice = getDinnerOverrideSelection(order)
         let menuItems = []
-        if (Array.isArray(order.items)) {
+        if (overrideChoice && (order.location || '').toLowerCase().includes('genneia')) {
+          menuItems.push(`Cena: ${overrideChoice}`)
+        } else if (Array.isArray(order.items)) {
           const principal = order.items.filter(
             item => item && item.name && item.name.toLowerCase().includes('menú principal')
           )
@@ -698,9 +737,11 @@ const DailyOrders = ({ user, loading }) => {
 
     try {
       const reportData = companyOrders.map(order => {
+        const overrideChoice = getDinnerOverrideSelection(order)
         const itemsList = []
-
-        if (Array.isArray(order.items)) {
+        if (overrideChoice && (order.location || '').toLowerCase().includes('genneia')) {
+          itemsList.push(`Cena: ${overrideChoice}`)
+        } else if (Array.isArray(order.items)) {
           order.items.forEach(item => {
             if (!item?.name) return
             itemsList.push(`${normalizeDishName(item.name)} (x${item.quantity || 1})`)
