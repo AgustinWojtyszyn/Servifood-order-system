@@ -495,6 +495,9 @@ const OrderForm = ({ user, loading }) => {
       t.includes('menu principal') ||
       t.includes('menú cena') ||
       t.includes('menu cena') ||
+      t.includes('menu de cena') ||
+      t.includes('menú de cena') ||
+      t.includes('opción cena') ||
       t.includes('veggie') ||
       t.includes('veg') ||
       t.includes('vegetar')
@@ -502,6 +505,7 @@ const OrderForm = ({ user, loading }) => {
   }
 
   const getDinnerOverrideChoice = () => {
+    // 1) Detectar por respuestas (valor)
     const responses = customResponsesDinner || {}
     for (const value of Object.values(responses)) {
       if (Array.isArray(value)) {
@@ -511,6 +515,19 @@ const OrderForm = ({ user, loading }) => {
         return value
       }
     }
+
+    // 2) Detectar por título de la pregunta (por si la opción es Sí/No)
+    if (Array.isArray(visibleDinnerOptions)) {
+      for (const opt of visibleDinnerOptions) {
+        if (!opt || !opt.id) continue
+        if (!matchesOverrideKeyword(opt.title || '')) continue
+
+        const resp = responses[opt.id]
+        if (Array.isArray(resp) && resp.length > 0) return resp[0]
+        if (typeof resp === 'string' && resp.trim() !== '') return resp
+      }
+    }
+
     return null
   }
 
