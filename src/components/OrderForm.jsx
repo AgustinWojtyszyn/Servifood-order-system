@@ -552,6 +552,18 @@ const OrderForm = ({ user, loading }) => {
     return getDinnerOverrideChoice() ? 1 : 0
   }
 
+  const validateDinnerExclusivity = () => {
+    const itemsCount = getSelectedItemsListDinner().length
+    const override = getDinnerOverrideChoice()
+    if (itemsCount > 0 && override) {
+      return 'Para cena elegí menú o la opción adicional (MP/veggie), no ambas.'
+    }
+    if (itemsCount > 1) {
+      return 'Solo un menú por persona en cena.'
+    }
+    return null
+  }
+
   const hasLunchSelection = selectedTurns.lunch && getSelectedItemsList().length > 0
   const hasDinnerSelection =
     selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled && (getSelectedItemsListDinner().length > 0 || !!getDinnerOverrideChoice())
@@ -784,6 +796,15 @@ const OrderForm = ({ user, loading }) => {
       setError('Elegí al menos almuerzo o cena.')
       setSubmitting(false)
       return
+    }
+
+    if (dinnerSelected) {
+      const exclusivityError = validateDinnerExclusivity()
+      if (exclusivityError) {
+        setError(exclusivityError)
+        setSubmitting(false)
+        return
+      }
     }
 
     try {
