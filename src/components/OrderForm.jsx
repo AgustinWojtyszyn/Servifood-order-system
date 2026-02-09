@@ -316,6 +316,22 @@ const OrderForm = ({ user, loading }) => {
     })
   }
 
+  const buildOrderItemLabel = (item = {}) => {
+    const baseName = (item?.name || '').trim()
+    if (!baseName) return 'Item'
+    const description = (item?.description || '').trim()
+    if (!description) return baseName
+
+    const normalized = baseName.toLowerCase()
+    const isGenericMenu =
+      normalized.includes('menú principal') ||
+      normalized.includes('menu principal') ||
+      normalized.includes('plato principal') ||
+      /^opci[oó]n\s*\d+$/i.test(baseName)
+
+    return isGenericMenu ? `${baseName} - ${description}` : baseName
+  }
+
   const fetchMenuItems = async () => {
     try {
       const { data, error } = await db.getMenuItems()
@@ -861,8 +877,14 @@ const OrderForm = ({ user, loading }) => {
           ? [{ id: 'dinner-override', name: `Cena: ${overrideChoice}`, quantity: 1 }]
           : itemsForService
 
+        const normalizedItemsToSend = itemsToSend.map(item => ({
+          ...item,
+          name: buildOrderItemLabel(item),
+          quantity: 1
+        }))
+
         const idempotencySignature = computePayloadSignature(
-          itemsToSend.map(item => ({ ...item, quantity: 1 })),
+          normalizedItemsToSend,
           responsesForService,
           formData.comments,
           deliveryDate,
@@ -887,7 +909,7 @@ const OrderForm = ({ user, loading }) => {
             customer_name: formData.name || user?.user_metadata?.full_name || user?.email || '',
             customer_email: formData.email || user?.email,
             customer_phone: formData.phone,
-            items: itemsToSend.map(item => ({
+            items: normalizedItemsToSend.map(item => ({
               id: item.id,
               name: item.name,
               quantity: 1

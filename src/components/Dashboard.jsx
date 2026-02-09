@@ -38,25 +38,32 @@ const getCustomSideFromResponses = (responses = []) => {
 // Resumen legible de items del pedido (similar a DailyOrders)
 const summarizeOrderItems = (items = []) => {
   const itemsList = ensureArray(items)
-  if (itemsList.length === 0) return { principalCount: 0, others: [], remaining: 0, title: '' }
+  if (itemsList.length === 0) {
+    return { principalCount: 0, principal: [], principalRemaining: 0, others: [], remaining: 0, title: '' }
+  }
 
-  const principal = itemsList.filter(
+  const principalRaw = itemsList.filter(
     item => item && item.name && item.name.toLowerCase().includes('menú principal')
   )
+  const principal = principalRaw.map(item => ({ name: item.name, qty: item.quantity || 1 }))
   const others = itemsList
     .filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'))
     .map(item => ({ name: item.name, qty: item.quantity || 1 }))
 
-  const principalCount = principal.reduce((sum, item) => sum + (item.quantity || 1), 0)
+  const principalCount = principal.reduce((sum, item) => sum + (item.qty || 1), 0)
+  const displayedPrincipal = principal.slice(0, 2)
+  const principalRemaining = Math.max(principal.length - displayedPrincipal.length, 0)
   const displayedOthers = others.slice(0, 3)
   const remaining = Math.max(others.length - displayedOthers.length, 0)
 
   const titleParts = []
-  if (principalCount > 0) titleParts.push(`Plato Principal: ${principalCount}`)
+  titleParts.push(...principal.map(p => `${p.name} (x${p.qty})`))
   titleParts.push(...others.map(o => `${o.name} (x${o.qty})`))
 
   return {
     principalCount,
+    principal: displayedPrincipal,
+    principalRemaining,
     others: displayedOthers,
     remaining,
     title: titleParts.join('; ')
@@ -649,8 +656,13 @@ const Dashboard = ({ user, loading }) => {
                           {order.location} • {formatDate(order.created_at)} • {service === 'dinner' ? 'Cena' : 'Almuerzo'}
                         </p>
                         <div className="mt-1 text-xs sm:text-sm text-gray-800 space-y-0.5">
-                          {summary.principalCount > 0 && (
-                            <p className="font-semibold">Plato principal: {summary.principalCount}</p>
+                          {summary.principal.map((item, idx) => (
+                            <p key={`${order.id}-principal-${idx}`} className="truncate font-semibold">
+                              {item.name} (x{item.qty})
+                            </p>
+                          ))}
+                          {summary.principalRemaining > 0 && (
+                            <p className="text-[11px] sm:text-xs text-gray-700">+{summary.principalRemaining} menú(es) principal(es) más</p>
                           )}
                           {summary.others.slice(0, 2).map((item, idx) => (
                             <p key={`${order.id}-item-${idx}`} className="truncate">{item.name} (x{item.qty})</p>
@@ -845,9 +857,14 @@ const Dashboard = ({ user, loading }) => {
                     </div>
 
                     <div className="text-xs sm:text-sm text-gray-900 space-y-1" title={summary.title}>
-                      {summary.principalCount > 0 && (
-                        <div className="font-semibold">
-                          Plato Principal: {summary.principalCount}
+                      {summary.principal.map((item, idx) => (
+                        <div key={`${order.id}-history-principal-${idx}`} className="font-semibold wrap-break-word">
+                          {item.name} (x{item.qty})
+                        </div>
+                      ))}
+                      {summary.principalRemaining > 0 && (
+                        <div className="text-[11px] sm:text-xs font-semibold text-gray-700">
+                          +{summary.principalRemaining} menú(es) principal(es) más
                         </div>
                       )}
                       {summary.others.map((o, idx) => (
