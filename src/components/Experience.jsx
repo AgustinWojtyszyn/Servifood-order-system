@@ -189,7 +189,7 @@ const Experience = () => {
 
       <Card title="Alertas" icon={overallLevel === 'red' ? ShieldX : ShieldCheck}>
         {alerts.length === 0 ? (
-          <p className="text-sm text-gray-600">Sin alertas activas.</p>
+          <p className="text-2xl text-gray-600">Sin alertas activas.</p>
         ) : (
           <div className="space-y-2">
             {alerts.map((alert, idx) => (
