@@ -23,6 +23,7 @@ AS $$
 DECLARE
   result public.orders;
   v_lock_key BIGINT;
+  v_service TEXT;
 BEGIN
   IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN
     RAISE EXCEPTION 'invalid user' USING ERRCODE = '28000';
@@ -38,6 +39,12 @@ BEGIN
 
   IF p_idempotency_key IS NULL OR btrim(p_idempotency_key) = '' THEN
     RAISE EXCEPTION 'p_idempotency_key is required';
+  END IF;
+
+  -- Turno elegido por el usuario (fallback a lunch para compatibilidad)
+  v_service := lower(COALESCE(NULLIF(btrim(p_payload->>'service'), ''), 'lunch'));
+  IF v_service NOT IN ('lunch', 'dinner') THEN
+    RAISE EXCEPTION 'invalid service, must be lunch or dinner';
   END IF;
 
   -- Serializa intentos concurrentes para (usuario, clave) dentro de la transacción
@@ -67,6 +74,7 @@ BEGIN
     items,
     comments,
     delivery_date,
+    service,
     status,
     total_items,
     custom_responses,
@@ -83,6 +91,7 @@ BEGIN
     COALESCE(p_payload->'items', '[]'::jsonb),
     p_payload->>'comments',
     (p_payload->>'delivery_date')::date,
+    v_service,
     COALESCE(p_payload->>'status', 'pending'),
     COALESCE((p_payload->>'total_items')::int, 0),
     COALESCE(p_payload->'custom_responses', '[]'::jsonb),
@@ -105,6 +114,32 @@ BEGIN
   RETURN result;
 END;
 $$;
+
+-- 4) (Opcional) Corrección histórica de pedidos de cena guardados como lunch
+--    Ejecutar solo si ya hubo datos afectados por este bug.
+UPDATE public.orders o
+SET service = 'dinner',
+    updated_at = now()
+WHERE o.service = 'lunch'
+  AND (
+    EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(COALESCE(o.items, '[]'::jsonb)) it
+      WHERE lower(COALESCE(it->>'id', '')) = 'dinner-override'
+         OR lower(COALESCE(it->>'name', '')) LIKE 'cena:%'
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(COALESCE(o.custom_responses, '[]'::jsonb)) r
+      WHERE lower(COALESCE(r->>'title', '')) LIKE '%cena%'
+         OR lower(COALESCE(r->>'response', '')) LIKE '%cena%'
+         OR lower(COALESCE(r->>'response', '')) LIKE '%mp cena%'
+         OR lower(COALESCE(r->>'response', '')) LIKE '%menu cena%'
+         OR lower(COALESCE(r->>'response', '')) LIKE '%menú cena%'
+         OR lower(COALESCE(r->>'response', '')) LIKE '%veggie%'
+         OR lower(COALESCE(r->>'response', '')) LIKE '%vegetar%'
+    )
+  );
 
 -- Reversión rápida (manual):
 --  DROP FUNCTION IF EXISTS public.create_order_idempotent(uuid, text, jsonb);
