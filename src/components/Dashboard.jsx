@@ -9,10 +9,24 @@ import { useOverlayLock } from '../contexts/OverlayLockContext'
 
 const EDIT_WINDOW_MINUTES = 15
 
+const ensureArray = (value) => {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
 // Helper para detectar guarnición principal desde custom_responses
 const getCustomSideFromResponses = (responses = []) => {
-  if (!Array.isArray(responses) || responses.length === 0) return null
-  for (const r of responses) {
+  const list = ensureArray(responses)
+  if (list.length === 0) return null
+  for (const r of list) {
     const title = r?.title?.toLowerCase() || ''
     if (title.includes('guarn')) {
       return r?.answer ?? r?.response ?? null
@@ -23,12 +37,13 @@ const getCustomSideFromResponses = (responses = []) => {
 
 // Resumen legible de items del pedido (similar a DailyOrders)
 const summarizeOrderItems = (items = []) => {
-  if (!Array.isArray(items)) return { principalCount: 0, others: [], remaining: 0, title: '' }
+  const itemsList = ensureArray(items)
+  if (itemsList.length === 0) return { principalCount: 0, others: [], remaining: 0, title: '' }
 
-  const principal = items.filter(
+  const principal = itemsList.filter(
     item => item && item.name && item.name.toLowerCase().includes('menú principal')
   )
-  const others = items
+  const others = itemsList
     .filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'))
     .map(item => ({ name: item.name, qty: item.quantity || 1 }))
 
@@ -603,6 +618,8 @@ const Dashboard = ({ user, loading }) => {
               .map((order) => {
                 const status = order.displayStatus || order.status
                 const service = (order.service || 'lunch').toLowerCase()
+                const summary = summarizeOrderItems(order.items)
+                const customSide = getCustomSideFromResponses(order.custom_responses)
                 return (
                   <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
                     <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
@@ -631,6 +648,20 @@ const Dashboard = ({ user, loading }) => {
                         <p className="text-xs sm:text-sm text-gray-600 truncate flex items-center gap-2">
                           {order.location} • {formatDate(order.created_at)} • {service === 'dinner' ? 'Cena' : 'Almuerzo'}
                         </p>
+                        <div className="mt-1 text-xs sm:text-sm text-gray-800 space-y-0.5">
+                          {summary.principalCount > 0 && (
+                            <p className="font-semibold">Plato principal: {summary.principalCount}</p>
+                          )}
+                          {summary.others.slice(0, 2).map((item, idx) => (
+                            <p key={`${order.id}-item-${idx}`} className="truncate">{item.name} (x{item.qty})</p>
+                          ))}
+                          {summary.remaining > 0 && (
+                            <p className="text-[11px] sm:text-xs text-gray-700">+{summary.remaining} alimento(s) más</p>
+                          )}
+                          {customSide && (
+                            <p className="text-[11px] sm:text-xs italic text-gray-700">Guarnición: {customSide}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start flex-wrap">
