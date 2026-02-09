@@ -508,6 +508,30 @@ const DailyOrders = ({ user, loading }) => {
     }
   }
 
+  const buildTurnSummary = (ordersList = []) => {
+    const turnCounts = {
+      lunch: { orders: 0, items: 0 },
+      dinner: { orders: 0, items: 0 }
+    }
+    const byLocationTurn = {}
+
+    ;(ordersList || []).forEach((order) => {
+      if (!order) return
+      const turn = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
+      const itemsQty = Number(order.total_items || 0)
+      const loc = order.location || 'Sin ubicación'
+
+      turnCounts[turn].orders += 1
+      turnCounts[turn].items += itemsQty
+
+      if (!byLocationTurn[loc]) byLocationTurn[loc] = { lunch: 0, dinner: 0, total: 0 }
+      byLocationTurn[loc][turn] += 1
+      byLocationTurn[loc].total += 1
+    })
+
+    return { turnCounts, byLocationTurn }
+  }
+
 
 
   const downloadWorkbook = async (workbook, fileName) => {
@@ -659,6 +683,7 @@ const DailyOrders = ({ user, loading }) => {
     }
 
     const today = new Date().toISOString().split('T')[0]
+    const { turnCounts, byLocationTurn } = buildTurnSummary(sortedOrders)
     const rowsHtml = sortedOrders.map(order => {
       const preview = buildOrderPreview(order)
       return `
@@ -669,10 +694,20 @@ const DailyOrders = ({ user, loading }) => {
           <td>${getStatusText(order.status)}</td>
           <td>${preview.itemsText}</td>
           <td>${preview.optionsText}</td>
+          <td>${(order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}</td>
           <td>${getTomorrowDate()}</td>
         </tr>
       `
     }).join('')
+
+    const byLocationTurnRows = Object.entries(byLocationTurn).map(([loc, turns]) => `
+      <tr>
+        <td>${loc}</td>
+        <td style="text-align:right">${turns.lunch}</td>
+        <td style="text-align:right">${turns.dinner}</td>
+        <td style="text-align:right">${turns.total}</td>
+      </tr>
+    `).join('')
 
     const html = `
       <!doctype html>
@@ -695,6 +730,51 @@ const DailyOrders = ({ user, loading }) => {
           <h1>Pedidos diarios</h1>
           <h2>Fecha de generación: ${today} · Entrega: ${getTomorrowDate()}</h2>
           <div class="meta">Total pedidos: ${sortedOrders.length}</div>
+
+          <h2>Resumen por turno</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Turno</th>
+                <th>Pedidos</th>
+                <th>Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Almuerzo</td>
+                <td style="text-align:right">${turnCounts.lunch.orders}</td>
+                <td style="text-align:right">${turnCounts.lunch.items}</td>
+              </tr>
+              <tr>
+                <td>Cena</td>
+                <td style="text-align:right">${turnCounts.dinner.orders}</td>
+                <td style="text-align:right">${turnCounts.dinner.items}</td>
+              </tr>
+              <tr>
+                <td><strong>Total</strong></td>
+                <td style="text-align:right"><strong>${turnCounts.lunch.orders + turnCounts.dinner.orders}</strong></td>
+                <td style="text-align:right"><strong>${turnCounts.lunch.items + turnCounts.dinner.items}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>Empresas por turno</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Almuerzo</th>
+                <th>Cena</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${byLocationTurnRows || '<tr><td colspan="4">Sin pedidos</td></tr>'}
+            </tbody>
+          </table>
+
+          <h2>Detalle de pedidos</h2>
           <table>
             <thead>
               <tr>
@@ -704,6 +784,7 @@ const DailyOrders = ({ user, loading }) => {
                 <th>Estado</th>
                 <th>Menú</th>
                 <th>Opciones</th>
+                <th>Turno</th>
                 <th>Entrega</th>
               </tr>
             </thead>
