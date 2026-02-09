@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { ClipboardList, RefreshCcw, Search, ShieldCheck, Activity, ServerCrash, BarChart2 } from 'lucide-react'
+import { ClipboardList, RefreshCcw, Search, ShieldCheck, Activity, ServerCrash, BarChart2, Download } from 'lucide-react'
 import { auditService } from '../services/audit'
 import { formatDate, getTimeAgo, truncate } from '../utils'
 import { healthCheck, supabase } from '../services/supabase'
 import { withAdmin } from '../contexts/AuthContext'
+import {
+  buildAuditExportRows,
+  buildDailyAuditSummary,
+  exportAuditCsv,
+  exportAuditXlsx,
+  filterAuditLogs,
+  groupDuplicateAuditLogs,
+  hasRapidMenuUpdates,
+  prepareAuditLogs
+} from '../utils/auditLogUtils'
 
 const ACTION_LABELS = {
   role_transfer: 'Transferencia de rol',
@@ -25,25 +35,10 @@ const ACTION_FILTERS = [
   { id: 'menu', label: 'Cambios de menú', actions: ['menu_updated'] }
 ]
 
+const ENABLE_DUPLICATE_GROUPING = true
+const DUPLICATE_WINDOW_SECONDS = 120
+
 const friendlyAction = (action) => ACTION_LABELS[action] || (action ? action.replace(/_/g, ' ') : 'Acción')
-
-const formatActor = (log) => log.actor_name || log.actor_email || log.actor || 'Administrador'
-
-const formatTarget = (log) =>
-  log.target_name || log.target_email || log.target || log.affected_user || 'N/A'
-
-const buildReadableDetail = (log) => {
-  if (log.details) return log.details
-  if (log.reason) return log.reason
-  if (log.metadata && typeof log.metadata === 'object') {
-    try {
-      return JSON.stringify(log.metadata)
-    } catch (_) {
-      return String(log.metadata)
-    }
-  }
-  return 'Sin descripción adicional'
-}
 
 const formatTimestamp = (value) => {
   if (!value) return 'Sin fecha'
@@ -58,6 +53,10 @@ const AuditLogs = () => {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [activeFilters, setActiveFilters] = useState([])
+  const [actorFilter, setActorFilter] = useState('all')
+  const [actionFilter, setActionFilter] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [health, setHealth] = useState(null)
   const [healthLoading, setHealthLoading] = useState(true)
   const [healthError, setHealthError] = useState(null)
@@ -162,33 +161,70 @@ const AuditLogs = () => {
     )
   }
 
+  const clearLogFilters = () => {
+    setSearch('')
+    setActiveFilters([])
+    setActorFilter('all')
+    setActionFilter('all')
+    setDateFrom('')
+    setDateTo('')
+  }
+
+  const handleExportCsv = () => {
+    if (!exportRows.length) return
+    const stamp = new Date().toISOString().slice(0, 10)
+    exportAuditCsv(exportRows, `auditoria-filtrada-${stamp}.csv`)
+  }
+
+  const handleExportXlsx = async () => {
+    if (!exportRows.length) return
+    const stamp = new Date().toISOString().slice(0, 10)
+    await exportAuditXlsx(exportRows, `auditoria-filtrada-${stamp}.xlsx`)
+  }
+
+  const preparedLogs = useMemo(() => prepareAuditLogs(logs), [logs])
+
+  const actorOptions = useMemo(() => {
+    const set = new Set(preparedLogs.map((log) => log.actor).filter(Boolean))
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'))
+  }, [preparedLogs])
+
+  const actionOptions = useMemo(() => {
+    const set = new Set(preparedLogs.map((log) => log.action).filter(Boolean))
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'))
+  }, [preparedLogs])
+
   const filteredLogs = useMemo(() => {
     const selectedActions = activeFilters
       .flatMap((key) => key.split(','))
       .filter(Boolean)
 
-    return (logs || []).filter((log) => {
-      const matchAction =
-        !selectedActions.length || selectedActions.includes(log.action)
-
-      if (!matchAction) return false
-
-      if (!search) return true
-
-      const haystack = [
-        formatActor(log),
-        formatTarget(log),
-        log.action,
-        log.details,
-        log.reason,
-        JSON.stringify(log.metadata || {})
-      ]
-        .join(' ')
-        .toLowerCase()
-
-      return haystack.includes(search.toLowerCase())
+    return filterAuditLogs(preparedLogs, {
+      search,
+      actions: selectedActions,
+      actor: actorFilter,
+      action: actionFilter,
+      dateFrom,
+      dateTo
     })
-  }, [logs, activeFilters, search])
+  }, [preparedLogs, activeFilters, search, actorFilter, actionFilter, dateFrom, dateTo])
+
+  const visibleLogs = useMemo(
+    () => groupDuplicateAuditLogs(filteredLogs, { enabled: ENABLE_DUPLICATE_GROUPING, windowSeconds: DUPLICATE_WINDOW_SECONDS }),
+    [filteredLogs]
+  )
+
+  const dailySummary = useMemo(() => buildDailyAuditSummary(preparedLogs), [preparedLogs])
+
+  const showMenuBurstWarning = useMemo(
+    () => hasRapidMenuUpdates(preparedLogs, { minCount: 2, windowMinutes: 10 }),
+    [preparedLogs]
+  )
+
+  const exportRows = useMemo(
+    () => buildAuditExportRows(visibleLogs, friendlyAction),
+    [visibleLogs]
+  )
 
   const filteredHealthLogs = useCallback(() => {
     const now = new Date()
@@ -296,7 +332,7 @@ const AuditLogs = () => {
                 )
               })}
               <button
-                onClick={() => setActiveFilters([])}
+                onClick={clearLogFilters}
                 className="text-sm font-semibold text-blue-700 hover:text-blue-900"
               >
                 Quitar filtros
@@ -309,17 +345,95 @@ const AuditLogs = () => {
                 <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Actualizar
               </button>
+              <button
+                onClick={handleExportCsv}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                disabled={loading || exportRows.length === 0}
+              >
+                <Download className="h-4 w-4" />
+                CSV
+              </button>
+              <button
+                onClick={handleExportXlsx}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                disabled={loading || exportRows.length === 0}
+              >
+                <Download className="h-4 w-4" />
+                XLSX
+              </button>
             </div>
+          </div>
+
+          <div className="grid gap-2 md:grid-cols-4">
+            <select
+              value={actorFilter}
+              onChange={(e) => setActorFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-sm"
+            >
+              <option value="all">Responsable: Todos</option>
+              {actorOptions.map((actor) => (
+                <option key={actor} value={actor}>{actor}</option>
+              ))}
+            </select>
+            <select
+              value={actionFilter}
+              onChange={(e) => setActionFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-sm"
+            >
+              <option value="all">Acción: Todas</option>
+              {actionOptions.map((action) => (
+                <option key={action} value={action}>{friendlyAction(action)}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-sm"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-sm"
+            />
           </div>
         </header>
       </div>
+
+      <section className="grid gap-3 md:grid-cols-3">
+        <div className="bg-white rounded-xl border border-blue-100 p-4">
+          <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">Última actualización de menú</p>
+          <p className="mt-1 text-sm font-bold text-gray-900">
+            {dailySummary.lastMenuUpdate?.createdAt ? formatDate(dailySummary.lastMenuUpdate.createdAt) : 'Sin eventos'}
+          </p>
+          <p className="text-xs text-gray-600 mt-1">
+            {dailySummary.lastMenuUpdate?.createdAt ? getTimeAgo(dailySummary.lastMenuUpdate.createdAt) : 'N/D'}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-blue-100 p-4">
+          <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">Cambios hoy</p>
+          <p className="mt-1 text-2xl font-black text-gray-900">{dailySummary.changesToday}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-blue-100 p-4">
+          <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">Responsable principal hoy</p>
+          <p className="mt-1 text-sm font-bold text-gray-900">{dailySummary.topActor}</p>
+          <p className="text-xs text-gray-600 mt-1">{dailySummary.topActorCount} evento(s)</p>
+        </div>
+      </section>
+
+      {showMenuBurstWarning && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Se detectaron múltiples cambios seguidos en menú diario en menos de 10 minutos.
+        </div>
+      )}
 
       <section className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <p className="text-sm text-gray-600">
             {loading
               ? 'Cargando eventos...'
-              : `${filteredLogs.length} evento${filteredLogs.length === 1 ? '' : 's'} mostrado${filteredLogs.length === 1 ? '' : 's'}`}
+              : `${visibleLogs.length} evento${visibleLogs.length === 1 ? '' : 's'} mostrado${visibleLogs.length === 1 ? '' : 's'}`}
           </p>
           {error && (
             <span className="text-sm text-red-600 font-semibold">
@@ -373,7 +487,7 @@ create index audit_logs_created_at_idx on public.audit_logs (created_at desc);`}
                   </td>
                 </tr>
               )}
-              {!loading && !missingTable && filteredLogs.length === 0 && (
+              {!loading && !missingTable && visibleLogs.length === 0 && (
                 <tr>
                   <td className="px-4 py-6 text-center text-gray-500 text-sm" colSpan={5}>
                     No hay eventos que coincidan con los filtros actuales.
@@ -387,22 +501,29 @@ create index audit_logs_created_at_idx on public.audit_logs (created_at desc);`}
                   </td>
                 </tr>
               )}
-              {!loading && filteredLogs.map((log) => (
-                <tr key={log.id || `${log.action}-${log.created_at}-${log.actor_email}`}>
+              {!loading && visibleLogs.map((log) => (
+                <tr key={log.id || `${log.action}-${log.createdAt}-${log.actor_email}`}>
                   <td className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap">
-                    {formatTimestamp(log.created_at || log.timestamp)}
+                    {formatTimestamp(log.createdAt)}
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-gray-900 whitespace-nowrap">
-                    {friendlyAction(log.action)}
+                    <div className="inline-flex items-center gap-2">
+                      <span>{friendlyAction(log.action)}</span>
+                      {(log.repeatCount || 1) > 1 && (
+                        <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-xs font-bold">
+                          x{log.repeatCount}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700">
-                    {buildReadableDetail(log)}
+                    {log.detail}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap">
-                    {formatActor(log)}
+                    {log.actor}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap">
-                    {formatTarget(log)}
+                    {log.target}
                   </td>
                 </tr>
               ))}
