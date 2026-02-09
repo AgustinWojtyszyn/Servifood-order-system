@@ -1,65 +1,54 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase, healthCheck } from '../services/supabase'
+import { supabase } from '../services/supabase'
 
-// Ventanas alineadas a la necesidad del módulo (sin exponerlas en UI)
-const WINDOW_SECONDS = 3600 // traemos hasta 60 min para tener errores recientes
-const REFRESH_MS = 60000 // refresco pasivo más liviano
-const USAGE_WINDOW_MS = 10 * 60 * 1000
-const PROBLEM_WINDOW_MS = 30 * 60 * 1000
-const ERROR_WINDOW_MS = 60 * 60 * 1000
-const CONNECTIVITY_REFRESH_MS = 12000
-const PING_ONCE_KEY = 'exp_ping_once' // evita spam por render
+const AUTO_REFRESH_MS = 90000
+const CHECK_TIMEOUT_MS = 8000
+const METRICS_WINDOW_SECONDS = 3600
+const METRICS_LIMIT = 300
+const ERRORS_WINDOW_MS = 60 * 60 * 1000
+const ERRORS_15M_WINDOW_MS = 15 * 60 * 1000
+const ORDER_ZERO_ALERT_HOUR = 11
 
-// Umbrales deterministas (no se muestran en UI)
-const THRESHOLDS = {
-  slowMs: 1200, // acción lenta
-  graveMs: 2000, // acción muy lenta
-  slowRate: 0.15 // 15% lentas en ventana -> amber
+const ALERT_THRESHOLDS = {
+  errors15mRed: 3,
+  postgrestSlowMs: 1200,
+  p95SlowMs: 2000
 }
 
-const ACTION_LABEL = {
-  create: 'guardar pedidos',
-  update: 'actualizar pedidos',
-  load: 'cargar pedidos',
-  confirm: 'confirmar acciones',
-  other: 'acciones generales'
+const ACTION_LABELS = {
+  create: 'Crear pedido',
+  update: 'Actualizar pedido',
+  load: 'Cargar menú/pedidos',
+  confirm: 'Confirmar',
+  export: 'Exportar',
+  other: 'Otras acciones'
 }
 
-// Publicar para tests/fixtures
+const memoryCache = {
+  snapshot: null,
+  lastRefreshedAt: null
+}
+
+const actionOrder = ['create', 'load', 'confirm', 'export', 'update', 'other']
+
 export const detectAction = (op = '', actionType = '', path = '') => {
-  const explicit = (actionType || '').toLowerCase()
-  if (explicit) {
-    if (explicit.includes('order_create')) return 'create'
-    if (explicit.includes('order_update')) return 'update'
-    if (explicit.includes('order_status')) return 'update'
-    if (explicit.includes('orders_list') || explicit.includes('load')) return 'load'
-    if (explicit.includes('payment_confirm')) return 'confirm'
-  }
-  const name = `${op} ${path}`.toLowerCase()
-  if (name.includes('insert') || name.includes('create') || name.includes('new') || name.includes('add')) return 'create'
-  if (name.includes('update') || name.includes('status') || name.includes('patch')) return 'update'
-  if (name.includes('list') || name.includes('get') || name.includes('fetch') || name.includes('select') || name.includes('load')) return 'load'
-  if (name.includes('confirm') || name.includes('approve')) return 'confirm'
+  const explicit = `${actionType || ''} ${op || ''} ${path || ''}`.toLowerCase()
+
+  if (explicit.includes('order_create') || explicit.includes('create_order') || explicit.includes('insert')) return 'create'
+  if (explicit.includes('export')) return 'export'
+  if (explicit.includes('confirm')) return 'confirm'
+  if (explicit.includes('order_update') || explicit.includes('order_status') || explicit.includes('update') || explicit.includes('patch')) return 'update'
+  if (explicit.includes('orders_list') || explicit.includes('menu') || explicit.includes('fetch') || explicit.includes('select') || explicit.includes('load')) return 'load'
   return 'other'
 }
 
-const stateOrder = { red: 2, amber: 1, green: 0 }
-
-// Cache en memoria (SWR) para evitar pantallas en blanco y reducir requests
-const experienceCache = {
-  data: null,
-  ordersToday: null,
-  summary: null,
-  supabaseStatus: null,
-  lastRefreshedAt: null,
-  skipSummary: false,
-  skipLog: false
+const toSafeNumber = (value) => {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
 }
 
-const startAbortable = (ref, timeoutMs = 12000) => {
-  if (ref.current) {
-    ref.current.abort('cancelled')
-  }
+const startAbortable = (ref, timeoutMs = CHECK_TIMEOUT_MS) => {
+  if (ref.current) ref.current.abort('cancelled')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort('timeout'), timeoutMs)
   ref.current = controller
@@ -69,322 +58,462 @@ const startAbortable = (ref, timeoutMs = 12000) => {
   }
 }
 
+const weightedPercentile = (points = [], percentile = 50) => {
+  if (!Array.isArray(points) || points.length === 0) return null
+  const sorted = points
+    .filter((p) => Number.isFinite(p.value) && p.weight > 0)
+    .sort((a, b) => a.value - b.value)
+  if (sorted.length === 0) return null
+
+  const totalWeight = sorted.reduce((acc, p) => acc + p.weight, 0)
+  if (totalWeight <= 0) return null
+
+  const target = (percentile / 100) * totalWeight
+  let cumulative = 0
+  for (const point of sorted) {
+    cumulative += point.weight
+    if (cumulative >= target) return Math.round(point.value)
+  }
+
+  return Math.round(sorted[sorted.length - 1].value)
+}
+
+const formatAgo = (isoDate) => {
+  if (!isoDate) return null
+  const diff = Date.now() - new Date(isoDate).getTime()
+  if (!Number.isFinite(diff) || diff < 0) return 'recién'
+  if (diff < 60000) return 'hace menos de 1 min'
+  if (diff < 3600000) return `hace ${Math.floor(diff / 60000)} min`
+  if (diff < 86400000) return `hace ${Math.floor(diff / 3600000)} h`
+  return `hace ${Math.floor(diff / 86400000)} d`
+}
+
+const buildCheckResult = (ok, latencyMs, error = null) => ({
+  ok,
+  latencyMs: Number.isFinite(latencyMs) ? Math.round(latencyMs) : null,
+  lastCheckedAt: new Date().toISOString(),
+  error: error ? String(error).slice(0, 180) : null
+})
+
 export const useAppExperience = () => {
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
-  const [data, setData] = useState([])
-  const [ordersToday, setOrdersToday] = useState(0)
-  const [supabaseStatus, setSupabaseStatus] = useState({ state: 'unknown', latencyMs: null, message: null })
-  const [summary, setSummary] = useState(null)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [lastRefreshedAt, setLastRefreshedAt] = useState(null)
-  const timer = useRef(null)
-  const connectivityTimer = useRef(null)
-  const fetchingRef = useRef(false)
-  const dataControllerRef = useRef(null)
-  const healthControllerRef = useRef(null)
-  const summaryControllerRef = useRef(null)
+  const [snapshot, setSnapshot] = useState(memoryCache.snapshot)
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(memoryCache.lastRefreshedAt)
+
+  const postgrestControllerRef = useRef(null)
+  const rpcControllerRef = useRef(null)
+  const authControllerRef = useRef(null)
+  const metricsControllerRef = useRef(null)
   const ordersControllerRef = useRef(null)
+  const errorsControllerRef = useRef(null)
+  const inFlightRef = useRef(false)
+  const intervalRef = useRef(null)
+
+  const fetchPostgrestHealth = async () => {
+    const { controller, clear } = startAbortable(postgrestControllerRef)
+    const started = performance.now()
+    try {
+      const { error: queryError } = await supabase
+        .from('orders')
+        .select('id')
+        .limit(1)
+        .abortSignal(controller.signal)
+      const latency = performance.now() - started
+      return buildCheckResult(!queryError, latency, queryError?.message || null)
+    } catch (err) {
+      const latency = performance.now() - started
+      return buildCheckResult(false, latency, err?.message || 'PostgREST no disponible')
+    } finally {
+      clear()
+    }
+  }
+
+  const fetchRpcHealth = async () => {
+    const { controller, clear } = startAbortable(rpcControllerRef)
+    const started = performance.now()
+    try {
+      const { error: rpcError } = await supabase
+        .rpc('get_metrics_summary', {
+          p_window_seconds: 60,
+          p_limit: 1
+        })
+        .abortSignal(controller.signal)
+
+      const latency = performance.now() - started
+      return buildCheckResult(!rpcError, latency, rpcError?.message || null)
+    } catch (err) {
+      const latency = performance.now() - started
+      return buildCheckResult(false, latency, err?.message || 'RPC no disponible')
+    } finally {
+      clear()
+    }
+  }
+
+  const fetchAuthHealth = async () => {
+    const { controller, clear } = startAbortable(authControllerRef)
+    const started = performance.now()
+    try {
+      const { data, error: authError } = await supabase.auth.getSession()
+      if (controller.signal.aborted) throw new Error('auth-check-timeout')
+      const session = data?.session
+      const expiresAtMs = toSafeNumber(session?.expires_at) * 1000
+      const isValidToken = !!session?.access_token && expiresAtMs > Date.now()
+      const latency = performance.now() - started
+
+      if (authError) {
+        return buildCheckResult(false, latency, authError.message || 'Sesión inválida')
+      }
+
+      return buildCheckResult(isValidToken, latency, isValidToken ? null : 'Token ausente o vencido')
+    } catch (err) {
+      const latency = performance.now() - started
+      return buildCheckResult(false, latency, err?.message || 'Auth no disponible')
+    } finally {
+      clear()
+    }
+  }
+
+  const fetchMetricsRows = async () => {
+    const { controller, clear } = startAbortable(metricsControllerRef, 10000)
+    try {
+      const { data, error: metricsError } = await supabase
+        .rpc('get_metrics_summary', {
+          p_window_seconds: METRICS_WINDOW_SECONDS,
+          p_limit: METRICS_LIMIT
+        })
+        .abortSignal(controller.signal)
+
+      if (metricsError) throw metricsError
+      return Array.isArray(data) ? data : []
+    } finally {
+      clear()
+    }
+  }
 
   const fetchOrdersToday = async () => {
-    const { controller, clear } = startAbortable(ordersControllerRef, 12000)
+    const { controller, clear } = startAbortable(ordersControllerRef, 10000)
     const start = new Date()
     start.setHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setDate(end.getDate() + 1)
+
     try {
-      const { count, error } = await supabase
+      const { data, error: ordersError } = await supabase
         .from('orders')
-        .select('id', { count: 'exact', head: true })
+        .select('created_at,status,service')
         .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString())
         .abortSignal(controller.signal)
 
-      if (!error && typeof count === 'number') {
-        setOrdersToday(count || 0)
-        experienceCache.ordersToday = count || 0
+      if (ordersError) throw ordersError
+
+      const rows = Array.isArray(data) ? data : []
+      const totals = {
+        ordersTodayTotal: rows.length,
+        ordersTodayLunch: 0,
+        ordersTodayDinner: 0,
+        ordersTodayPending: 0,
+        ordersTodayConfirmed: 0,
+        ordersTodayArchived: 0,
+        lastOrderAt: null
+      }
+
+      rows.forEach((row) => {
+        const service = (row?.service || 'lunch').toLowerCase()
+        const status = (row?.status || '').toLowerCase()
+
+        if (service === 'dinner') totals.ordersTodayDinner += 1
+        else totals.ordersTodayLunch += 1
+
+        if (status === 'pending') totals.ordersTodayPending += 1
+        if (status === 'completed' || status === 'delivered') totals.ordersTodayConfirmed += 1
+        if (status === 'archived') totals.ordersTodayArchived += 1
+
+        if (!totals.lastOrderAt || new Date(row.created_at).getTime() > new Date(totals.lastOrderAt).getTime()) {
+          totals.lastOrderAt = row.created_at
+        }
+      })
+
+      return {
+        ...totals,
+        lastOrderAgo: totals.lastOrderAt ? formatAgo(totals.lastOrderAt) : null
       }
     } finally {
       clear()
     }
   }
 
-  const fetchData = async (silent = false) => {
-    if (document?.visibilityState === 'hidden') return
-    if (fetchingRef.current) return
-    fetchingRef.current = true
+  const fetchRecentErrors = async () => {
+    const { controller, clear } = startAbortable(errorsControllerRef, 10000)
+    const hourAgo = new Date(Date.now() - ERRORS_WINDOW_MS).toISOString()
+    try {
+      const { data, error: tableError } = await supabase
+        .from('system_metrics')
+        .select('message,created_at')
+        .eq('kind', 'error')
+        .gte('created_at', hourAgo)
+        .order('created_at', { ascending: false })
+        .limit(200)
+        .abortSignal(controller.signal)
 
-    if (experienceCache.data && !silent) {
-      setData(experienceCache.data)
-      setOrdersToday(experienceCache.ordersToday ?? 0)
-      setSummary(experienceCache.summary)
-      if (experienceCache.supabaseStatus) setSupabaseStatus(experienceCache.supabaseStatus)
-      if (experienceCache.lastRefreshedAt) setLastRefreshedAt(experienceCache.lastRefreshedAt)
+      if (tableError) return { rows: [], source: 'none' }
+      return { rows: Array.isArray(data) ? data : [], source: 'system_metrics' }
+    } finally {
+      clear()
+    }
+  }
+
+  const buildActionLatency = (metricsRows = []) => {
+    const opRows = metricsRows.filter((row) => row?.kind === 'op')
+    const groups = {}
+
+    opRows.forEach((row) => {
+      const action = detectAction(row?.op, row?.action_type, row?.path)
+      if (!groups[action]) {
+        groups[action] = {
+          action,
+          label: ACTION_LABELS[action] || ACTION_LABELS.other,
+          calls: 0,
+          p50Points: [],
+          p95Points: []
+        }
+      }
+
+      const calls = Math.max(1, toSafeNumber(row?.calls))
+      groups[action].calls += calls
+
+      const p50 = toSafeNumber(row?.p50_ms || row?.avg_ms || row?.duration_ms)
+      const p95 = toSafeNumber(row?.p95_ms || row?.max_ms || row?.duration_ms)
+
+      if (p50 > 0) groups[action].p50Points.push({ value: p50, weight: calls })
+      if (p95 > 0) groups[action].p95Points.push({ value: p95, weight: calls })
+    })
+
+    return Object.values(groups)
+      .map((g) => ({
+        action: g.action,
+        label: g.label,
+        calls: g.calls,
+        p50: weightedPercentile(g.p50Points, 50),
+        p95: weightedPercentile(g.p95Points, 95)
+      }))
+      .sort((a, b) => {
+        const ai = actionOrder.indexOf(a.action)
+        const bi = actionOrder.indexOf(b.action)
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+      })
+  }
+
+  const buildErrorSummary = (errorRows = []) => {
+    const rows = (errorRows || []).filter((row) => row?.message)
+    const fifteenMinAgo = Date.now() - ERRORS_15M_WINDOW_MS
+
+    const errorsLast15mCount = rows.filter((row) => new Date(row.created_at).getTime() >= fifteenMinAgo).length
+    const lastError = rows[0] || null
+
+    const topMap = new Map()
+    rows.forEach((row) => {
+      const msg = String(row.message || 'Error sin mensaje').trim().slice(0, 180)
+      topMap.set(msg, (topMap.get(msg) || 0) + 1)
+    })
+
+    const topErrors = Array.from(topMap.entries())
+      .map(([message, count]) => ({ message, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3)
+
+    return {
+      errorsLast15mCount,
+      lastErrorMessage: lastError?.message || null,
+      lastErrorAt: lastError?.created_at || null,
+      lastErrorAgo: lastError?.created_at ? formatAgo(lastError.created_at) : null,
+      topErrors
+    }
+  }
+
+  const buildAlerts = (state) => {
+    const alerts = []
+    const { health, ordersToday, errorSummary, actionLatency } = state
+
+    if (!health.postgrest.ok) {
+      alerts.push({ level: 'red', title: 'PostgREST caído', detail: health.postgrest.error || 'No responde la API de datos.' })
+    }
+    if (!health.rpc_create_order_idempotent.ok) {
+      alerts.push({ level: 'red', title: 'RPC degradada', detail: health.rpc_create_order_idempotent.error || 'No responde el canal RPC.' })
+    }
+    if (!health.auth.ok) {
+      alerts.push({ level: 'red', title: 'Sesión inválida', detail: health.auth.error || 'No hay token válido.' })
+    }
+    if (errorSummary.errorsLast15mCount >= ALERT_THRESHOLDS.errors15mRed) {
+      alerts.push({
+        level: 'red',
+        title: 'Pico de errores',
+        detail: `${errorSummary.errorsLast15mCount} errores en los últimos 15 minutos.`
+      })
     }
 
-    if (!silent) setLoading(true)
+    if (health.postgrest.ok && (health.postgrest.latencyMs || 0) > ALERT_THRESHOLDS.postgrestSlowMs) {
+      alerts.push({
+        level: 'yellow',
+        title: 'Latencia alta en API',
+        detail: `PostgREST está tardando ${health.postgrest.latencyMs} ms.`
+      })
+    }
+
+    const slowAction = actionLatency.find((row) => (row.p95 || 0) > ALERT_THRESHOLDS.p95SlowMs)
+    if (slowAction) {
+      alerts.push({
+        level: 'yellow',
+        title: 'Latencia p95 alta',
+        detail: `${slowAction.label} tiene p95 de ${slowAction.p95} ms.`
+      })
+    }
+
+    const localHour = new Date().getHours()
+    if (localHour >= ORDER_ZERO_ALERT_HOUR && ordersToday.ordersTodayTotal === 0) {
+      alerts.push({
+        level: 'yellow',
+        title: 'Sin pedidos hoy',
+        detail: `Son las ${localHour}:00 y todavía no hay pedidos registrados.`
+      })
+    }
+
+    return alerts
+      .sort((a, b) => (a.level === 'red' ? 0 : 1) - (b.level === 'red' ? 0 : 1))
+      .slice(0, 5)
+  }
+
+  const refreshNow = async () => {
+    if (document?.visibilityState === 'hidden' || inFlightRef.current) return
+    inFlightRef.current = true
+    setRefreshing(true)
     setError(null)
 
-    const { controller, clear } = startAbortable(dataControllerRef, 15000)
     try {
-      const { data: metrics, error } = await supabase.rpc('get_metrics_summary', {
-        p_window_seconds: WINDOW_SECONDS,
-        p_limit: 50
-      }).abortSignal(controller.signal)
+      const [postgrest, rpcFallback, auth, metricsRows, ordersToday, errorData] = await Promise.all([
+        fetchPostgrestHealth(),
+        fetchRpcHealth(),
+        fetchAuthHealth(),
+        fetchMetricsRows(),
+        fetchOrdersToday(),
+        fetchRecentErrors()
+      ])
 
-      if (error) throw error
+      const actionLatency = buildActionLatency(metricsRows)
+      const errorSummary = buildErrorSummary(errorData.rows)
 
-      setData(metrics || [])
-      experienceCache.data = metrics || []
-      experienceCache.lastRefreshedAt = new Date().toISOString()
-      setLastRefreshedAt(experienceCache.lastRefreshedAt)
-
-      if (!ordersControllerRef.current || ordersControllerRef.current.signal.aborted) {
-        fetchOrdersToday()
+      const next = {
+        health: {
+          postgrest,
+          rpc_create_order_idempotent: {
+            ...rpcFallback,
+            detail: 'medido vía get_metrics_summary (fallback seguro sin dry-run)'
+          },
+          auth
+        },
+        ordersToday,
+        actionLatency,
+        errorSummary
       }
+      next.alerts = buildAlerts(next)
+
+      setSnapshot(next)
+      const refreshedAt = new Date().toISOString()
+      setLastRefreshedAt(refreshedAt)
+      memoryCache.snapshot = next
+      memoryCache.lastRefreshedAt = refreshedAt
     } catch (err) {
-      if (err?.name !== 'AbortError') {
-        setError(err?.message || 'No se pudieron cargar las métricas')
-      }
+      setError(err?.message || 'No se pudo actualizar Experiencia en vivo')
     } finally {
-      clear()
-      fetchingRef.current = false
-      if (!silent) setLoading(false)
-    }
-  }
-
-  const pingSupabase = async (reason = 'auto') => {
-    if (experienceCache.skipLog) {
-      const health = await healthCheck(4000)
-      const state = !health.healthy || health.latencyMs > 1500 ? 'red' : health.latencyMs > 500 ? 'amber' : 'green'
-      const status = { state, latencyMs: health.latencyMs, message: health.error || null }
-      setSupabaseStatus(status)
-      experienceCache.supabaseStatus = status
-      return
-    }
-
-    const metaBase = { source: 'ping', reason, ts_client: new Date().toISOString() }
-    const { controller, clear } = startAbortable(healthControllerRef, 5000)
-    try {
-      const health = await healthCheck(4000)
-      clear()
-
-      let state = 'green'
-      if (!health.healthy || health.latencyMs > 1500) state = 'red'
-      else if (health.latencyMs > 500) state = 'amber'
-
-      const status = { state, latencyMs: health.latencyMs, message: health.error || null }
-      setSupabaseStatus(status)
-      experienceCache.supabaseStatus = status
-
-      try {
-        await supabase.rpc('log_system_metric', {
-          kind: 'health_ping',
-          ok: health.healthy,
-          latency_ms: health.latencyMs,
-          path: '/experiencia',
-          status_code: health.healthy ? 200 : null,
-          message: health.error?.slice(0, 120) || null,
-          meta: metaBase
-        }).abortSignal(controller.signal)
-      } catch (logError) {
-        if (logError?.code === 'PGRST116' || logError?.status === 404) {
-          experienceCache.skipLog = true // no volver a intentar si la RPC no está expuesta
-        }
-        // No romper UI si falla el log
-      }
-    } catch (err) {
-      clear()
-      if (err?.name === 'AbortError') return
-      const latency = err?.latencyMs || null
-      const status = { state: 'red', latencyMs: latency, message: err?.message || 'No disponible' }
-      setSupabaseStatus(status)
-      experienceCache.supabaseStatus = status
-    }
-  }
-
-  const refreshExperienceStatus = async ({ reason = 'manual' } = {}) => {
-    if (isRefreshing) return
-    if (document?.visibilityState === 'hidden') return
-    if (experienceCache.skipSummary) return
-    setIsRefreshing(true)
-    const { controller, clear } = startAbortable(summaryControllerRef, 12000)
-    try {
-      await pingSupabase(reason)
-      const { data: statusData, error: summaryError } = await supabase
-        .rpc('get_system_status_summary', { window_minutes: 60 })
-        .abortSignal(controller.signal)
-      if (!summaryError && statusData) {
-        setSummary(statusData)
-        experienceCache.summary = statusData
-      } else if (summaryError && (summaryError.code === 'PGRST116' || summaryError.status === 404)) {
-        // RPC no publicada; no seguir llamando para evitar 404s
-        setSummary(null)
-        experienceCache.skipSummary = true
-      }
-    } catch (err) {
-      if (err?.name !== 'AbortError') {
-        console.error('Refresh experience status error', err)
-      }
-    } finally {
-      clear()
-      setIsRefreshing(false)
-      setLastRefreshedAt(new Date().toISOString())
-      experienceCache.lastRefreshedAt = new Date().toISOString()
+      inFlightRef.current = false
+      setRefreshing(false)
     }
   }
 
   useEffect(() => {
-    // Mostrar cache inmediato (SWR)
-    if (experienceCache.data) {
-      setData(experienceCache.data)
-      setOrdersToday(experienceCache.ordersToday ?? 0)
-      setSummary(experienceCache.summary)
-      if (experienceCache.supabaseStatus) setSupabaseStatus(experienceCache.supabaseStatus)
-      if (experienceCache.lastRefreshedAt) setLastRefreshedAt(experienceCache.lastRefreshedAt)
-    }
-
-    fetchData()
-    timer.current = setInterval(() => {
-      if (document?.visibilityState !== 'hidden') {
-        fetchData(true)
-      }
-    }, REFRESH_MS)
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        fetchData(true)
-      }
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-
-    if (!sessionStorage.getItem(PING_ONCE_KEY)) {
-      refreshExperienceStatus({ reason: 'auto' })
-      sessionStorage.setItem(PING_ONCE_KEY, '1')
+    if (memoryCache.snapshot) {
+      setSnapshot(memoryCache.snapshot)
+      setLastRefreshedAt(memoryCache.lastRefreshedAt)
     } else {
-      // solo medir sin log en montajes repetidos
-      pingSupabase('auto')
+      setLoading(true)
     }
+
+    refreshNow().finally(() => setLoading(false))
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshNow()
+    }
+
+    intervalRef.current = setInterval(() => {
+      if (document?.visibilityState !== 'hidden') refreshNow()
+    }, AUTO_REFRESH_MS)
+    document.addEventListener('visibilitychange', onVisible)
+
+    const postgrestCtrl = postgrestControllerRef.current
+    const rpcCtrl = rpcControllerRef.current
+    const authCtrl = authControllerRef.current
+    const metricsCtrl = metricsControllerRef.current
+    const ordersCtrl = ordersControllerRef.current
+    const errorsCtrl = errorsControllerRef.current
+
     return () => {
-      timer.current && clearInterval(timer.current)
-      document.removeEventListener('visibilitychange', onVisibility)
-      dataControllerRef.current?.abort('unmount')
-      healthControllerRef.current?.abort('unmount')
-      summaryControllerRef.current?.abort('unmount')
-      ordersControllerRef.current?.abort('unmount')
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      document.removeEventListener('visibilitychange', onVisible)
+      postgrestCtrl?.abort('unmount')
+      rpcCtrl?.abort('unmount')
+      authCtrl?.abort('unmount')
+      metricsCtrl?.abort('unmount')
+      ordersCtrl?.abort('unmount')
+      errorsCtrl?.abort('unmount')
     }
+    // refreshNow queda intencionalmente fuera para preservar un único ciclo de montaje.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const ops = useMemo(() => data.filter(d => d.kind === 'op'), [data])
-  const now = Date.now()
-
-  const aggregated = useMemo(() => {
-    const groups = {}
-    ops.forEach((row) => {
-      const action = detectAction(row.op, row.action_type, row.path)
-      if (!groups[action]) groups[action] = { action, calls: 0, errors: 0, maxP95: 0, last_ts: null, slowCount: 0 }
-      const calls = row.calls || 0
-      const errors = row.errors || 0
-      groups[action].calls += calls
-      groups[action].errors += errors
-      const p95 = row.p95_ms || 0
-      groups[action].maxP95 = Math.max(groups[action].maxP95, p95)
-      if (p95 > THRESHOLDS.slowMs) groups[action].slowCount += calls || 1
-      const ts = row.last_ts ? new Date(row.last_ts).getTime() : null
-      if (ts && (!groups[action].last_ts || ts > groups[action].last_ts)) groups[action].last_ts = ts
-    })
-    return Object.values(groups)
-  }, [ops])
-
-  const totals = useMemo(() => {
-    const usageActions = aggregated
-      .filter(g => g.last_ts && now - g.last_ts <= USAGE_WINDOW_MS)
-      .reduce((acc, g) => acc + g.calls, 0)
-
-    const errors60m = aggregated
-      .filter(g => g.last_ts && now - g.last_ts <= ERROR_WINDOW_MS)
-      .reduce((acc, g) => acc + g.errors, 0)
-
-    const slowGroups = aggregated
-      .filter(g => g.last_ts && now - g.last_ts <= PROBLEM_WINDOW_MS)
-      .filter(g => g.maxP95 > THRESHOLDS.slowMs)
-
-    const grave = aggregated
-      .filter(g => g.last_ts && now - g.last_ts <= PROBLEM_WINDOW_MS)
-      .some(g => g.maxP95 > THRESHOLDS.graveMs || g.errors >= 2)
-
-    const slowRate = usageActions > 0
-      ? slowGroups.reduce((acc, g) => acc + g.slowCount, 0) / Math.max(usageActions, 1)
-      : 0
-
-    let state = 'green'
-    if (grave || errors60m >= 2 || slowGroups.length >= 2 || slowRate > THRESHOLDS.slowRate) state = 'red'
-    else if (errors60m >= 1 || slowGroups.length >= 1 || slowRate > 0) state = 'amber'
-
-    return { actions: usageActions, errors: errors60m, state, slowGroups, slowRate }
-  }, [aggregated, now])
-
-  const latencyMs = useMemo(() => {
-    if (summary?.avg_latency_ms) return summary.avg_latency_ms
-    if (summary?.last_ping_latency_ms) return summary.last_ping_latency_ms
-    const totalCalls = aggregated.reduce((acc, g) => acc + g.calls, 0)
-    if (totalCalls === 0) return null
-    const weighted = aggregated.reduce((acc, g) => acc + (g.maxP95 || 0) * (g.calls || 1), 0)
-    return Math.round(weighted / Math.max(totalCalls, 1))
-  }, [aggregated, summary])
-
-  const lastPingAt = useMemo(() => summary?.last_ping_at || lastRefreshedAt, [summary, lastRefreshedAt])
-
-  const lastError = useMemo(() => {
-    if (summary?.last_error_at) {
+  const derived = useMemo(() => {
+    if (!snapshot) {
       return {
-        type: summary.last_error_message || 'Sin fallos',
-        at: summary.last_error_at
+        health: {
+          postgrest: buildCheckResult(false, null, 'Sin datos aún'),
+          rpc_create_order_idempotent: buildCheckResult(false, null, 'Sin datos aún'),
+          auth: buildCheckResult(false, null, 'Sin datos aún')
+        },
+        ordersToday: {
+          ordersTodayTotal: 0,
+          ordersTodayLunch: 0,
+          ordersTodayDinner: 0,
+          ordersTodayPending: 0,
+          ordersTodayConfirmed: 0,
+          ordersTodayArchived: 0,
+          lastOrderAt: null,
+          lastOrderAgo: null
+        },
+        actionLatency: [],
+        errorSummary: {
+          errorsLast15mCount: 0,
+          lastErrorMessage: null,
+          lastErrorAt: null,
+          lastErrorAgo: null,
+          topErrors: []
+        },
+        alerts: []
       }
     }
-    const withErrors = aggregated.filter(g => g.errors > 0 && g.last_ts)
-    if (!withErrors.length) return null
-    const latest = withErrors.sort((a, b) => (b.last_ts || 0) - (a.last_ts || 0))[0]
-    return {
-      type: ACTION_LABEL[latest.action] || 'Acción',
-      at: latest.last_ts
-    }
-  }, [aggregated, summary])
-
-  const problems = useMemo(() => {
-    const recent = aggregated.filter(g => g.last_ts && now - g.last_ts <= PROBLEM_WINDOW_MS)
-    const items = []
-
-    recent.forEach((g) => {
-      const label = ACTION_LABEL[g.action] || ACTION_LABEL.other
-      const hasError = g.errors > 0
-      const isSlow = g.maxP95 > THRESHOLDS.slowMs
-      if (hasError) items.push({ state: 'red', message: `Errores al ${label}.`, key: `${g.action}-err` })
-      if (!hasError && isSlow) items.push({ state: 'amber', message: `El ${label} está tardando más de lo esperado.`, key: `${g.action}-slow` })
-    })
-
-    return items.slice(0, 3)
-  }, [aggregated, now])
-
-  const speedLabel = useMemo(() => {
-    if (totals.state === 'red') return { title: 'Lenta', text: 'Varias acciones están tardando demasiado o fallando.' }
-    if (totals.state === 'amber') return { title: 'Normal', text: 'Algunas acciones tardan un poco más de lo esperado.' }
-    return { title: 'Rápida', text: 'Los pedidos se guardan sin demoras.' }
-  }, [totals.state])
+    return snapshot
+  }, [snapshot])
 
   return {
     loading,
+    refreshing,
     error,
-    totals,
-    aggregated,
-    ordersToday,
-    problems,
-    speedLabel,
-    latencyMs,
-    lastError,
-    supabaseStatus,
-    summary,
-    isRefreshing,
     lastRefreshedAt,
-    lastPingAt,
-    refreshExperienceStatus,
-    refetch: fetchData
+    refreshNow,
+    health: derived.health,
+    ordersToday: derived.ordersToday,
+    actionLatency: derived.actionLatency,
+    errorSummary: derived.errorSummary,
+    alerts: derived.alerts
   }
 }
