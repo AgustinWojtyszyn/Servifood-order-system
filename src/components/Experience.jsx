@@ -10,16 +10,11 @@ const levelPill = {
   red: 'bg-red-50 text-red-700 border-red-200'
 }
 
-const statusIcon = (ok) => {
-  if (ok) return <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-  return <XCircle className="h-4 w-4 text-red-600" />
-}
-
 const Chip = ({ label, value, ok }) => (
-  <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold">
-    {statusIcon(ok)}
+  <div className="inline-flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold">
+    {ok ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
     <span className="text-gray-700">{label}</span>
-    <span className="text-gray-500">{value}</span>
+    <span className="text-gray-500 font-bold">{value}</span>
   </div>
 )
 
