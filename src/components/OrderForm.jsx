@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ordersService } from '../services/orders'
@@ -86,6 +86,7 @@ const OrderForm = ({ user, loading }) => {
   const [suggestionVisible, setSuggestionVisible] = useState(false)
   const [suggestionLoading, setSuggestionLoading] = useState(false)
   const [suggestionSummary, setSuggestionSummary] = useState('')
+  const submitLockRef = useRef(false)
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
     if (typeof window === 'undefined') return false
     const stored = localStorage.getItem('dinner_menu_enabled')
@@ -681,11 +682,14 @@ const OrderForm = ({ user, loading }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (submitting || submitLockRef.current) return
+    submitLockRef.current = true
     setSubmitting(true)
     setError('')
     if (!user?.id) {
       setError('No se pudo validar el usuario. Intenta nuevamente.')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
 
@@ -693,6 +697,7 @@ const OrderForm = ({ user, loading }) => {
     if (isOutsideWindow()) {
       setError('Pedidos disponibles de 09:00 a 22:00 (hora Buenos Aires). Intenta dentro del horario.')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
 
@@ -700,11 +705,13 @@ const OrderForm = ({ user, loading }) => {
     if (pendingLunch && (!dinnerEnabled || !dinnerMenuEnabled || !selectedTurns.dinner)) {
       setError('Ya tienes un pedido de almuerzo pendiente. Espera a que se complete.')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
     if (selectedTurns.dinner && pendingDinner) {
       setError('Ya tienes un pedido de cena pendiente. Espera a que se complete.')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
 
@@ -714,6 +721,7 @@ const OrderForm = ({ user, loading }) => {
     if (!formData.location) {
       setError('Por favor selecciona un lugar de trabajo')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
 
@@ -723,12 +731,14 @@ const OrderForm = ({ user, loading }) => {
     if (!lunchSelected && !dinnerSelected) {
       setError('Selecciona al menos almuerzo o cena.')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
 
     if (lunchSelected && selectedItemsList.length === 0) {
       setError('Selecciona al menos un plato para almuerzo.')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
 
@@ -737,6 +747,7 @@ const OrderForm = ({ user, loading }) => {
     if (dinnerSelected && selectedItemsListDinner.length === 0 && !dinnerOverrideChoice) {
       setError('Selecciona al menos un plato para cena o marca la opción MP/veggie.')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
 
@@ -750,6 +761,7 @@ const OrderForm = ({ user, loading }) => {
       if (missingRequiredOptions.length > 0) {
         setError(`Por favor completa (almuerzo): ${missingRequiredOptions.join(', ')}`)
         setSubmitting(false)
+        submitLockRef.current = false
         return
       }
 
@@ -776,6 +788,7 @@ const OrderForm = ({ user, loading }) => {
       if (missingRequiredOptionsDinner.length > 0) {
         setError(`Para cena completa: ${missingRequiredOptionsDinner.join(', ')}`)
         setSubmitting(false)
+        submitLockRef.current = false
         return
       }
       customResponsesDinnerArray = visibleDinnerOptions
@@ -806,6 +819,7 @@ const OrderForm = ({ user, loading }) => {
     if (dinnerEnabled && dinnerMenuEnabled && turnosSeleccionados.length === 0) {
       setError('Elegí al menos almuerzo o cena.')
       setSubmitting(false)
+      submitLockRef.current = false
       return
     }
 
@@ -814,9 +828,12 @@ const OrderForm = ({ user, loading }) => {
       if (exclusivityError) {
         setError(exclusivityError)
         setSubmitting(false)
+        submitLockRef.current = false
         return
       }
     }
+
+    let hasSubmitError = false
 
     try {
       for (const service of turnosSeleccionados) {
@@ -830,11 +847,13 @@ const OrderForm = ({ user, loading }) => {
           if (itemsForService.length > 0 && hasOverride) {
             setError('Para cena elegí menú o la opción adicional (MP/veggie), no ambas.')
             setSubmitting(false)
+            hasSubmitError = true
             break
           }
           if (itemsForService.length > 1) {
             setError('Solo un menú por persona en cena.')
             setSubmitting(false)
+            hasSubmitError = true
             break
           }
         }
@@ -882,9 +901,10 @@ const OrderForm = ({ user, loading }) => {
             service
           }
 
-        const { error } = await db.createOrder(orderData)
+        const { error } = await ordersService.createOrder(orderData)
 
         if (error) {
+          hasSubmitError = true
           let msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
           if (msg.includes('dinner') || msg.toLowerCase().includes('service') || msg.includes('feature')) {
             setError('No tenés habilitada la cena. Deja solo almuerzo o pedí alta a un admin.')
@@ -898,14 +918,10 @@ const OrderForm = ({ user, loading }) => {
             setError('Error al crear el pedido: ' + msg)
             break
           }
-        } else {
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem(idempotencyStorageKey)
-          }
         }
       }
 
-      if (!error) {
+      if (!hasSubmitError) {
         setSuccess(true)
         setTimeout(() => {
           navigate('/')
@@ -915,6 +931,7 @@ const OrderForm = ({ user, loading }) => {
       // Mostrar el error real si ocurre una excepción
       setError('Error al crear el pedido: ' + (err?.message || JSON.stringify(err)))
     } finally {
+      submitLockRef.current = false
       setSubmitting(false)
     }
   }
@@ -1582,7 +1599,7 @@ const OrderForm = ({ user, loading }) => {
           }}>
           <button
             type="submit"
-            disabled={loading || !hasAnySelectedItems || hasOrderToday}
+            disabled={loading || submitting || !hasAnySelectedItems || hasOrderToday}
             style={{ 
               backgroundColor: '#16a34a',
               color: '#ffffff',
@@ -1592,7 +1609,7 @@ const OrderForm = ({ user, loading }) => {
             }}
             className="w-full sm:w-auto hover:bg-green-700 font-black py-5 px-8 rounded-xl shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-2xl border-2 border-green-600"
           >
-            {loading ? (
+            {(loading || submitting) ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                 <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', fontWeight: '900' }}>Creando pedido...</span>

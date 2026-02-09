@@ -22,6 +22,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   result public.orders;
+  v_lock_key BIGINT;
 BEGIN
   IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN
     RAISE EXCEPTION 'invalid user' USING ERRCODE = '28000';
@@ -37,6 +38,23 @@ BEGIN
 
   IF p_idempotency_key IS NULL OR btrim(p_idempotency_key) = '' THEN
     RAISE EXCEPTION 'p_idempotency_key is required';
+  END IF;
+
+  -- Serializa intentos concurrentes para (usuario, clave) dentro de la transacción
+  -- para evitar carreras en escenarios de doble click/reintentos simultáneos.
+  v_lock_key := hashtextextended(p_user_id::text || ':' || btrim(p_idempotency_key), 0);
+  PERFORM pg_advisory_xact_lock(v_lock_key);
+
+  -- Fast-path: si ya existe, devolverlo sin tocar updated_at.
+  SELECT o.*
+  INTO result
+  FROM public.orders o
+  WHERE o.user_id = p_user_id
+    AND o.idempotency_key = btrim(p_idempotency_key)
+  LIMIT 1;
+
+  IF result.id IS NOT NULL THEN
+    RETURN result;
   END IF;
 
   INSERT INTO public.orders (
@@ -57,7 +75,7 @@ BEGIN
   )
   VALUES (
     p_user_id,
-    p_idempotency_key,
+    btrim(p_idempotency_key),
     COALESCE(p_payload->>'location', '')::text,
     COALESCE(p_payload->>'customer_name', '')::text,
     COALESCE(p_payload->>'customer_email', '')::text,
@@ -71,9 +89,18 @@ BEGIN
     COALESCE((p_payload->>'created_at')::timestamptz, TIMEZONE('utc', NOW())),
     COALESCE((p_payload->>'updated_at')::timestamptz, TIMEZONE('utc', NOW()))
   )
-  ON CONFLICT (user_id, idempotency_key) DO UPDATE
-  SET updated_at = COALESCE(EXCLUDED.updated_at, public.orders.updated_at)
+  ON CONFLICT DO NOTHING
   RETURNING * INTO result;
+
+  -- Si hubo conflicto (insert no-op), devolver el registro ya existente.
+  IF result.id IS NULL THEN
+    SELECT o.*
+    INTO result
+    FROM public.orders o
+    WHERE o.user_id = p_user_id
+      AND o.idempotency_key = btrim(p_idempotency_key)
+    LIMIT 1;
+  END IF;
 
   RETURN result;
 END;
