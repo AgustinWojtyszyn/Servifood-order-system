@@ -116,22 +116,22 @@ const Experience = () => {
         </Card>
 
         <Card title="Pedidos de hoy" icon={ClipboardList}>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-              <p className="text-gray-600">Total</p>
-              <p className="text-2xl font-black text-gray-900">{ordersToday.ordersTodayTotal}</p>
+          <div className="grid grid-cols-2 gap-4 text-xl">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <p className="text-2xl text-gray-600">Total</p>
+              <p className="text-5xl font-black text-gray-900">{ordersToday.ordersTodayTotal}</p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-              <p className="text-gray-600">Último pedido</p>
-              <p className="text-sm font-bold text-gray-900">{ordersToday.lastOrderAgo || 'Sin pedidos aún'}</p>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <p className="text-2xl text-gray-600">Último pedido</p>
+              <p className="text-3xl font-bold text-gray-900">{ordersToday.lastOrderAgo || 'Sin pedidos aún'}</p>
             </div>
-            <div className="rounded-xl border border-gray-200 p-3">
-              <p className="text-gray-600">Almuerzo / Cena</p>
-              <p className="font-bold text-gray-900">{ordersToday.ordersTodayLunch} / {ordersToday.ordersTodayDinner}</p>
+            <div className="rounded-xl border border-gray-200 p-5">
+              <p className="text-2xl text-gray-600">Almuerzo / Cena</p>
+              <p className="text-4xl font-bold text-gray-900">{ordersToday.ordersTodayLunch} / {ordersToday.ordersTodayDinner}</p>
             </div>
-            <div className="rounded-xl border border-gray-200 p-3">
-              <p className="text-gray-600">Pend / Conf / Arch</p>
-              <p className="font-bold text-gray-900">{ordersToday.ordersTodayPending} / {ordersToday.ordersTodayConfirmed} / {ordersToday.ordersTodayArchived}</p>
+            <div className="rounded-xl border border-gray-200 p-5">
+              <p className="text-2xl text-gray-600">Pend / Conf / Arch</p>
+              <p className="text-4xl font-bold text-gray-900">{ordersToday.ordersTodayPending} / {ordersToday.ordersTodayConfirmed} / {ordersToday.ordersTodayArchived}</p>
             </div>
           </div>
         </Card>
