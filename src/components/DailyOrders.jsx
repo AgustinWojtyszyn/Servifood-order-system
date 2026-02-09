@@ -911,10 +911,27 @@ const DailyOrders = ({ user, loading }) => {
   const printStats = (() => {
     const sideCounts = {}
     const optionCounts = {}
+    const turnCounts = {
+      lunch: { orders: 0, items: 0 },
+      dinner: { orders: 0, items: 0 }
+    }
+    const byLocationTurn = {}
 
     allOrders.forEach(order => {
       if (!order) return
       const customResponses = Array.isArray(order.custom_responses) ? order.custom_responses : []
+      const turn = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
+      const itemsQty = Number(order.total_items || 0)
+
+      turnCounts[turn].orders += 1
+      turnCounts[turn].items += itemsQty
+
+      const loc = order.location || 'Sin ubicación'
+      if (!byLocationTurn[loc]) {
+        byLocationTurn[loc] = { lunch: 0, dinner: 0, total: 0 }
+      }
+      byLocationTurn[loc][turn] += 1
+      byLocationTurn[loc].total += 1
 
       // Guarniciones
       const side = getCustomSideFromResponses(customResponses)
@@ -930,7 +947,7 @@ const DailyOrders = ({ user, loading }) => {
       })
     })
 
-    return { sideCounts, optionCounts }
+    return { sideCounts, optionCounts, turnCounts, byLocationTurn }
   })()
 
   return (
@@ -968,6 +985,60 @@ const DailyOrders = ({ user, loading }) => {
                   <td className="text-right">{count}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Resumen por turno</h3>
+          <table className="print-table text-[11px] mb-2 print-block">
+            <thead>
+              <tr>
+                <th>Turno</th>
+                <th>Pedidos</th>
+                <th>Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Almuerzo</td>
+                <td className="text-right">{printStats.turnCounts.lunch.orders}</td>
+                <td className="text-right">{printStats.turnCounts.lunch.items}</td>
+              </tr>
+              <tr>
+                <td>Cena</td>
+                <td className="text-right">{printStats.turnCounts.dinner.orders}</td>
+                <td className="text-right">{printStats.turnCounts.dinner.items}</td>
+              </tr>
+              <tr>
+                <td><strong>Total</strong></td>
+                <td className="text-right"><strong>{printStats.turnCounts.lunch.orders + printStats.turnCounts.dinner.orders}</strong></td>
+                <td className="text-right"><strong>{printStats.turnCounts.lunch.items + printStats.turnCounts.dinner.items}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 className="text-sm font-bold text-gray-900 mb-1">Empresas por turno</h3>
+          <table className="print-table text-[11px] mb-2 print-block">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Almuerzo</th>
+                <th>Cena</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.keys(printStats.byLocationTurn).length === 0 ? (
+                <tr><td colSpan={4}>Sin pedidos</td></tr>
+              ) : (
+                Object.entries(printStats.byLocationTurn).map(([loc, turns]) => (
+                  <tr key={loc}>
+                    <td>{loc}</td>
+                    <td className="text-right">{turns.lunch}</td>
+                    <td className="text-right">{turns.dinner}</td>
+                    <td className="text-right">{turns.total}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
 
