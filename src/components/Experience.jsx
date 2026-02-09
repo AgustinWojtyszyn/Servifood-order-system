@@ -137,18 +137,18 @@ const Experience = () => {
         </Card>
 
         <Card title="Errores recientes" icon={AlertTriangle}>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-3 text-2xl">
             <p className="font-semibold text-gray-900">Últimos 15 min: {errorSummary.errorsLast15mCount}</p>
             <p className="text-gray-700">
               Último error: {errorSummary.lastErrorMessage || 'Sin errores recientes'}
               {errorSummary.lastErrorAgo ? ` (${errorSummary.lastErrorAgo})` : ''}
             </p>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {errorSummary.topErrors.length === 0 ? (
-                <p className="text-gray-500">No hay mediciones recientes.</p>
+                <p className="text-2xl text-gray-500">No hay mediciones recientes.</p>
               ) : (
                 errorSummary.topErrors.map((entry) => (
-                  <p key={entry.message} className="text-gray-700">
+                  <p key={entry.message} className="text-2xl text-gray-700">
                     {entry.count}x · {entry.message}
                   </p>
                 ))
@@ -159,25 +159,25 @@ const Experience = () => {
 
         <Card title="Latencia por acción" icon={Zap}>
           {actionLatency.length === 0 ? (
-            <p className="text-sm text-gray-500">Sin datos aún.</p>
+            <p className="text-2xl text-gray-500">Sin datos aún.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+              <table className="min-w-full text-2xl">
                 <thead>
                   <tr className="text-left text-gray-600 border-b border-gray-200">
-                    <th className="py-2 pr-3">Acción</th>
-                    <th className="py-2 pr-3">Llamadas</th>
-                    <th className="py-2 pr-3">p50</th>
-                    <th className="py-2">p95</th>
+                    <th className="py-3 pr-4">Acción</th>
+                    <th className="py-3 pr-4">Llamadas</th>
+                    <th className="py-3 pr-4">p50</th>
+                    <th className="py-3">p95</th>
                   </tr>
                 </thead>
                 <tbody>
                   {actionLatency.map((row) => (
                     <tr key={row.action} className="border-b border-gray-100 last:border-b-0">
-                      <td className="py-2 pr-3 font-semibold text-gray-900">{row.label}</td>
-                      <td className="py-2 pr-3 text-gray-700">{row.calls}</td>
-                      <td className="py-2 pr-3 text-gray-700">{row.p50 != null ? `${row.p50} ms` : 'Sin datos'}</td>
-                      <td className="py-2 text-gray-700">{row.p95 != null ? `${row.p95} ms` : 'Sin datos'}</td>
+                      <td className="py-3 pr-4 font-semibold text-gray-900">{row.label}</td>
+                      <td className="py-3 pr-4 text-gray-700">{row.calls}</td>
+                      <td className="py-3 pr-4 text-gray-700">{row.p50 != null ? `${row.p50} ms` : 'Sin datos'}</td>
+                      <td className="py-3 text-gray-700">{row.p95 != null ? `${row.p95} ms` : 'Sin datos'}</td>
                     </tr>
                   ))}
                 </tbody>
