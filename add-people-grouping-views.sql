@@ -4,17 +4,57 @@
 -- Ejecutar en Supabase SQL Editor.
 -- No elimina datos ni modifica auth.users/orders.
 
+-- Importante: si la view ya existía con tipos distintos (ej. person_id uuid),
+-- CREATE OR REPLACE VIEW no puede cambiar el tipo de columna.
+-- Por eso se eliminan y recrean solo las views.
+DROP VIEW IF EXISTS public.orders_count_by_person;
+DROP VIEW IF EXISTS public.orders_with_person_key;
+DROP VIEW IF EXISTS public.admin_people_unified;
+
 CREATE OR REPLACE VIEW public.admin_people_unified AS
 WITH grouped AS (
   SELECT
     aug.group_id::text AS person_id,
     aug.group_id,
     aug.display_name,
-    aug.emails,
-    aug.user_ids,
-    aug.members_count,
-    aug.first_created,
-    aug.last_created,
+    COALESCE(
+      (
+        SELECT ARRAY_AGG(u.email ORDER BY u.created_at)
+        FROM public.user_group_members ugm
+        JOIN public.users u ON u.id = ugm.user_id
+        WHERE ugm.group_id = aug.group_id
+      ),
+      ARRAY[]::text[]
+    ) AS emails,
+    COALESCE(
+      (
+        SELECT ARRAY_AGG(u.id ORDER BY u.created_at)
+        FROM public.user_group_members ugm
+        JOIN public.users u ON u.id = ugm.user_id
+        WHERE ugm.group_id = aug.group_id
+      ),
+      ARRAY[]::uuid[]
+    ) AS user_ids,
+    COALESCE(
+      (
+        SELECT COUNT(*)::integer
+        FROM public.user_group_members ugm
+        WHERE ugm.group_id = aug.group_id
+      ),
+      0
+    ) AS members_count,
+    (
+      SELECT MIN(u.created_at)
+      FROM public.user_group_members ugm
+      JOIN public.users u ON u.id = ugm.user_id
+      WHERE ugm.group_id = aug.group_id
+    ) AS first_created,
+    (
+      SELECT MAX(u.created_at)
+      FROM public.user_group_members ugm
+      JOIN public.users u ON u.id = ugm.user_id
+      WHERE ugm.group_id = aug.group_id
+    ) AS last_created,
     TRUE AS is_grouped
   FROM public.admin_users_grouped aug
 ),

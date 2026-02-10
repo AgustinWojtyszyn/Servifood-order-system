@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle, Building2 } from 'lucide-react'
+import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle, Building2, ArrowUpDown } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { COMPANY_LIST, COMPANY_CATALOG } from '../constants/companyConfig'
 
@@ -56,6 +56,7 @@ const AdminPanel = () => {
   // Estados para búsqueda y filtrado de usuarios
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all') // 'all', 'admin', 'user'
+  const [sortBy, setSortBy] = useState('name_asc') // name_asc, name_desc, created_desc, created_asc
   
   // Estados para limpieza de datos
   const [completedOrdersCount, setCompletedOrdersCount] = useState(0)
@@ -285,7 +286,7 @@ const AdminPanel = () => {
 
   // Función para filtrar usuarios según búsqueda y rol
   const getFilteredUsers = () => {
-    return users.filter(user => {
+    const filteredUsers = users.filter(user => {
       // Filtro por término de búsqueda (nombre o email)
       const matchesSearch = searchTerm === '' || 
         (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -297,6 +298,16 @@ const AdminPanel = () => {
         (roleFilter === 'user' && user.role === 'user')
       
       return matchesSearch && matchesRole
+    })
+
+    const normalizedName = (user) => (user.full_name || user.email || '').toLowerCase()
+    const createdAtMs = (user) => (user.created_at ? new Date(user.created_at).getTime() : 0)
+
+    return [...filteredUsers].sort((a, b) => {
+      if (sortBy === 'name_asc') return normalizedName(a).localeCompare(normalizedName(b), 'es')
+      if (sortBy === 'name_desc') return normalizedName(b).localeCompare(normalizedName(a), 'es')
+      if (sortBy === 'created_asc') return createdAtMs(a) - createdAtMs(b)
+      return createdAtMs(b) - createdAtMs(a) // created_desc
     })
   }
 
@@ -741,6 +752,28 @@ const AdminPanel = () => {
                 </select>
               </div>
             </div>
+
+            {/* Ordenamiento */}
+            <div className="w-full sm:w-56">
+              <label htmlFor="sortBy" className="block text-sm font-bold text-gray-900 mb-2">
+                Ordenar por
+              </label>
+              <div className="relative">
+                <ArrowUpDown className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  id="sortBy"
+                  name="sortBy"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium appearance-none"
+                >
+                  <option value="name_asc">Nombre (A-Z)</option>
+                  <option value="name_desc">Nombre (Z-A)</option>
+                  <option value="created_desc">Fecha (más reciente)</option>
+                  <option value="created_asc">Fecha (más antigua)</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           {/* Contador de resultados */}
@@ -764,15 +797,20 @@ const AdminPanel = () => {
                     </p>
                   </div>
                   <span className={`ml-2 shrink-0 inline-flex px-2.5 py-1 text-xs font-bold rounded-full ${
-                    user.is_grouped
-                      ? 'bg-amber-100 text-amber-800'
-                      : user.role === 'admin'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-blue-100 text-blue-800'
+                    user.role === 'admin'
+                      ? 'bg-purple-100 text-purple-800'
+                      : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {user.is_grouped ? `Grupo (${user.members_count})` : (user.role === 'admin' ? 'Admin' : 'Usuario')}
+                    {user.role === 'admin' ? 'Admin' : 'Usuario'}
                   </span>
                 </div>
+                {user.is_grouped && user.members_count > 1 && (
+                  <div className="mb-3">
+                    <span className="inline-flex px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+                      {user.members_count} cuentas vinculadas
+                    </span>
+                  </div>
+                )}
 
                 {/* Fecha de Registro */}
                 <div className="text-xs text-gray-500 mb-3">
@@ -848,15 +886,20 @@ const AdminPanel = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-3 py-1 text-sm font-bold rounded-full ${
-                        user.is_grouped
-                          ? 'bg-amber-100 text-amber-800'
-                          : user.role === 'admin'
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex px-3 py-1 text-sm font-bold rounded-full ${
+                          user.role === 'admin'
                             ? 'bg-purple-100 text-purple-800'
                             : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {user.is_grouped ? `Grupo (${user.members_count})` : (user.role === 'admin' ? 'Admin' : 'Usuario')}
-                      </span>
+                        }`}>
+                          {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                        </span>
+                        {user.is_grouped && user.members_count > 1 && (
+                          <span className="inline-flex px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+                            {user.members_count} cuentas
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES') : '—'}
