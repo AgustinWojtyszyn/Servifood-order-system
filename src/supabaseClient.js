@@ -239,6 +239,26 @@ export const db = {
     return { data, error }
   },
 
+  // Personas admin (usuarios agrupados + sueltos, sin duplicados)
+  getAdminPeopleUnified: async (force = false) => {
+    const cacheKey = 'admin-people-unified'
+    if (!force) {
+      const cached = cache.get(cacheKey)
+      if (cached) return { data: cached, error: null }
+    }
+
+    const { data, error } = await supabase
+      .from('admin_people_unified')
+      .select('person_id, group_id, display_name, emails, user_ids, members_count, first_created, last_created, is_grouped')
+      .order('display_name', { ascending: true })
+
+    if (!error && data) {
+      cache.set(cacheKey, data, 60000)
+    }
+
+    return { data, error }
+  },
+
   updateUserRole: async (userId, role) => {
     cache.clear() // Limpiar cache al actualizar
     const { data, error } = await supabase
@@ -358,6 +378,34 @@ export const db = {
     }
 
     const { data, error } = await query
+    return { data, error }
+  },
+
+  // Pedidos con person_key para agrupar por persona (grupo o usuario suelto)
+  getOrdersWithPersonKey: async ({ userId = null, personKey = null } = {}) => {
+    let query = supabase
+      .from('orders_with_person_key')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (userId) {
+      query = query.eq('user_id', userId)
+    }
+
+    if (personKey) {
+      query = query.eq('person_key', personKey)
+    }
+
+    const { data, error } = await query
+    return { data, error }
+  },
+
+  // Conteo de pedidos agrupado por persona
+  getOrdersCountByPerson: async () => {
+    const { data, error } = await supabase
+      .from('orders_count_by_person')
+      .select('*')
+      .order('total_orders', { ascending: false })
     return { data, error }
   },
 

@@ -145,13 +145,16 @@ const Dashboard = ({ user, loading }) => {
       }
       
       // TODOS (admins y usuarios) solo ven sus propios pedidos en el Dashboard
-      const { data, error } = await db.getOrders(user.id)
+      const { data, error } = await db.getOrdersWithPersonKey({ userId: user.id })
 
       if (error) {
         console.error('Error fetching orders:', error)
       } else {
-        // Obtener información de usuarios para mostrar nombres
-        const { data: usersData } = await db.getUsers()
+        // Resolver nombre/email por persona unificada (grupo o usuario suelto)
+        const { data: peopleData } = await db.getAdminPeopleUnified()
+        const personById = new Map(
+          (Array.isArray(peopleData) ? peopleData : []).map(person => [person.person_id, person])
+        )
         
         // Obtener fecha de hoy
         const today = new Date()
@@ -159,13 +162,14 @@ const Dashboard = ({ user, loading }) => {
         
         let ordersWithUserNames = (data || []).map(order => {
           const displayStatus = normalizeStatus(order.status)
-          const orderUser = usersData?.find(u => u.id === order.user_id)
+          const personId = order.person_key || (order.user_id ? String(order.user_id) : null)
+          const person = personId ? personById.get(personId) : null
+          const emails = Array.isArray(person?.emails) ? person.emails.filter(Boolean) : []
           // Intentar obtener el nombre de diferentes fuentes
           let userName = 'Usuario'
-          if (orderUser) {
-            userName = orderUser.full_name || 
-                      orderUser.user_metadata?.full_name || 
-                      orderUser.email?.split('@')[0] || 
+          if (person) {
+            userName = person.display_name ||
+                      emails[0]?.split('@')[0] ||
                       order.customer_name ||
                       'Usuario'
           } else if (order.customer_name) {
@@ -175,7 +179,8 @@ const Dashboard = ({ user, loading }) => {
           return {
             ...order,
             displayStatus,
-            user_name: userName
+            user_name: userName,
+            user_email: emails[0] || order.customer_email || ''
           }
         })
         

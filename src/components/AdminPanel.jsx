@@ -143,16 +143,38 @@ const AdminPanel = () => {
   const fetchData = async () => {
     setDataLoading(true)
     try {
-      const [usersResult, menuResult, optionsResult] = await Promise.all([
+      const [peopleResult, accountsResult, menuResult, optionsResult] = await Promise.all([
+        db.getAdminPeopleUnified(),
         db.getUsers(),
         db.getMenuItems(),
         db.getCustomOptions()
       ])
 
-      if (usersResult.error) {
-        console.error('Error fetching users:', usersResult.error)
+      if (peopleResult.error) {
+        console.error('Error fetching admin people:', peopleResult.error)
       } else {
-        setUsers(usersResult.data || [])
+        const accountRows = Array.isArray(accountsResult?.data) ? accountsResult.data : []
+        const accountById = new Map(accountRows.map(acc => [acc.id, acc]))
+        const mappedPeople = (peopleResult.data || []).map(person => {
+          const primaryUserId = Array.isArray(person.user_ids) ? person.user_ids[0] : null
+          const primaryAccount = primaryUserId ? accountById.get(primaryUserId) : null
+          const emails = Array.isArray(person.emails) ? person.emails.filter(Boolean) : []
+          return {
+            id: person.person_id,
+            person_id: person.person_id,
+            group_id: person.group_id,
+            full_name: person.display_name || emails[0] || 'Sin nombre',
+            email: emails[0] || '',
+            emails,
+            user_ids: Array.isArray(person.user_ids) ? person.user_ids : [],
+            primary_user_id: primaryUserId,
+            members_count: person.members_count || 1,
+            is_grouped: !!person.is_grouped,
+            created_at: person.first_created || person.last_created || primaryAccount?.created_at || null,
+            role: primaryAccount?.role || 'user'
+          }
+        })
+        setUsers(mappedPeople)
       }
 
       const extractNumber = (name) => {
@@ -296,13 +318,9 @@ const AdminPanel = () => {
       alert('Rol actualizado correctamente')
       // Actualizar el usuario en la lista local
       if (data && Array.isArray(users)) {
-        setUsers(users.map(u => u.id === userId ? { ...u, role: roleValue } : u))
+        setUsers(users.map(u => u.primary_user_id === userId ? { ...u, role: roleValue } : u))
       }
-      // Forzar fetchData sin cache
-      if (db.getUsers) {
-        const { data: freshUsers, error: fetchError } = await db.getUsers(true)
-        if (!fetchError && freshUsers) setUsers(freshUsers)
-      }
+      await fetchData()
       // Si el usuario actual cambia su propio rol, refrescar sesión
       if (user && user.id === userId) {
         await refreshSession()
@@ -331,7 +349,7 @@ const AdminPanel = () => {
         alert('Error al eliminar el usuario: ' + error.message)
       } else {
         // Update local state
-        setUsers(users.filter(user => user.id !== userId))
+        setUsers(users.filter(person => person.primary_user_id !== userId))
         alert('Usuario eliminado exitosamente')
       }
     } catch (err) {
@@ -727,44 +745,50 @@ const AdminPanel = () => {
 
           {/* Contador de resultados */}
           <div className="mb-4 text-sm text-gray-600">
-            Mostrando <span className="font-bold text-gray-900">{getFilteredUsers().length}</span> de <span className="font-bold text-gray-900">{users.length}</span> usuarios
+            Mostrando <span className="font-bold text-gray-900">{getFilteredUsers().length}</span> de <span className="font-bold text-gray-900">{users.length}</span> personas
           </div>
 
           {/* Vista Mobile - Cards */}
           <div className="block md:hidden space-y-4">
             {getFilteredUsers().map((user) => (
-              <div key={user.id} className="border-2 border-gray-200 rounded-xl p-3 bg-white hover:border-primary-300 transition-all">
+              <div key={user.person_id || user.id} className="border-2 border-gray-200 rounded-xl p-3 bg-white hover:border-primary-300 transition-all">
                 {/* Nombre y Badge de Rol */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-base text-gray-900 truncate">
                       {user.full_name || user.email || 'Sin nombre'}
                     </h3>
-                    <p className="text-sm text-gray-600 truncate mt-1">{user.email}</p>
+                    <p className="text-sm text-gray-600 truncate mt-1">
+                      {user.email}
+                      {Array.isArray(user.emails) && user.emails.length > 1 ? ` (+${user.emails.length - 1})` : ''}
+                    </p>
                   </div>
                   <span className={`ml-2 shrink-0 inline-flex px-2.5 py-1 text-xs font-bold rounded-full ${
-                    user.role === 'admin'
-                      ? 'bg-purple-100 text-purple-800'
-                      : 'bg-blue-100 text-blue-800'
+                    user.is_grouped
+                      ? 'bg-amber-100 text-amber-800'
+                      : user.role === 'admin'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                    {user.is_grouped ? `Grupo (${user.members_count})` : (user.role === 'admin' ? 'Admin' : 'Usuario')}
                   </span>
                 </div>
 
                 {/* Fecha de Registro */}
                 <div className="text-xs text-gray-500 mb-3">
-                  Registrado: {new Date(user.created_at).toLocaleDateString('es-ES')}
+                  Registrado: {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES') : '—'}
                 </div>
 
                 {/* Controles */}
                 <div className="flex gap-2 pt-3 border-t border-gray-200">
                   <div className="flex-1">
-                    <label htmlFor={`mobile-role-${user.id}`} className="block text-xs font-bold text-gray-700 mb-1">Cambiar Rol</label>
+                    <label htmlFor={`mobile-role-${user.person_id || user.id}`} className="block text-xs font-bold text-gray-700 mb-1">Cambiar Rol</label>
                     <select
-                      id={`mobile-role-${user.id}`}
-                      name={`mobile-role-${user.id}`}
+                      id={`mobile-role-${user.person_id || user.id}`}
+                      name={`mobile-role-${user.person_id || user.id}`}
                       value={user.role || 'user'}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                      onChange={(e) => handleRoleChange(user.primary_user_id, e.target.value)}
+                      disabled={user.is_grouped || !user.primary_user_id}
                       className="w-full text-sm border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium"
                     >
                       <option value="user">Usuario</option>
@@ -773,7 +797,8 @@ const AdminPanel = () => {
                   </div>
                   <div className="flex items-end">
                     <button
-                      onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
+                      onClick={() => handleDeleteUser(user.primary_user_id, user.full_name || user.email)}
+                      disabled={user.is_grouped || !user.primary_user_id}
                       className="px-4 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors font-semibold text-sm flex items-center gap-1"
                       title="Eliminar usuario"
                     >
@@ -810,42 +835,49 @@ const AdminPanel = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {getFilteredUsers().map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={user.person_id || user.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="text-base font-bold text-gray-900">
                         {user.full_name || user.email || 'Sin nombre'}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-base text-gray-900">{user.email}</div>
+                      <div className="text-base text-gray-900">
+                        {user.email}
+                        {Array.isArray(user.emails) && user.emails.length > 1 ? ` (+${user.emails.length - 1})` : ''}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-3 py-1 text-sm font-bold rounded-full ${
-                        user.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
+                        user.is_grouped
+                          ? 'bg-amber-100 text-amber-800'
+                          : user.role === 'admin'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                        {user.is_grouped ? `Grupo (${user.members_count})` : (user.role === 'admin' ? 'Admin' : 'Usuario')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.created_at).toLocaleDateString('es-ES')}
+                      {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES') : '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
-                        <label htmlFor={`table-role-${user.id}`} className="sr-only">Cambiar rol para {user.full_name || user.email || 'usuario'}</label>
+                        <label htmlFor={`table-role-${user.person_id || user.id}`} className="sr-only">Cambiar rol para {user.full_name || user.email || 'usuario'}</label>
                         <select
-                          id={`table-role-${user.id}`}
-                          name={`table-role-${user.id}`}
+                          id={`table-role-${user.person_id || user.id}`}
+                          name={`table-role-${user.person_id || user.id}`}
                           value={user.role || 'user'}
-                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                          onChange={(e) => handleRoleChange(user.primary_user_id, e.target.value)}
+                          disabled={user.is_grouped || !user.primary_user_id}
                           className="text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"
                         >
                           <option value="user">Usuario</option>
                           <option value="admin">Admin</option>
                         </select>
                         <button
-                          onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
+                          onClick={() => handleDeleteUser(user.primary_user_id, user.full_name || user.email)}
+                          disabled={user.is_grouped || !user.primary_user_id}
                           className="p-2.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors shrink-0"
                           title="Eliminar usuario"
                         >

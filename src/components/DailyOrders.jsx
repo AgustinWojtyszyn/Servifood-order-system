@@ -175,13 +175,16 @@ const DailyOrders = ({ user, loading }) => {
         setOrdersLoading(true)
       }
       
-      const { data: ordersData, error } = await db.getOrders()
+      const { data: ordersData, error } = await db.getOrdersWithPersonKey()
 
       if (error) {
         console.error('Error fetching orders:', error)
       } else {
-        // Obtener información de usuarios para mostrar nombres
-        const { data: usersData } = await db.getUsers()
+        // Obtener información de personas (grupos + usuarios sueltos, sin duplicados)
+        const { data: peopleData } = await db.getAdminPeopleUnified()
+        const personById = new Map(
+          (Array.isArray(peopleData) ? peopleData : []).map(person => [person.person_id, person])
+        )
         
         // Obtener fecha de hoy
         const today = new Date()
@@ -197,13 +200,13 @@ const DailyOrders = ({ user, loading }) => {
           orderDate.setHours(0, 0, 0, 0)
           return orderDate.getTime() === today.getTime()
         }).map(order => {
-          // Evitar destructuración directa y acceso antes de inicialización
-          const orderUser = Array.isArray(usersData) ? usersData.find(u => u && u.id === order.user_id) : null;
+          const personId = order.person_key || (order.user_id ? String(order.user_id) : null)
+          const person = personId ? personById.get(personId) : null
+          const emails = Array.isArray(person?.emails) ? person.emails.filter(Boolean) : []
           let userName = 'Usuario';
-          if (orderUser) {
-            userName = (orderUser.full_name !== undefined ? orderUser.full_name : null)
-              || (orderUser.user_metadata?.full_name ? orderUser.user_metadata.full_name : null)
-              || (orderUser.email ? orderUser.email.split('@')[0] : null)
+          if (person) {
+            userName = (person.display_name !== undefined ? person.display_name : null)
+              || (emails[0] ? emails[0].split('@')[0] : null)
               || (order.customer_name !== undefined ? order.customer_name : null)
               || 'Usuario';
           } else if (order.customer_name !== undefined) {
@@ -220,7 +223,7 @@ const DailyOrders = ({ user, loading }) => {
           return {
             ...order,
             user_name: userName,
-            user_email: (orderUser?.email ? orderUser.email : (order.customer_email !== undefined ? order.customer_email : ''))
+            user_email: (emails[0] ? emails[0] : (order.customer_email !== undefined ? order.customer_email : ''))
           };
         }) : [];
 
