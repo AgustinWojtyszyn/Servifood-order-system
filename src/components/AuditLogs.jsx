@@ -11,7 +11,6 @@ import {
   exportAuditXlsx,
   filterAuditLogs,
   groupDuplicateAuditLogs,
-  hasRapidMenuUpdates,
   prepareAuditLogs
 } from '../utils/auditLogUtils'
 
@@ -216,11 +215,6 @@ const AuditLogs = () => {
 
   const dailySummary = useMemo(() => buildDailyAuditSummary(preparedLogs), [preparedLogs])
 
-  const showMenuBurstWarning = useMemo(
-    () => hasRapidMenuUpdates(preparedLogs, { minCount: 2, windowMinutes: 10 }),
-    [preparedLogs]
-  )
-
   const exportRows = useMemo(
     () => buildAuditExportRows(visibleLogs, friendlyAction),
     [visibleLogs]
@@ -421,12 +415,6 @@ const AuditLogs = () => {
           <p className="text-xs text-gray-600 mt-1">{dailySummary.topActorCount} evento(s)</p>
         </div>
       </section>
-
-      {showMenuBurstWarning && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Se detectaron múltiples cambios seguidos en menú diario en menos de 10 minutos.
-        </div>
-      )}
 
       <section className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
