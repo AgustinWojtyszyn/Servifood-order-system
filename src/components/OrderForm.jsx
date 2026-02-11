@@ -674,12 +674,7 @@ const OrderForm = ({ user, loading }) => {
     const isDinnerSuggestion = suggestionService === 'dinner'
 
     if (isGenneia && isDinnerSuggestion) {
-      const reusableDinnerItems = (suggestion.items || []).filter((item) => {
-        const name = (item?.name || '').toString()
-        if (matchesOverrideKeyword(name)) return false
-        return !/(veggie|veg|vegetar)/i.test(name)
-      })
-      const selectedDinnerMap = mapOrderItemsToSelection(reusableDinnerItems)
+      const selectedDinnerMap = mapOrderItemsToSelection(suggestion.items || [])
       setSelectedItems({})
       setSelectedItemsDinner(selectedDinnerMap)
       setSelectedTurns({ lunch: false, dinner: true })
