@@ -14,7 +14,7 @@ const Chip = ({ label, value, ok }) => (
   <div className="inline-flex items-center gap-5 rounded-full border border-gray-200 bg-white px-7 py-5 text-2xl font-semibold">
     {ok ? <CheckCircle2 className="h-8 w-8 text-emerald-600" /> : <XCircle className="h-8 w-8 text-red-600" />}
     <span className="text-4xl text-gray-700">{label}</span>
-    <span className="text-4xl text-gray-500 font-bold">{value}</span>
+    <span className="text-2xl text-gray-500 font-bold">{value}</span>
   </div>
 )
 
