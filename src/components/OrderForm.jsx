@@ -5,6 +5,7 @@ import { ordersService } from '../services/orders'
 import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2 } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
+import { Sound } from '../utils/sound'
 
 const ORDER_START_HOUR = 9  // 09:00 apertura
 const ORDER_CUTOFF_HOUR = 22 // 22:00 cierre
@@ -184,6 +185,12 @@ const OrderForm = ({ user, loading }) => {
   useEffect(() => {
     setCustomResponses({})
   }, [rawCompanySlug])
+
+  useEffect(() => {
+    if (success) {
+      Sound.playSuccess()
+    }
+  }, [success])
 
   useEffect(() => {
     if (!isGenneia) return
@@ -1635,6 +1642,9 @@ const OrderForm = ({ user, loading }) => {
           }}>
           <button
             type="submit"
+            onClick={() => {
+              Sound.prime()
+            }}
             disabled={loading || submitting || !hasAnySelectedItems || hasOrderToday}
             style={{ 
               backgroundColor: '#16a34a',
