@@ -669,8 +669,27 @@ const OrderForm = ({ user, loading }) => {
 
   const handleRepeatSuggestion = () => {
     if (!suggestion) return
-    const selectedMap = mapOrderItemsToSelection(suggestion.items || [])
-    setSelectedItems(selectedMap)
+
+    const suggestionService = (suggestion.service || 'lunch').toLowerCase()
+    const isDinnerSuggestion = suggestionService === 'dinner'
+
+    if (isGenneia && isDinnerSuggestion) {
+      const reusableDinnerItems = (suggestion.items || []).filter((item) => {
+        const name = (item?.name || '').toString()
+        if (matchesOverrideKeyword(name)) return false
+        return !/(veggie|veg|vegetar)/i.test(name)
+      })
+      const selectedDinnerMap = mapOrderItemsToSelection(reusableDinnerItems)
+      setSelectedItems({})
+      setSelectedItemsDinner(selectedDinnerMap)
+      setSelectedTurns({ lunch: false, dinner: true })
+      setMode('dinner')
+      clearDinnerOverrideResponses()
+    } else {
+      const selectedMap = mapOrderItemsToSelection(suggestion.items || [])
+      setSelectedItems(selectedMap)
+    }
+
     setFormData(prev => ({
       ...prev,
       comments: suggestion.comments || '',
