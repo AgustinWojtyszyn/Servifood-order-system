@@ -286,9 +286,12 @@ const Layout = ({ children, user, loading }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-h-0 overflow-visible">
-          {/* El único scroll vertical de la app vive en el body; aquí evitamos overflow para no generar una segunda barra. */}
-          <div className="flex-1 p-4 md:p-8 min-h-0 overflow-visible">
+        <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden md:overflow-visible">
+          {/* En mobile el scroll vive en este contenedor para evitar recortes del viewport dinámico. */}
+          <div
+            className="flex-1 p-4 md:p-8 min-h-0 overflow-y-auto overflow-x-hidden md:overflow-visible"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+          >
             {children}
           </div>
         </main>
