@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../services/supabase'
+import { supabase, instrumentRpc } from '../services/supabase'
 
 const AUTO_REFRESH_MS = 90000
 const CHECK_TIMEOUT_MS = 8000
@@ -134,14 +134,17 @@ export const useAppExperience = () => {
     const { controller, clear } = startAbortable(rpcControllerRef)
     const started = performance.now()
     try {
-      const { error: rpcError } = await supabase
-        .rpc('get_metrics_summary', {
+      const { error: rpcError, durationMs } = await instrumentRpc(
+        'get_metrics_summary',
+        {
           p_window_seconds: 60,
           p_limit: 1
-        })
-        .abortSignal(controller.signal)
+        },
+        { context: 'experience.health' },
+        { signal: controller.signal }
+      )
 
-      const latency = performance.now() - started
+      const latency = Number.isFinite(durationMs) ? durationMs : performance.now() - started
       return buildCheckResult(!rpcError, latency, rpcError?.message || null)
     } catch (err) {
       const latency = performance.now() - started
@@ -340,8 +343,8 @@ export const useAppExperience = () => {
     if (!health.postgrest.ok) {
       alerts.push({ level: 'red', title: 'PostgREST caído', detail: health.postgrest.error || 'No responde la API de datos.' })
     }
-    if (!health.rpc_create_order_idempotent.ok) {
-      alerts.push({ level: 'red', title: 'RPC degradada', detail: health.rpc_create_order_idempotent.error || 'No responde el canal RPC.' })
+    if (!health.rpc_get_metrics_summary.ok) {
+      alerts.push({ level: 'red', title: 'RPC degradada', detail: health.rpc_get_metrics_summary.error || 'No responde el canal RPC.' })
     }
     if (!health.auth.ok) {
       alerts.push({ level: 'red', title: 'Sesión inválida', detail: health.auth.error || 'No hay token válido.' })
@@ -407,9 +410,9 @@ export const useAppExperience = () => {
       const next = {
         health: {
           postgrest,
-          rpc_create_order_idempotent: {
+          rpc_get_metrics_summary: {
             ...rpcFallback,
-            detail: 'medido vía get_metrics_summary (fallback seguro sin dry-run)'
+            detail: 'medido vía rpc.get_metrics_summary'
           },
           auth
         },
@@ -477,7 +480,7 @@ export const useAppExperience = () => {
       return {
         health: {
           postgrest: buildCheckResult(false, null, 'Sin datos aún'),
-          rpc_create_order_idempotent: buildCheckResult(false, null, 'Sin datos aún'),
+          rpc_get_metrics_summary: buildCheckResult(false, null, 'Sin datos aún'),
           auth: buildCheckResult(false, null, 'Sin datos aún')
         },
         ordersToday: {

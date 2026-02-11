@@ -175,7 +175,64 @@ const AdminPanel = () => {
             role: primaryAccount?.role || 'user'
           }
         })
-        setUsers(mappedPeople)
+
+        const normalizeName = (value) => {
+          const raw = (value || '').toString().trim().toLowerCase()
+          const withoutDiacritics = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          // Si el nombre viene "contaminado" con dominio (ej: "mercado.com.ar"), corta desde el primer punto
+          const withoutDomainTail = withoutDiacritics.replace(/\.[a-z0-9].*$/, '')
+          // Elimina caracteres que no aportan al nombre
+          return withoutDomainTail.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+        }
+        const normalizeEmail = (value) => (value || '').toString().trim().toLowerCase()
+        const toDateMs = (value) => {
+          const ms = value ? new Date(value).getTime() : NaN
+          return Number.isFinite(ms) ? ms : null
+        }
+
+        const dedupedPeople = []
+        for (const person of mappedPeople) {
+          const personEmails = new Set((person.emails || []).map(normalizeEmail).filter(Boolean))
+          const personUserIds = new Set((person.user_ids || []).filter(Boolean))
+          const personName = normalizeName(person.full_name || person.email)
+
+          const existing = dedupedPeople.find(p => {
+            const existingEmails = new Set((p.emails || []).map(normalizeEmail).filter(Boolean))
+            const existingUserIds = new Set((p.user_ids || []).filter(Boolean))
+            const existingName = normalizeName(p.full_name || p.email)
+
+            const hasSharedUserId = [...personUserIds].some(id => existingUserIds.has(id))
+            const hasSharedEmail = [...personEmails].some(email => existingEmails.has(email))
+            const hasSameName = personName !== '' && personName === existingName
+
+            return hasSharedUserId || hasSharedEmail || hasSameName
+          })
+
+          if (!existing) {
+            dedupedPeople.push(person)
+            continue
+          }
+
+          const mergedEmails = [...new Set([...(existing.emails || []), ...(person.emails || [])])]
+          const mergedUserIds = [...new Set([...(existing.user_ids || []), ...(person.user_ids || [])])]
+          const existingCreatedMs = toDateMs(existing.created_at)
+          const personCreatedMs = toDateMs(person.created_at)
+          const earliestMs = [existingCreatedMs, personCreatedMs].filter(v => v !== null).sort((a, b) => a - b)[0]
+
+          existing.emails = mergedEmails
+          existing.user_ids = mergedUserIds
+          existing.email = mergedEmails[0] || existing.email || person.email || ''
+          existing.full_name = existing.full_name || person.full_name
+          existing.members_count = Math.max(existing.members_count || 1, person.members_count || 1, mergedUserIds.length, mergedEmails.length)
+          existing.is_grouped = existing.is_grouped || person.is_grouped || mergedUserIds.length > 1 || mergedEmails.length > 1
+          existing.role = existing.role === 'admin' || person.role === 'admin' ? 'admin' : 'user'
+          existing.primary_user_id = existing.primary_user_id || person.primary_user_id || mergedUserIds[0] || null
+          if (earliestMs) {
+            existing.created_at = new Date(earliestMs).toISOString()
+          }
+        }
+
+        setUsers(dedupedPeople)
       }
 
       const extractNumber = (name) => {
@@ -286,11 +343,22 @@ const AdminPanel = () => {
 
   // Función para filtrar usuarios según búsqueda y rol
   const getFilteredUsers = () => {
+    const normalizedSearch = searchTerm.trim().toLowerCase()
+
     const filteredUsers = users.filter(user => {
-      // Filtro por término de búsqueda (nombre o email)
-      const matchesSearch = searchTerm === '' || 
-        (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      // Filtro por término de búsqueda (nombre de usuario o cualquier email)
+      const allEmails = Array.isArray(user.emails)
+        ? user.emails.filter(Boolean).map(e => e.toLowerCase())
+        : (user.email ? [user.email.toLowerCase()] : [])
+      const emailUsernames = allEmails.map(e => e.split('@')[0]).filter(Boolean)
+      const searchableText = [
+        user.full_name || '',
+        user.email || '',
+        ...allEmails,
+        ...emailUsernames
+      ].join(' ').toLowerCase()
+
+      const matchesSearch = normalizedSearch === '' || searchableText.includes(normalizedSearch)
       
       // Filtro por rol
       const matchesRole = roleFilter === 'all' || 

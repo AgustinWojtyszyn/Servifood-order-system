@@ -1,4 +1,4 @@
-import { supabase, supabaseService, sanitizeQuery } from './supabase'
+import { supabase, supabaseService, sanitizeQuery, instrumentRpc } from './supabase'
 import { handleError } from '../utils'
 import { ORDER_STATUS } from '../types'
 
@@ -30,16 +30,30 @@ class OrdersService {
         updated_at: new Date().toISOString()
       }
 
-      const { data, error } = await supabaseService.withRetry(
-        () => supabase.rpc('create_order_idempotent', {
-          p_user_id: orderWithDefaults.user_id,
-          p_idempotency_key: orderWithDefaults.idempotency_key || null,
-          p_payload: orderWithDefaults
-        }),
+      let attempt = 0
+      const { data } = await supabaseService.withRetry(
+        async () => {
+          attempt += 1
+          const { data: rpcData, error } = await instrumentRpc(
+            'create_order_idempotent',
+            {
+              p_user_id: orderWithDefaults.user_id,
+              p_idempotency_key: orderWithDefaults.idempotency_key || null,
+              p_payload: orderWithDefaults
+            },
+            {
+              context: 'createOrder',
+              admin: Boolean(orderWithDefaults?.is_admin || orderWithDefaults?.isAdmin),
+              attempt,
+              retried: attempt > 1
+            }
+          )
+
+          if (error) throw error
+          return { data: rpcData, error: null }
+        },
         'createOrder'
       )
-
-      if (error) throw error
 
       // Invalidar cache relacionado con pedidos
       supabaseService.invalidateCache('orders')

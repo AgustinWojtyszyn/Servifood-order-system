@@ -242,3 +242,38 @@ export const healthCheck = async (timeoutMs = 4000) => {
     }
   }
 }
+
+export const instrumentRpc = async (rpcName, args = {}, metaContext = {}, options = {}) => {
+  const now = () => (
+    typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now()
+  )
+  const startedAt = now()
+  let query = supabase.rpc(rpcName, args)
+  if (options?.signal) {
+    query = query.abortSignal(options.signal)
+  }
+  const { data, error } = await query
+  const durationMs = Math.round(now() - startedAt)
+
+  const skipInstrumentation = ['log_metric', 'log_system_metric', 'log_health_probe'].includes(rpcName)
+  if (skipInstrumentation) {
+    return { data, error, durationMs }
+  }
+
+  try {
+    await supabase.rpc('log_metric', {
+      p_op: `rpc.${rpcName}`,
+      p_ok: !error,
+      p_duration_ms: durationMs,
+      p_screen: null,
+      p_error_code: error ? String(error.code || error.message || 'rpc_error').slice(0, 180) : null,
+      p_meta: metaContext || {}
+    })
+  } catch (e) {
+    console.error('[metrics] log_metric rpc failed', e?.message || e)
+  }
+
+  return { data, error, durationMs }
+}

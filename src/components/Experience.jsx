@@ -100,9 +100,9 @@ const Experience = () => {
               value={health.postgrest.latencyMs != null ? `${health.postgrest.latencyMs} ms` : 'Sin datos'}
             />
             <Chip
-              label="rpc"
-              ok={health.rpc_create_order_idempotent.ok}
-              value={health.rpc_create_order_idempotent.latencyMs != null ? `${health.rpc_create_order_idempotent.latencyMs} ms` : 'Sin datos'}
+              label="rpc.get_metrics_summary"
+              ok={health.rpc_get_metrics_summary.ok}
+              value={health.rpc_get_metrics_summary.latencyMs != null ? `${health.rpc_get_metrics_summary.latencyMs} ms` : 'Sin datos'}
             />
             <Chip
               label="auth"
@@ -111,7 +111,7 @@ const Experience = () => {
             />
           </div>
           <p className="text-xs text-gray-500">
-            {health.rpc_create_order_idempotent.detail || 'Chequeo RPC estándar.'}
+            {health.rpc_get_metrics_summary.detail || 'Chequeo RPC estándar.'}
           </p>
         </Card>
 

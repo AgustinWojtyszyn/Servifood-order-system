@@ -20,9 +20,7 @@ export const useScreenMetrics = () => {
           p_meta: { admin: isAdmin }
         })
       } catch (e) {
-        if (import.meta.env.DEV) {
-          console.warn('[metrics] log_metric screen.view failed', e?.message || e)
-        }
+        console.error('[metrics] log_metric screen.view failed', e?.message || e)
       }
     }
     send()
