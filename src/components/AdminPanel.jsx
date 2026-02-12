@@ -5,6 +5,7 @@ import { db } from '../supabaseClient'
 import { Users, ChefHat, Edit3, Save, X, Plus, Trash2, Settings, ArrowUp, ArrowDown, Shield, Search, Filter, Database, AlertTriangle, Building2, ArrowUpDown } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { COMPANY_LIST, COMPANY_CATALOG } from '../constants/companyConfig'
+import { Sound } from '../utils/Sound'
 
 const AdminPanel = () => {
   // Archivar todos los pedidos pendientes
@@ -37,6 +38,7 @@ const AdminPanel = () => {
   const [customOptions, setCustomOptions] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
   const [editingMenu, setEditingMenu] = useState(false)
+  const [savingMenu, setSavingMenu] = useState(false)
   const [newMenuItems, setNewMenuItems] = useState([])
   const [editingOptions, setEditingOptions] = useState(false)
   const [newOption, setNewOption] = useState(null)
@@ -438,6 +440,8 @@ const AdminPanel = () => {
   }
 
   const handleMenuUpdate = async () => {
+    if (savingMenu) return
+
     try {
       // Filter out empty items
       const validItems = newMenuItems.filter(item => item.name.trim() !== '')
@@ -447,6 +451,7 @@ const AdminPanel = () => {
         return
       }
 
+      setSavingMenu(true)
       const requestId = crypto.randomUUID?.() || Math.random().toString(36).slice(2)
       console.debug('[menu][save] request_id', requestId, 'items', validItems.length)
       const { error } = await db.updateMenuItems(validItems, requestId)
@@ -456,12 +461,15 @@ const AdminPanel = () => {
         alert('Error al actualizar el menú')
       } else {
         setEditingMenu(false)
+        Sound.playSuccess()
         alert('Menú actualizado exitosamente')
         fetchData() // Refresh data
       }
     } catch (err) {
       console.error('Error:', err)
       alert('Error al actualizar el menú')
+    } finally {
+      setSavingMenu(false)
     }
   }
 
@@ -1045,7 +1053,11 @@ const AdminPanel = () => {
             ) : (
               <div className="flex flex-col sm:flex-row gap-2">
                 <button
+                  onPointerDown={() => {
+                    if (!savingMenu) Sound.primeSuccess()
+                  }}
                   onClick={handleMenuUpdate}
+                  disabled={savingMenu}
                   className="btn-primary flex items-center justify-center text-sm sm:text-base px-4 py-2.5 flex-1"
                 >
                   <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
