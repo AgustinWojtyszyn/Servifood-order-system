@@ -102,6 +102,9 @@ const OrderForm = ({ user, loading }) => {
     .trim()
     .toLowerCase()
   const companyConfig = COMPANY_CATALOG[rawCompanySlug] || COMPANY_CATALOG[defaultCompanySlug]
+  const companyOptionsSlug = (companyConfig?.optionsSourceSlug || companyConfig?.slug || rawCompanySlug || '')
+    .trim()
+    .toLowerCase()
   const isGenneia = (companyConfig?.slug || rawCompanySlug || '').toLowerCase() === 'genneia'
   const isGenneiaPostreOption = (option = {}) =>
     isGenneia && (option.title || '').toLowerCase().includes('postre')
@@ -375,8 +378,8 @@ const OrderForm = ({ user, loading }) => {
         })
 
       const [{ data: lunchData, error: lunchError }, { data: dinnerData, error: dinnerError }] = await Promise.all([
-        db.getVisibleCustomOptions({ company: rawCompanySlug, meal: 'lunch', date: deliveryDate }),
-        db.getVisibleCustomOptions({ company: rawCompanySlug, meal: 'dinner', date: deliveryDate })
+        db.getVisibleCustomOptions({ company: companyOptionsSlug, meal: 'lunch', date: deliveryDate }),
+        db.getVisibleCustomOptions({ company: companyOptionsSlug, meal: 'dinner', date: deliveryDate })
       ])
 
       if (lunchError) console.error('Error fetching lunch custom options:', lunchError)

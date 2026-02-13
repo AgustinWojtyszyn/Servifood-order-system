@@ -4,6 +4,7 @@ import { db } from '../supabaseClient'
 import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle, Save } from 'lucide-react'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
+import { COMPANY_LOCATIONS } from '../constants/companyConfig'
 
 const EDIT_WINDOW_MINUTES = 10
 
@@ -26,7 +27,7 @@ export default function EditOrderForm({ user, loading }) {
   const location = useLocation()
   const order = location.state?.order
 
-  const locations = ['Los Berros', 'La Laja', 'Padre Bueno', 'Genneia']
+  const locations = COMPANY_LOCATIONS
 
   useEffect(() => {
     if (!order) {

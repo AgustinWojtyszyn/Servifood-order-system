@@ -13,6 +13,7 @@ import { db } from '../supabaseClient'
 import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon, Printer } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import RequireUser from './RequireUser'
+import { COMPANY_LOCATIONS } from '../constants/companyConfig'
 
 const DailyOrders = ({ user, loading }) => {
   const emailLoadingRef = useRef(false)
@@ -39,7 +40,7 @@ const DailyOrders = ({ user, loading }) => {
     cancelled: 0
   })
 
-  const locations = ['Los Berros', 'La Laja', 'Padre Bueno', 'Genneia']
+  const locations = COMPANY_LOCATIONS
 
   // Función robusta para detectar y extraer guarniciones personalizadas
   const getCustomSideFromResponses = (responses = []) => {
