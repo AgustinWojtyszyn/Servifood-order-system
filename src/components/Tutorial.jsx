@@ -13,33 +13,33 @@ const Tutorial = ({ isOpen, onClose }) => {
 
   const steps = [
     {
-      title: '¡Bienvenido a ServiFood!',
-      content: 'Esta es tu plataforma para gestionar pedidos de comida de manera fácil y rápida. Te guiaremos por las funciones principales.',
-      image: '🍽️'
+      title: 'Paso 1: Entrá a Nuevo Pedido',
+      content: 'Abrí el menú lateral y tocá "Nuevo Pedido". Ese botón te lleva al flujo de carga. Si estás en celular, primero abrí el menú con el ícono de la esquina.',
+      image: '🧭'
     },
     {
-      title: 'Panel Principal',
-      content: 'En el panel principal puedes ver un resumen de todos tus pedidos: totales, pendientes y completados. Aquí también verás tus pedidos más recientes.',
-      image: '📈'
+      title: 'Paso 2: Elegí la empresa',
+      content: 'Seleccioná la empresa correcta para tu pedido (La Laja, Ccp, Padre Bueno, Los Berros o Genneia). Esto es importante porque cada empresa puede mostrar opciones adicionales diferentes.',
+      image: '🏢'
     },
     {
-      title: 'Crear Nuevo Pedido',
-      content: 'Hacé clic en "Nuevo Pedido" para crear un pedido. Seleccioná los platos del menú, completá tus datos y elegí la fecha de entrega. Recordá: solo 1 menú principal y 1 ensalada por pedido.',
+      title: 'Paso 3: Seleccioná tu menú',
+      content: 'Marcá el plato que querés pedir y completá las opciones que aparezcan (por ejemplo: guarniciones o preguntas obligatorias). Revisá que quede seleccionado lo que realmente querés enviar.',
       image: '📝'
     },
     {
-      title: 'Gestionar Pedidos',
-      content: 'Podés marcar pedidos como entregados haciendo clic en el botón verde de verificación. Los pedidos completados aparecerán en su propia sección.',
-      image: '⚙️'
+      title: 'Paso 4: Completá tus datos',
+      content: 'Comprobá tu ubicación y tus datos personales: nombre, correo y teléfono. Si necesitás, agregá comentarios claros para cocina o entrega antes de confirmar.',
+      image: '👤'
     },
     {
-      title: 'Panel de Administrador (Solo Admin)',
-      content: 'Si sos administrador, podés gestionar usuarios, cambiar roles y editar el menú de platos disponibles. También podés agregar o eliminar opciones del menú.',
-      image: '🔐'
+      title: 'Paso 5: Confirmá el pedido',
+      content: 'Cuando todo esté listo, presioná "Crear pedido". Si no falta ningún dato, vas a ver la pantalla de confirmación y tu pedido quedará registrado.',
+      image: '✅'
     },
     {
-      title: '¡Listo para comenzar!',
-      content: 'Ya conocés las funciones básicas. Podés volver a ver este tutorial en cualquier momento desde el menú de ayuda.',
+      title: 'Paso 6: Revisá el estado',
+      content: 'Volvé al panel principal para seguir el estado de tu pedido (pendiente, en preparación o completado). Si querés repasar, podés abrir este tutorial de nuevo en cualquier momento.',
       image: '🚀'
     }
   ]
