@@ -940,10 +940,10 @@ const AdminPanel = () => {
                   <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
                     Rol
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-bold text-black bg-white/80 uppercase tracking-wider">
                     Fecha de Registro
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-bold text-black bg-white/80 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
