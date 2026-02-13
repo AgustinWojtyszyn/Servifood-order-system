@@ -14,6 +14,7 @@ import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filt
 import ExcelJS from 'exceljs'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
+import { Sound } from '../utils/sound'
 
 const DailyOrders = ({ user, loading }) => {
   const emailLoadingRef = useRef(false)
@@ -1270,6 +1271,7 @@ const DailyOrders = ({ user, loading }) => {
                     if (!error) {
                       const updated = Array.isArray(data) ? data.length : 0
                       alert(`Pedidos pendientes archivados correctamente. Total afectados: ${updated}.`)
+                      Sound.playSuccess()
                       handleRefresh()
                     } else {
                       alert('Error al archivar pedidos: ' + error.message)

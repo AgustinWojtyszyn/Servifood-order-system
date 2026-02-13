@@ -24,6 +24,7 @@ const AdminPanel = () => {
         alert('❌ Ocurrió un error al archivar los pedidos pendientes. Intenta nuevamente.\n\n' + error.message)
       } else {
         alert('✅ Todos los pedidos pendientes han sido archivados correctamente.\n\nPuedes consultar el historial en la sección de pedidos archivados.')
+        Sound.playSuccess()
         fetchData()
       }
     } catch (err) {
