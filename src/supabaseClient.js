@@ -87,8 +87,12 @@ export const auth = {
   },
 
   resetPassword: async (email) => {
+    const redirectTo = `${window.location.origin}/reset-password`
+    if (import.meta.env.DEV) {
+      console.debug('[auth-recovery] resetPassword redirectTo', redirectTo)
+    }
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo
     })
     return { data, error }
   },

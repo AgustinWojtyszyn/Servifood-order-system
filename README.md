@@ -167,6 +167,8 @@ VITE_SUPABASE_ANON_KEY=tu-anon-key
 3. En "Redirect URLs" agregar:
    - `http://localhost:5173/auth/callback` (desarrollo)
    - `https://tu-app-en-render.com/auth/callback` (producción)
+   - `http://localhost:5173/reset-password` (desarrollo)
+   - `https://tu-app-en-render.com/reset-password` (producción)
 
 ## 🏃‍♂️ Ejecutar en Desarrollo
 
@@ -195,6 +197,9 @@ La aplicación estará disponible en `http://localhost:5173`
    - **Environment Variables:**
      - `VITE_SUPABASE_URL`
      - `VITE_SUPABASE_ANON_KEY`
+
+**Nota SPA (deep links):** para que rutas como `/reset-password` no caigan en `/` por refresh o acceso directo, el start command debe servir `dist` en modo single-page app:
+`npx serve -s dist -l ${PORT:-3000} --single`
 
 ### 3. Configurar dominio personalizado (opcional)
 

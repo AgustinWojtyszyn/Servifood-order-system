@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList, GaugeCircle } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
@@ -134,10 +134,6 @@ const Layout = ({ children, user, loading }) => {
     { name: 'Panel Principal', path: '/dashboard', icon: User },
     { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
   ]
-
-  if (isAdmin) {
-    menuItems.splice(1, 0, { name: 'Experiencia en vivo', path: '/experiencia', icon: GaugeCircle })
-  }
 
   if (isAdmin) {
     menuItems.push({ 

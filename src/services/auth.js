@@ -97,10 +97,14 @@ class AuthService {
       if (!validateEmail(email)) {
         throw new Error('Correo electrónico inválido')
       }
+      const redirectTo = `${window.location.origin}/reset-password`
+      if (import.meta.env.DEV) {
+        console.debug('[auth-recovery] resetPassword redirectTo', redirectTo)
+      }
 
       const { data, error } = await supabaseService.withRetry(
         () => supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
-          redirectTo: `${window.location.origin}/reset-password`
+          redirectTo
         }),
         'resetPassword'
       )
