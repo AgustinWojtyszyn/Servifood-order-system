@@ -23,7 +23,7 @@ class AuthService {
           password,
           options: {
             data: sanitizedMetadata,
-            emailRedirectTo: `${window.location.origin}/dashboard`
+            emailRedirectTo: `${window.location.origin}/reset-password`
           }
         }),
         'signUp'

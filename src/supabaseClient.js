@@ -6,8 +6,10 @@ export { supabase }
 // Redirección global si el token expira mucho tiempo (fuera de línea)
 supabase.auth.onAuthStateChange((event, session) => {
   if ((event === 'SIGNED_OUT' || event === 'TOKEN_REFRESH_FAILED') && !session) {
-    // Si el usuario estaba logueado y el token expiró mucho tiempo
-    if (!window.location.pathname.startsWith('/login')) {
+    // Evitar interceptar rutas públicas de autenticación (ej: recovery/reset)
+    const publicAuthRoutes = ['/login', '/forgot-password', '/reset-password', '/register', '/auth/callback']
+    const isPublicAuthRoute = publicAuthRoutes.some((route) => window.location.pathname.startsWith(route))
+    if (!isPublicAuthRoute) {
       window.location.href = '/login';
     }
   }
@@ -49,7 +51,7 @@ export const auth = {
       password,
       options: {
         data: metadata,
-        emailRedirectTo: `${window.location.origin}/dashboard`
+        emailRedirectTo: `${window.location.origin}/reset-password`
       }
     })
     return { data, error }
