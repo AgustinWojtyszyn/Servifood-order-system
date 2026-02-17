@@ -131,9 +131,9 @@ const Profile = ({ user, loading }) => {
                 : 'bg-red-50 border-red-400 text-red-800'
             }`}>
               {message.type === 'success' ? (
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               ) : (
-                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               )}
               <span className="flex-1">{message.text}</span>
             </div>

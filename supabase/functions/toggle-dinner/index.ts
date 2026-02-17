@@ -2,8 +2,9 @@
 // Requires SERVICE_ROLE key when invoking.
 // POST { email: string, enabled: boolean }
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.1'
+/// <reference lib="deno.window" />
+/// <reference lib="deno.ns" />
+import { createClient } from 'https://deno.land/x/supabase@2.40.0/src/main.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -18,7 +19,7 @@ const isAdmin = (req: Request) => {
   return token === serviceRoleKey
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
   if (!isAdmin(req)) return new Response('Unauthorized', { status: 401 })
 
@@ -46,6 +47,7 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' }
     })
   } catch (err) {
-    return new Response(err?.message || 'error', { status: 500 })
+    const message = err instanceof Error ? err.message : 'error'
+    return new Response(message, { status: 500 })
   }
 })

@@ -625,7 +625,7 @@ const DailyOrders = ({ user }) => {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl">
+      <div className="bg-linear-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl">
         <div className="flex flex-col gap-4">
           {/* Título y fecha */}
           <div className="text-center md:text-left">
@@ -636,7 +636,7 @@ const DailyOrders = ({ user }) => {
             <p className="text-blue-100 text-base md:text-lg">
               Todos los pedidos para entregar mañana
             </p>
-            <div className="flex items-center justify-center md:justify-start gap-2 mt-3 bg-white/20 rounded-lg px-3 py-2 md:px-4 md:py-2 inline-block">
+            <div className="flex items-center justify-center md:justify-start gap-2 mt-3 bg-white/20 rounded-lg px-3 py-2 md:px-4 md:py-2">
               <Clock className="h-4 w-4 md:h-5 md:w-5" />
               <span className="font-semibold text-sm md:text-base capitalize">{getTomorrowDate()}</span>
             </div>
@@ -648,7 +648,7 @@ const DailyOrders = ({ user }) => {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
+              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-12 ${
                 refreshing
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-500 hover:bg-blue-600 text-white'
@@ -663,7 +663,7 @@ const DailyOrders = ({ user }) => {
             <button
               onClick={exportToExcel}
               disabled={sortedOrders.length === 0}
-              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
+              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-12 ${
                 sortedOrders.length === 0
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-green-500 hover:bg-green-600 text-white'
@@ -678,7 +678,7 @@ const DailyOrders = ({ user }) => {
             <button
               onClick={shareViaWhatsApp}
               disabled={sortedOrders.length === 0}
-              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-[48px] ${
+              className={`font-bold py-3 px-4 md:px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base min-h-12 ${
                 sortedOrders.length === 0
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700 text-white'
@@ -694,14 +694,14 @@ const DailyOrders = ({ user }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {/* Filtro por ubicación */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
-              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+              <label className="text-xs md:text-sm font-semibold mb-2 flex items-center gap-2">
                 <MapPin className="h-3 w-3 md:h-4 md:w-4" />
                 Ubicación
               </label>
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-10"
               >
                 <option value="all">Todas ({stats.total})</option>
                 {locations.map(location => (
@@ -714,14 +714,14 @@ const DailyOrders = ({ user }) => {
 
             {/* Filtro por estado */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
-              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+              <label className="text-xs md:text-sm font-semibold mb-2 flex items-center gap-2">
                 <Filter className="h-3 w-3 md:h-4 md:w-4" />
                 Estado
               </label>
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-10"
               >
                 <option value="all">Todos</option>
                 <option value="pending">Pendientes ({stats.pending})</option>
@@ -732,14 +732,14 @@ const DailyOrders = ({ user }) => {
 
             {/* Filtro por platillo */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
-              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+              <label className="text-xs md:text-sm font-semibold mb-2 flex items-center gap-2">
                 <Package className="h-3 w-3 md:h-4 md:w-4" />
                 Platillo
               </label>
               <select
                 value={selectedDish}
                 onChange={(e) => setSelectedDish(e.target.value)}
-                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-10"
               >
                 <option value="all">Todos</option>
                 {availableDishes.map(dish => (
@@ -752,14 +752,14 @@ const DailyOrders = ({ user }) => {
 
             {/* Filtro por guarnición */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
-              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+              <label className="text-xs md:text-sm font-semibold mb-2 flex items-center gap-2">
                 <Package className="h-3 w-3 md:h-4 md:w-4" />
                 Guarnición
               </label>
               <select
                 value={selectedSide}
                 onChange={(e) => setSelectedSide(e.target.value)}
-                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-10"
               >
                 <option value="all">Todas</option>
                 {[...new Set(orders
@@ -772,14 +772,14 @@ const DailyOrders = ({ user }) => {
 
             {/* Ordenar por */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
-              <label className="text-xs md:text-sm font-semibold mb-2 block flex items-center gap-2">
+              <label className="text-xs md:text-sm font-semibold mb-2 flex items-center gap-2">
                 <TrendingUp className="h-3 w-3 md:h-4 md:w-4" />
                 Ordenar
               </label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                className="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white text-gray-900 font-semibold text-sm md:text-base focus:ring-2 focus:ring-blue-400 min-h-10"
               >
                 <option value="time">Recientes</option>
                 <option value="location">Ubicación</option>
@@ -871,11 +871,11 @@ const DailyOrders = ({ user }) => {
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-gray-200 overflow-hidden"
             >
               {/* Header del pedido - Mobile optimized */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 md:px-6 py-3 md:py-4 border-b-2 border-gray-200">
+              <div className="bg-linear-to-r from-gray-50 to-gray-100 px-4 md:px-6 py-3 md:py-4 border-b-2 border-gray-200">
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                      <div className="p-1.5 md:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                      <div className="p-1.5 md:p-2 bg-blue-100 rounded-lg shrink-0">
                         <User className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -884,7 +884,7 @@ const DailyOrders = ({ user }) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className={`px-2 md:px-4 py-1 md:py-2 rounded-lg font-bold text-xs md:text-sm border-2 ${getStatusColor(order.status)}`}>
                         {getStatusText(order.status)}
                       </span>
@@ -906,7 +906,7 @@ const DailyOrders = ({ user }) => {
               <div className="p-4 md:p-6 space-y-3 md:space-y-4">
                 {/* Ubicación */}
                 <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3 md:p-4 border-2 border-blue-200">
-                  <MapPin className="h-5 w-5 md:h-6 md:w-6 text-blue-600 flex-shrink-0" />
+                  <MapPin className="h-5 w-5 md:h-6 md:w-6 text-blue-600 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs md:text-sm text-gray-600 font-semibold">Ubicación de Entrega</p>
                     <p className="text-base md:text-lg font-bold text-gray-900 truncate">{order.location}</p>
@@ -924,7 +924,7 @@ const DailyOrders = ({ user }) => {
                       <div key={index} className="bg-white rounded-lg p-2 md:p-3 border border-gray-200">
                         <div className="flex items-center justify-between">
                           <span style={{ fontWeight: '900' }} className="text-sm md:text-base text-gray-900 flex-1 truncate mr-2">{item.name}</span>
-                          <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-bold flex-shrink-0">
+                          <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-bold shrink-0">
                             x{item.quantity}
                           </span>
                         </div>
@@ -942,7 +942,7 @@ const DailyOrders = ({ user }) => {
                                 <span className="font-bold text-orange-900 text-sm">🔸 Guarnición Personalizada</span>
                                 <p className="text-xs md:text-sm font-bold text-orange-700 mt-1 truncate">{customSide}</p>
                               </div>
-                              <span className="px-2 py-1 bg-orange-200 text-orange-900 rounded-full text-xs font-bold flex-shrink-0 ml-2">
+                              <span className="px-2 py-1 bg-orange-200 text-orange-900 rounded-full text-xs font-bold shrink-0 ml-2">
                                 CUSTOM
                               </span>
                             </div>
@@ -1012,7 +1012,7 @@ const DailyOrders = ({ user }) => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {locations.map(location => (
-              <div key={location} className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-2 border-blue-200">
+              <div key={location} className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-2 border-blue-200">
                 <h3 className="font-bold text-gray-900 text-lg mb-2">{location}</h3>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Pedidos:</span>

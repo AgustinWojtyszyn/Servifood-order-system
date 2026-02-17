@@ -296,7 +296,7 @@ const AuditLogs = () => {
             </div>
           </div>
           <div className="flex flex-col md:flex-row md:items-center gap-3">
-            <div className="relative flex-1 min-w-[240px]">
+            <div className="relative flex-1 min-w-60">
               <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"

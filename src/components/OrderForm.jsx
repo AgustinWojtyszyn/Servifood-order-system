@@ -5,7 +5,7 @@ import { ordersService } from '../services/orders'
 import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2 } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
-import { Sound } from '../utils/sound'
+import { Sound } from '../utils/Sound'
 
 const ORDER_START_HOUR = 9  // 09:00 apertura
 const ORDER_CUTOFF_HOUR = 22 // 22:00 cierre

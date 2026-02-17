@@ -14,7 +14,7 @@ import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filt
 import ExcelJS from 'exceljs'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
-import { Sound } from '../utils/sound'
+import { Sound } from '../utils/Sound'
 
 const DailyOrders = ({ user, loading }) => {
   const emailLoadingRef = useRef(false)

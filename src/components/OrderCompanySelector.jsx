@@ -38,7 +38,7 @@ const OrderCompanySelector = ({ user, loading }) => {
               onClick={() => handleSelect(company.slug)}
               className="relative group text-left bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl hover:shadow-3xl overflow-hidden transition-all duration-200 hover:-translate-y-1.5 p-2 sm:p-3"
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${company.accent} opacity-10 group-hover:opacity-25 transition-opacity`} />
+              <div className={`absolute inset-0 bg-linear-to-br ${company.accent} opacity-10 group-hover:opacity-25 transition-opacity`} />
               <div className="p-6 sm:p-8 flex flex-col gap-5 relative z-10">
                 <div className="flex items-center gap-4">
                   <div className="p-5 rounded-2xl bg-white shadow-inner border-2 border-gray-100">
@@ -76,7 +76,7 @@ const OrderCompanySelector = ({ user, loading }) => {
         </div>
 
         <div className="bg-white/15 border-2 border-white/30 rounded-2xl p-4 sm:p-6 text-white shadow-2xl flex items-center gap-3">
-          <Sparkles className="h-6 w-6 flex-shrink-0 text-yellow-200" />
+          <Sparkles className="h-6 w-6 shrink-0 text-yellow-200" />
           <div className="space-y-1">
             <p className="text-lg font-bold">Configuraciones por empresa</p>
             <p className="text-sm text-white/90">

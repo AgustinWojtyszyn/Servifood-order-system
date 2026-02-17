@@ -62,9 +62,9 @@ const Tutorial = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden border-4 border-white/20">
+      <div className="bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden border-4 border-white/20">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-900 to-primary-800 p-6 text-white relative border-b-4 border-secondary-500">
+        <div className="bg-linear-to-r from-primary-900 to-primary-800 p-6 text-white relative border-b-4 border-secondary-500">
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 p-2 bg-white/90 text-gray-900 hover:bg-white rounded-lg transition-colors border border-gray-200 shadow-sm"

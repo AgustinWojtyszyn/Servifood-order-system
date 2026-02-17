@@ -149,7 +149,7 @@ const ResetPassword = () => {
 
   if (success) {
     return (
-      <div className="w-full min-h-[100dvh] flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+      <div className="w-full min-h-dvh flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
         <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center" style={{maxHeight: '98vh'}}>
           <div className="text-center bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-10 border-4 border-white/20 w-full">
             <div className="flex justify-center mb-4 sm:mb-6">
@@ -176,7 +176,7 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="w-full min-h-[100dvh] flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+    <div className="w-full min-h-dvh flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
       <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center" style={{maxHeight: '98vh'}}>
         <div className="text-center mb-2 sm:mb-6 pt-1 pb-1">
           <div className="flex justify-center mb-2 sm:mb-4">

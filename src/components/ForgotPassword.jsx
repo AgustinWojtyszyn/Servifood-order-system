@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { auth } from '../supabaseClient'
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
@@ -9,30 +9,59 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const inFlightRef = useRef(false)
+
+  const COOLDOWN_MS = 60 * 1000
+  const getCooldownKey = (value) => `pw_reset_last_${encodeURIComponent(value)}`
+  const getLastResetAt = (value) => {
+    try {
+      return Number(localStorage.getItem(getCooldownKey(value)) || 0)
+    } catch {
+      return 0
+    }
+  }
+  const setLastResetAt = (value, ts) => {
+    try {
+      localStorage.setItem(getCooldownKey(value), String(ts))
+    } catch {
+      // ignore storage errors
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (inFlightRef.current) return
+    inFlightRef.current = true
     setLoading(true)
     setError('')
-
     try {
-      const { error } = await auth.resetPassword(email)
+      const normalizedEmail = (email || '').trim().toLowerCase()
+      const last = normalizedEmail ? getLastResetAt(normalizedEmail) : 0
+      if (normalizedEmail && last && (Date.now() - last) < COOLDOWN_MS) {
+        setError('Error al enviar el correo de recuperación')
+        return
+      }
+
+      const { error } = await auth.resetPassword(normalizedEmail)
 
       if (error) {
-        setError(error.message)
-      } else {
-        setSuccess(true)
+        setError(error.message || 'Error al enviar el correo de recuperación')
+        return
       }
+
+      if (normalizedEmail) setLastResetAt(normalizedEmail, Date.now())
+      setSuccess(true)
     } catch (err) {
       setError('Error al enviar el correo de recuperación')
     } finally {
       setLoading(false)
+      inFlightRef.current = false
     }
   }
 
   if (success) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+      <div className="min-h-dvh flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
         <div className="max-w-md w-full">
           <div className="text-center bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-10 border-4 border-white/20">
             <div className="flex justify-center mb-4 sm:mb-6">
@@ -67,7 +96,7 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
+    <div className="min-h-dvh flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)'}}>
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-4 sm:mb-6">

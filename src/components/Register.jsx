@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle, Mail, AlertCircle } from 'lucide-react'
@@ -19,6 +19,7 @@ const Register = () => {
   const [success, setSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const navigate = useNavigate()
+  const inFlightRef = useRef(false)
 
   const handleChange = (e) => {
     setFormData({
@@ -56,15 +57,14 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (inFlightRef.current) return
+    inFlightRef.current = true
     setLoading(true)
     setError('')
 
-    if (!validateForm()) {
-      setLoading(false)
-      return
-    }
-
     try {
+      if (!validateForm()) return
+
       const { data, error } = await auth.signUp(formData.email, formData.password, {
         full_name: formData.fullName
       })
@@ -90,12 +90,13 @@ const Register = () => {
       setError(`Error al crear la cuenta: ${err.message || 'Error desconocido'}`)
     } finally {
       setLoading(false)
+      inFlightRef.current = false
     }
   }
 
   if (success) {
     return (
-      <div className="min-h-[100dvh] w-full min-w-0 overflow-x-hidden flex flex-col justify-center py-4 px-2 sm:py-8 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+      <div className="min-h-dvh w-full min-w-0 overflow-x-hidden flex flex-col justify-center py-4 px-2 sm:py-8 sm:px-6 lg:px-8" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
         <div className="w-full max-w-md mx-4 sm:mx-auto flex flex-col flex-1 justify-center" style={{paddingBottom: '2rem'}}>
           <div className="text-center bg-white rounded-3xl shadow-2xl p-10 border-4 border-white/20 mt-4 mb-4">
             <div className="flex justify-center mb-6">
@@ -115,7 +116,7 @@ const Register = () => {
             
             <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 mb-6">
               <div className="flex items-start">
-                <AlertCircle className="h-6 w-6 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+                <AlertCircle className="h-6 w-6 text-yellow-600 mt-0.5 mr-3 shrink-0" />
                 <div className="text-left">
                   <p className="text-sm font-bold text-yellow-800 mb-2">
                     ⚠️ Importante:
@@ -166,7 +167,7 @@ const Register = () => {
   }
 
   return (
-    <div className="w-full min-h-[100dvh] flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
+    <div className="w-full min-h-dvh flex flex-col justify-center items-center px-2 py-2 sm:py-4" style={{background: 'linear-gradient(to bottom right, #1a237e, #283593, #303f9f)', minHeight: '100dvh'}}>
       <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center" style={{maxHeight: '98vh'}}>
         <div className="text-center mb-2 sm:mb-6 pt-1 pb-1">
           <div className="flex justify-center mb-2 sm:mb-4">

@@ -57,7 +57,7 @@ export default function LandingPage() {
   }, [showIntro])
 
   return (
-    <div className="flex flex-col min-h-[100dvh] w-full min-w-0 overflow-x-hidden bg-gradient-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
+    <div className="flex flex-col min-h-dvh w-full min-w-0 overflow-x-hidden bg-linear-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
 
       {/* Intro cinematográfica */}
       {showIntro && (
@@ -140,7 +140,7 @@ export default function LandingPage() {
 
           <Link
             to="/register"
-            className="px-4 py-2 text-white font-bold rounded-xl bg-gradient-to-r from-[#ff9800] to-[#fb8c00] hover:from-[#fb8c00] hover:to-[#f57c00]"
+            className="px-4 py-2 text-white font-bold rounded-xl bg-linear-to-r from-[#ff9800] to-[#fb8c00] hover:from-[#fb8c00] hover:to-[#f57c00]"
           >
             Registrarse
           </Link>

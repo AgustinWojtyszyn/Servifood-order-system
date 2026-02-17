@@ -17,17 +17,15 @@ class AuthService {
 
       const sanitizedMetadata = sanitizeQuery(metadata)
 
-      const { data, error } = await supabaseService.withRetry(
-        () => supabase.auth.signUp({
-          email: email.toLowerCase().trim(),
-          password,
-          options: {
-            data: sanitizedMetadata,
-            emailRedirectTo: `${window.location.origin}/reset-password`
-          }
-        }),
-        'signUp'
-      )
+      // No retry: signUp no es idempotente y puede enviar múltiples emails
+      const { data, error } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(),
+        password,
+        options: {
+          data: sanitizedMetadata,
+          emailRedirectTo: `${window.location.origin}/reset-password`
+        }
+      })
 
       if (error) throw error
 
@@ -102,12 +100,10 @@ class AuthService {
         console.debug('[auth-recovery] resetPassword redirectTo', redirectTo)
       }
 
-      const { data, error } = await supabaseService.withRetry(
-        () => supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
-          redirectTo
-        }),
-        'resetPassword'
-      )
+      // No retry: resetPasswordForEmail no es idempotente y puede enviar múltiples emails
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+        redirectTo
+      })
 
       if (error) throw error
 
@@ -144,16 +140,23 @@ class AuthService {
     try {
       const sanitizedUpdates = sanitizeQuery(updates)
 
-      const { data, error } = await supabaseService.withRetry(
-        () => supabase.auth.updateUser({
-          email: sanitizedUpdates.email?.toLowerCase().trim(),
-          data: {
-            full_name: sanitizedUpdates.full_name,
-            ...sanitizedUpdates
-          }
-        }),
-        'updateProfile'
-      )
+      const updatePayload = {
+        data: {
+          full_name: sanitizedUpdates.full_name,
+          ...sanitizedUpdates
+        }
+      }
+      if (sanitizedUpdates.email) {
+        updatePayload.email = sanitizedUpdates.email.toLowerCase().trim()
+      }
+
+      // No retry cuando hay cambio de email: no es idempotente y puede disparar múltiples emails
+      const { data, error } = sanitizedUpdates.email
+        ? await supabase.auth.updateUser(updatePayload)
+        : await supabaseService.withRetry(
+            () => supabase.auth.updateUser(updatePayload),
+            'updateProfile'
+          )
 
       if (error) throw error
 

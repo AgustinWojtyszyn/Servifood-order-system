@@ -32,7 +32,7 @@ const SplashScreen = ({ onComplete }) => {
 
   return (
     <div 
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 transition-opacity duration-500 ${
         fadeOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
@@ -58,14 +58,14 @@ const SplashScreen = ({ onComplete }) => {
         {/* Barra de progreso */}
         <div className="relative bg-white/20 rounded-full h-2.5 overflow-hidden backdrop-blur-sm shadow-inner">
           <div 
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out"
+            className="absolute top-0 left-0 h-full bg-linear-to-r from-blue-400 via-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out"
             style={{ 
               width: `${progress}%`,
               boxShadow: '0 0 20px rgba(59, 130, 246, 0.6)'
             }}
           >
             {/* Efecto de brillo en la barra */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+            <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
           </div>
         </div>
 

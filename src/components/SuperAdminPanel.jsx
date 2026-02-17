@@ -199,7 +199,7 @@ export default function SuperAdminPanel({ user, loading }) {
     <RequireUser user={user} loading={loading}>
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-8 text-white shadow-2xl">
+      <div className="bg-linear-to-r from-purple-600 to-purple-800 rounded-2xl p-8 text-white shadow-2xl">
         <div className="flex items-center gap-4">
           <div className="p-4 bg-white/20 rounded-full">
             <Crown className="h-12 w-12" />
@@ -388,7 +388,7 @@ export default function SuperAdminPanel({ user, loading }) {
       {/* Warning Footer */}
       <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
+          <AlertTriangle className="h-6 w-6 text-yellow-600 shrink-0 mt-1" />
           <div>
             <h3 className="font-bold text-yellow-900 mb-2">⚠️ Advertencia Importante</h3>
             <ul className="text-yellow-800 space-y-1 text-sm">
