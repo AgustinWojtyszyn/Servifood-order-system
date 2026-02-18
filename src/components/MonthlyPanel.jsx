@@ -79,6 +79,105 @@ function DateRangePicker({ value, onChange }) {
   )
 }
 
+const toDisplayString = (value) => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return String(value)
+    }
+  }
+  return String(value)
+}
+
+const normalizeLabel = (value = '') => {
+  const base = toDisplayString(value)
+  if (!base) return ''
+  return base
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+const classifySideItem = (label = '') => {
+  const normalized = normalizeLabel(label)
+  if (!normalized) return 'guarnicion'
+  const tokens = normalized.split(' ').filter(Boolean)
+  const matches = (keyword) => {
+    if (keyword.includes(' ')) return normalized.includes(keyword)
+    return tokens.includes(keyword)
+  }
+  const beverageKeywords = [
+    'agua',
+    'coca',
+    'coca cola',
+    'cola',
+    'sprite',
+    'fanta',
+    'soda',
+    'jugo',
+    'gaseosa',
+    'pepsi',
+    'seven',
+    '7up',
+    'seven up',
+    'limonada',
+    'te',
+    'mate',
+    'cafe'
+  ]
+  const dessertKeywords = [
+    'flan',
+    'budin',
+    'gelatina',
+    'mousse',
+    'helado',
+    'postre',
+    'torta',
+    'brownie',
+    'alfajor'
+  ]
+  if (beverageKeywords.some(matches)) return 'bebida'
+  if (dessertKeywords.some(matches)) return 'postre'
+  return 'guarnicion'
+}
+
+const incrementCount = (map, key, delta = 1) => {
+  map[key] = (map[key] || 0) + delta
+}
+
+const createSideBuckets = () => ({
+  tiposGuarniciones: {},
+  tiposBebidas: {},
+  tiposPostres: {},
+  totalGuarniciones: 0,
+  totalBebidas: 0,
+  totalPostres: 0
+})
+
+const addSideItem = (label, buckets) => {
+  if (!label) return
+  const kind = classifySideItem(label)
+  if (kind === 'bebida') {
+    buckets.totalBebidas += 1
+    incrementCount(buckets.tiposBebidas, label)
+    return
+  }
+  if (kind === 'postre') {
+    buckets.totalPostres += 1
+    incrementCount(buckets.tiposPostres, label)
+    return
+  }
+  buckets.totalGuarniciones += 1
+  incrementCount(buckets.tiposGuarniciones, label)
+}
+
 
 const MonthlyPanel = ({ user, loading }) => {
   // Estados que cuentan para métricas (incluir preparaciones listas)
@@ -236,25 +335,9 @@ const MonthlyPanel = ({ user, loading }) => {
         const pedidos = grouped[empresa]
         let totalMenus = 0
         let tiposMenus = {}
-        let totalGuarniciones = 0
-        let tiposGuarniciones = {}
         let totalOpciones = 0
         let tiposOpciones = {}
-        let totalBebidas = 0
-        let tiposBebidas = {}
-        const isBebida = (text = '') => {
-          const t = (text || '').toLowerCase()
-          return ['bebida', 'agua', 'jugo', 'coca', 'gaseosa', 'sprite', 'fanta', 'pepsi', 'soda'].some(k => t.includes(k))
-        }
-        const norm = (v) => {
-          if (v === null || v === undefined) return ''
-          if (typeof v === 'string') return v.trim()
-          if (typeof v === 'number' || typeof v === 'boolean') return String(v)
-          if (typeof v === 'object') {
-            try { return JSON.stringify(v) } catch { return String(v) }
-          }
-          return String(v)
-        }
+        const sideBuckets = createSideBuckets()
 
         pedidos.forEach(p => {
           // Procesar items (menús principales y opciones)
@@ -289,27 +372,14 @@ const MonthlyPanel = ({ user, loading }) => {
           }
           customResponses.forEach(resp => {
             // Si hay respuesta de guarnición
-            const baseResp = norm(resp.response)
-            if (baseResp) {
-              totalGuarniciones++
-              const tipo = baseResp
-              tiposGuarniciones[tipo] = (tiposGuarniciones[tipo] || 0) + 1
-              if (isBebida(tipo)) {
-                totalBebidas++
-                tiposBebidas[tipo] = (tiposBebidas[tipo] || 0) + 1
-              }
-            }
+            const baseResp = toDisplayString(resp.response)
+            if (baseResp) addSideItem(baseResp, sideBuckets)
             // Si hay opciones (array)
             if (Array.isArray(resp.options)) {
               resp.options.forEach(opt => {
-                const tipo = norm(opt)
+                const tipo = toDisplayString(opt)
                 if (!tipo) return
-                totalGuarniciones++
-                tiposGuarniciones[tipo] = (tiposGuarniciones[tipo] || 0) + 1
-                if (isBebida(tipo)) {
-                  totalBebidas++
-                  tiposBebidas[tipo] = (tiposBebidas[tipo] || 0) + 1
-                }
+                addSideItem(tipo, sideBuckets)
               })
             }
           })
@@ -319,12 +389,14 @@ const MonthlyPanel = ({ user, loading }) => {
           cantidadPedidos: pedidos.length,
           totalMenus,
           totalOpciones,
-          totalGuarniciones,
-          totalBebidas,
+          totalGuarniciones: sideBuckets.totalGuarniciones,
+          totalBebidas: sideBuckets.totalBebidas,
+          totalPostres: sideBuckets.totalPostres,
           tiposMenus,
           tiposOpciones,
-          tiposGuarniciones,
-          tiposBebidas
+          tiposGuarniciones: sideBuckets.tiposGuarniciones,
+          tiposBebidas: sideBuckets.tiposBebidas,
+          tiposPostres: sideBuckets.tiposPostres
         }
       })
 
@@ -355,30 +427,34 @@ const MonthlyPanel = ({ user, loading }) => {
             return fmt.format(new Date(o.created_at))
           } catch { return null }
         }
-        const norm = (v) => {
-          if (v === null || v === undefined) return ''
-          if (typeof v === 'string') return v.trim()
-          if (typeof v === 'number' || typeof v === 'boolean') return String(v)
-          if (typeof v === 'object') {
-            try { return JSON.stringify(v) } catch { return String(v) }
-          }
-          return String(v)
-        }
         orders.forEach(o => {
           const day = bucketForOrder(o)
           if (!day) return
           if (!byDay[day]) {
+            const sideBuckets = createSideBuckets()
             byDay[day] = {
               date: day,
               count: 0,
               menus_principales: 0,
               opciones: {},
               total_opciones: 0,
-              tipos_guarniciones: {},
-              total_guarniciones: 0
+              tipos_guarniciones: sideBuckets.tiposGuarniciones,
+              total_guarniciones: 0,
+              tipos_bebidas: sideBuckets.tiposBebidas,
+              total_bebidas: 0,
+              tipos_postres: sideBuckets.tiposPostres,
+              total_postres: 0,
+              sideBuckets
             }
           }
           const row = byDay[day]
+          const addSide = (value) => {
+            if (!value) return
+            addSideItem(value, row.sideBuckets)
+            row.total_guarniciones = row.sideBuckets.totalGuarniciones
+            row.total_bebidas = row.sideBuckets.totalBebidas
+            row.total_postres = row.sideBuckets.totalPostres
+          }
           row.count += 1
           let items = []
           if (Array.isArray(o.items)) items = o.items
@@ -399,29 +475,32 @@ const MonthlyPanel = ({ user, loading }) => {
           if (Array.isArray(o.custom_responses)) custom = o.custom_responses
           else if (typeof o.custom_responses === 'string') { try { custom = JSON.parse(o.custom_responses) } catch {} }
           custom.forEach(cr => {
-            const r = norm(cr?.response)
-            if (r) {
-              row.tipos_guarniciones[r] = (row.tipos_guarniciones[r] || 0) + 1
-              row.total_guarniciones += 1
-            }
+            const r = toDisplayString(cr?.response)
+            if (r) addSide(r)
             if (Array.isArray(cr?.options)) {
               cr.options.forEach(opt => {
-                const v = norm(opt)
+                const v = toDisplayString(opt)
                 if (!v) return
-                row.tipos_guarniciones[v] = (row.tipos_guarniciones[v] || 0) + 1
-                row.total_guarniciones += 1
+                addSide(v)
               })
             }
           })
         })
-        const daily_breakdown = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
+        const daily_breakdown = Object.values(byDay)
+          .map(({ sideBuckets, ...rest }) => {
+            void sideBuckets
+            return rest
+          })
+          .sort((a, b) => a.date.localeCompare(b.date))
         const range_totals = daily_breakdown.reduce((acc, d) => {
           acc.count += d.count
           acc.menus_principales += d.menus_principales || 0
           acc.total_opciones += d.total_opciones || 0
           acc.total_guarniciones += d.total_guarniciones || 0
+          acc.total_bebidas += d.total_bebidas || 0
+          acc.total_postres += d.total_postres || 0
           return acc
-        }, { count: 0, menus_principales: 0, total_opciones: 0, total_guarniciones: 0 })
+        }, { count: 0, menus_principales: 0, total_opciones: 0, total_guarniciones: 0, total_bebidas: 0, total_postres: 0 })
         finalBreakdown = { daily_breakdown, range_totals }
         pushLog('breakdown-fallback', { days: daily_breakdown.length, total: range_totals.count })
       }
@@ -550,6 +629,9 @@ const MonthlyPanel = ({ user, loading }) => {
       const tiposBebidas = Object.entries(e.tiposBebidas || {})
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
+      const tiposPostres = Object.entries(e.tiposPostres || {})
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
 
       rows.push({
         Empresa: e.empresa,
@@ -563,54 +645,59 @@ const MonthlyPanel = ({ user, loading }) => {
         'OPCIÓN 6': opciones['OPCIÓN 6'] || 0,
         'Guarniciones': tiposGuarniciones || '—',
         'Bebidas': tiposBebidas || '—',
+        'Postres': tiposPostres || '—',
         'Total menús': e.totalMenus - e.totalOpciones,
         'Total opciones': e.totalOpciones,
         'Total guarniciones': e.totalGuarniciones,
-        'Total bebidas': e.totalBebidas || 0
+        'Total bebidas': e.totalBebidas || 0,
+        'Total postres': e.totalPostres || 0
       })
     })
     return rows
   }
 
   const buildDailyRows = (daily, byDay) => {
-    const rows = daily.daily_breakdown.map(d => {
-      const guarnStr = Object.entries(d.tipos_guarniciones || {})
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
-      let bebidasStr = '—'
-      let totalBebidas = 0
+    const rows = []
+    const rangeBuckets = createSideBuckets()
+
+    daily.daily_breakdown.forEach(d => {
       const dayOrders = byDay?.[d.date] || []
+      const dayBuckets = createSideBuckets()
+
       if (dayOrders.length) {
-        const tiposBebidas = {}
-        const isBebida = (text = '') => {
-          const t = (text || '').toLowerCase()
-          return ['bebida', 'agua', 'jugo', 'coca', 'gaseosa', 'sprite', 'fanta', 'pepsi', 'soda'].some(k => t.includes(k))
-        }
         dayOrders.forEach(o => {
           let custom = []
           if (Array.isArray(o.custom_responses)) custom = o.custom_responses
           else if (typeof o.custom_responses === 'string') { try { custom = JSON.parse(o.custom_responses) } catch {} }
           custom.forEach(cr => {
-            const resp = cr?.response || ''
-            if (isBebida(resp)) {
-              const key = resp.trim() || 'Bebida'
-              tiposBebidas[key] = (tiposBebidas[key] || 0) + 1
-              totalBebidas++
-            }
+            const resp = toDisplayString(cr?.response)
+            if (resp) addSideItem(resp, dayBuckets)
             if (Array.isArray(cr?.options)) {
               cr.options.forEach(opt => {
-                if (isBebida(opt)) {
-                  const key = (opt || '').trim() || 'Bebida'
-                  tiposBebidas[key] = (tiposBebidas[key] || 0) + 1
-                  totalBebidas++
-                }
+                const value = toDisplayString(opt)
+                if (!value) return
+                addSideItem(value, dayBuckets)
               })
             }
           })
         })
-        bebidasStr = Object.entries(tiposBebidas).map(([k, v]) => `${k}: ${v}`).join('; ') || '—'
       }
-      return {
+
+      rangeBuckets.totalGuarniciones += dayBuckets.totalGuarniciones
+      rangeBuckets.totalBebidas += dayBuckets.totalBebidas
+      rangeBuckets.totalPostres += dayBuckets.totalPostres
+
+      const guarnStr = Object.entries(dayBuckets.tiposGuarniciones)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+      const bebidasStr = Object.entries(dayBuckets.tiposBebidas)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+      const postresStr = Object.entries(dayBuckets.tiposPostres)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ')
+
+      rows.push({
         Fecha: d.date,
         Pedidos: d.count,
         'Menús principales': d.menus_principales || 0,
@@ -622,11 +709,14 @@ const MonthlyPanel = ({ user, loading }) => {
         'OPCIÓN 6': d.opciones?.['OPCIÓN 6'] || 0,
         'Total opciones': d.total_opciones || 0,
         'Guarniciones (tipo: cantidad)': guarnStr || '—',
-        'Total guarniciones': d.total_guarniciones || 0,
-        'Bebidas (tipo: cantidad)': bebidasStr,
-        'Total bebidas': totalBebidas
-      }
+        'Total guarniciones': dayBuckets.totalGuarniciones,
+        'Bebidas (tipo: cantidad)': bebidasStr || '—',
+        'Total bebidas': dayBuckets.totalBebidas,
+        'Postres (tipo: cantidad)': postresStr || '—',
+        'Total postres': dayBuckets.totalPostres
+      })
     })
+
     rows.push({
       Fecha: 'Totales',
       Pedidos: daily.range_totals.count,
@@ -639,9 +729,11 @@ const MonthlyPanel = ({ user, loading }) => {
       'OPCIÓN 6': '',
       'Total opciones': daily.range_totals.total_opciones,
       'Guarniciones (tipo: cantidad)': '',
-      'Total guarniciones': daily.range_totals.total_guarniciones,
+      'Total guarniciones': rangeBuckets.totalGuarniciones,
       'Bebidas (tipo: cantidad)': '',
-      'Total bebidas': ''
+      'Total bebidas': rangeBuckets.totalBebidas,
+      'Postres (tipo: cantidad)': '',
+      'Total postres': rangeBuckets.totalPostres
     })
     return rows
   }
@@ -743,7 +835,7 @@ const MonthlyPanel = ({ user, loading }) => {
             <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
             <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
             <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
-            <li>Haz clic en una <b>barra del gráfico</b> para ver el detalle completo de ese día (totales, desglose por empresa/menús/opciones/guarniciones y lista de pedidos). Usa “Cerrar detalle” para volver.</li>
+            <li>Haz clic en una <b>barra del gráfico</b> para ver el detalle completo de ese día (totales, desglose por empresa/menús/opciones/guarniciones/bebidas/postres y lista de pedidos). Usa “Cerrar detalle” para volver.</li>
             <li>El <b>desglose diario en tabla</b> se muestra solo cuando presionas “Ver tabla diaria”, para evitar scroll en rangos grandes.</li>
           </ol>
         </div>
@@ -954,7 +1046,7 @@ const MonthlyPanel = ({ user, loading }) => {
           )}
 
           {/* Tarjetas de métricas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full print-no-break print-full-width">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4 w-full print-no-break print-full-width">
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
               <div className="text-center">
                 <img
@@ -1034,6 +1126,46 @@ const MonthlyPanel = ({ user, loading }) => {
                 <p className="text-2xl md:text-3xl font-bold text-purple-600">{metrics.empresas.reduce((acc, e) => acc + e.totalGuarniciones, 0)}</p>
               </div>
             </div>
+            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-sky-200 w-full">
+              <div className="text-center">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6 md:h-8 md:w-8 text-sky-600 mx-auto mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M7 3h7a3 3 0 0 1 3 3v8a5 5 0 0 1-5 5H7z" />
+                  <path d="M7 3v16" />
+                  <path d="M7 10h10" />
+                </svg>
+                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Bebidas</p>
+                <p className="text-2xl md:text-3xl font-bold text-sky-600">{metrics.empresas.reduce((acc, e) => acc + (e.totalBebidas || 0), 0)}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-pink-200 w-full">
+              <div className="text-center">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6 md:h-8 md:w-8 text-pink-600 mx-auto mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 14h16" />
+                  <path d="M6 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+                  <path d="M8 18h8" />
+                </svg>
+                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Postres</p>
+                <p className="text-2xl md:text-3xl font-bold text-pink-600">{metrics.empresas.reduce((acc, e) => acc + (e.totalPostres || 0), 0)}</p>
+              </div>
+            </div>
           </div>
           <div className="mb-2 font-semibold text-center">
             Mostrando los pedidos del <span className="font-bold">{dateRange.start || '...'}</span> al <span className="font-bold">{dateRange.end || '...'}</span>
@@ -1050,9 +1182,13 @@ const MonthlyPanel = ({ user, loading }) => {
                     <th className="px-4 py-2">Menús principales</th>
                     <th className="px-4 py-2">Opciones</th>
                     <th className="px-4 py-2">Guarniciones</th>
+                    <th className="px-4 py-2">Bebidas</th>
+                    <th className="px-4 py-2">Postres</th>
                     <th className="px-4 py-2">Total menús</th>
                     <th className="px-4 py-2">Total opciones</th>
                     <th className="px-4 py-2">Total guarniciones</th>
+                    <th className="px-4 py-2">Total bebidas</th>
+                    <th className="px-4 py-2">Total postres</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1063,9 +1199,13 @@ const MonthlyPanel = ({ user, loading }) => {
                       <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '').map(([k, v]) => (<span key={k} className="inline-block bg-blue-100 text-blue-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
                       <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => /^OPC(ION|IÓN)\s*\d+/i.test(nombre)).map(([k, v]) => (<span key={k} className="inline-block bg-yellow-100 text-yellow-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
                       <td className="px-4 py-2">{Object.entries(e.tiposGuarniciones).map(([k, v]) => (<span key={k} className="inline-block bg-purple-100 text-purple-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                      <td className="px-4 py-2">{Object.entries(e.tiposBebidas || {}).map(([k, v]) => (<span key={k} className="inline-block bg-sky-100 text-sky-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                      <td className="px-4 py-2">{Object.entries(e.tiposPostres || {}).map(([k, v]) => (<span key={k} className="inline-block bg-pink-100 text-pink-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
                       <td className="px-4 py-2 text-center">{e.totalMenus - e.totalOpciones}</td>
                       <td className="px-4 py-2 text-center">{e.totalOpciones}</td>
                       <td className="px-4 py-2 text-center">{e.totalGuarniciones}</td>
+                      <td className="px-4 py-2 text-center">{e.totalBebidas || 0}</td>
+                      <td className="px-4 py-2 text-center">{e.totalPostres || 0}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1093,11 +1233,11 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
 
   const isOption = (name = '') => /^OPC(ION|IÓN)\s*\d+/i.test(name.trim())
 
-  let totals = { pedidos: orders.length, menus: 0, opciones: 0, guarniciones: 0 }
+  let totals = { pedidos: orders.length, menus: 0, opciones: 0 }
+  const sideBuckets = createSideBuckets()
   const byEmpresa = {}
   const byMenu = {}
   const byOpcion = {}
-  const byGuarnicion = {}
 
   orders.forEach(order => {
     const empresa = order.location || 'Sin ubicación'
@@ -1128,28 +1268,26 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
       try { custom = JSON.parse(order.custom_responses) } catch {}
     }
     custom.forEach(cr => {
-      const val = (cr?.response || '').trim()
-      if (val) {
-        totals.guarniciones += 1
-        byGuarnicion[val] = (byGuarnicion[val] || 0) + 1
-      }
+      const val = toDisplayString(cr?.response)
+      if (val) addSideItem(val, sideBuckets)
       if (Array.isArray(cr?.options)) {
         cr.options.forEach(opt => {
-          const o = (opt || '').trim()
+          const o = toDisplayString(opt)
           if (!o) return
-          totals.guarniciones += 1
-          byGuarnicion[o] = (byGuarnicion[o] || 0) + 1
+          addSideItem(o, sideBuckets)
         })
       }
     })
   })
 
-  const summary = dailyBreakdown || {
+  const summary = {
     date,
-    count: totals.pedidos,
-    menus_principales: totals.menus,
-    total_opciones: totals.opciones,
-    total_guarniciones: totals.guarniciones
+    count: dailyBreakdown?.count ?? totals.pedidos,
+    menus_principales: dailyBreakdown?.menus_principales ?? totals.menus,
+    total_opciones: dailyBreakdown?.total_opciones ?? totals.opciones,
+    total_guarniciones: sideBuckets.totalGuarniciones,
+    total_bebidas: sideBuckets.totalBebidas,
+    total_postres: sideBuckets.totalPostres
   }
 
   return (
@@ -1167,11 +1305,13 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
         <Stat label="Total pedidos" value={summary.count ?? totals.pedidos} />
         <Stat label="Total menús" value={summary.menus_principales ?? totals.menus} />
         <Stat label="Total opciones" value={summary.total_opciones ?? totals.opciones} />
-        <Stat label="Total guarniciones" value={summary.total_guarniciones ?? totals.guarniciones} />
+        <Stat label="Total guarniciones" value={summary.total_guarniciones} />
+        <Stat label="Total bebidas" value={summary.total_bebidas} />
+        <Stat label="Total postres" value={summary.total_postres} />
       </div>
 
       <Section title="Desglose por empresa">
@@ -1187,7 +1327,15 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
       </Section>
 
       <Section title="Guarniciones">
-        <ChipList data={byGuarnicion} />
+        <ChipList data={sideBuckets.tiposGuarniciones} />
+      </Section>
+
+      <Section title="Bebidas">
+        <ChipList data={sideBuckets.tiposBebidas} />
+      </Section>
+
+      <Section title="Postres">
+        <ChipList data={sideBuckets.tiposPostres} />
       </Section>
 
       <Section title="Pedidos del día">
