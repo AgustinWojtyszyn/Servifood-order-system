@@ -141,7 +141,9 @@ const classifySideItem = (label = '') => {
     'postre',
     'torta',
     'brownie',
-    'alfajor'
+    'alfajor',
+    'fruta',
+    'frutas'
   ]
   if (beverageKeywords.some(matches)) return 'bebida'
   if (dessertKeywords.some(matches)) return 'postre'
@@ -186,14 +188,14 @@ const MonthlyPanel = ({ user, loading }) => {
   const [dateRange, setDateRange] = useState({ start: '', end: '' }) // rango aplicado
   const [metricsLoading, setMetricsLoading] = useState(false)
   const [metrics, setMetrics] = useState(null)
-  const [error, setError] = useState(null)
+  const [, setError] = useState(null)
+  const [empresaFilter, setEmpresaFilter] = useState('ALL')
   const [dailyData, setDailyData] = useState(null)
   const [ordersByDay, setOrdersByDay] = useState({})
   const [selectedDate, setSelectedDate] = useState(null)
   const [showDailyTable, setShowDailyTable] = useState(false)
-  const [debugLogs, setDebugLogs] = useState([])
+  const [, setDebugLogs] = useState([])
   const [debugEnabled, setDebugEnabled] = useState(true)
-  const [showDebug, setShowDebug] = useState(true)
   const fetchId = useRef(0)
   const manualFetchRef = useRef(false)
   const navigate = useNavigate()
@@ -227,9 +229,10 @@ const MonthlyPanel = ({ user, loading }) => {
       const params = new URLSearchParams(window.location.search)
       if (params.get('debug') === '1') {
         setDebugEnabled(true)
-        setShowDebug(true)
       }
-    } catch {}
+    } catch (err) {
+      void err
+    }
   }, [])
 
   // Sync logs from window store into state so getDailyBreakdown logs are visible
@@ -347,7 +350,9 @@ const MonthlyPanel = ({ user, loading }) => {
           } else if (typeof p.items === 'string') {
             try {
               items = JSON.parse(p.items)
-            } catch {}
+            } catch (err) {
+              void err
+            }
           }
           items.forEach(item => {
             totalMenus += item.quantity || 1
@@ -368,7 +373,9 @@ const MonthlyPanel = ({ user, loading }) => {
           } else if (typeof p.custom_responses === 'string') {
             try {
               customResponses = JSON.parse(p.custom_responses)
-            } catch {}
+            } catch (err) {
+              void err
+            }
           }
           customResponses.forEach(resp => {
             // Si hay respuesta de guarnición
@@ -388,6 +395,8 @@ const MonthlyPanel = ({ user, loading }) => {
           empresa,
           cantidadPedidos: pedidos.length,
           totalMenus,
+          totalMenusPrincipales: totalMenus - totalOpciones,
+          totalMenusTotal: totalMenus,
           totalOpciones,
           totalGuarniciones: sideBuckets.totalGuarniciones,
           totalBebidas: sideBuckets.totalBebidas,
@@ -458,7 +467,13 @@ const MonthlyPanel = ({ user, loading }) => {
           row.count += 1
           let items = []
           if (Array.isArray(o.items)) items = o.items
-          else if (typeof o.items === 'string') { try { items = JSON.parse(o.items) } catch {} }
+          else if (typeof o.items === 'string') {
+            try {
+              items = JSON.parse(o.items)
+            } catch (err) {
+              void err
+            }
+          }
           items.forEach(it => {
             const qty = it?.quantity || 1
             const name = (it?.name || '').trim()
@@ -473,7 +488,13 @@ const MonthlyPanel = ({ user, loading }) => {
           })
           let custom = []
           if (Array.isArray(o.custom_responses)) custom = o.custom_responses
-          else if (typeof o.custom_responses === 'string') { try { custom = JSON.parse(o.custom_responses) } catch {} }
+          else if (typeof o.custom_responses === 'string') {
+            try {
+              custom = JSON.parse(o.custom_responses)
+            } catch (err) {
+              void err
+            }
+          }
           custom.forEach(cr => {
             const r = toDisplayString(cr?.response)
             if (r) addSide(r)
@@ -560,7 +581,10 @@ const MonthlyPanel = ({ user, loading }) => {
   const handleExportExcel = async () => {
     if (!metrics || !metrics.empresas) return
     // Exportación robusta: separar menús principales y opciones, y mostrar cantidades claras
-    const rows = buildSummaryRows(metrics)
+    const empresasForExport = empresaFilter === 'ALL'
+      ? metrics.empresas
+      : metrics.empresas.filter(e => e.empresa === empresaFilter)
+    const rows = buildSummaryRows(metrics, empresasForExport)
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('Resumen')
     if (rows.length > 0) {
@@ -588,7 +612,10 @@ const MonthlyPanel = ({ user, loading }) => {
   const handleExportAllExcel = async () => {
     if (!metrics || !metrics.empresas) return
     const wb = new ExcelJS.Workbook()
-    const summaryRows = buildSummaryRows(metrics)
+    const empresasForExport = empresaFilter === 'ALL'
+      ? metrics.empresas
+      : metrics.empresas.filter(e => e.empresa === empresaFilter)
+    const summaryRows = buildSummaryRows(metrics, empresasForExport)
     const wsSummary = wb.addWorksheet('Resumen')
     if (summaryRows.length > 0) {
       wsSummary.columns = Object.keys(summaryRows[0]).map(k => ({ header: k, key: k, width: 20 }))
@@ -606,12 +633,13 @@ const MonthlyPanel = ({ user, loading }) => {
     await downloadWorkbook(wb, fileName)
   }
 
-  const buildSummaryRows = (metricsData) => {
+  const buildSummaryRows = (metricsData, empresasOverride) => {
     const rows = []
-    metricsData.empresas.forEach(e => {
+    const empresas = empresasOverride || metricsData?.empresas || []
+    empresas.forEach(e => {
       const tiposMenusPrincipales = Object.entries(e.tiposMenus)
         .filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '')
-        .reduce((acc, [_, v]) => acc + v, 0)
+        .reduce((acc, [, v]) => acc + v, 0)
 
       const opciones = {}
       for (let i = 1; i <= 6; i++) {
@@ -646,8 +674,9 @@ const MonthlyPanel = ({ user, loading }) => {
         'Guarniciones': tiposGuarniciones || '—',
         'Bebidas': tiposBebidas || '—',
         'Postres': tiposPostres || '—',
-        'Total menús': e.totalMenus - e.totalOpciones,
+        'Total menús principales': e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones),
         'Total opciones': e.totalOpciones,
+        'Total menús (total)': e.totalMenusTotal ?? e.totalMenus,
         'Total guarniciones': e.totalGuarniciones,
         'Total bebidas': e.totalBebidas || 0,
         'Total postres': e.totalPostres || 0
@@ -668,7 +697,13 @@ const MonthlyPanel = ({ user, loading }) => {
         dayOrders.forEach(o => {
           let custom = []
           if (Array.isArray(o.custom_responses)) custom = o.custom_responses
-          else if (typeof o.custom_responses === 'string') { try { custom = JSON.parse(o.custom_responses) } catch {} }
+          else if (typeof o.custom_responses === 'string') {
+            try {
+              custom = JSON.parse(o.custom_responses)
+            } catch (err) {
+              void err
+            }
+          }
           custom.forEach(cr => {
             const resp = toDisplayString(cr?.response)
             if (resp) addSideItem(resp, dayBuckets)
@@ -772,6 +807,30 @@ const MonthlyPanel = ({ user, loading }) => {
     }
   }
 
+  const empresasAll = metrics?.empresas || []
+  const empresasForView = empresaFilter === 'ALL'
+    ? empresasAll
+    : empresasAll.filter(e => e.empresa === empresaFilter)
+  const empresasForDropdown = [...empresasAll].sort((a, b) => (a.empresa || '').localeCompare(b.empresa || ''))
+  const totalsForView = empresasForView.reduce((acc, e) => {
+    acc.pedidos += e.cantidadPedidos || 0
+    acc.menusPrincipales += e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones)
+    acc.opciones += e.totalOpciones || 0
+    acc.menusTotal += e.totalMenusTotal ?? e.totalMenus
+    acc.guarniciones += e.totalGuarniciones || 0
+    acc.bebidas += e.totalBebidas || 0
+    acc.postres += e.totalPostres || 0
+    return acc
+  }, {
+    pedidos: 0,
+    menusPrincipales: 0,
+    opciones: 0,
+    menusTotal: 0,
+    guarniciones: 0,
+    bebidas: 0,
+    postres: 0
+  })
+
   return (
     <RequireUser user={user} loading={loading}>
     <div
@@ -873,35 +932,6 @@ const MonthlyPanel = ({ user, loading }) => {
         </div>
       </div>
 
-      {/* Panel de logs (solo si debug=1 en query) */}
-      {debugEnabled && (
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 md:p-4 shadow mb-4 print-hide">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold text-amber-900">Logs de Panel Mensual</p>
-              <p className="text-xs text-amber-800">Se almacenan en memoria y en window.__monthlyPanelLogs</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowDebug(prev => !prev)}
-              className="px-3 py-1 text-xs font-bold rounded bg-amber-600 text-white hover:bg-amber-700"
-            >
-              {showDebug ? 'Ocultar' : 'Ver logs'}
-            </button>
-          </div>
-          {showDebug && (
-            <div className="mt-3 max-h-64 overflow-auto font-mono text-xs bg-white border border-amber-200 rounded p-2 space-y-1">
-              {debugLogs.length === 0 && <div className="text-amber-700">Sin logs aún</div>}
-              {debugLogs.map((l, idx) => (
-                <div key={`${l.ts}-${idx}`} className="text-amber-900">
-                  <span className="font-semibold">{l.ts}</span> · <span className="font-bold">{l.label}</span> · {JSON.stringify(l.data)}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Exportar a Excel */}
       {metrics && (
         <div className="flex justify-end mb-2 flex-wrap gap-2">
@@ -963,7 +993,7 @@ const MonthlyPanel = ({ user, loading }) => {
               {dailyData.daily_breakdown.length} días en el rango seleccionado.
             </p>
             <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-1 print-unclamp print-full-width">
-                {dailyData.daily_breakdown.map((d, idx) => {
+                {dailyData.daily_breakdown.map(d => {
                   const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
                   const height = `${heightPx}px`
                   const color = palette[0]
@@ -1055,7 +1085,7 @@ const MonthlyPanel = ({ user, loading }) => {
                   className="h-8 w-8 mx-auto mb-2 object-contain"
                 />
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Pedidos</p>
-                <p className="text-2xl md:text-3xl font-bold text-blue-600">{metrics.totalPedidos}</p>
+                <p className="text-2xl md:text-3xl font-bold text-blue-600">{totalsForView.pedidos}</p>
               </div>
             </div>
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-green-200 w-full">
@@ -1087,8 +1117,8 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M19.8 6c0-.6 1-.6 1 0" />
                   <path d="M19.8 15.5c0 .8.8 1.5 1.5 1.5" />
                 </svg>
-                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Menús</p>
-                <p className="text-2xl md:text-3xl font-bold text-green-600">{metrics.empresas.reduce((acc, e) => acc + (e.totalMenus - e.totalOpciones), 0)}</p>
+                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Menús Principales</p>
+                <p className="text-2xl md:text-3xl font-bold text-green-600">{totalsForView.menusPrincipales}</p>
               </div>
             </div>
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-yellow-200 w-full">
@@ -1099,7 +1129,7 @@ const MonthlyPanel = ({ user, loading }) => {
                   className="h-8 w-8 mx-auto mb-2 object-contain"
                 />
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Opciones</p>
-                <p className="text-2xl md:text-3xl font-bold text-yellow-600">{metrics.empresas.reduce((acc, e) => acc + e.totalOpciones, 0)}</p>
+                <p className="text-2xl md:text-3xl font-bold text-yellow-600">{totalsForView.opciones}</p>
               </div>
             </div>
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-purple-200 w-full">
@@ -1123,7 +1153,7 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M9 14h6" />
                 </svg>
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Guarniciones</p>
-                <p className="text-2xl md:text-3xl font-bold text-purple-600">{metrics.empresas.reduce((acc, e) => acc + e.totalGuarniciones, 0)}</p>
+                <p className="text-2xl md:text-3xl font-bold text-purple-600">{totalsForView.guarniciones}</p>
               </div>
             </div>
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-sky-200 w-full">
@@ -1143,7 +1173,7 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M7 10h10" />
                 </svg>
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Bebidas</p>
-                <p className="text-2xl md:text-3xl font-bold text-sky-600">{metrics.empresas.reduce((acc, e) => acc + (e.totalBebidas || 0), 0)}</p>
+                <p className="text-2xl md:text-3xl font-bold text-sky-600">{totalsForView.bebidas}</p>
               </div>
             </div>
             <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-pink-200 w-full">
@@ -1163,17 +1193,33 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M8 18h8" />
                 </svg>
                 <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Postres</p>
-                <p className="text-2xl md:text-3xl font-bold text-pink-600">{metrics.empresas.reduce((acc, e) => acc + (e.totalPostres || 0), 0)}</p>
+                <p className="text-2xl md:text-3xl font-bold text-pink-600">{totalsForView.postres}</p>
               </div>
             </div>
           </div>
-          <div className="mb-2 font-semibold text-center">
-            Mostrando los pedidos del <span className="font-bold">{dateRange.start || '...'}</span> al <span className="font-bold">{dateRange.end || '...'}</span>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+            <div className="font-semibold text-center md:text-left">
+              Mostrando los pedidos del <span className="font-bold">{dateRange.start || '...'}</span> al <span className="font-bold">{dateRange.end || '...'}</span>
+            </div>
+            <div className="flex items-center gap-2 justify-center md:justify-end">
+              <label className="text-sm font-semibold text-gray-700">Empresa:</label>
+              <select
+                value={empresaFilter}
+                onChange={(e) => setEmpresaFilter(e.target.value)}
+                className="border rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 bg-white shadow-sm"
+              >
+                <option value="ALL">Todas las empresas</option>
+                {empresasForDropdown.map(e => (
+                  <option key={e.empresa} value={e.empresa}>{e.empresa}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          {metrics.empresas.length === 0 ? (
+          {empresasForView.length === 0 ? (
             <div className="text-gray-600 text-center">No hay datos para el rango seleccionado.</div>
           ) : (
             <div className="overflow-x-auto print-unclamp print-full-width">
+              <div className="mb-2 font-bold text-blue-900">Resumen por empresa (rango seleccionado)</div>
               <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
                 <thead className="bg-blue-50">
                   <tr>
@@ -1184,15 +1230,16 @@ const MonthlyPanel = ({ user, loading }) => {
                     <th className="px-4 py-2">Guarniciones</th>
                     <th className="px-4 py-2">Bebidas</th>
                     <th className="px-4 py-2">Postres</th>
-                    <th className="px-4 py-2">Total menús</th>
+                    <th className="px-4 py-2">Total menús principales</th>
                     <th className="px-4 py-2">Total opciones</th>
+                    <th className="px-4 py-2">Total menús (total)</th>
                     <th className="px-4 py-2">Total guarniciones</th>
                     <th className="px-4 py-2">Total bebidas</th>
                     <th className="px-4 py-2">Total postres</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {metrics.empresas.map(e => (
+                  {empresasForView.map(e => (
                     <tr key={e.empresa} className="border-t hover:bg-blue-50 transition-all">
                       <td className="px-4 py-2 font-bold">{e.empresa}</td>
                       <td className="px-4 py-2">{e.cantidadPedidos}</td>
@@ -1201,8 +1248,9 @@ const MonthlyPanel = ({ user, loading }) => {
                       <td className="px-4 py-2">{Object.entries(e.tiposGuarniciones).map(([k, v]) => (<span key={k} className="inline-block bg-purple-100 text-purple-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
                       <td className="px-4 py-2">{Object.entries(e.tiposBebidas || {}).map(([k, v]) => (<span key={k} className="inline-block bg-sky-100 text-sky-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
                       <td className="px-4 py-2">{Object.entries(e.tiposPostres || {}).map(([k, v]) => (<span key={k} className="inline-block bg-pink-100 text-pink-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                      <td className="px-4 py-2 text-center">{e.totalMenus - e.totalOpciones}</td>
+                      <td className="px-4 py-2 text-center">{e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones)}</td>
                       <td className="px-4 py-2 text-center">{e.totalOpciones}</td>
+                      <td className="px-4 py-2 text-center">{e.totalMenusTotal ?? e.totalMenus}</td>
                       <td className="px-4 py-2 text-center">{e.totalGuarniciones}</td>
                       <td className="px-4 py-2 text-center">{e.totalBebidas || 0}</td>
                       <td className="px-4 py-2 text-center">{e.totalPostres || 0}</td>
@@ -1228,7 +1276,10 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
   const fmtTime = (ts) => {
     try {
       return new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-    } catch { return '—' }
+    } catch (err) {
+      void err
+      return '—'
+    }
   }
 
   const isOption = (name = '') => /^OPC(ION|IÓN)\s*\d+/i.test(name.trim())
@@ -1247,7 +1298,11 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
     let items = []
     if (Array.isArray(order.items)) items = order.items
     else if (typeof order.items === 'string') {
-      try { items = JSON.parse(order.items) } catch {}
+      try {
+        items = JSON.parse(order.items)
+      } catch (err) {
+        void err
+      }
     }
     items.forEach(it => {
       const qty = it?.quantity || 1
@@ -1265,7 +1320,11 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
     let custom = []
     if (Array.isArray(order.custom_responses)) custom = order.custom_responses
     else if (typeof order.custom_responses === 'string') {
-      try { custom = JSON.parse(order.custom_responses) } catch {}
+      try {
+        custom = JSON.parse(order.custom_responses)
+      } catch (err) {
+        void err
+      }
     }
     custom.forEach(cr => {
       const val = toDisplayString(cr?.response)
@@ -1414,7 +1473,11 @@ const renderItems = (order, isOptionFn) => {
   let items = []
   if (Array.isArray(order.items)) items = order.items
   else if (typeof order.items === 'string') {
-    try { items = JSON.parse(order.items) } catch {}
+    try {
+      items = JSON.parse(order.items)
+    } catch (err) {
+      void err
+    }
   }
   if (!items.length) return '—'
   return items.map((it, idx) => {
