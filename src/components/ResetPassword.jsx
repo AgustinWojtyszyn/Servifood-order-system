@@ -127,19 +127,20 @@ const ResetPassword = () => {
         return
       }
 
-      const { error } = await auth.updatePassword(formData.password)
-      console.debug('[auth-recovery] updatePassword', { ok: !error, hasError: Boolean(error) })
+      const { error: updErr } = await supabase.auth.updateUser({ password: formData.password })
+      console.debug('[auth-recovery] updateUser', { ok: !updErr, hasError: Boolean(updErr) })
 
-      if (error) {
-        setError(error.message)
-      } else {
-        await supabase.auth.refreshSession().catch(() => {})
-        console.debug('[auth-recovery] refreshSession attempted')
-        setSuccess(true)
-        setTimeout(() => {
-          navigate('/login?reset=ok')
-        }, 2000)
+      if (updErr) {
+        setError(updErr.message || 'No se pudo actualizar la contraseña.')
+        setLoading(false)
+        return
       }
+
+      setSuccess(true)
+      await supabase.auth.signOut().catch(() => {})
+      setTimeout(() => {
+        navigate('/login?reset=ok')
+      }, 1500)
     } catch (err) {
       setError('Error al actualizar la contraseña')
     } finally {
