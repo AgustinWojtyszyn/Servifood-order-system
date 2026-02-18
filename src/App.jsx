@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { useAuthContext } from './contexts/AuthContext'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { supabase, auth } from './supabaseClient'
 import SplashScreen from './components/SplashScreen'
 import './App.css'
 
@@ -16,6 +15,7 @@ import AdminPanel from './components/AdminPanel'
 const Register = lazy(() => import('./components/Register'))
 const ForgotPassword = lazy(() => import('./components/ForgotPassword'))
 const ResetPassword = lazy(() => import('./components/ResetPassword'))
+const AuthCallback = lazy(() => import('./pages/AuthCallback'))
 const Dashboard = lazy(() => import('./components/Dashboard'))
 const SuperAdminPanel = lazy(() => import('./components/SuperAdminPanel'))
 const DailyOrders = lazy(() => import('./components/DailyOrders'))
@@ -195,6 +195,7 @@ function App() {
               !loading && (user ? <Navigate to="/dashboard" /> : <ForgotPassword />)
             } />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/order" element={
               !loading && (user ? <Layout user={user} loading={loading}><OrderCompanySelector user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
@@ -222,7 +223,6 @@ function App() {
             <Route path="/auditoria" element={
               !loading && (user ? <Layout user={user} loading={loading}><AuditLogs user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
-            <Route path="/auth/callback" element={<AuthCallback />} />
             {/* Redirección global para rutas inexistentes */}
             <Route
               path="*"
@@ -241,24 +241,6 @@ function App() {
       </Router>
     )
   )
-}
-
-// Componente para manejar callback de autenticación
-function AuthCallback() {
-  useEffect(() => {
-    const handleAuthCallback = async () => {
-      const { data, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Error en callback de auth:', error)
-      }
-      // Redirigir al dashboard
-      window.location.href = '/dashboard'
-    }
-
-    handleAuthCallback()
-  }, [])
-
-  return <InternalLoader />
 }
 
 export default App

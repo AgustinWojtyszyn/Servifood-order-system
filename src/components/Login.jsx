@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
@@ -13,6 +13,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const { search } = useLocation()
+  const params = new URLSearchParams(search)
+  const confirmed = params.get('confirmed')
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -89,6 +92,16 @@ const Login = () => {
 
         <div className="card bg-white/95 backdrop-blur-sm shadow-2xl border-2 border-white/20 px-2 sm:px-0" style={{maxHeight: 'none', overflow: 'visible', minWidth: '320px', width: '100%'}}>
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {confirmed === '1' && (
+              <div className="bg-green-50 border-2 border-green-300 text-green-700 px-4 py-3 rounded-xl font-medium">
+                ✅ Correo confirmado. Ya podés iniciar sesión.
+              </div>
+            )}
+            {confirmed === '0' && (
+              <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-xl font-medium">
+                ❌ No se pudo confirmar el correo. Intentá nuevamente.
+              </div>
+            )}
             {error && (
               <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-xl font-medium">
                 {error}

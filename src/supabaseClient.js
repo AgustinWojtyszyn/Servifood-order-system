@@ -51,7 +51,7 @@ export const auth = {
       password,
       options: {
         data: metadata,
-        emailRedirectTo: `${window.location.origin}/reset-password`
+        emailRedirectTo: `${window.location.origin}/auth/callback`
       }
     })
     return { data, error }
