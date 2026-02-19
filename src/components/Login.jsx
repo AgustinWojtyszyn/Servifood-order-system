@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { auth } from '../supabaseClient'
+import { auth, supabase } from '../supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 
@@ -12,6 +12,7 @@ const Login = () => {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState('')
   const { search } = useLocation()
   const params = new URLSearchParams(search)
@@ -56,6 +57,26 @@ const Login = () => {
       setError('Error al iniciar sesión. Por favor, intenta nuevamente.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setOauthLoading(true)
+    setError('')
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      if (error) {
+        setError(error.message || 'Error al iniciar sesión con Google.')
+        setOauthLoading(false)
+      }
+    } catch (err) {
+      setError('Error al iniciar sesión con Google. Por favor, intenta nuevamente.')
+      setOauthLoading(false)
     }
   }
 
@@ -190,6 +211,32 @@ const Login = () => {
                   </>
                 ) : (
                   'Iniciar Sesión'
+                )}
+              </button>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={oauthLoading || loading}
+                className="w-full flex justify-center items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-gray-300 text-gray-800 bg-white"
+              >
+                {oauthLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-700 mr-2"></div>
+                    Conectando...
+                  </>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                      <path fill="#EA4335" d="M24 9.5c3.2 0 6.1 1.1 8.4 3.1l6.3-6.3C34.9 2.5 29.8 0 24 0 14.6 0 6.5 5.4 2.7 13.2l7.6 5.9C12 13.5 17.6 9.5 24 9.5z"/>
+                      <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-2.8-.4-4.1H24v7.8h12.6c-.5 3-2.2 5.5-4.8 7.2l7.3 5.7c4.2-3.9 6.9-9.7 6.9-16.6z"/>
+                      <path fill="#FBBC05" d="M10.3 28.3c-1.1-3.3-1.1-6.9 0-10.2l-7.6-5.9C-.9 17.6-.9 30.4 2.7 35.8l7.6-5.9z"/>
+                      <path fill="#34A853" d="M24 48c5.8 0 10.7-1.9 14.3-5.1l-7.3-5.7c-2 1.3-4.6 2.2-7 2.2-6.4 0-12-4-13.7-9.6l-7.6 5.9C6.5 42.6 14.6 48 24 48z"/>
+                    </svg>
+                    <span>Continuar con Google</span>
+                  </>
                 )}
               </button>
             </div>

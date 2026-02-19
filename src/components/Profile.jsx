@@ -5,6 +5,9 @@ import RequireUser from './RequireUser'
 
 const Profile = ({ user, loading }) => {
   const [submitting, setSubmitting] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [googleLinked, setGoogleLinked] = useState(false)
+  const [googleError, setGoogleError] = useState('')
   const [formData, setFormData] = useState({
     fullName: '',
     email: ''
@@ -19,6 +22,25 @@ const Profile = ({ user, loading }) => {
       email: user.email || ''
     })
   }, [user])
+
+  useEffect(() => {
+    if (!user?.id) return
+    let cancelled = false
+    ;(async () => {
+      const { data, error } = await supabase.auth.getUser()
+      if (cancelled) return
+      if (error) {
+        setGoogleError('No se pudo obtener el estado de Google.')
+        return
+      }
+      const isLinked = Array.isArray(data?.user?.identities) && data.user.identities.some((i) => i.provider === 'google')
+      setGoogleLinked(isLinked)
+      setGoogleError('')
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   const handleChange = (e) => {
     setFormData({
@@ -108,6 +130,26 @@ const Profile = ({ user, loading }) => {
       setLastUpdateInfo(null)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleLinkGoogle = async () => {
+    setGoogleLoading(true)
+    setGoogleError('')
+    try {
+      const { error } = await supabase.auth.linkIdentity({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      if (error) {
+        setGoogleError(error.message || 'Error al vincular Google.')
+        setGoogleLoading(false)
+      }
+    } catch (err) {
+      setGoogleError('Error al vincular Google. Por favor, intenta nuevamente.')
+      setGoogleLoading(false)
     }
   }
 
@@ -229,6 +271,46 @@ const Profile = ({ user, loading }) => {
             </ul>
           </div>
         )}
+
+        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t-2 border-gray-200">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">Vincular Google</h3>
+          {googleError && (
+            <div className="bg-red-50 border-2 border-red-400 text-red-800 px-4 py-3 rounded-xl font-bold text-sm sm:text-base mb-3 sm:mb-4">
+              {googleError}
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {googleLinked ? (
+              <div className="inline-flex items-center gap-2 bg-green-50 border border-green-300 text-green-800 px-3 py-2 rounded-xl font-semibold text-sm sm:text-base">
+                <span>Google vinculado</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLinkGoogle}
+                disabled={googleLoading}
+                className="flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold py-2.5 sm:py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-gray-300 text-gray-800 bg-white"
+              >
+                {googleLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-gray-700 mr-2"></div>
+                    Conectando...
+                  </>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                      <path fill="#EA4335" d="M24 9.5c3.2 0 6.1 1.1 8.4 3.1l6.3-6.3C34.9 2.5 29.8 0 24 0 14.6 0 6.5 5.4 2.7 13.2l7.6 5.9C12 13.5 17.6 9.5 24 9.5z"/>
+                      <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-2.8-.4-4.1H24v7.8h12.6c-.5 3-2.2 5.5-4.8 7.2l7.3 5.7c4.2-3.9 6.9-9.7 6.9-16.6z"/>
+                      <path fill="#FBBC05" d="M10.3 28.3c-1.1-3.3-1.1-6.9 0-10.2l-7.6-5.9C-.9 17.6-.9 30.4 2.7 35.8l7.6-5.9z"/>
+                      <path fill="#34A853" d="M24 48c5.8 0 10.7-1.9 14.3-5.1l-7.3-5.7c-2 1.3-4.6 2.2-7 2.2-6.4 0-12-4-13.7-9.6l-7.6 5.9C6.5 42.6 14.6 48 24 48z"/>
+                    </svg>
+                    <span>Vincular Google</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
 
         <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t-2 border-gray-200">
           <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">Información de la Cuenta</h3>
