@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { auth } from '../supabaseClient'
+import { auth, supabase } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle, Mail, AlertCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood logo.jpg'
 
@@ -15,6 +15,8 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [googleError, setGoogleError] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState('')
@@ -91,6 +93,24 @@ const Register = () => {
     } finally {
       setLoading(false)
       inFlightRef.current = false
+    }
+  }
+
+  const handleGoogleRegister = async () => {
+    setGoogleLoading(true)
+    setGoogleError('')
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth/callback` }
+      })
+      if (error) {
+        setGoogleError(error.message || 'Error al registrarse con Google.')
+        setGoogleLoading(false)
+      }
+    } catch (err) {
+      setGoogleError('Error al registrarse con Google. Por favor, intenta nuevamente.')
+      setGoogleLoading(false)
     }
   }
 
@@ -198,6 +218,36 @@ const Register = () => {
         </div>
 
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-8 border-4 border-white/20" style={{maxHeight: 'none', overflow: 'visible', minWidth: '320px', width: '100%'}}>
+          {googleError && (
+            <div className="bg-red-50 border-2 border-red-400 text-red-800 px-5 py-4 rounded-xl font-bold text-base mb-4">
+              {googleError}
+            </div>
+          )}
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={handleGoogleRegister}
+              disabled={googleLoading || loading}
+              className="w-full flex justify-center items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold py-4 px-6 text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-gray-300 text-gray-800 bg-white"
+            >
+              {googleLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-700 mr-3"></div>
+                  Conectando...
+                </>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                    <path fill="#EA4335" d="M24 9.5c3.2 0 6.1 1.1 8.4 3.1l6.3-6.3C34.9 2.5 29.8 0 24 0 14.6 0 6.5 5.4 2.7 13.2l7.6 5.9C12 13.5 17.6 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-2.8-.4-4.1H24v7.8h12.6c-.5 3-2.2 5.5-4.8 7.2l7.3 5.7c4.2-3.9 6.9-9.7 6.9-16.6z"/>
+                    <path fill="#FBBC05" d="M10.3 28.3c-1.1-3.3-1.1-6.9 0-10.2l-7.6-5.9C-.9 17.6-.9 30.4 2.7 35.8l7.6-5.9z"/>
+                    <path fill="#34A853" d="M24 48c5.8 0 10.7-1.9 14.3-5.1l-7.3-5.7c-2 1.3-4.6 2.2-7 2.2-6.4 0-12-4-13.7-9.6l-7.6 5.9C6.5 42.6 14.6 48 24 48z"/>
+                  </svg>
+                  <span>Registrarse con Google</span>
+                </>
+              )}
+            </button>
+          </div>
           {step === 1 && (
             <form className="space-y-6" onSubmit={handleNextStep}>
               {error && (
