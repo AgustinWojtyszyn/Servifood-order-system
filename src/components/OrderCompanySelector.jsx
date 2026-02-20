@@ -48,7 +48,9 @@ const OrderCompanySelector = ({ user, loading }) => {
                     <p className={`inline-flex px-4 py-2.5 rounded-full text-xl font-black ${company.badgeClass} border border-white`}>
                       {company.name}
                     </p>
-                    <p className="text-lg font-semibold text-gray-800 mt-1">Flujo dedicado</p>
+                    <p className="text-lg font-semibold text-gray-800 mt-1">
+                      {company.subtitle || 'Flujo dedicado'}
+                    </p>
                   </div>
                 </div>
 
@@ -65,7 +67,7 @@ const OrderCompanySelector = ({ user, loading }) => {
                   <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                     {company.locations.join(' • ')}
                   </div>
-                  <div className="inline-flex items-center gap-2 text-secondary-700 font-bold text-base">
+                  <div className="inline-flex items-center gap-2 bg-[#0b1f3a] text-white font-bold text-base px-3 py-1.5 rounded-full shadow-md">
                     Continuar
                     <ArrowRight className="h-4 w-4" />
                   </div>
