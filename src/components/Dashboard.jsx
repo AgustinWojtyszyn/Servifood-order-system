@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun } from 'lucide-react'
-import servifoodLogo from '../assets/servifood logo.jpg'
+import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
 import { useOverlayLock } from '../contexts/OverlayLockContext'
@@ -615,7 +615,7 @@ const Dashboard = ({ user, loading }) => {
 
         {orders.length === 0 ? (
           <div className="text-center py-12">
-            <img src={servifoodLogo} alt="Servifood Logo" className="h-20 w-20 mx-auto mb-4 rounded-full object-cover shadow-lg bg-white" />
+            <img src={servifoodLogo} alt="Servifood Logo" className="h-20 w-20 mx-auto mb-4 object-contain" />
             <h3 className="text-2xl font-bold text-gray-900 mb-2">No hay pedidos en el historial</h3>
             <p className="text-xl text-gray-600 mb-6">¡Crea un pedido para comenzar!</p>
             <Link to="/order" className="btn-primary bg-linear-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-black font-bold py-4 px-8 text-lg rounded-xl shadow-lg">

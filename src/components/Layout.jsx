@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList } from 'lucide-react'
-import servifoodLogo from '../assets/servifood logo.jpg'
+import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
@@ -161,7 +161,7 @@ const Layout = ({ children, user, loading }) => {
             <img 
               src={servifoodLogo} 
               alt="Servifood Logo" 
-              className="max-h-40 sm:max-h-48 w-auto rounded object-cover"
+              className="max-h-40 sm:max-h-48 w-auto object-contain"
               style={{height: '120px', maxHeight: '160px', display: 'block'}}
             />
             <button

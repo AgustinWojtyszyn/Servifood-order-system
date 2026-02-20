@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom';
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png';
-import servifoodLogoOld from '../assets/servifood logo.jpg';
 
 import { ArrowRight } from 'react-feather';
 import timerIcon from '../assets/timer icon.png';
@@ -64,7 +63,7 @@ export default function LandingPage() {
       {showIntro && (
         <div className="intro-overlay">
           <img
-            src={servifoodLogoOld}
+            src={servifoodLogo}
             alt="ServiFood Catering Logo"
             className="intro-logo"
             onError={e => {
@@ -91,20 +90,23 @@ export default function LandingPage() {
         }
 
         .intro-logo {
-          width: clamp(200px, 34vh, 300px);
-          height: clamp(200px, 34vh, 300px);
+          width: clamp(240px, 34vh, 360px);
+          height: clamp(240px, 34vh, 360px);
           object-fit: contain;
           border-radius: 20px;
           box-shadow: 0 25px 80px rgba(0,0,0,0.35);
-          will-change: transform, filter;
+          will-change: transform, opacity;
+          image-rendering: auto;
+          -webkit-transform: translateZ(0);
+          transform: translateZ(0);
           animation: logoZoom 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
         @keyframes logoZoom {
-          0%   { transform: scale(0.70); opacity: 0; filter: blur(0px); }
-          55%  { transform: scale(1.08); opacity: 1; filter: blur(0px); }
-          80%  { transform: scale(1.18); opacity: 1; filter: blur(1px); }
-          100% { transform: scale(1.25); opacity: 0; filter: blur(4px); }
+          0%   { transform: scale(0.85); opacity: 0; }
+          55%  { transform: scale(1.02); opacity: 1; }
+          80%  { transform: scale(1.08); opacity: 1; }
+          100% { transform: scale(1.12); opacity: 0; }
         }
 
         @keyframes introFade {

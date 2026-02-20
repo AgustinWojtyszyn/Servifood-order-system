@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth, supabase } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle } from 'lucide-react'
-import servifoodLogo from '../assets/servifood logo.jpg'
+import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 
 const ResetPassword = () => {
   const [formData, setFormData] = useState({

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import servilogo from '../assets/servifood logo.jpg'
+import servilogo from '../assets/servifood_logo_white_text_HQ.png'
 
 const SplashScreen = ({ onComplete }) => {
   const [progress, setProgress] = useState(0)
@@ -41,7 +41,7 @@ const SplashScreen = ({ onComplete }) => {
         <img 
           src={servilogo} 
           alt="ServiFood Logo" 
-          className="w-28 h-28 md:w-36 md:h-36 rounded-3xl shadow-2xl animate-pulse"
+          className="w-28 h-28 md:w-36 md:h-36 object-contain shadow-2xl animate-pulse"
           style={{
             filter: 'drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5))'
           }}

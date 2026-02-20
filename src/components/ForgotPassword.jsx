@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { auth } from '../supabaseClient'
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
-import servifoodLogo from '../assets/servifood logo.jpg'
+import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
