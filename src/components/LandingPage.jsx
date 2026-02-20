@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom';
-import servifoodLogo from '../assets/servifood logo.jpg';
+import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png';
+import servifoodLogoOld from '../assets/servifood logo.jpg';
 
 import { ArrowRight } from 'react-feather';
 import timerIcon from '../assets/timer icon.png';
@@ -63,7 +64,7 @@ export default function LandingPage() {
       {showIntro && (
         <div className="intro-overlay">
           <img
-            src={servifoodLogo}
+            src={servifoodLogoOld}
             alt="ServiFood Catering Logo"
             className="intro-logo"
             onError={e => {
@@ -118,8 +119,8 @@ export default function LandingPage() {
         <img
           src={servifoodLogo}
           alt="ServiFood Catering Logo"
-          className="rounded-xl shadow-xl"
-          style={{ width: "150px", height: "150px", objectFit: "contain" }}
+          className="block"
+          style={{ width: "220px", height: "220px", objectFit: "contain" }}
           onError={e => {
             e.target.onerror = null;
             e.target.src = 'https://via.placeholder.com/150?text=Logo+no+disponible';
@@ -140,7 +141,7 @@ export default function LandingPage() {
 
           <Link
             to="/register"
-            className="px-4 py-2 text-white font-bold rounded-xl bg-linear-to-r from-[#ff9800] to-[#fb8c00] hover:from-[#fb8c00] hover:to-[#f57c00]"
+            className="px-4 py-2 text-white font-bold rounded-xl bg-[#fb8c00] hover:bg-[#f57c00] transition-colors"
           >
             Registrarse
           </Link>
@@ -148,7 +149,7 @@ export default function LandingPage() {
       </div>
 
       {/* FEATURES */}
-      <div className="py-8" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
+      <div className="py-8">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">
@@ -171,7 +172,7 @@ export default function LandingPage() {
                 <div
                   className="p-4 rounded-xl mx-auto mb-3"
                   style={{
-                    background: "linear-gradient(to right, #ff9800, #fb8c00)",
+                    background: "#fb8c00",
                   }}
                 >
                   {feature.icon}
@@ -191,7 +192,7 @@ export default function LandingPage() {
           <div
             className="rounded-3xl p-6 sm:p-8 text-center shadow-xl"
             style={{
-              background: "linear-gradient(to right, #ff9800, #fb8c00)",
+              background: "#fb8c00",
             }}
           >
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
@@ -215,13 +216,7 @@ export default function LandingPage() {
       </div>
 
       {/* FOOTER */}
-      <footer
-        className="py-4 text-center border-t backdrop-blur-sm"
-        style={{
-          backgroundColor: "rgba(26,35,126,0.5)",
-          borderColor: "rgba(255,255,255,0.1)",
-        }}
-      >
+      <footer className="py-4 text-center">
         <p className="text-white/90">
           © 2025 ServiFood Catering. Todos los derechos reservados.
         </p>
