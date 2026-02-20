@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth, supabase } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle, Mail, AlertCircle } from 'lucide-react'
-import servifoodLogo from '../assets/servifood logo.jpg'
+import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 
 const Register = () => {
   const [formData, setFormData] = useState({

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { auth, supabase } from '../supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
-import servifoodLogo from '../assets/servifood logo.jpg'
+import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 
 const Login = () => {
   const [formData, setFormData] = useState({
