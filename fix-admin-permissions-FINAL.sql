@@ -13,7 +13,7 @@ BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.users 
     WHERE id = auth.uid() 
-    AND role = 'admin'
+    AND role IN ('admin', 'superadmin')
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -70,6 +70,8 @@ DROP POLICY IF EXISTS "Everyone can view all users" ON public.users;
 DROP POLICY IF EXISTS "All admins can update any user" ON public.users;
 DROP POLICY IF EXISTS "Superadmins can delete users" ON public.users;
 DROP POLICY IF EXISTS "Superadmins can update user roles" ON public.users;
+DROP POLICY IF EXISTS "Admins can delete users" ON public.users;
+DROP POLICY IF EXISTS "All admins can delete users" ON public.users;
 
 -- Crear nuevas políticas
 CREATE POLICY "Everyone can view all users"
@@ -89,6 +91,11 @@ CREATE POLICY "All admins can update any user"
   USING (is_admin())
   WITH CHECK (is_admin());
 
+CREATE POLICY "All admins can delete users"
+  ON public.users FOR DELETE
+  TO authenticated
+  USING (is_admin());
+
 -- ========================================
 -- 4. POLÍTICAS PARA ORDERS
 -- ========================================
@@ -104,6 +111,9 @@ DROP POLICY IF EXISTS "All admins can view all orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can update own pending orders" ON public.orders;
 DROP POLICY IF EXISTS "All admins can update any order" ON public.orders;
 DROP POLICY IF EXISTS "Superadmins can delete any order" ON public.orders;
+DROP POLICY IF EXISTS "Users can delete own orders" ON public.orders;
+DROP POLICY IF EXISTS "Admins can delete any order" ON public.orders;
+DROP POLICY IF EXISTS "All admins can delete any order" ON public.orders;
 
 -- Crear nuevas políticas
 CREATE POLICY "Users can view own orders"
@@ -132,6 +142,16 @@ CREATE POLICY "All admins can update any order"
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
+
+CREATE POLICY "Users can delete own orders"
+  ON public.orders FOR DELETE
+  TO authenticated
+  USING (user_id = auth.uid());
+
+CREATE POLICY "All admins can delete any order"
+  ON public.orders FOR DELETE
+  TO authenticated
+  USING (is_admin());
 
 -- ========================================
 -- 5. POLÍTICAS PARA CUSTOM_OPTIONS

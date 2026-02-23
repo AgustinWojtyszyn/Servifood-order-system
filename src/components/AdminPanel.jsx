@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment, useMemo, useDeferredValue } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 import { db } from '../supabaseClient'
@@ -55,11 +55,13 @@ const AdminPanel = () => {
   const [loadingDessertOverride, setLoadingDessertOverride] = useState(false)
   const [showDessertConfirm, setShowDessertConfirm] = useState(false)
   const { isAdmin, user, refreshSession, loading } = useAuthContext()
+  const [expandedPeople, setExpandedPeople] = useState({})
   
   // Estados para búsqueda y filtrado de usuarios
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all') // 'all', 'admin', 'user'
   const [sortBy, setSortBy] = useState('name_asc') // name_asc, name_desc, created_desc, created_asc
+  const deferredSearchTerm = useDeferredValue(searchTerm)
   
   // Estados para limpieza de datos
   const [completedOrdersCount, setCompletedOrdersCount] = useState(0)
@@ -157,28 +159,6 @@ const AdminPanel = () => {
       if (peopleResult.error) {
         console.error('Error fetching admin people:', peopleResult.error)
       } else {
-        const accountRows = Array.isArray(accountsResult?.data) ? accountsResult.data : []
-        const accountById = new Map(accountRows.map(acc => [acc.id, acc]))
-        const mappedPeople = (peopleResult.data || []).map(person => {
-          const primaryUserId = Array.isArray(person.user_ids) ? person.user_ids[0] : null
-          const primaryAccount = primaryUserId ? accountById.get(primaryUserId) : null
-          const emails = Array.isArray(person.emails) ? person.emails.filter(Boolean) : []
-          return {
-            id: person.person_id,
-            person_id: person.person_id,
-            group_id: person.group_id,
-            full_name: person.display_name || emails[0] || 'Sin nombre',
-            email: emails[0] || '',
-            emails,
-            user_ids: Array.isArray(person.user_ids) ? person.user_ids : [],
-            primary_user_id: primaryUserId,
-            members_count: person.members_count || 1,
-            is_grouped: !!person.is_grouped,
-            created_at: person.first_created || person.last_created || primaryAccount?.created_at || null,
-            role: primaryAccount?.role || 'user'
-          }
-        })
-
         const normalizeName = (value) => {
           const raw = (value || '').toString().trim().toLowerCase()
           const withoutDiacritics = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -193,11 +173,73 @@ const AdminPanel = () => {
           return Number.isFinite(ms) ? ms : null
         }
 
+        const accountRows = Array.isArray(accountsResult?.data) ? accountsResult.data : []
+        const accountById = new Map(accountRows.map(acc => [acc.id, acc]))
+        const accountByEmail = new Map()
+        for (const acc of accountRows) {
+          const key = normalizeEmail(acc.email)
+          if (!key || accountByEmail.has(key)) continue
+          accountByEmail.set(key, acc)
+        }
+        const resolveAccountsForPerson = (person) => {
+          const accounts = []
+          const seen = new Set()
+          const userIds = Array.isArray(person.user_ids) ? person.user_ids.filter(Boolean) : []
+          const emails = Array.isArray(person.emails) ? person.emails.filter(Boolean) : []
+
+          for (const id of userIds) {
+            const acc = accountById.get(id)
+            if (acc && !seen.has(acc.id)) {
+              accounts.push(acc)
+              seen.add(acc.id)
+            }
+          }
+
+          for (const email of emails) {
+            const acc = accountByEmail.get(normalizeEmail(email))
+            if (acc && !seen.has(acc.id)) {
+              accounts.push(acc)
+              seen.add(acc.id)
+            }
+          }
+
+          return accounts
+        }
+        const mappedPeople = (peopleResult.data || []).map(person => {
+          const primaryUserId = Array.isArray(person.user_ids) ? person.user_ids[0] : null
+          const emails = Array.isArray(person.emails) ? person.emails.filter(Boolean) : []
+          const accounts = resolveAccountsForPerson(person)
+          const primaryAccount = primaryUserId ? accountById.get(primaryUserId) : accounts[0] || null
+          const primaryAccountId = primaryAccount?.id || primaryUserId || null
+          const normalizedMembersCount = Math.max(
+            person.members_count || 1,
+            accounts.length || 0,
+            Array.isArray(person.user_ids) ? person.user_ids.length : 0,
+            emails.length
+          )
+          return {
+            id: person.person_id,
+            person_id: person.person_id,
+            group_id: person.group_id,
+            full_name: person.display_name || emails[0] || 'Sin nombre',
+            email: emails[0] || '',
+            emails,
+            user_ids: Array.isArray(person.user_ids) ? person.user_ids : [],
+            primary_user_id: primaryAccountId,
+            members_count: normalizedMembersCount,
+            is_grouped: !!person.is_grouped || accounts.length > 1 || normalizedMembersCount > 1,
+            created_at: person.first_created || person.last_created || primaryAccount?.created_at || null,
+            role: primaryAccount?.role || 'user',
+            accounts
+          }
+        })
+
         const dedupedPeople = []
         for (const person of mappedPeople) {
           const personEmails = new Set((person.emails || []).map(normalizeEmail).filter(Boolean))
           const personUserIds = new Set((person.user_ids || []).filter(Boolean))
           const personName = normalizeName(person.full_name || person.email)
+          const personAccounts = Array.isArray(person.accounts) ? person.accounts : []
 
           const existing = dedupedPeople.find(p => {
             const existingEmails = new Set((p.emails || []).map(normalizeEmail).filter(Boolean))
@@ -216,20 +258,34 @@ const AdminPanel = () => {
             continue
           }
 
+          const mergedAccounts = []
+          const mergedAccountIds = new Set()
+          for (const acc of [...(existing.accounts || []), ...personAccounts]) {
+            if (!acc?.id || mergedAccountIds.has(acc.id)) continue
+            mergedAccountIds.add(acc.id)
+            mergedAccounts.push(acc)
+          }
           const mergedEmails = [...new Set([...(existing.emails || []), ...(person.emails || [])])]
           const mergedUserIds = [...new Set([...(existing.user_ids || []), ...(person.user_ids || [])])]
           const existingCreatedMs = toDateMs(existing.created_at)
           const personCreatedMs = toDateMs(person.created_at)
           const earliestMs = [existingCreatedMs, personCreatedMs].filter(v => v !== null).sort((a, b) => a - b)[0]
 
+          existing.accounts = mergedAccounts
           existing.emails = mergedEmails
           existing.user_ids = mergedUserIds
           existing.email = mergedEmails[0] || existing.email || person.email || ''
           existing.full_name = existing.full_name || person.full_name
-          existing.members_count = Math.max(existing.members_count || 1, person.members_count || 1, mergedUserIds.length, mergedEmails.length)
-          existing.is_grouped = existing.is_grouped || person.is_grouped || mergedUserIds.length > 1 || mergedEmails.length > 1
+          existing.members_count = Math.max(
+            existing.members_count || 1,
+            person.members_count || 1,
+            mergedUserIds.length,
+            mergedEmails.length,
+            mergedAccounts.length
+          )
+          existing.is_grouped = existing.is_grouped || person.is_grouped || mergedUserIds.length > 1 || mergedEmails.length > 1 || mergedAccounts.length > 1
           existing.role = existing.role === 'admin' || person.role === 'admin' ? 'admin' : 'user'
-          existing.primary_user_id = existing.primary_user_id || person.primary_user_id || mergedUserIds[0] || null
+          existing.primary_user_id = existing.primary_user_id || person.primary_user_id || mergedUserIds[0] || mergedAccounts[0]?.id || null
           if (earliestMs) {
             existing.created_at = new Date(earliestMs).toISOString()
           }
@@ -344,12 +400,8 @@ const AdminPanel = () => {
     }
   }
 
-  // Función para filtrar usuarios según búsqueda y rol
-  const getFilteredUsers = () => {
-    const normalizedSearch = searchTerm.trim().toLowerCase()
-
-    const filteredUsers = users.filter(user => {
-      // Filtro por término de búsqueda (nombre de usuario o cualquier email)
+  const userSearchIndex = useMemo(() => {
+    return users.map(user => {
       const allEmails = Array.isArray(user.emails)
         ? user.emails.filter(Boolean).map(e => e.toLowerCase())
         : (user.email ? [user.email.toLowerCase()] : [])
@@ -360,27 +412,43 @@ const AdminPanel = () => {
         ...allEmails,
         ...emailUsernames
       ].join(' ').toLowerCase()
+      return { user, searchableText }
+    })
+  }, [users])
 
+  const filteredUsers = useMemo(() => {
+    const normalizedSearch = deferredSearchTerm.trim().toLowerCase()
+
+    const filtered = userSearchIndex.filter(({ user, searchableText }) => {
       const matchesSearch = normalizedSearch === '' || searchableText.includes(normalizedSearch)
-      
-      // Filtro por rol
       const matchesRole = roleFilter === 'all' || 
         (roleFilter === 'admin' && user.role === 'admin') ||
         (roleFilter === 'user' && user.role === 'user')
-      
       return matchesSearch && matchesRole
-    })
+    }).map(entry => entry.user)
 
     const normalizedName = (user) => (user.full_name || user.email || '').toLowerCase()
     const createdAtMs = (user) => (user.created_at ? new Date(user.created_at).getTime() : 0)
 
-    return [...filteredUsers].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       if (sortBy === 'name_asc') return normalizedName(a).localeCompare(normalizedName(b), 'es')
       if (sortBy === 'name_desc') return normalizedName(b).localeCompare(normalizedName(a), 'es')
       if (sortBy === 'created_asc') return createdAtMs(a) - createdAtMs(b)
       return createdAtMs(b) - createdAtMs(a) // created_desc
     })
+  }, [deferredSearchTerm, roleFilter, sortBy, userSearchIndex])
+
+  const togglePersonDetails = (personId) => {
+    if (!personId) return
+    setExpandedPeople(prev => ({
+      ...prev,
+      [personId]: !prev[personId]
+    }))
   }
+
+  const isPersonExpanded = (personId) => !!expandedPeople[personId]
+
+  const formatShortDate = (value) => (value ? new Date(value).toLocaleDateString('es-ES') : '—')
 
   const handleRoleChange = async (userId, newRole) => {
     try {
@@ -433,6 +501,7 @@ const AdminPanel = () => {
         // Update local state
         setUsers(users.filter(person => person.primary_user_id !== userId))
         alert('Usuario eliminado exitosamente')
+        await fetchData()
       }
     } catch (err) {
       console.error('Error:', err)
@@ -855,13 +924,19 @@ const AdminPanel = () => {
 
           {/* Contador de resultados */}
           <div className="mb-4 text-sm text-gray-600">
-            Mostrando <span className="font-bold text-gray-900">{getFilteredUsers().length}</span> de <span className="font-bold text-gray-900">{users.length}</span> personas
+            Mostrando <span className="font-bold text-gray-900">{filteredUsers.length}</span> de <span className="font-bold text-gray-900">{users.length}</span> personas
           </div>
 
           {/* Vista Mobile - Cards */}
           <div className="block md:hidden space-y-4">
-            {getFilteredUsers().map((user) => (
-              <div key={user.person_id || user.id} className="border-2 border-gray-200 rounded-xl p-3 bg-white hover:border-primary-300 transition-all">
+            {filteredUsers.map((user) => {
+              const personKey = user.person_id || user.id
+              const accounts = Array.isArray(user.accounts) ? user.accounts : []
+              const hasMultipleAccounts = (user.members_count || 0) > 1 || user.is_grouped || accounts.length > 1
+              const isExpanded = hasMultipleAccounts && isPersonExpanded(personKey)
+
+              return (
+              <div key={personKey} className="border-2 border-gray-200 rounded-xl p-3 bg-white hover:border-primary-300 transition-all">
                 {/* Nombre y Badge de Rol */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
@@ -891,7 +966,7 @@ const AdminPanel = () => {
 
                 {/* Fecha de Registro */}
                 <div className="text-xs text-gray-500 mb-3">
-                  Registrado: {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES') : '—'}
+                  Registrado: {formatShortDate(user.created_at)}
                 </div>
 
                 {/* Controles */}
@@ -922,8 +997,83 @@ const AdminPanel = () => {
                     </button>
                   </div>
                 </div>
+
+                {hasMultipleAccounts && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => togglePersonDetails(personKey)}
+                      className="w-full py-2 px-3 rounded-lg border-2 border-blue-600 bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <X className="h-4 w-4" />
+                          Cerrar
+                        </>
+                      ) : (
+                        'Ver detalle'
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {isExpanded && (
+                  <div className="mt-3 border-t border-gray-200 pt-3">
+                    <div className="text-xs font-bold text-gray-700 mb-2">Cuentas asociadas</div>
+                    {accounts.length === 0 ? (
+                      <div className="text-xs text-gray-500">
+                        No se encontraron cuentas vinculadas. Intenta recargar el panel.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {accounts.map((account) => (
+                          <div key={account.id || account.email} className="border border-gray-200 rounded-lg p-2 bg-white">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-gray-900 truncate">
+                                  {account.full_name || account.email || 'Sin nombre'}
+                                </div>
+                                <div className="text-xs text-gray-600 truncate">{account.email || '—'}</div>
+                                <div className="text-xs text-gray-500">
+                                  Registrado: {formatShortDate(account.created_at)}
+                                </div>
+                              </div>
+                              <span className={`shrink-0 inline-flex px-2 py-1 text-[11px] font-bold rounded-full ${
+                                account.role === 'admin'
+                                  ? 'bg-purple-100 text-purple-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {account.role === 'admin' ? 'Admin' : 'Usuario'}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex gap-2">
+                              <select
+                                value={account.role || 'user'}
+                                onChange={(e) => handleRoleChange(account.id, e.target.value)}
+                                disabled={!account.id}
+                                className="flex-1 text-xs border-2 border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium"
+                              >
+                                <option value="user">Usuario</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                              <button
+                                onClick={() => handleDeleteUser(account.id, account.full_name || account.email)}
+                                disabled={!account.id}
+                                className="px-3 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors font-semibold text-xs"
+                                title="Eliminar cuenta"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Vista Desktop - Tabla */}
@@ -949,70 +1099,151 @@ const AdminPanel = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {getFilteredUsers().map((user) => (
-                  <tr key={user.person_id || user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="text-base font-bold text-gray-900">
-                        {user.full_name || user.email || 'Sin nombre'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-base text-gray-900">
-                        {user.email}
-                        {Array.isArray(user.emails) && user.emails.length > 1 ? ` (+${user.emails.length - 1})` : ''}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex px-3 py-1 text-sm font-bold rounded-full ${
-                          user.role === 'admin'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {user.role === 'admin' ? 'Admin' : 'Usuario'}
-                        </span>
-                        {user.is_grouped && user.members_count > 1 && (
-                          <span className="inline-flex px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
-                            {user.members_count} cuentas
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES') : '—'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <label htmlFor={`table-role-${user.person_id || user.id}`} className="sr-only">Cambiar rol para {user.full_name || user.email || 'usuario'}</label>
-                        <select
-                          id={`table-role-${user.person_id || user.id}`}
-                          name={`table-role-${user.person_id || user.id}`}
-                          value={user.role || 'user'}
-                          onChange={(e) => handleRoleChange(user.primary_user_id, e.target.value)}
-                          disabled={user.is_grouped || !user.primary_user_id}
-                          className="text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"
-                        >
-                          <option value="user">Usuario</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        <button
-                          onClick={() => handleDeleteUser(user.primary_user_id, user.full_name || user.email)}
-                          disabled={user.is_grouped || !user.primary_user_id}
-                          className="p-2.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors shrink-0"
-                          title="Eliminar usuario"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredUsers.map((user) => {
+                  const personKey = user.person_id || user.id
+                  const accounts = Array.isArray(user.accounts) ? user.accounts : []
+                  const hasMultipleAccounts = (user.members_count || 0) > 1 || user.is_grouped || accounts.length > 1
+                  const isExpanded = hasMultipleAccounts && isPersonExpanded(personKey)
+
+                  return (
+                    <Fragment key={personKey}>
+                      <tr className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="text-base font-bold text-gray-900">
+                            {user.full_name || user.email || 'Sin nombre'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-base text-gray-900">
+                            {user.email}
+                            {Array.isArray(user.emails) && user.emails.length > 1 ? ` (+${user.emails.length - 1})` : ''}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex px-3 py-1 text-sm font-bold rounded-full ${
+                              user.role === 'admin'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                            </span>
+                            {user.is_grouped && user.members_count > 1 && (
+                              <span className="inline-flex px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+                                {user.members_count} cuentas
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatShortDate(user.created_at)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <label htmlFor={`table-role-${user.person_id || user.id}`} className="sr-only">Cambiar rol para {user.full_name || user.email || 'usuario'}</label>
+                            <select
+                              id={`table-role-${user.person_id || user.id}`}
+                              name={`table-role-${user.person_id || user.id}`}
+                              value={user.role || 'user'}
+                              onChange={(e) => handleRoleChange(user.primary_user_id, e.target.value)}
+                              disabled={user.is_grouped || !user.primary_user_id}
+                              className="text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"
+                            >
+                              <option value="user">Usuario</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                            <button
+                              onClick={() => handleDeleteUser(user.primary_user_id, user.full_name || user.email)}
+                              disabled={user.is_grouped || !user.primary_user_id}
+                              className="p-2.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors shrink-0"
+                              title="Eliminar usuario"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            {hasMultipleAccounts && (
+                              <button
+                                type="button"
+                                onClick={() => togglePersonDetails(personKey)}
+                                className="px-3 py-2 rounded-lg border-2 border-blue-600 bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    <X className="h-4 w-4" />
+                                    Cerrar
+                                  </>
+                                ) : (
+                                  'Ver detalle'
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-gray-50">
+                          <td colSpan={5} className="px-6 py-4">
+                            <div className="text-sm font-bold text-gray-700 mb-3">Cuentas asociadas</div>
+                            {accounts.length === 0 ? (
+                              <div className="text-sm text-gray-500">
+                                No se encontraron cuentas vinculadas. Intenta recargar el panel.
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                {accounts.map((account) => (
+                                  <div key={account.id || account.email} className="border border-gray-200 rounded-lg p-3 bg-white">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <div className="text-sm font-bold text-gray-900 truncate">
+                                          {account.full_name || account.email || 'Sin nombre'}
+                                        </div>
+                                        <div className="text-xs text-gray-600 truncate">{account.email || '—'}</div>
+                                        <div className="text-xs text-gray-500">
+                                          Registrado: {formatShortDate(account.created_at)}
+                                        </div>
+                                      </div>
+                                      <span className={`shrink-0 inline-flex px-2.5 py-1 text-xs font-bold rounded-full ${
+                                        account.role === 'admin'
+                                          ? 'bg-purple-100 text-purple-800'
+                                          : 'bg-blue-100 text-blue-800'
+                                      }`}>
+                                        {account.role === 'admin' ? 'Admin' : 'Usuario'}
+                                      </span>
+                                    </div>
+                                    <div className="mt-3 flex items-center gap-2">
+                                      <select
+                                        value={account.role || 'user'}
+                                        onChange={(e) => handleRoleChange(account.id, e.target.value)}
+                                        disabled={!account.id}
+                                        className="text-sm border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"
+                                      >
+                                        <option value="user">Usuario</option>
+                                        <option value="admin">Admin</option>
+                                      </select>
+                                      <button
+                                        onClick={() => handleDeleteUser(account.id, account.full_name || account.email)}
+                                        disabled={!account.id}
+                                        className="px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors font-semibold text-sm"
+                                        title="Eliminar cuenta"
+                                      >
+                                        Eliminar
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Mensaje cuando no hay resultados */}
-          {getFilteredUsers().length === 0 && (
+          {filteredUsers.length === 0 && (
             <div className="text-center py-12">
               <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-900 mb-2">No se encontraron usuarios</h3>

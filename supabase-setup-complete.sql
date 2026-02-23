@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   email TEXT,
   full_name TEXT,
-  role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin', 'superadmin')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -76,6 +76,20 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
 
+-- Función segura para validar admins (evita recursión de policies)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.users u
+    WHERE u.id = auth.uid()
+    AND u.role IN ('admin', 'superadmin')
+  );
+$$;
+
 
 
 -- Limpieza de políticas redundantes en public.users
@@ -102,34 +116,19 @@ CREATE POLICY "Users can view their own profile" ON public.users
   FOR SELECT USING (auth.uid() = id);
 
 CREATE POLICY "Admins can view all users" ON public.users
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR SELECT USING (is_admin());
 
 CREATE POLICY "Users can update their own profile" ON public.users
   FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "Admins can update user roles" ON public.users
-  FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR UPDATE USING (is_admin());
 
 CREATE POLICY "Users can insert their profile" ON public.users
   FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Admins can delete users" ON public.users
-  FOR DELETE USING (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR DELETE USING (is_admin());
 
 -- Políticas para orders
 CREATE POLICY "Users can view their own orders" ON public.orders
@@ -146,24 +145,17 @@ CREATE POLICY "Users can update status of their own orders" ON public.orders
   WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Admins can view all orders" ON public.orders
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR SELECT USING (is_admin());
+
+CREATE POLICY "Admins can delete any order" ON public.orders
+  FOR DELETE USING (is_admin());
 
 -- Políticas para menu_items
 CREATE POLICY "Everyone can view menu items" ON public.menu_items
   FOR SELECT USING (true);
 
 CREATE POLICY "Only admins can modify menu items" ON public.menu_items
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR ALL USING (is_admin());
 
 -- 6. INSERTAR ITEMS DE MENÚ POR DEFECTO (si no existen)
 -- ============================================
