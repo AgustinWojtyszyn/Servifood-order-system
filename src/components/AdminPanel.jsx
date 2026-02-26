@@ -19,11 +19,16 @@ const AdminPanel = () => {
     if (!window.confirm(msg)) return;
     setArchivingPending(true)
     try {
-      const { error } = await db.archiveAllPendingOrders()
+      const { data, error } = await db.archiveAllPendingOrders()
       if (error) {
         alert('❌ Ocurrió un error al archivar los pedidos pendientes. Intenta nuevamente.\n\n' + error.message)
       } else {
-        alert('✅ Todos los pedidos pendientes han sido archivados correctamente.\n\nPuedes consultar el historial en la sección de pedidos archivados.')
+        const affected = Array.isArray(data) ? data.length : 0
+        alert(
+          affected === 0
+            ? 'No hay pedidos pendientes para archivar.'
+            : `✅ Pedidos archivados correctamente: ${affected}\n\nPuedes consultar el historial en la sección de pedidos archivados.`
+        )
         Sound.playSuccess()
         fetchData()
       }
@@ -64,7 +69,7 @@ const AdminPanel = () => {
   const deferredSearchTerm = useDeferredValue(searchTerm)
   
   // Estados para limpieza de datos
-  const [completedOrdersCount, setCompletedOrdersCount] = useState(0)
+  const [archivedOrdersCount, setArchivedOrdersCount] = useState(0)
   const [deletingOrders, setDeletingOrders] = useState(false)
 
   const getCompanyLabel = (slug) => {
@@ -82,13 +87,13 @@ const AdminPanel = () => {
   useEffect(() => {
     if (!user?.id || !isAdmin) return
     fetchData()
-    fetchCompletedOrdersCount()
+    fetchArchivedOrdersCount()
   }, [isAdmin, user])
 
   useEffect(() => {
     if (!user?.id || !isAdmin) return
     if (isAdmin && activeTab === 'cleanup') {
-      fetchCompletedOrdersCount()
+      fetchArchivedOrdersCount()
     }
   }, [activeTab, isAdmin, user])
 
@@ -346,22 +351,22 @@ const AdminPanel = () => {
     }
   }
 
-  const fetchCompletedOrdersCount = async () => {
+  const fetchArchivedOrdersCount = async () => {
     try {
-      const { count, error } = await db.getCompletedOrdersCount()
+      const { count, error } = await db.getArchivedOrdersCount()
       if (!error) {
-        setCompletedOrdersCount(count || 0)
+        setArchivedOrdersCount(count || 0)
       }
     } catch (err) {
-      console.error('Error fetching completed orders count:', err)
+      console.error('Error fetching archived orders count:', err)
     }
   }
 
-  const handleDeleteCompletedOrders = async () => {
+  const handleDeleteArchivedOrders = async () => {
     const confirmed = window.confirm(
-      `⚠️ ADVERTENCIA: Estás a punto de eliminar ${completedOrdersCount} pedidos completados.\n\n` +
+      `⚠️ ADVERTENCIA: Estás a punto de eliminar ${archivedOrdersCount} pedidos archivados.\n\n` +
       '✓ Esta acción liberará espacio en la base de datos\n' +
-      '✗ Los pedidos completados serán eliminados permanentemente\n' +
+      '✗ Los pedidos archivados serán eliminados permanentemente\n' +
       '✗ Esta acción NO se puede deshacer\n\n' +
       '¿Estás seguro de continuar?'
     )
@@ -372,7 +377,7 @@ const AdminPanel = () => {
     const doubleCheck = window.confirm(
       '🔒 CONFIRMACIÓN FINAL\n\n' +
       'Esta es tu última oportunidad de cancelar.\n' +
-      `Se eliminarán ${completedOrdersCount} pedidos completados.\n\n` +
+      `Se eliminarán ${archivedOrdersCount} pedidos archivados.\n\n` +
       '¿Confirmas que deseas proceder?'
     )
 
@@ -381,15 +386,15 @@ const AdminPanel = () => {
     setDeletingOrders(true)
     
     try {
-      const { error } = await db.deleteCompletedOrders()
+      const { error } = await db.deleteArchivedOrders()
       
       if (error) {
-        console.error('Error deleting completed orders:', error)
+        console.error('Error deleting archived orders:', error)
         alert('❌ Error al eliminar los pedidos: ' + error.message)
       } else {
-        alert(`✅ Se eliminaron ${completedOrdersCount} pedidos completados exitosamente.\n\n` +
+        alert(`✅ Se eliminaron ${archivedOrdersCount} pedidos archivados exitosamente.\n\n` +
               'Se ha liberado espacio en la base de datos.')
-        setCompletedOrdersCount(0)
+        setArchivedOrdersCount(0)
         fetchData() // Refrescar datos
       }
     } catch (err) {
@@ -842,9 +847,9 @@ const AdminPanel = () => {
           >
             <Database className="h-5 w-5 shrink-0" />
             <span>Limpiar Cache</span>
-            {completedOrdersCount > 0 && (
+            {archivedOrdersCount > 0 && (
               <span className="ml-2 inline-flex items-center justify-center px-2.5 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full shadow-md">
-                {completedOrdersCount}
+                {archivedOrdersCount}
               </span>
             )}
           </button>
@@ -1848,20 +1853,20 @@ const AdminPanel = () => {
                 <h3 className="text-xl font-bold text-yellow-900 mb-2">⚠️ Recordatorio Importante</h3>
                 <div className="text-yellow-800 space-y-2 leading-relaxed">
                   <p className="font-semibold">
-                    Recordá limpiar regularmente los pedidos completados para ahorrar recursos en Supabase.
+                    Recordá limpiar regularmente los pedidos archivados para ahorrar recursos en Supabase.
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Los pedidos completados ocupan espacio en la base de datos</li>
+                    <li>Los pedidos archivados ocupan espacio en la base de datos</li>
                     <li>Se recomienda limpiar al final de cada día o semana</li>
                     <li>Esta acción es <strong>irreversible</strong> - los datos no se pueden recuperar</li>
-                    <li>Solo se eliminan pedidos con estado "Completado" o "Pendiente"</li>
+                    <li>Solo se eliminan pedidos con estado "Archivado"</li>
                   </ul>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Panel de limpieza de pedidos completados y pendientes antiguos */}
+          {/* Panel de limpieza de pedidos archivados y pendientes antiguos */}
           <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl">
@@ -1879,9 +1884,9 @@ const AdminPanel = () => {
                 <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Pedidos Completados</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Pedidos Archivados</p>
                       <p className="text-3xl sm:text-4xl font-bold text-blue-600">
-                        {completedOrdersCount}
+                        {archivedOrdersCount}
                       </p>
                     </div>
                     <div className="p-3 bg-blue-100 rounded-full">
@@ -1898,7 +1903,7 @@ const AdminPanel = () => {
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">Espacio Estimado</p>
                       <p className="text-3xl sm:text-4xl font-bold text-green-600">
-                        ~{(completedOrdersCount * 2).toFixed(1)}KB
+                        ~{(archivedOrdersCount * 2).toFixed(1)}KB
                       </p>
                     </div>
                     <div className="p-3 bg-green-100 rounded-full">
@@ -1943,7 +1948,7 @@ const AdminPanel = () => {
                 Úsalo para limpiar la lista de pendientes y mantener el historial ordenado.
               </div>
             </div>
-            {completedOrdersCount > 0 ? (
+            {archivedOrdersCount > 0 ? (
               <div className="space-y-4">
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">
                   <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
@@ -1951,7 +1956,7 @@ const AdminPanel = () => {
                     ¿Qué se eliminará?
                   </h4>
                   <ul className="text-blue-800 space-y-1 text-sm ml-7">
-                    <li>• {completedOrdersCount} pedidos con estado "Completado"</li>
+                    <li>• {archivedOrdersCount} pedidos con estado "Archivado"</li>
                     <li>• Información de items y opciones personalizadas</li>
                     <li>• Timestamps y datos asociados</li>
                   </ul>
@@ -1963,13 +1968,13 @@ const AdminPanel = () => {
                     ¡Atención! Acción Irreversible
                   </h4>
                   <p className="text-red-800 text-sm leading-relaxed">
-                    Una vez eliminados, los pedidos completados <strong>no se pueden recuperar</strong>. 
+                    Una vez eliminados, los pedidos archivados <strong>no se pueden recuperar</strong>. 
                     Asegúrate de haber exportado o guardado cualquier información importante antes de proceder.
                   </p>
                 </div>
 
                 <button
-                  onClick={handleDeleteCompletedOrders}
+                  onClick={handleDeleteArchivedOrders}
                   disabled={deletingOrders}
                   className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${
                     deletingOrders
@@ -1985,7 +1990,7 @@ const AdminPanel = () => {
                   ) : (
                     <>
                       <Trash2 className="h-6 w-6" />
-                      Eliminar {completedOrdersCount} Pedidos Completados
+                      Eliminar {archivedOrdersCount} Pedidos Archivados
                     </>
                   )}
                 </button>
@@ -1997,7 +2002,7 @@ const AdminPanel = () => {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">✨ Todo Limpio</h3>
                 <p className="text-gray-600 mb-4 max-w-md mx-auto">
-                  No hay pedidos completados para eliminar en este momento.
+                  No hay pedidos archivados para eliminar en este momento.
                 </p>
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border-2 border-green-200 rounded-lg text-green-700 font-semibold">
                   <span className="text-2xl">✓</span>
@@ -2017,7 +2022,7 @@ const AdminPanel = () => {
               <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
                 <h4 className="font-bold mb-2">🕐 Frecuencia Recomendada</h4>
                 <p className="text-sm leading-relaxed">
-                  Limpia los pedidos completados una vez por semana o cuando acumules más de 100 pedidos.
+                  Limpia los pedidos archivados una vez por semana o cuando acumules más de 100 pedidos.
                 </p>
               </div>
               <div className="bg-white/60 rounded-lg p-4 border border-purple-200">

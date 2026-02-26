@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun } from 'lucide-react'
+import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun, Archive } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
@@ -98,7 +98,7 @@ const Dashboard = ({ user, loading }) => {
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
-    completed: 0
+    archived: 0
   })
   const navigate = useNavigate()
   useOverlayLock(!!selectedOrder)
@@ -121,8 +121,6 @@ const Dashboard = ({ user, loading }) => {
       return () => clearInterval(interval)
     }
   }, [isAdmin, user])
-
-  const normalizeStatus = (status) => status === 'archived' ? 'completed' : status
 
   const checkIfAdmin = async () => {
     if (!user?.id) return
@@ -161,7 +159,7 @@ const Dashboard = ({ user, loading }) => {
         today.setHours(0, 0, 0, 0)
         
         let ordersWithUserNames = (data || []).map(order => {
-          const displayStatus = normalizeStatus(order.status)
+          const displayStatus = order.status
           const personId = order.person_key || (order.user_id ? String(order.user_id) : null)
           const person = personId ? personById.get(personId) : null
           const emails = Array.isArray(person?.emails) ? person.emails.filter(Boolean) : []
@@ -217,11 +215,11 @@ const Dashboard = ({ user, loading }) => {
     
     const total = todayOrders.length
     const pending = todayOrders.filter(order => (order.displayStatus || order.status) === 'pending').length
-    const completed = todayOrders.filter(order => 
-      (order.displayStatus || order.status) === 'completed' || (order.displayStatus || order.status) === 'delivered'
+    const archived = todayOrders.filter(order => 
+      (order.displayStatus || order.status) === 'archived'
     ).length
 
-    setStats({ total, pending, completed })
+    setStats({ total, pending, archived })
   }
 
   const formatDate = (dateString) => {
@@ -234,10 +232,10 @@ const Dashboard = ({ user, loading }) => {
     })
   }
 
-  const handleMarkAsDelivered = async (orderId) => {
-    if (confirm('¿Marcar este pedido como entregado?')) {
+  const handleMarkAsArchived = async (orderId) => {
+    if (confirm('¿Archivar este pedido?')) {
       try {
-        const { error } = await db.updateOrderStatus(orderId, 'delivered')
+        const { error } = await db.updateOrderStatus(orderId, 'archived')
         if (error) {
           alert('Error al actualizar el pedido')
         } else {
@@ -254,7 +252,8 @@ const Dashboard = ({ user, loading }) => {
     if (currentStatus === newStatus) return // No hacer nada si es el mismo estado
     
     const statusNames = {
-      'completed': 'Completado',
+      'pending': 'Pendiente',
+      'archived': 'Archivado',
       'cancelled': 'Cancelado'
     }
     
@@ -273,18 +272,18 @@ const Dashboard = ({ user, loading }) => {
     }
   }
 
-  const handleMarkAllAsCompleted = async () => {
+  const handleArchiveAllPending = async () => {
     const pendingOrders = orders.filter(order => order.status === 'pending')
 
     if (pendingOrders.length === 0) {
-      alert('No hay pedidos pendientes para marcar como completados')
+      alert('No hay pedidos pendientes para archivar')
       return
     }
 
-    if (confirm(`¿Marcar todos los ${pendingOrders.length} pedidos pendientes como completados?`)) {
+    if (confirm(`¿Archivar todos los ${pendingOrders.length} pedidos pendientes?`)) {
       try {
         const promises = pendingOrders.map(order =>
-          db.updateOrderStatus(order.id, 'completed')
+          db.updateOrderStatus(order.id, 'archived')
         )
 
         const results = await Promise.all(promises)
@@ -293,7 +292,7 @@ const Dashboard = ({ user, loading }) => {
         if (errors.length > 0) {
           alert(`Se actualizaron ${pendingOrders.length - errors.length} pedidos. ${errors.length} fallaron.`)
         } else {
-          alert(`✓ ${pendingOrders.length} pedidos marcados como completados`)
+          alert(`✓ ${pendingOrders.length} pedidos archivados`)
         }
 
         fetchOrders() // Recargar pedidos
@@ -464,13 +463,12 @@ const Dashboard = ({ user, loading }) => {
                 const status = order.displayStatus || order.status
                 return (
               <span className={`inline-flex px-4 py-2 text-sm font-bold rounded-full ${
-                status === 'delivered' || status === 'completed' ? 'bg-green-100 text-green-800' :
+                status === 'archived' ? 'bg-green-100 text-green-800' :
                 status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                 status === 'cancelled' ? 'bg-red-100 text-red-800' :
                 'bg-blue-100 text-blue-800'
               }`}>
-                {status === 'delivered' ? 'Entregado' :
-                 status === 'completed' ? 'Completado' :
+                {status === 'archived' ? 'Archivado' :
                  status === 'pending' ? 'Pendiente' : 
                  status === 'cancelled' ? 'Cancelado' : status}
               </span>
@@ -520,11 +518,11 @@ const Dashboard = ({ user, loading }) => {
           </button>
           {isAdmin && (
             <button
-              onClick={handleMarkAllAsCompleted}
+              onClick={handleArchiveAllPending}
               className="inline-flex items-center justify-center bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
             >
-              <CheckCircle className="h-5 w-5 mr-2" />
-              Marcar Todos Completos
+              <Archive className="h-5 w-5 mr-2" />
+              Archivar Todos
             </button>
           )}
           <Link to="/order" className="btn-primary inline-flex items-center justify-center w-full sm:w-auto bg-linear-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
@@ -570,8 +568,8 @@ const Dashboard = ({ user, loading }) => {
               <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="ml-4 sm:ml-5">
-              <p className="text-xs sm:text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-1">COMPLETADOS</p>
-              <p className="text-4xl sm:text-5xl font-black text-green-600 drop-shadow">{stats.completed}</p>
+              <p className="text-xs sm:text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-1">ARCHIVADOS</p>
+              <p className="text-4xl sm:text-5xl font-black text-green-600 drop-shadow">{stats.archived}</p>
             </div>
           </div>
         </div>
@@ -638,11 +636,11 @@ const Dashboard = ({ user, loading }) => {
                   <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
                     <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                       <div className={`p-2 rounded-full shrink-0 ${
-                        status === 'delivered' || status === 'completed' ? 'bg-green-100' :
+                        status === 'archived' ? 'bg-green-100' :
                         status === 'pending' ? 'bg-yellow-100' :
                         status === 'cancelled' ? 'bg-red-100' : 'bg-blue-100'
                       }`}>
-                        {status === 'delivered' || status === 'completed' ? (
+                        {status === 'archived' ? (
                           <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                         ) : status === 'pending' ? (
                           <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
@@ -721,26 +719,24 @@ const Dashboard = ({ user, loading }) => {
                             value={status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value, status)}
                             className={`text-xs font-semibold rounded-full px-2 sm:px-3 py-1 border-2 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                              status === 'completed' || status === 'delivered' ? 'bg-green-100 text-green-800 border-green-300' :
+                              status === 'archived' ? 'bg-green-100 text-green-800 border-green-300' :
                               status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-300' :
                               'bg-yellow-100 text-yellow-800 border-yellow-300'
                             }`}
                           >
                             <option value="pending">Pendiente</option>
-                            <option value="completed">Completado</option>
+                            <option value="archived">Archivado</option>
                             <option value="cancelled">Cancelado</option>
                           </select>
                         </>
                       ) : (
                         <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                          status === 'delivered' || status === 'completed' ? 'bg-green-100 text-green-800' :
+                          status === 'archived' ? 'bg-green-100 text-green-800' :
                           status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          status === 'processing' ? 'bg-blue-100 text-blue-800' :
                           status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-50 text-blue-800'
                         }`}>
-                          {status === 'delivered' || status === 'completed' ? 'Completado' :
+                          {status === 'archived' ? 'Archivado' :
                            status === 'pending' ? 'Pendiente' :
-                           status === 'processing' ? 'En Proceso' :
                            status === 'cancelled' ? 'Cancelado' : status}
                         </span>
                       )}
@@ -752,18 +748,18 @@ const Dashboard = ({ user, loading }) => {
         )}
       </div>
 
-      {/* Completed Orders - Solo para admins */}
-      {isAdmin && orders.filter(o => (o.displayStatus || o.status) === 'delivered' || (o.displayStatus || o.status) === 'completed').length > 0 && (
+      {/* Archived Orders - Solo para admins */}
+      {isAdmin && orders.filter(o => (o.displayStatus || o.status) === 'archived').length > 0 && (
         <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Pedidos Completados</h2>
+            <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Pedidos Archivados</h2>
             <span className="text-sm text-gray-600 font-semibold">
-              {orders.filter(o => (o.displayStatus || o.status) === 'delivered' || (o.displayStatus || o.status) === 'completed').length} completado(s)
+              {orders.filter(o => (o.displayStatus || o.status) === 'archived').length} archivado(s)
             </span>
           </div>
 
           <div className="space-y-4">
-            {orders.filter(o => (o.displayStatus || o.status) === 'delivered' || (o.displayStatus || o.status) === 'completed').slice(0, 10).map((order) => {
+            {orders.filter(o => (o.displayStatus || o.status) === 'archived').slice(0, 10).map((order) => {
               const status = order.displayStatus || order.status
               return (
               <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-3 sm:p-4 border-2 border-green-200 bg-green-50 rounded-xl transition-all">
@@ -793,7 +789,7 @@ const Dashboard = ({ user, loading }) => {
                     </button>
                   )}
                   <span className="inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 whitespace-nowrap">
-                    {status === 'delivered' ? 'Entregado' : 'Completado'}
+                    Archivado
                   </span>
                 </div>
               </div>
@@ -850,10 +846,9 @@ const Dashboard = ({ user, loading }) => {
                           const status = order.displayStatus || order.status
                           return (
                             <span className="inline-flex px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-gray-100 text-gray-800 border border-gray-300">
-                              {status === 'delivered' ? 'Entregado' :
-                               status === 'completed' ? 'Completado' :
+                              {status === 'archived' ? 'Archivado' :
                                status === 'pending' ? 'Pendiente' :
-                               status === 'processing' ? 'En Proceso' : 'Cancelado'}
+                               'Cancelado'}
                             </span>
                           )
                         })()}

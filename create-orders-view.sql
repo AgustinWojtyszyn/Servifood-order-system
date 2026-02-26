@@ -74,9 +74,7 @@ SELECT
     ) as "Monto Total",
     CASE o.status
         WHEN 'pending' THEN 'Pendiente'
-        WHEN 'processing' THEN 'En Proceso'
-        WHEN 'completed' THEN 'Completado'
-        WHEN 'delivered' THEN 'Entregado'
+        WHEN 'archived' THEN 'Archivado'
         WHEN 'cancelled' THEN 'Cancelado'
         ELSE o.status
     END as "Estado",
@@ -110,9 +108,7 @@ SELECT
     (item->>'quantity')::integer * (item->>'price')::numeric as "Subtotal",
     CASE o.status
         WHEN 'pending' THEN 'Pendiente'
-        WHEN 'processing' THEN 'En Proceso'
-        WHEN 'completed' THEN 'Completado'
-        WHEN 'delivered' THEN 'Entregado'
+        WHEN 'archived' THEN 'Archivado'
         WHEN 'cancelled' THEN 'Cancelado'
         ELSE o.status
     END as "Estado",
@@ -139,8 +135,7 @@ SELECT
     u.email as "Email",
     COUNT(o.id) as "Total Pedidos",
     COUNT(CASE WHEN o.status = 'pending' THEN 1 END) as "Pendientes",
-    COUNT(CASE WHEN o.status = 'processing' THEN 1 END) as "En Proceso",
-    COUNT(CASE WHEN o.status = 'completed' THEN 1 END) as "Completados",
+    COUNT(CASE WHEN o.status = 'archived' THEN 1 END) as "Archivados",
     COUNT(CASE WHEN o.status = 'cancelled' THEN 1 END) as "Cancelados",
     SUM(
         (SELECT SUM((item->>'quantity')::numeric * (item->>'price')::numeric)
@@ -162,9 +157,7 @@ CREATE OR REPLACE VIEW orders_count_by_status AS
 SELECT 
     CASE status
         WHEN 'pending' THEN 'Pendiente'
-        WHEN 'processing' THEN 'En Proceso'
-        WHEN 'completed' THEN 'Completado'
-        WHEN 'delivered' THEN 'Entregado'
+        WHEN 'archived' THEN 'Archivado'
         WHEN 'cancelled' THEN 'Cancelado'
         ELSE status
     END as "Estado",
@@ -189,7 +182,7 @@ SELECT
     location as "Ubicación",
     COUNT(*) as "Total de Pedidos",
     COUNT(CASE WHEN status = 'pending' THEN 1 END) as "Pendientes",
-    COUNT(CASE WHEN status = 'completed' THEN 1 END) as "Completados",
+    COUNT(CASE WHEN status = 'archived' THEN 1 END) as "Archivados",
     SUM(total_items) as "Total de Items",
     ROUND(SUM(
         (SELECT SUM((item->>'quantity')::numeric * (item->>'price')::numeric)
@@ -229,7 +222,7 @@ SELECT
     COUNT(*) as "Total de Pedidos",
     SUM(total_items) as "Total de Items",
     COUNT(CASE WHEN status = 'pending' THEN 1 END) as "Pendientes",
-    COUNT(CASE WHEN status = 'completed' THEN 1 END) as "Completados",
+    COUNT(CASE WHEN status = 'archived' THEN 1 END) as "Archivados",
     ROUND(SUM(
         (SELECT SUM((item->>'quantity')::numeric * (item->>'price')::numeric)
          FROM jsonb_array_elements(items) as item)
@@ -251,8 +244,7 @@ CREATE OR REPLACE VIEW orders_summary AS
 SELECT 
     (SELECT COUNT(*) FROM public.orders) as "Total de Pedidos",
     (SELECT COUNT(*) FROM public.orders WHERE status = 'pending') as "Pendientes",
-    (SELECT COUNT(*) FROM public.orders WHERE status = 'processing') as "En Proceso",
-    (SELECT COUNT(*) FROM public.orders WHERE status = 'completed') as "Completados",
+    (SELECT COUNT(*) FROM public.orders WHERE status = 'archived') as "Archivados",
     (SELECT COUNT(*) FROM public.orders WHERE status = 'cancelled') as "Cancelados",
     (SELECT SUM(total_items) FROM public.orders) as "Total de Items Pedidos",
     (SELECT COUNT(DISTINCT user_id) FROM public.orders) as "Clientes Únicos",

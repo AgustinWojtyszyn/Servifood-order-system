@@ -9,7 +9,8 @@ export const useOrders = (userId = null, options = {}) => {
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
-    completed: 0
+    archived: 0,
+    cancelled: 0
   })
 
   const {
@@ -112,20 +113,15 @@ export const useOrders = (userId = null, options = {}) => {
     }
   }, [userId])
 
-  // Marcar como entregado
-  const markAsDelivered = useCallback(async (orderId) => {
-    return updateOrderStatus(orderId, 'delivered')
+  // Marcar como archivado
+  const markAsArchived = useCallback(async (orderId) => {
+    return updateOrderStatus(orderId, 'archived')
   }, [updateOrderStatus])
 
-  // Marcar como completado
-  const markAsCompleted = useCallback(async (orderId) => {
-    return updateOrderStatus(orderId, 'completed')
-  }, [updateOrderStatus])
-
-  // Marcar múltiples como completados
-  const markMultipleAsCompleted = useCallback(async (orderIds) => {
+  // Marcar múltiples como archivados
+  const markMultipleAsArchived = useCallback(async (orderIds) => {
     try {
-      const result = await ordersService.bulkUpdateStatus(orderIds, 'completed')
+      const result = await ordersService.bulkUpdateStatus(orderIds, 'archived')
 
       if (result.error) {
         return result
@@ -134,7 +130,7 @@ export const useOrders = (userId = null, options = {}) => {
       // Actualizar estado local
       setOrders(prev => prev.map(order =>
         orderIds.includes(order.id)
-          ? { ...order, status: 'completed', updated_at: new Date().toISOString() }
+          ? { ...order, status: 'archived', updated_at: new Date().toISOString() }
           : order
       ))
 
@@ -210,12 +206,12 @@ export const useOrders = (userId = null, options = {}) => {
   )
 
   const activeOrders = useMemo(() =>
-    orders.filter(order => order.status !== 'delivered' && order.status !== 'completed'),
+    orders.filter(order => order.status !== 'archived'),
     [orders]
   )
 
-  const completedOrders = useMemo(() =>
-    orders.filter(order => order.status === 'delivered' || order.status === 'completed'),
+  const archivedOrders = useMemo(() =>
+    orders.filter(order => order.status === 'archived'),
     [orders]
   )
 
@@ -240,16 +236,15 @@ export const useOrders = (userId = null, options = {}) => {
     // Computed
     pendingOrders,
     activeOrders,
-    completedOrders,
+    archivedOrders,
     todayOrders,
 
     // Acciones
     loadOrders,
     createOrder,
     updateOrderStatus,
-    markAsDelivered,
-    markAsCompleted,
-    markMultipleAsCompleted,
+    markAsArchived,
+    markMultipleAsArchived,
     searchOrders,
     filterByStatus
   }

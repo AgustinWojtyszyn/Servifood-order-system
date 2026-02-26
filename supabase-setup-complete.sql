@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   items JSONB NOT NULL,
   comments TEXT,
   delivery_date DATE,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'delivered', 'cancelled')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'archived', 'cancelled')),
   total_items INTEGER NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL

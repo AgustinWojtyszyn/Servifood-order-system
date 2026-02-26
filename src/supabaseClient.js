@@ -180,11 +180,12 @@ const logAudit = async ({
 
 // Archivar todos los pedidos pendientes (de cualquier día)
 const archiveAllPendingOrders = async () => {
-  const { data, error } = await supabase
-    .from('orders')
-    .update({ status: 'archived', updated_at: new Date().toISOString() })
-    .eq('status', 'pending')
-    .select('id')
+  const { data: { session } } = await supabase.auth.getSession()
+  console.log('session?', !!session, session?.user?.id)
+  const pendingLike = ['pending']
+  const { data, error } = await supabase.rpc('archive_orders_bulk', {
+    statuses: pendingLike
+  })
   return { data, error }
 }
 
@@ -199,14 +200,14 @@ export const db = {
             .select('id')
           return { data, error }
         },
-    // Marcar todos los pedidos pendientes de días anteriores como completados
+    // Marcar todos los pedidos pendientes de días anteriores como archivados
     completeAllOldPendingOrders: async () => {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const isoToday = today.toISOString()
       const { data, error } = await supabase
         .from('orders')
-        .update({ status: 'completed' })
+        .update({ status: 'archived' })
         .eq('status', 'pending')
         .lt('created_at', isoToday)
       return { data, error }
@@ -434,20 +435,20 @@ export const db = {
     return { data, error }
   },
 
-  deleteCompletedOrders: async () => {
-    cache.clear() // Limpiar cache al eliminar pedidos completados
+  deleteArchivedOrders: async () => {
+    cache.clear() // Limpiar cache al eliminar pedidos archivados
     const { data, error } = await supabase
       .from('orders')
       .delete()
-      .eq('status', 'completed')
+      .eq('status', 'archived')
     return { data, error }
   },
 
-  getCompletedOrdersCount: async () => {
+  getArchivedOrdersCount: async () => {
     const { count, error } = await supabase
       .from('orders')
       .select('id', { count: 'exact', head: true })
-      .eq('status', 'completed')
+      .eq('status', 'archived')
     return { count, error }
   },
 
@@ -461,7 +462,7 @@ export const db = {
     }
 
     // Estados que cuentan como "pedido" en este panel (incluir en preparación/listo)
-    const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending', 'ready', 'preparing']
+    const COUNTABLE_STATUSES = ['pending', 'archived', 'cancelled']
 
     const dbg = (label, data = {}) => {
       if (typeof window !== 'undefined') {

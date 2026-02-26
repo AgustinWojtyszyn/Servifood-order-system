@@ -183,7 +183,7 @@ const addSideItem = (label, buckets) => {
 
 const MonthlyPanel = ({ user, loading }) => {
   // Estados que cuentan para métricas (incluir preparaciones listas)
-  const COUNTABLE_STATUSES = ['completed', 'delivered', 'archived', 'pending', 'ready', 'preparing']
+  const COUNTABLE_STATUSES = ['pending', 'archived', 'cancelled']
   const [draftRange, setDraftRange] = useState({ start: '', end: '' })
   const [dateRange, setDateRange] = useState({ start: '', end: '' }) // rango aplicado
   const [metricsLoading, setMetricsLoading] = useState(false)

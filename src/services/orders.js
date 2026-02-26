@@ -285,15 +285,15 @@ class OrdersService {
     }
   }
 
-  // Eliminar pedidos completados (admin)
-  async deleteCompletedOrders() {
+  // Eliminar pedidos archivados (admin)
+  async deleteArchivedOrders() {
     try {
       const { data, error } = await supabaseService.withRetry(
         () => supabase
           .from('orders')
           .delete()
-          .in('status', [ORDER_STATUS.COMPLETED, ORDER_STATUS.DELIVERED]),
-        'deleteCompletedOrders'
+          .eq('status', ORDER_STATUS.ARCHIVED),
+        'deleteArchivedOrders'
       )
 
       if (error) throw error
@@ -303,7 +303,7 @@ class OrdersService {
 
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: handleError(error, 'deleteCompletedOrders') }
+      return { data: null, error: handleError(error, 'deleteArchivedOrders') }
     }
   }
 
@@ -333,9 +333,7 @@ class OrdersService {
         const stats = {
           total: data.length,
           pending: data.filter(o => o.status === ORDER_STATUS.PENDING).length,
-          processing: data.filter(o => o.status === ORDER_STATUS.PROCESSING).length,
-          completed: data.filter(o => o.status === ORDER_STATUS.COMPLETED).length,
-          delivered: data.filter(o => o.status === ORDER_STATUS.DELIVERED).length,
+          archived: data.filter(o => o.status === ORDER_STATUS.ARCHIVED).length,
           cancelled: data.filter(o => o.status === ORDER_STATUS.CANCELLED).length
         }
 

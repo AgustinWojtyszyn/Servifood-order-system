@@ -136,7 +136,7 @@ SELECT
   apu.user_ids,
   COUNT(owpk.id) AS total_orders,
   COUNT(*) FILTER (WHERE owpk.status = 'pending') AS pending_orders,
-  COUNT(*) FILTER (WHERE owpk.status IN ('completed', 'delivered')) AS completed_orders,
+  COUNT(*) FILTER (WHERE owpk.status = 'archived') AS archived_orders,
   COUNT(*) FILTER (WHERE owpk.status = 'cancelled') AS cancelled_orders,
   MIN(owpk.created_at) AS first_order_at,
   MAX(owpk.created_at) AS last_order_at

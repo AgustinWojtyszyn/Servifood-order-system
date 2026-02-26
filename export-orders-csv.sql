@@ -30,9 +30,7 @@ SELECT
     ), 2)::text || ';' ||
     CASE o.status
         WHEN 'pending' THEN 'Pendiente'
-        WHEN 'processing' THEN 'En Proceso'
-        WHEN 'completed' THEN 'Completado'
-        WHEN 'delivered' THEN 'Entregado'
+        WHEN 'archived' THEN 'Archivado'
         WHEN 'cancelled' THEN 'Cancelado'
         ELSE o.status
     END || ';' ||

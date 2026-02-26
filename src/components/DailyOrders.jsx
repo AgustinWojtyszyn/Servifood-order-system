@@ -23,7 +23,7 @@ const DailyOrders = ({ user, loading }) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [exportCompany, setExportCompany] = useState('all')
-  const [exportStatusFilter, setExportStatusFilter] = useState('completed')
+  const [exportStatusFilter, setExportStatusFilter] = useState('archived')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedDish, setSelectedDish] = useState('all')
   const [selectedSide, setSelectedSide] = useState('all')
@@ -36,7 +36,7 @@ const DailyOrders = ({ user, loading }) => {
     byLocation: {},
     byDish: {},
     totalItems: 0,
-    completed: 0,
+    archived: 0,
     pending: 0,
     cancelled: 0
   })
@@ -263,7 +263,7 @@ const DailyOrders = ({ user, loading }) => {
     const byLocation = {}
     const byDish = {}
     let totalItems = 0
-    let completed = 0
+    let archived = 0
     let pending = 0
     let cancelled = 0
 
@@ -291,8 +291,8 @@ const DailyOrders = ({ user, loading }) => {
       totalItems += order.total_items || 0
 
       // Contar por estado
-      if (order.status === 'completed' || order.status === 'delivered') {
-        completed++
+      if (order.status === 'archived') {
+        archived++
       } else if (order.status === 'cancelled') {
         cancelled++
       } else {
@@ -305,7 +305,7 @@ const DailyOrders = ({ user, loading }) => {
       byLocation,
       byDish,
       totalItems,
-      completed,
+      archived,
       pending,
       cancelled
     })
@@ -331,8 +331,7 @@ const DailyOrders = ({ user, loading }) => {
 
   const getStatusColor = (status) => {
     switch(status) {
-      case 'completed':
-      case 'delivered':
+      case 'archived':
         return 'bg-green-100 text-green-800 border-green-300'
       case 'cancelled':
         return 'bg-red-100 text-red-800 border-red-300'
@@ -345,10 +344,8 @@ const DailyOrders = ({ user, loading }) => {
 
   const getStatusText = (status) => {
     switch(status) {
-      case 'completed':
-        return 'Completado'
-      case 'delivered':
-        return 'Entregado'
+      case 'archived':
+        return 'Archivado'
       case 'cancelled':
         return 'Cancelado'
       case 'pending':
@@ -375,8 +372,8 @@ const DailyOrders = ({ user, loading }) => {
     ? Array.isArray(filteredOrders) ? filteredOrders : []
     : Array.isArray(filteredOrders) ? filteredOrders.filter(order => {
         if (!order) return false;
-        if (selectedStatus === 'completed') {
-          return order.status === 'completed' || order.status === 'delivered'
+        if (selectedStatus === 'archived') {
+          return order.status === 'archived'
         }
         return order.status === selectedStatus
       }) : []
@@ -504,8 +501,8 @@ const DailyOrders = ({ user, loading }) => {
     const companyFiltered = filterOrdersByCompany(ordersList, company)
 
     switch (statusFilter) {
-      case 'completed':
-        return companyFiltered.filter(order => order.status === 'completed' || order.status === 'delivered')
+      case 'archived':
+        return companyFiltered.filter(order => order.status === 'archived')
       case 'pending':
         return companyFiltered.filter(order => order.status === 'pending')
       default:
@@ -618,7 +615,7 @@ const DailyOrders = ({ user, loading }) => {
       // Crear hoja de estadísticas
       const statsData = [
         { Concepto: 'Total de Pedidos', Valor: stats.total },
-        { Concepto: 'Pedidos Completados', Valor: stats.completed },
+        { Concepto: 'Pedidos Archivados', Valor: stats.archived },
         { Concepto: 'Pedidos Pendientes', Valor: stats.pending },
         { Concepto: 'Pedidos Cancelados', Valor: stats.cancelled },
         { Concepto: 'Total de Items', Valor: stats.totalItems },
@@ -846,9 +843,9 @@ const DailyOrders = ({ user, loading }) => {
             return `${r.title}: ${response}`
           }).join(' | ') || 'Sin opciones'
 
-        const confirmationDate = formatDate(order.updated_at || order.completed_at || order.created_at)
+        const confirmationDate = formatDate(order.updated_at || order.created_at)
         const companyTarget = order.company || order.company_slug || order.target_company || order.location || 'Empresa no asignada'
-        const isConfirmed = order.status === 'completed' || order.status === 'delivered'
+        const isConfirmed = order.status === 'archived'
 
         return {
           'ID Pedido': order.id || order.order_id || 'N/A',
@@ -859,7 +856,7 @@ const DailyOrders = ({ user, loading }) => {
           'Teléfono': order.customer_phone || 'Sin teléfono',
           'Estado': getStatusText(order.status),
           'Turno': (order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo',
-          'Confirmación': isConfirmed ? 'Pedido completo confirmado' : 'Pendiente de confirmación',
+          'Confirmación': isConfirmed ? 'Pedido archivado' : 'Pendiente de confirmación',
           'Fecha Confirmación': confirmationDate,
           'Items Detallados': itemsList.join(' | ') || 'Sin items',
           'Guarnición Seleccionada': customSide || 'Sin guarnición',
@@ -1221,7 +1218,7 @@ const DailyOrders = ({ user, loading }) => {
                 onChange={(e) => setExportStatusFilter(e.target.value)}
                 className="rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
               >
-                <option value="completed">Solo completados</option>
+                <option value="archived">Solo archivados</option>
                 <option value="pending">Solo pendientes</option>
                 <option value="all">Todos los estados</option>
               </select>
@@ -1269,8 +1266,12 @@ const DailyOrders = ({ user, loading }) => {
                   if (window.confirm('¿Archivar TODOS los pedidos pendientes? Esta acción no se puede deshacer.')) {
                     const { data, error } = await db.archiveAllPendingOrders()
                     if (!error) {
-                      const updated = Array.isArray(data) ? data.length : 0
-                      alert(`Pedidos pendientes archivados correctamente. Total afectados: ${updated}.`)
+                      const affected = Array.isArray(data) ? data.length : 0
+                      alert(
+                        affected === 0
+                          ? 'No hay pedidos pendientes para archivar.'
+                          : `Pedidos archivados correctamente: ${affected}`
+                      )
                       Sound.playSuccess()
                       handleRefresh()
                     } else {
@@ -1341,7 +1342,7 @@ const DailyOrders = ({ user, loading }) => {
             >
               <option value="all">Todos</option>
               <option value="pending">Pendientes ({stats.pending})</option>
-              <option value="completed">Completados ({stats.completed})</option>
+              <option value="archived">Archivados ({stats.archived})</option>
               <option value="cancelled">Cancelados ({stats.cancelled})</option>
             </select>
           </div>
@@ -1465,9 +1466,9 @@ const DailyOrders = ({ user, loading }) => {
           <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-green-500 to-green-600 p-6 shadow-xl border-2 border-green-300">
             <div className="flex items-center justify-between">
               <div className="z-10">
-                <span className="text-base font-semibold text-green-100">Completados</span>
+                <span className="text-base font-semibold text-green-100">Archivados</span>
                 <h4 className="text-3xl font-black text-white mt-1">
-                  {stats.completed}
+                  {stats.archived}
                 </h4>
               </div>
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
@@ -1846,7 +1847,7 @@ const DailyOrders = ({ user, loading }) => {
                       <td className="px-4 py-3 text-sm text-gray-800 border-b border-gray-100">{order.location || '—'}</td>
                       <td className="px-4 py-3 text-sm font-semibold border-b border-gray-100">
                         <span className={`px-2 py-1 rounded-full text-xs ${
-                          order.status === 'completed' || order.status === 'delivered'
+                          order.status === 'archived'
                             ? 'bg-green-100 text-green-800'
                             : order.status === 'pending'
                             ? 'bg-yellow-100 text-yellow-800'

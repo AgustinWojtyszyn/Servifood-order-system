@@ -7,9 +7,7 @@ export const USER_ROLES = {
 
 export const ORDER_STATUS = {
   PENDING: 'pending',
-  PROCESSING: 'processing',
-  COMPLETED: 'completed',
-  DELIVERED: 'delivered',
+  ARCHIVED: 'archived',
   CANCELLED: 'cancelled'
 }
 
