@@ -462,7 +462,7 @@ export const db = {
     }
 
     // Estados que cuentan como "pedido" en este panel (incluir en preparación/listo)
-    const COUNTABLE_STATUSES = ['pending', 'archived', 'cancelled']
+    const COUNTABLE_STATUSES = ['pending', 'preparing', 'ready', 'archived', 'cancelled']
 
     const dbg = (label, data = {}) => {
       if (typeof window !== 'undefined') {

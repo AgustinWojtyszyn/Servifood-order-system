@@ -184,13 +184,15 @@ const addSideItem = (label, buckets) => {
 
 const MonthlyPanel = ({ user, loading }) => {
   // Estados que cuentan para métricas (incluir preparaciones listas)
-  const COUNTABLE_STATUSES = ['pending', 'archived', 'cancelled']
+  const COUNTABLE_STATUSES = ['pending', 'preparing', 'ready', 'archived', 'cancelled']
   const [draftRange, setDraftRange] = useState({ start: '', end: '' })
   const [dateRange, setDateRange] = useState({ start: '', end: '' }) // rango aplicado
   const [metricsLoading, setMetricsLoading] = useState(false)
   const [metrics, setMetrics] = useState(null)
   const [, setError] = useState(null)
   const [empresaFilter, setEmpresaFilter] = useState('ALL')
+  const [empresaSearch, setEmpresaSearch] = useState('')
+  const [showEmpresaSummary, setShowEmpresaSummary] = useState(false)
   const [dailyData, setDailyData] = useState(null)
   const [ordersByDay, setOrdersByDay] = useState({})
   const [selectedDate, setSelectedDate] = useState(null)
@@ -216,6 +218,22 @@ const MonthlyPanel = ({ user, loading }) => {
   const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
   const isDraftValid = draftRange.start && draftRange.end && draftRange.start <= draftRange.end
   const handlePrintPdf = () => window.print()
+  const PAGE_SIZE = 1000
+
+  const fetchAllOrders = async (buildQuery, label) => {
+    let from = 0
+    let all = []
+    while (true) {
+      const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1)
+      if (error) throw error
+      const batch = data || []
+      all = all.concat(batch)
+      pushLog('orders-page', { label, from, size: batch.length, total: all.length })
+      if (batch.length < PAGE_SIZE) break
+      from += PAGE_SIZE
+    }
+    return all
+  }
 
   useEffect(() => {
     // Control de acceso: solo admin
@@ -289,22 +307,29 @@ const MonthlyPanel = ({ user, loading }) => {
       pushLog('query-params', { startUtc, endUtc, start: currentRange.start, end: currentRange.end })
 
       // Dos consultas explícitas para evitar problemas de encoding con OR complejo
-      const [{ data: deliveryOrders, error: deliveryErr }, { data: createdOrders, error: createdErr }] = await Promise.all([
-        supabase
-          .from('orders')
-          .select(columns)
-          .gte('delivery_date', currentRange.start)
-          .lte('delivery_date', currentRange.end),
-        supabase
-          .from('orders')
-          .select(columns)
-          .is('delivery_date', null)
-          .gte('created_at', startUtc)
-          .lte('created_at', endUtc)
+      const [deliveryOrders, createdOrders] = await Promise.all([
+        fetchAllOrders(
+          (from, to) => supabase
+            .from('orders')
+            .select(columns)
+            .gte('delivery_date', currentRange.start)
+            .lte('delivery_date', currentRange.end)
+            .order('id', { ascending: true })
+            .range(from, to),
+          'delivery'
+        ),
+        fetchAllOrders(
+          (from, to) => supabase
+            .from('orders')
+            .select(columns)
+            .is('delivery_date', null)
+            .gte('created_at', startUtc)
+            .lte('created_at', endUtc)
+            .order('id', { ascending: true })
+            .range(from, to),
+          'created'
+        )
       ])
-
-      if (deliveryErr) throw deliveryErr
-      if (createdErr) throw createdErr
 
       let orders = []
       if (Array.isArray(deliveryOrders)) orders = orders.concat(deliveryOrders)
@@ -812,7 +837,12 @@ const MonthlyPanel = ({ user, loading }) => {
   const empresasForView = empresaFilter === 'ALL'
     ? empresasAll
     : empresasAll.filter(e => e.empresa === empresaFilter)
-  const empresasForDropdown = [...empresasAll].sort((a, b) => (a.empresa || '').localeCompare(b.empresa || ''))
+  const empresaSearchNormalized = empresaSearch.trim().toLowerCase()
+  const empresasForDropdown = [...empresasAll]
+    .filter(e => !empresaSearchNormalized
+      || (e.empresa || '').toLowerCase().includes(empresaSearchNormalized)
+      || e.empresa === empresaFilter)
+    .sort((a, b) => (a.empresa || '').localeCompare(b.empresa || ''))
   const totalsForView = empresasForView.reduce((acc, e) => {
     acc.pedidos += e.cantidadPedidos || 0
     acc.menusPrincipales += e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones)
@@ -1202,8 +1232,15 @@ const MonthlyPanel = ({ user, loading }) => {
             <div className="font-semibold text-center md:text-left">
               Mostrando los pedidos del <span className="font-bold">{dateRange.start || '...'}</span> al <span className="font-bold">{dateRange.end || '...'}</span>
             </div>
-            <div className="flex items-center gap-2 justify-center md:justify-end">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 justify-center md:justify-end">
               <label className="text-sm font-semibold text-gray-700">Empresa:</label>
+              <input
+                type="text"
+                value={empresaSearch}
+                onChange={(e) => setEmpresaSearch(e.target.value)}
+                placeholder="Buscar empresa..."
+                className="border rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 bg-white shadow-sm"
+              />
               <select
                 value={empresaFilter}
                 onChange={(e) => setEmpresaFilter(e.target.value)}
@@ -1214,51 +1251,79 @@ const MonthlyPanel = ({ user, loading }) => {
                   <option key={e.empresa} value={e.empresa}>{e.empresa}</option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmpresaFilter('ALL')
+                  setEmpresaSearch('')
+                }}
+                className="px-3 py-2 text-sm font-semibold text-blue-700 border border-blue-200 rounded-lg bg-white hover:bg-blue-50 transition-colors"
+              >
+                Limpiar
+              </button>
             </div>
           </div>
           {empresasForView.length === 0 ? (
             <div className="text-gray-600 text-center">No hay datos para el rango seleccionado.</div>
           ) : (
-            <div className="overflow-x-auto print-unclamp print-full-width">
-              <div className="mb-2 font-bold text-blue-900">Resumen por empresa (rango seleccionado)</div>
-              <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
-                <thead className="bg-blue-50">
-                  <tr>
-                    <th className="px-4 py-2">Empresa</th>
-                    <th className="px-4 py-2">Pedidos</th>
-                    <th className="px-4 py-2">Menús principales</th>
-                    <th className="px-4 py-2">Opciones</th>
-                    <th className="px-4 py-2">Guarniciones</th>
-                    <th className="px-4 py-2">Bebidas</th>
-                    <th className="px-4 py-2">Postres</th>
-                    <th className="px-4 py-2">Total menús principales</th>
-                    <th className="px-4 py-2">Total opciones</th>
-                    <th className="px-4 py-2">Total menús (total)</th>
-                    <th className="px-4 py-2">Total guarniciones</th>
-                    <th className="px-4 py-2">Total bebidas</th>
-                    <th className="px-4 py-2">Total postres</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {empresasForView.map(e => (
-                    <tr key={e.empresa} className="border-t hover:bg-blue-50 transition-all">
-                      <td className="px-4 py-2 font-bold">{e.empresa}</td>
-                      <td className="px-4 py-2">{e.cantidadPedidos}</td>
-                      <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '').map(([k, v]) => (<span key={k} className="inline-block bg-blue-100 text-blue-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                      <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => /^OPC(ION|IÓN)\s*\d+/i.test(nombre)).map(([k, v]) => (<span key={k} className="inline-block bg-yellow-100 text-yellow-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                      <td className="px-4 py-2">{Object.entries(e.tiposGuarniciones).map(([k, v]) => (<span key={k} className="inline-block bg-purple-100 text-purple-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                      <td className="px-4 py-2">{Object.entries(e.tiposBebidas || {}).map(([k, v]) => (<span key={k} className="inline-block bg-sky-100 text-sky-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                      <td className="px-4 py-2">{Object.entries(e.tiposPostres || {}).map(([k, v]) => (<span key={k} className="inline-block bg-pink-100 text-pink-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                      <td className="px-4 py-2 text-center">{e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones)}</td>
-                      <td className="px-4 py-2 text-center">{e.totalOpciones}</td>
-                      <td className="px-4 py-2 text-center">{e.totalMenusTotal ?? e.totalMenus}</td>
-                      <td className="px-4 py-2 text-center">{e.totalGuarniciones}</td>
-                      <td className="px-4 py-2 text-center">{e.totalBebidas || 0}</td>
-                      <td className="px-4 py-2 text-center">{e.totalPostres || 0}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-blue-900">Resumen por empresa (rango seleccionado)</div>
+                <button
+                  type="button"
+                  onClick={() => setShowEmpresaSummary(prev => !prev)}
+                  className="px-3 py-2 text-sm font-semibold text-blue-700 border border-blue-200 rounded-lg bg-white hover:bg-blue-50 transition-colors"
+                >
+                  {showEmpresaSummary ? 'Ocultar resumen' : 'Ver resumen'}
+                </button>
+              </div>
+              {showEmpresaSummary && (
+                <div className="overflow-x-auto print-unclamp print-full-width">
+                  <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
+                    <thead className="bg-blue-50">
+                      <tr>
+                        <th className="px-4 py-2">Empresa</th>
+                        <th className="px-4 py-2">Pedidos</th>
+                        <th className="px-4 py-2">Menús principales</th>
+                        <th className="px-4 py-2">Opciones</th>
+                        <th className="px-4 py-2">Guarniciones</th>
+                        <th className="px-4 py-2">Bebidas</th>
+                        <th className="px-4 py-2">Postres</th>
+                        <th className="px-4 py-2">Total menús principales</th>
+                        <th className="px-4 py-2">Total opciones</th>
+                        <th className="px-4 py-2">Total menús (total)</th>
+                        <th className="px-4 py-2">Total guarniciones</th>
+                        <th className="px-4 py-2">Total bebidas</th>
+                        <th className="px-4 py-2">Total postres</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {empresasForView.map(e => (
+                        <tr
+                          key={e.empresa}
+                          onClick={() => setEmpresaFilter(e.empresa)}
+                          title="Filtrar por empresa"
+                          className="border-t hover:bg-blue-50 transition-all cursor-pointer"
+                        >
+                          <td className="px-4 py-2 font-bold">{e.empresa}</td>
+                          <td className="px-4 py-2">{e.cantidadPedidos}</td>
+                          <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '').map(([k, v]) => (<span key={k} className="inline-block bg-blue-100 text-blue-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                          <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => /^OPC(ION|IÓN)\s*\d+/i.test(nombre)).map(([k, v]) => (<span key={k} className="inline-block bg-yellow-100 text-yellow-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                          <td className="px-4 py-2">{Object.entries(e.tiposGuarniciones).map(([k, v]) => (<span key={k} className="inline-block bg-purple-100 text-purple-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                          <td className="px-4 py-2">{Object.entries(e.tiposBebidas || {}).map(([k, v]) => (<span key={k} className="inline-block bg-sky-100 text-sky-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                          <td className="px-4 py-2">{Object.entries(e.tiposPostres || {}).map(([k, v]) => (<span key={k} className="inline-block bg-pink-100 text-pink-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
+                          <td className="px-4 py-2 text-center">{e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones)}</td>
+                          <td className="px-4 py-2 text-center">{e.totalOpciones}</td>
+                          <td className="px-4 py-2 text-center">{e.totalMenusTotal ?? e.totalMenus}</td>
+                          <td className="px-4 py-2 text-center">{e.totalGuarniciones}</td>
+                          <td className="px-4 py-2 text-center">{e.totalBebidas || 0}</td>
+                          <td className="px-4 py-2 text-center">{e.totalPostres || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1273,6 +1338,7 @@ export default MonthlyPanel
 // Panel de detalle diario
 const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
   if (!date) return null
+  const [showDetails, setShowDetails] = useState(false)
 
   const fmtTime = (ts) => {
     try {
@@ -1357,12 +1423,20 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
           <h4 className="text-lg font-bold text-blue-900">Detalle del {date}</h4>
           <p className="text-sm text-blue-800">Pedidos: {summary.count ?? totals.pedidos}</p>
         </div>
-        <button
-          onClick={onClose}
-          className="px-3 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow"
-        >
-          Cerrar detalle
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowDetails(prev => !prev)}
+            className="px-3 py-2 text-sm font-semibold text-blue-700 border border-blue-200 bg-white hover:bg-blue-50 rounded-lg shadow"
+          >
+            {showDetails ? 'Ocultar detalle' : 'Ver detalle'}
+          </button>
+          <button
+            onClick={onClose}
+            className="px-3 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow"
+          >
+            Cerrar detalle
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
@@ -1378,66 +1452,70 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
         <ChipList data={byEmpresa} />
       </Section>
 
-      <Section title="Menús principales">
-        <ChipList data={byMenu} />
-      </Section>
+      {showDetails && (
+        <>
+          <Section title="Menús principales">
+            <ChipList data={byMenu} />
+          </Section>
 
-      <Section title="Opciones">
-        <ChipList data={byOpcion} />
-      </Section>
+          <Section title="Opciones">
+            <ChipList data={byOpcion} />
+          </Section>
 
-      <Section title="Guarniciones">
-        <ChipList data={sideBuckets.tiposGuarniciones} />
-      </Section>
+          <Section title="Guarniciones">
+            <ChipList data={sideBuckets.tiposGuarniciones} />
+          </Section>
 
-      <Section title="Bebidas">
-        <ChipList data={sideBuckets.tiposBebidas} />
-      </Section>
+          <Section title="Bebidas">
+            <ChipList data={sideBuckets.tiposBebidas} />
+          </Section>
 
-      <Section title="Postres">
-        <ChipList data={sideBuckets.tiposPostres} />
-      </Section>
+          <Section title="Postres">
+            <ChipList data={sideBuckets.tiposPostres} />
+          </Section>
 
-      <Section title="Pedidos del día">
-        {orders.length === 0 ? (
-          <p className="text-sm text-gray-600">No hay pedidos en este día.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm bg-white border rounded-xl shadow">
-              <thead className="bg-blue-100 text-blue-900">
-                <tr>
-                  <th className="px-3 py-2 text-left">Hora</th>
-                  <th className="px-3 py-2 text-left">Empresa</th>
-                  <th className="px-3 py-2 text-left">Turno</th>
-                  <th className="px-3 py-2 text-left">Items</th>
-                  <th className="px-3 py-2 text-left">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o, i) => (
-                  <tr key={`${o.id}-${i}`} className="border-t hover:bg-blue-50">
-                    <td className="px-3 py-2">{fmtTime(o.created_at)}</td>
-                    <td className="px-3 py-2">{o.location || '—'}</td>
-                    <td className="px-3 py-2">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${
-                        (o.service || 'lunch') === 'dinner'
-                          ? 'bg-amber-100 text-amber-800 border-amber-200'
-                          : 'bg-sky-100 text-sky-800 border-sky-200'
-                      }`}>
-                        {(o.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">
-                      {renderItems(o, isOption)}
-                    </td>
-                    <td className="px-3 py-2 capitalize">{o.status || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Section>
+          <Section title="Pedidos del día">
+            {orders.length === 0 ? (
+              <p className="text-sm text-gray-600">No hay pedidos en este día.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm bg-white border rounded-xl shadow">
+                  <thead className="bg-blue-100 text-blue-900">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Hora</th>
+                      <th className="px-3 py-2 text-left">Empresa</th>
+                      <th className="px-3 py-2 text-left">Turno</th>
+                      <th className="px-3 py-2 text-left">Items</th>
+                      <th className="px-3 py-2 text-left">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((o, i) => (
+                      <tr key={`${o.id}-${i}`} className="border-t hover:bg-blue-50">
+                        <td className="px-3 py-2">{fmtTime(o.created_at)}</td>
+                        <td className="px-3 py-2">{o.location || '—'}</td>
+                        <td className="px-3 py-2">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${
+                            (o.service || 'lunch') === 'dinner'
+                              ? 'bg-amber-100 text-amber-800 border-amber-200'
+                              : 'bg-sky-100 text-sky-800 border-sky-200'
+                          }`}>
+                            {(o.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          {renderItems(o, isOption)}
+                        </td>
+                        <td className="px-3 py-2 capitalize">{o.status || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Section>
+        </>
+      )}
     </div>
   )
 }
