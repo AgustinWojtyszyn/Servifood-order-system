@@ -835,25 +835,6 @@ const AdminPanel = () => {
           </nav>
         </div>
         
-        {/* Botón de Limpiar Cache - Solo para Admins */}
-        <div className="px-3 sm:px-4 mt-3">
-          <button
-            onClick={() => setActiveTab('cleanup')}
-            className={`w-full py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'cleanup'
-                ? 'bg-red-600 text-white shadow-lg'
-                : 'bg-white/20 text-white hover:bg-white/30 border-2 border-white/40'
-            }`}
-          >
-            <Database className="h-5 w-5 shrink-0" />
-            <span>Limpiar Cache</span>
-            {archivedOrdersCount > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center px-2.5 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full shadow-md">
-                {archivedOrdersCount}
-              </span>
-            )}
-          </button>
-        </div>
       </div>
 
       {/* Users Tab */}
