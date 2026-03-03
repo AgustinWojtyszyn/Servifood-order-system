@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { ClipboardList, RefreshCcw, Search, ShieldCheck, Activity, ServerCrash, BarChart2, Download } from 'lucide-react'
+import { ClipboardList, RefreshCcw, Search, ShieldCheck, Activity, ServerCrash, BarChart2 } from 'lucide-react'
 import { auditService } from '../services/audit'
 import { formatDate, getTimeAgo, truncate } from '../utils'
 import { healthCheck, supabase } from '../services/supabase'
 import { withAdmin } from '../contexts/AuthContext'
+import excelLogo from '../assets/logoexcel.png'
 import {
   buildAuditExportRows,
   buildDailyAuditSummary,
-  exportAuditCsv,
   exportAuditXlsx,
   filterAuditLogs,
   groupDuplicateAuditLogs,
@@ -169,12 +169,6 @@ const AuditLogs = () => {
     setDateTo('')
   }
 
-  const handleExportCsv = () => {
-    if (!exportRows.length) return
-    const stamp = new Date().toISOString().slice(0, 10)
-    exportAuditCsv(exportRows, `auditoria-filtrada-${stamp}.csv`)
-  }
-
   const handleExportXlsx = async () => {
     if (!exportRows.length) return
     const stamp = new Date().toISOString().slice(0, 10)
@@ -314,13 +308,13 @@ const AuditLogs = () => {
                   <button
                     key={filter.id}
                     onClick={() => toggleFilter(filter.actions)}
-                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border transition-all ${
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-base font-semibold border transition-all ${
                       active
                         ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                         : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-700'
                     }`}
                   >
-                    <ShieldCheck className="h-4 w-4" />
+                    <ShieldCheck className="h-5 w-5" />
                     {filter.label}
                   </button>
                 )
@@ -333,27 +327,19 @@ const AuditLogs = () => {
               </button>
               <button
                 onClick={loadLogs}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-base font-semibold border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
                 disabled={loading}
               >
-                <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCcw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
                 Actualizar
               </button>
               <button
-                onClick={handleExportCsv}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                disabled={loading || exportRows.length === 0}
-              >
-                <Download className="h-4 w-4" />
-                CSV
-              </button>
-              <button
                 onClick={handleExportXlsx}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-3 px-6 py-3 rounded-full text-base font-semibold border border-emerald-700 bg-emerald-600 text-white shadow-lg shadow-emerald-200/70 hover:bg-emerald-700 hover:shadow-emerald-300/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading || exportRows.length === 0}
               >
-                <Download className="h-4 w-4" />
-                XLSX
+                <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
+                Exportar Excel
               </button>
             </div>
           </div>

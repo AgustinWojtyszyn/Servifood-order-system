@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Download, Package, TrendingUp, User, BarChart2, Printer } from 'lucide-react'
+import { Calendar, Package, TrendingUp, User, BarChart2, Printer } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
@@ -10,6 +10,7 @@ import { es } from 'date-fns/locale'
 import { useRef } from 'react'
 import clipboardImg from '../assets/clipboard.png'
 import choiceImg from '../assets/choice.png'
+import excelLogo from '../assets/logoexcel.png'
 
 // Configurar calendario en español
 registerLocale('es', es)
@@ -939,14 +940,14 @@ const MonthlyPanel = ({ user, loading }) => {
             onClick={handleExportAllExcel}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
           >
-            <Download className="h-5 w-5" />
+            <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
             Exportar panel (todo)
           </button>
           <button
             onClick={handleExportExcel}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
           >
-            <Download className="h-5 w-5" />
+            <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
             Exportar Excel
           </button>
           {dailyData?.daily_breakdown && (
@@ -954,7 +955,7 @@ const MonthlyPanel = ({ user, loading }) => {
               onClick={handleExportDailyExcel}
               className="ml-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
             >
-              <Download className="h-5 w-5" />
+              <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
               Exportar rango (diario)
             </button>
           )}

@@ -10,11 +10,13 @@ const InternalLoader = () => (
 // import { useRef } from 'react' // Ya está importado arriba
 import { useState, useEffect, useRef } from 'react'
 import { db } from '../supabaseClient'
-import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, FileSpreadsheet, Shield, Mail, Send, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon, Printer } from 'lucide-react'
+import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, Shield, Mail, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon, Printer } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
 import { Sound } from '../utils/Sound'
+import excelLogo from '../assets/logoexcel.png'
+import whatsappLogo from '../assets/whatsapp.png'
 
 const DailyOrders = ({ user, loading }) => {
   const emailLoadingRef = useRef(false)
@@ -1229,8 +1231,8 @@ const DailyOrders = ({ user, loading }) => {
               disabled={exportableOrdersCount === 0}
               className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-green-500 to-green-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-600 hover:to-green-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
             >
-              <FileSpreadsheet className="mr-3 h-6 w-6" />
-              📊 Excel ({exportableOrdersCount})
+              <img src={excelLogo} alt="" className="mr-3 h-7 w-7" aria-hidden="true" />
+              Exportar por Excel ({exportableOrdersCount})
             </button>
 
             <button
@@ -1256,8 +1258,8 @@ const DailyOrders = ({ user, loading }) => {
               disabled={sortedOrders.length === 0}
               className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-green-600 to-green-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-700 hover:to-green-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
             >
-              <Send className="mr-3 h-6 w-6" />
-              📱 WhatsApp
+              <img src={whatsappLogo} alt="" className="mr-3 h-7 w-7" aria-hidden="true" />
+              Exportar por WSP
             </button>
 
             {isAdmin && (
@@ -1407,94 +1409,6 @@ const DailyOrders = ({ user, loading }) => {
               <option value="hour">Hora (asc)</option>
                     {/* Estado oculto en vista principal */}
             </select>
-          </div>
-        </div>
-
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-8">
-          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-primary-500 to-primary-700 p-6 shadow-xl border-2 border-primary-300">
-            <div className="flex items-center justify-between">
-              <div className="z-10">
-                <span className="text-base font-semibold text-primary-100">Total Pedidos</span>
-                <h4 className="text-3xl font-black text-white mt-1">
-                  {stats.total}
-                </h4>
-              </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
-                <Package className="h-8 w-8 text-white drop-shadow-lg" />
-              </div>
-            </div>
-            <div className="absolute -right-4 -bottom-4 opacity-10">
-              <Package className="h-20 w-20 text-white" />
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-secondary-500 to-secondary-700 p-6 shadow-xl border-2 border-secondary-300">
-            <div className="flex items-center justify-between">
-              <div className="z-10">
-                <span className="text-base font-semibold text-secondary-100">Total Items</span>
-                <h4 className="text-3xl font-black text-white mt-1">
-                  {stats.totalItems}
-                </h4>
-              </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
-                <TrendingUp className="h-8 w-8 text-white drop-shadow-lg" />
-              </div>
-            </div>
-            <div className="absolute -right-4 -bottom-4 opacity-10">
-              <TrendingUp className="h-20 w-20 text-white" />
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-yellow-500 to-yellow-600 p-6 shadow-xl border-2 border-yellow-300">
-            <div className="flex items-center justify-between">
-              <div className="z-10">
-                <span className="text-base font-semibold text-yellow-100">Pendientes</span>
-                <h4 className="text-3xl font-black text-white mt-1">
-                  {stats.pending}
-                </h4>
-              </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
-                <Clock className="h-8 w-8 text-white drop-shadow-lg" />
-              </div>
-            </div>
-            <div className="absolute -right-4 -bottom-4 opacity-10">
-              <Clock className="h-20 w-20 text-white" />
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-green-500 to-green-600 p-6 shadow-xl border-2 border-green-300">
-            <div className="flex items-center justify-between">
-              <div className="z-10">
-                <span className="text-base font-semibold text-green-100">Archivados</span>
-                <h4 className="text-3xl font-black text-white mt-1">
-                  {stats.archived}
-                </h4>
-              </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
-                <CheckCircle className="h-8 w-8 text-white drop-shadow-lg" />
-              </div>
-            </div>
-            <div className="absolute -right-4 -bottom-4 opacity-10">
-              <CheckCircle className="h-20 w-20 text-white" />
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-red-500 to-red-600 p-6 shadow-xl border-2 border-red-300">
-            <div className="flex items-center justify-between">
-              <div className="z-10">
-                <span className="text-base font-semibold text-red-100">Cancelados</span>
-                <h4 className="text-3xl font-black text-white mt-1">
-                  {stats.cancelled}
-                </h4>
-              </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 shadow-lg">
-                <XCircle className="h-8 w-8 text-white drop-shadow-lg" />
-              </div>
-            </div>
-            <div className="absolute -right-4 -bottom-4 opacity-10">
-              <XCircle className="h-20 w-20 text-white" />
-            </div>
           </div>
         </div>
 
