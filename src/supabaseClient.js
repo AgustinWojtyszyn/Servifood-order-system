@@ -476,18 +476,37 @@ export const db = {
     const startUtc = new Date(`${start}T00:00:00.000Z`).toISOString()
     const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
     const selectOrders = async (cols) => {
+      const pageSize = 1000
+      let from = 0
+      let all = []
       dbg('query', { start, end, cols })
-      const res = await supabase
-        .from('orders')
-        .select(cols)
-        .or(
-          [
-            `and(delivery_date.gte.${start},delivery_date.lte.${end})`,
-            `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
-          ].join(',')
-        )
-      dbg('result', { count: res?.data?.length || 0, error: res?.error })
-      return res
+      while (true) {
+        const res = await supabase
+          .from('orders')
+          .select(cols)
+          .or(
+            [
+              `and(delivery_date.gte.${start},delivery_date.lte.${end})`,
+              `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
+            ].join(',')
+          )
+          .order('id', { ascending: true })
+          .range(from, from + pageSize - 1)
+
+        if (res?.error) {
+          dbg('result', { count: res?.data?.length || 0, error: res?.error })
+          return res
+        }
+
+        const batch = res?.data || []
+        all = all.concat(batch)
+        dbg('page', { from, size: batch.length, total: all.length })
+
+        if (batch.length < pageSize) break
+        from += pageSize
+      }
+      dbg('result', { count: all.length, error: null })
+      return { data: all, error: null }
     }
 
     // Intento principal: incluye custom_responses si existe

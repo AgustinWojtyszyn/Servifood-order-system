@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
@@ -7,7 +7,6 @@ import ExcelJS from 'exceljs'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
 import { es } from 'date-fns/locale'
-import { useRef } from 'react'
 import clipboardImg from '../assets/clipboard.png'
 import choiceImg from '../assets/choice.png'
 import excelLogo from '../assets/logoexcel.png'
@@ -181,6 +180,101 @@ const addSideItem = (label, buckets) => {
   incrementCount(buckets.tiposGuarniciones, label)
 }
 
+const isOptionName = (name = '') => /^OPC(ION|IÓN)\s*\d+/i.test(name.trim())
+
+const buildDailyBreakdownFromOrdersByDay = (dates = [], byDay = {}) => {
+  const daily_breakdown = []
+  const range_totals = {
+    count: 0,
+    menus_principales: 0,
+    total_opciones: 0,
+    total_guarniciones: 0,
+    total_bebidas: 0,
+    total_postres: 0
+  }
+
+  dates.forEach(date => {
+    const dayOrders = byDay?.[date] || []
+    const sideBuckets = createSideBuckets()
+    const row = {
+      date,
+      count: 0,
+      menus_principales: 0,
+      opciones: { 'OPCIÓN 1': 0, 'OPCIÓN 2': 0, 'OPCIÓN 3': 0, 'OPCIÓN 4': 0, 'OPCIÓN 5': 0, 'OPCIÓN 6': 0 },
+      total_opciones: 0,
+      tipos_guarniciones: sideBuckets.tiposGuarniciones,
+      total_guarniciones: 0,
+      tipos_bebidas: sideBuckets.tiposBebidas,
+      total_bebidas: 0,
+      tipos_postres: sideBuckets.tiposPostres,
+      total_postres: 0
+    }
+
+    dayOrders.forEach(o => {
+      row.count += 1
+      let items = []
+      if (Array.isArray(o.items)) items = o.items
+      else if (typeof o.items === 'string') {
+        try {
+          items = JSON.parse(o.items)
+        } catch {
+          items = []
+        }
+      }
+      items.forEach(it => {
+        const qty = it?.quantity || 1
+        const name = (it?.name || '').trim()
+        if (!name) return
+        if (isOptionName(name)) {
+          const m = name.match(/\d+/)
+          const key = m ? `OPCIÓN ${m[0]}` : name.toUpperCase()
+          if (row.opciones[key] === undefined) row.opciones[key] = 0
+          row.opciones[key] += qty
+          row.total_opciones += qty
+        } else {
+          row.menus_principales += qty
+        }
+      })
+
+      let custom = []
+      if (Array.isArray(o.custom_responses)) custom = o.custom_responses
+      else if (typeof o.custom_responses === 'string') {
+        try {
+          custom = JSON.parse(o.custom_responses)
+        } catch {
+          custom = []
+        }
+      }
+      custom.forEach(cr => {
+        const resp = toDisplayString(cr?.response)
+        if (resp) addSideItem(resp, sideBuckets)
+        if (Array.isArray(cr?.options)) {
+          cr.options.forEach(opt => {
+            const value = toDisplayString(opt)
+            if (!value) return
+            addSideItem(value, sideBuckets)
+          })
+        }
+      })
+    })
+
+    row.total_guarniciones = sideBuckets.totalGuarniciones
+    row.total_bebidas = sideBuckets.totalBebidas
+    row.total_postres = sideBuckets.totalPostres
+
+    range_totals.count += row.count
+    range_totals.menus_principales += row.menus_principales
+    range_totals.total_opciones += row.total_opciones
+    range_totals.total_guarniciones += row.total_guarniciones
+    range_totals.total_bebidas += row.total_bebidas
+    range_totals.total_postres += row.total_postres
+
+    daily_breakdown.push(row)
+  })
+
+  return { daily_breakdown, range_totals }
+}
+
 
 const MonthlyPanel = ({ user, loading }) => {
   // Estados que cuentan para métricas (incluir preparaciones listas)
@@ -215,7 +309,6 @@ const MonthlyPanel = ({ user, loading }) => {
   }
 
   const palette = ['#2563eb']
-  const maxDailyCount = dailyData?.daily_breakdown ? Math.max(...dailyData.daily_breakdown.map(x => x.count || 0), 1) : 1
   const isDraftValid = draftRange.start && draftRange.end && draftRange.start <= draftRange.end
   const handlePrintPdf = () => window.print()
   const PAGE_SIZE = 1000
@@ -234,6 +327,28 @@ const MonthlyPanel = ({ user, loading }) => {
     }
     return all
   }
+
+  const ordersByDayForView = useMemo(() => {
+    if (empresaFilter === 'ALL') return ordersByDay || {}
+    const filtered = {}
+    Object.entries(ordersByDay || {}).forEach(([date, dayOrders]) => {
+      const match = (dayOrders || []).filter(order => (order.location || 'Sin ubicación') === empresaFilter)
+      if (match.length) filtered[date] = match
+    })
+    return filtered
+  }, [ordersByDay, empresaFilter])
+
+  const dailyDataForView = useMemo(() => {
+    if (!dailyData?.daily_breakdown) return dailyData
+    if (empresaFilter === 'ALL') return dailyData
+    const dates = dailyData.daily_breakdown.map(d => d.date)
+    const recalculated = buildDailyBreakdownFromOrdersByDay(dates, ordersByDayForView)
+    return { ...dailyData, ...recalculated }
+  }, [dailyData, ordersByDayForView, empresaFilter])
+
+  const maxDailyCount = dailyDataForView?.daily_breakdown
+    ? Math.max(...dailyDataForView.daily_breakdown.map(x => x.count || 0), 1)
+    : 1
 
   useEffect(() => {
     // Control de acceso: solo admin
@@ -451,9 +566,10 @@ const MonthlyPanel = ({ user, loading }) => {
         total: breakdown?.range_totals?.count || 0,
         sample: breakdown?.daily_breakdown?.slice?.(0, 3) || []
       })
-      // Fallback: si Supabase devolvió 0 en breakdown pero tenemos órdenes, recalcular rápido desde "orders"
+      const breakdownCount = breakdown?.range_totals?.count ?? 0
+      // Fallback: si el breakdown no coincide con las órdenes del rango, recalcular desde "orders"
       let finalBreakdown = breakdown
-      if ((breakdown?.range_totals?.count ?? 0) === 0 && orders.length > 0) {
+      if (orders.length > 0 && breakdownCount !== orders.length) {
         const byDay = {}
         const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/San_Juan', year: 'numeric', month: '2-digit', day: '2-digit' })
         const bucketForOrder = (o) => {
@@ -549,7 +665,7 @@ const MonthlyPanel = ({ user, loading }) => {
           return acc
         }, { count: 0, menus_principales: 0, total_opciones: 0, total_guarniciones: 0, total_bebidas: 0, total_postres: 0 })
         finalBreakdown = { daily_breakdown, range_totals }
-        pushLog('breakdown-fallback', { days: daily_breakdown.length, total: range_totals.count })
+        pushLog('breakdown-fallback', { days: daily_breakdown.length, total: range_totals.count, breakdownCount, ordersCount: orders.length })
       }
       // Evitar condiciones de carrera: solo actualizar si es la petición vigente
       if (reqId === fetchId.current) {
@@ -623,8 +739,8 @@ const MonthlyPanel = ({ user, loading }) => {
 
   // Exportar desglose diario del rango
   const handleExportDailyExcel = async () => {
-    if (!dailyData || !dailyData.daily_breakdown) return
-    const rows = buildDailyRows(dailyData, ordersByDay)
+    if (!dailyDataForView || !dailyDataForView.daily_breakdown) return
+    const rows = buildDailyRows(dailyDataForView, ordersByDayForView)
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('Desglose Diario')
     if (rows.length > 0) {
@@ -647,8 +763,8 @@ const MonthlyPanel = ({ user, loading }) => {
       wsSummary.columns = Object.keys(summaryRows[0]).map(k => ({ header: k, key: k, width: 20 }))
       wsSummary.addRows(summaryRows)
     }
-    if (dailyData?.daily_breakdown) {
-      const dailyRows = buildDailyRows(dailyData, ordersByDay)
+    if (dailyDataForView?.daily_breakdown) {
+      const dailyRows = buildDailyRows(dailyDataForView, ordersByDayForView)
       const wsDaily = wb.addWorksheet('Desglose Diario')
       if (dailyRows.length > 0) {
         wsDaily.columns = Object.keys(dailyRows[0]).map(k => ({ header: k, key: k, width: 20 }))
@@ -980,7 +1096,7 @@ const MonthlyPanel = ({ user, loading }) => {
             <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
             Exportar Excel
           </button>
-          {dailyData?.daily_breakdown && (
+          {dailyDataForView?.daily_breakdown && (
             <button
               onClick={handleExportDailyExcel}
               className="ml-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
@@ -1014,17 +1130,17 @@ const MonthlyPanel = ({ user, loading }) => {
       {metrics && (
         <div className="space-y-6">
           {/* Gráficos rápidos (siempre visibles cuando hay datos) */}
-          {dailyData?.daily_breakdown && (
+          {dailyDataForView?.daily_breakdown && (
           <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break print-full-width">
             <div className="flex items-center gap-2 mb-3">
               <BarChart2 className="h-5 w-5 text-blue-600" />
               <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
             </div>
             <p className="text-sm text-gray-700 mb-3">
-              {dailyData.daily_breakdown.length} días en el rango seleccionado.
+              {dailyDataForView.daily_breakdown.length} días en el rango seleccionado.
             </p>
             <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-1 print-unclamp print-full-width">
-                {dailyData.daily_breakdown.map(d => {
+                {dailyDataForView.daily_breakdown.map(d => {
                   const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
                   const height = `${heightPx}px`
                   const color = palette[0]
@@ -1053,7 +1169,7 @@ const MonthlyPanel = ({ user, loading }) => {
           )}
 
           {/* Desglose diario del rango */}
-          {dailyData?.daily_breakdown && (
+          {dailyDataForView?.daily_breakdown && (
             <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break print-full-width">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="h-5 w-5 text-blue-600" />
@@ -1062,14 +1178,14 @@ const MonthlyPanel = ({ user, loading }) => {
               {selectedDate && (
                 <DailyDetailPanel
                   date={selectedDate}
-                  orders={ordersByDay[selectedDate] || []}
-                  dailyBreakdown={dailyData.daily_breakdown.find(d => d.date === selectedDate)}
+                  orders={ordersByDayForView[selectedDate] || []}
+                  dailyBreakdown={dailyDataForView.daily_breakdown.find(d => d.date === selectedDate)}
                   onClose={() => setSelectedDate(null)}
                 />
               )}
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm text-gray-700">
-                  {dailyData.daily_breakdown.length} días en el rango seleccionado.
+                  {dailyDataForView.daily_breakdown.length} días en el rango seleccionado.
                 </p>
                 <button
                   onClick={() => setShowDailyTable(prev => !prev)}
@@ -1089,7 +1205,7 @@ const MonthlyPanel = ({ user, loading }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {dailyData.daily_breakdown.map(d => (
+                      {dailyDataForView.daily_breakdown.map(d => (
                         <tr key={d.date} className="border-t hover:bg-blue-50 transition-all">
                           <td className="px-4 py-2">{d.date}</td>
                           <td className="px-4 py-2 text-right">{d.count}</td>
@@ -1097,7 +1213,7 @@ const MonthlyPanel = ({ user, loading }) => {
                       ))}
                       <tr className="border-t bg-blue-100">
                         <td className="px-4 py-2 font-semibold">Totales del rango</td>
-                        <td className="px-4 py-2 text-right font-semibold">{dailyData.range_totals.count}</td>
+                        <td className="px-4 py-2 text-right font-semibold">{dailyDataForView.range_totals.count}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1337,8 +1453,8 @@ export default MonthlyPanel
 
 // Panel de detalle diario
 const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
-  if (!date) return null
   const [showDetails, setShowDetails] = useState(false)
+  if (!date) return null
 
   const fmtTime = (ts) => {
     try {
@@ -1439,21 +1555,21 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-        <Stat label="Total pedidos" value={summary.count ?? totals.pedidos} />
-        <Stat label="Total menús" value={summary.menus_principales ?? totals.menus} />
-        <Stat label="Total opciones" value={summary.total_opciones ?? totals.opciones} />
-        <Stat label="Total guarniciones" value={summary.total_guarniciones} />
-        <Stat label="Total bebidas" value={summary.total_bebidas} />
-        <Stat label="Total postres" value={summary.total_postres} />
-      </div>
-
-      <Section title="Desglose por empresa">
-        <ChipList data={byEmpresa} />
-      </Section>
-
       {showDetails && (
         <>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+            <Stat label="Total pedidos" value={summary.count ?? totals.pedidos} />
+            <Stat label="Total menús" value={summary.menus_principales ?? totals.menus} />
+            <Stat label="Total opciones" value={summary.total_opciones ?? totals.opciones} />
+            <Stat label="Total guarniciones" value={summary.total_guarniciones} />
+            <Stat label="Total bebidas" value={summary.total_bebidas} />
+            <Stat label="Total postres" value={summary.total_postres} />
+          </div>
+
+          <Section title="Desglose por empresa">
+            <ChipList data={byEmpresa} />
+          </Section>
+
           <Section title="Menús principales">
             <ChipList data={byMenu} />
           </Section>
