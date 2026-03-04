@@ -18,6 +18,7 @@ import { Sound } from '../utils/Sound'
 import excelLogo from '../assets/logoexcel.png'
 import whatsappLogo from '../assets/whatsapp.png'
 import orderImg from '../assets/order.png'
+import dinnerImg from '../assets/dinner.png'
 
 const DailyOrders = ({ user, loading }) => {
   const emailLoadingRef = useRef(false)
@@ -33,7 +34,6 @@ const DailyOrders = ({ user, loading }) => {
   const [sortBy, setSortBy] = useState('recent') // recent, location, hour, status
   const [availableDishes, setAvailableDishes] = useState([])
   const [refreshing, setRefreshing] = useState(false)
-  const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
     byLocation: {},
@@ -1175,8 +1175,9 @@ const DailyOrders = ({ user, loading }) => {
         {/* Page Header */}
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4 print-hide">
           <div>
-            <h4 className="text-3xl font-black text-black dark:text-white">
-              📋 Pedidos Diarios
+            <h4 className="text-3xl font-black text-black dark:text-white flex items-center gap-3">
+              <img src={dinnerImg} alt="" className="h-10 w-10" aria-hidden="true" />
+              Pedidos Diarios
             </h4>
             <p className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
               Gestión de pedidos para entrega mañana - {getTomorrowDate()}
@@ -1213,20 +1214,6 @@ const DailyOrders = ({ user, loading }) => {
               </select>
             </div>
 
-            <div className="flex flex-col">
-              <label htmlFor="export-status" className="text-xs font-semibold text-gray-700 mb-1">Estado para enviar</label>
-              <select
-                id="export-status"
-                value={exportStatusFilter}
-                onChange={(e) => setExportStatusFilter(e.target.value)}
-                className="rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="archived">Solo archivados</option>
-                <option value="pending">Solo pendientes</option>
-                <option value="all">Todos los estados</option>
-              </select>
-            </div>
-
             <button
               onClick={exportToExcel}
               disabled={exportableOrdersCount === 0}
@@ -1234,15 +1221,6 @@ const DailyOrders = ({ user, loading }) => {
             >
               <img src={excelLogo} alt="" className="mr-3 h-7 w-7" aria-hidden="true" />
               Exportar por Excel ({exportableOrdersCount})
-            </button>
-
-            <button
-              onClick={() => setShowPreviewModal(true)}
-              disabled={sortedOrders.length === 0}
-              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-700 hover:to-blue-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
-            >
-              <Mail className="mr-3 h-6 w-6" />
-              📄 Vista Previa
             </button>
 
             <button
@@ -1718,73 +1696,6 @@ const DailyOrders = ({ user, loading }) => {
             </div>
           </div>
         )}
-    {/* Modal Vista Previa */}
-    {showPreviewModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-        <div className="bg-white rounded-2xl shadow-3xl max-w-5xl w-full max-h-[80vh] overflow-hidden border-2 border-primary-200">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-linear-to-r from-primary-600 to-primary-800">
-            <div className="flex items-center gap-3">
-              <Mail className="h-6 w-6 text-white" />
-              <div>
-                <h3 className="text-xl font-black text-white">Vista previa de exportación</h3>
-                <p className="text-sm text-white/80">Así se verán los datos en Excel/PDF</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowPreviewModal(false)}
-              className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-bold text-black hover:bg-gray-100 border border-gray-300 shadow-sm"
-            >
-              <XCircle className="h-5 w-5 text-black" style={{ color: '#000', stroke: '#000' }} />
-              Cerrar
-            </button>
-          </div>
-
-          <div className="overflow-auto max-h-[65vh]">
-            <table className="w-full text-left border-separate border-spacing-0">
-              <thead className="bg-gray-100 sticky top-0 z-10">
-                <tr>
-                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Cliente</th>
-                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Ubicación</th>
-                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Estado</th>
-                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Menú</th>
-                  <th className="px-4 py-3 text-xs font-bold text-gray-700 border-b border-gray-200">Opciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedOrders.map(order => {
-                  const preview = buildOrderPreview(order)
-                  return (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 border-b border-gray-100">
-                        {order.customer_name || order.user_name || 'Usuario'}
-                        <div className="text-xs text-gray-600">{order.user_email || order.customer_email || ''}</div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-800 border-b border-gray-100">{order.location || '—'}</td>
-                      <td className="px-4 py-3 text-sm font-semibold border-b border-gray-100">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          order.status === 'archived'
-                            ? 'bg-green-100 text-green-800'
-                            : order.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {getStatusText(order.status)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-800 border-b border-gray-100">{preview.itemsText}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800 border-b border-gray-100">{preview.optionsText}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-            {sortedOrders.length === 0 && (
-              <div className="p-6 text-center text-gray-600">No hay pedidos para mostrar.</div>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
     </div>
   </RequireUser>
   )
