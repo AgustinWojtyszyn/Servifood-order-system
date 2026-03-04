@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Package, TrendingUp, User, BarChart2, Printer } from 'lucide-react'
+import { Calendar, Package, TrendingUp, User, Printer } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
@@ -43,7 +43,7 @@ function DateRangePicker({ value, onChange }) {
               onChange({ ...value, start: iso })
             }
           }}
-          dateFormat="yyyy-MM-dd"
+          dateFormat="dd/MM/yyyy"
           className="border rounded px-3 py-2 text-base"
           placeholderText="Desde"
           // Permitir cualquier fecha (pasada, presente o futura)
@@ -64,7 +64,7 @@ function DateRangePicker({ value, onChange }) {
               onChange({ ...value, end: iso })
             }
           }}
-          dateFormat="yyyy-MM-dd"
+          dateFormat="dd/MM/yyyy"
           className="border rounded px-3 py-2 text-base"
           placeholderText="Hasta"
           minDate={null}
@@ -356,7 +356,6 @@ const MonthlyPanel = ({ user, loading }) => {
     }
   }
 
-  const palette = ['#2563eb']
   const isDraftValid = draftRange.start && draftRange.end && draftRange.start <= draftRange.end
   const handlePrintPdf = () => window.print()
   const PAGE_SIZE = 1000
@@ -393,10 +392,6 @@ const MonthlyPanel = ({ user, loading }) => {
     const recalculated = buildDailyBreakdownFromOrdersByDay(dates, ordersByDayForView)
     return { ...dailyData, ...recalculated }
   }, [dailyData, ordersByDayForView, empresaFilter])
-
-  const maxDailyCount = dailyDataForView?.daily_breakdown
-    ? Math.max(...dailyDataForView.daily_breakdown.map(x => x.count || 0), 1)
-    : 1
 
   useEffect(() => {
     // Control de acceso: solo admin
@@ -1065,7 +1060,7 @@ const MonthlyPanel = ({ user, loading }) => {
             <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
             <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
             <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
-            <li>Haz clic en una <b>barra del gráfico</b> para ver el detalle completo de ese día (totales, desglose por empresa/menús/opciones/guarniciones/bebidas/postres y lista de pedidos). Usa “Cerrar detalle” para volver.</li>
+            <li>Haz clic en una <b>fila de la tabla diaria</b> para ver el detalle completo de ese día (totales, desglose por empresa/menús/opciones/guarniciones/bebidas/postres y lista de pedidos). Usa “Cerrar detalle” para volver.</li>
             <li>El <b>desglose diario en tabla</b> se muestra solo cuando presionas “Ver tabla diaria”, para evitar scroll en rangos grandes.</li>
           </ol>
         </div>
@@ -1158,45 +1153,6 @@ const MonthlyPanel = ({ user, loading }) => {
       {/* Error suprimido visualmente para no bloquear la vista */}
       {metrics && (
         <div className="space-y-6">
-          {/* Gráficos rápidos (siempre visibles cuando hay datos) */}
-          {dailyDataForView?.daily_breakdown && (
-          <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break print-full-width">
-            <div className="flex items-center gap-2 mb-3">
-              <BarChart2 className="h-5 w-5 text-blue-600" />
-              <div className="font-bold text-blue-900 text-lg">Pedidos por día (rango)</div>
-            </div>
-            <p className="text-sm text-gray-700 mb-3">
-              {dailyDataForView.daily_breakdown.length} días en el rango seleccionado.
-            </p>
-            <div className="h-72 flex items-end gap-2 overflow-x-auto px-1 mt-1 print-unclamp print-full-width">
-                {dailyDataForView.daily_breakdown.map(d => {
-                  const heightPx = Math.max((d.count / maxDailyCount) * 220, 8)
-                  const height = `${heightPx}px`
-                  const color = palette[0]
-                  return (
-                    <div
-                      key={d.date}
-                      className="flex flex-col items-center flex-1 min-w-[46px] cursor-pointer select-none"
-                      onClick={() => setSelectedDate(d.date)}
-                    >
-                      <div
-                        className={`w-full rounded-t-md transition-all ${selectedDate === d.date ? 'ring-2 ring-blue-400 shadow-lg' : ''}`}
-                        style={{
-                          background: color,
-                          height,
-                          minHeight: '6px'
-                        }}
-                        title={`${d.date}: ${d.count} pedidos`}
-                      />
-                      <div className="text-[11px] text-gray-600 mt-1 whitespace-nowrap">{d.date.slice(5)}</div>
-                      <div className="text-xs font-semibold text-gray-800">{d.count}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Desglose diario del rango */}
           {dailyDataForView?.daily_breakdown && (
             <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break print-full-width">
@@ -1229,14 +1185,18 @@ const MonthlyPanel = ({ user, loading }) => {
                   <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
                     <thead className="bg-blue-50">
                       <tr>
-                        <th className="px-4 py-2 text-left">Fecha (YYYY-MM-DD)</th>
+                        <th className="px-4 py-2 text-left">Fecha (DD/MM/AAAA)</th>
                         <th className="px-4 py-2 text-right">Cantidad de pedidos</th>
                       </tr>
                     </thead>
                     <tbody>
                       {dailyDataForView.daily_breakdown.map(d => (
-                        <tr key={d.date} className="border-t hover:bg-blue-50 transition-all">
-                          <td className="px-4 py-2">{d.date}</td>
+                        <tr
+                          key={d.date}
+                          onClick={() => setSelectedDate(d.date)}
+                          className={`border-t hover:bg-blue-50 transition-all cursor-pointer ${selectedDate === d.date ? 'bg-blue-100' : ''}`}
+                        >
+                          <td className="px-4 py-2">{formatDateDMY(d.date)}</td>
                           <td className="px-4 py-2 text-right">{d.count}</td>
                         </tr>
                       ))}
