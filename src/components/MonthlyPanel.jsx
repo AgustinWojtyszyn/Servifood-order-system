@@ -182,6 +182,53 @@ const addSideItem = (label, buckets) => {
 
 const isOptionName = (name = '') => /^OPC(ION|IÓN)\s*\d+/i.test(name.trim())
 
+const formatDateDMY = (value = '') => {
+  if (!value || typeof value !== 'string') return value
+  const [y, m, d] = value.split('-')
+  if (!y || !m || !d) return value
+  return `${d}/${m}/${y}`
+}
+
+const buildRangeDates = (start, end) => {
+  if (!start || !end) return []
+  const parse = (str) => {
+    const [y, m, d] = str.split('-').map(Number)
+    if (!y || !m || !d) return null
+    return new Date(y, m - 1, d)
+  }
+  const startDate = parse(start)
+  const endDate = parse(end)
+  if (!startDate || !endDate || startDate > endDate) return []
+  const dates = []
+  for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
+    const yyyy = dt.getFullYear()
+    const mm = String(dt.getMonth() + 1).padStart(2, '0')
+    const dd = String(dt.getDate()).padStart(2, '0')
+    dates.push(`${yyyy}-${mm}-${dd}`)
+  }
+  return dates
+}
+
+const indexOrdersByDay = (orders = [], timeZone = 'America/Argentina/San_Juan') => {
+  const byDay = {}
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+  const bucketForOrder = (o) => {
+    if (o?.delivery_date) return o.delivery_date.slice(0, 10)
+    try {
+      return fmt.format(new Date(o.created_at))
+    } catch {
+      return null
+    }
+  }
+  orders.forEach(o => {
+    const day = bucketForOrder(o)
+    if (!day) return
+    if (!byDay[day]) byDay[day] = []
+    byDay[day].push(o)
+  })
+  return byDay
+}
+
 const buildDailyBreakdownFromOrdersByDay = (dates = [], byDay = {}) => {
   const daily_breakdown = []
   const range_totals = {
@@ -289,6 +336,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const [showEmpresaSummary, setShowEmpresaSummary] = useState(false)
   const [dailyData, setDailyData] = useState(null)
   const [ordersByDay, setOrdersByDay] = useState({})
+  const [rangeOrders, setRangeOrders] = useState([])
   const [selectedDate, setSelectedDate] = useState(null)
   const [showDailyTable, setShowDailyTable] = useState(false)
   const [, setDebugLogs] = useState([])
@@ -558,144 +606,50 @@ const MonthlyPanel = ({ user, loading }) => {
       pushLog('metrics-grouped', { empresas: newMetrics.empresas.length })
       setMetrics(newMetrics)
 
-      // Desglose diario del rango (fuente histórica real)
-      const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: currentRange.start, end: currentRange.end })
-      if (breakdownError) throw breakdownError
-      pushLog('breakdown', {
-        days: breakdown?.daily_breakdown?.length || 0,
-        total: breakdown?.range_totals?.count || 0,
-        sample: breakdown?.daily_breakdown?.slice?.(0, 3) || []
-      })
-      const breakdownCount = breakdown?.range_totals?.count ?? 0
-      // Fallback: si el breakdown no coincide con las órdenes del rango, recalcular desde "orders"
-      let finalBreakdown = breakdown
-      if (orders.length > 0 && breakdownCount !== orders.length) {
-        const byDay = {}
-        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/San_Juan', year: 'numeric', month: '2-digit', day: '2-digit' })
-        const bucketForOrder = (o) => {
-          if (o.delivery_date) return o.delivery_date.slice(0, 10)
-          try {
-            return fmt.format(new Date(o.created_at))
-          } catch { return null }
-        }
-        orders.forEach(o => {
-          const day = bucketForOrder(o)
-          if (!day) return
-          if (!byDay[day]) {
-            const sideBuckets = createSideBuckets()
-            byDay[day] = {
-              date: day,
-              count: 0,
-              menus_principales: 0,
-              opciones: {},
-              total_opciones: 0,
-              tipos_guarniciones: sideBuckets.tiposGuarniciones,
-              total_guarniciones: 0,
-              tipos_bebidas: sideBuckets.tiposBebidas,
-              total_bebidas: 0,
-              tipos_postres: sideBuckets.tiposPostres,
-              total_postres: 0,
-              sideBuckets
-            }
-          }
-          const row = byDay[day]
-          const addSide = (value) => {
-            if (!value) return
-            addSideItem(value, row.sideBuckets)
-            row.total_guarniciones = row.sideBuckets.totalGuarniciones
-            row.total_bebidas = row.sideBuckets.totalBebidas
-            row.total_postres = row.sideBuckets.totalPostres
-          }
-          row.count += 1
-          let items = []
-          if (Array.isArray(o.items)) items = o.items
-          else if (typeof o.items === 'string') {
-            try {
-              items = JSON.parse(o.items)
-            } catch (err) {
-              void err
-            }
-          }
-          items.forEach(it => {
-            const qty = it?.quantity || 1
-            const name = (it?.name || '').trim()
-            const m = name.match(/^OPC(ION|IÓN)\s*(\d+)/i)
-            if (m) {
-              const key = `OPCIÓN ${m[2]}`
-              row.opciones[key] = (row.opciones[key] || 0) + qty
-              row.total_opciones += qty
-            } else {
-              row.menus_principales += qty
-            }
-          })
-          let custom = []
-          if (Array.isArray(o.custom_responses)) custom = o.custom_responses
-          else if (typeof o.custom_responses === 'string') {
-            try {
-              custom = JSON.parse(o.custom_responses)
-            } catch (err) {
-              void err
-            }
-          }
-          custom.forEach(cr => {
-            const r = toDisplayString(cr?.response)
-            if (r) addSide(r)
-            if (Array.isArray(cr?.options)) {
-              cr.options.forEach(opt => {
-                const v = toDisplayString(opt)
-                if (!v) return
-                addSide(v)
-              })
-            }
-          })
+      const byDay = indexOrdersByDay(orders)
+      const rangeDates = buildRangeDates(currentRange.start, currentRange.end)
+      let finalBreakdown = buildDailyBreakdownFromOrdersByDay(rangeDates, byDay)
+      let breakdownCount = finalBreakdown?.range_totals?.count ?? 0
+
+      try {
+        // Desglose diario del rango (fuente histórica real)
+        const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: currentRange.start, end: currentRange.end })
+        if (breakdownError) throw breakdownError
+        pushLog('breakdown', {
+          days: breakdown?.daily_breakdown?.length || 0,
+          total: breakdown?.range_totals?.count || 0,
+          sample: breakdown?.daily_breakdown?.slice?.(0, 3) || []
         })
-        const daily_breakdown = Object.values(byDay)
-          .map(({ sideBuckets, ...rest }) => {
-            void sideBuckets
-            return rest
+        breakdownCount = breakdown?.range_totals?.count ?? 0
+        // Fallback: si el breakdown no coincide con las órdenes del rango, recalcular desde "orders"
+        if (orders.length > 0 && breakdownCount !== orders.length) {
+          finalBreakdown = buildDailyBreakdownFromOrdersByDay(rangeDates, byDay)
+          pushLog('breakdown-fallback', {
+            days: finalBreakdown.daily_breakdown.length,
+            total: finalBreakdown.range_totals.count,
+            breakdownCount,
+            ordersCount: orders.length
           })
-          .sort((a, b) => a.date.localeCompare(b.date))
-        const range_totals = daily_breakdown.reduce((acc, d) => {
-          acc.count += d.count
-          acc.menus_principales += d.menus_principales || 0
-          acc.total_opciones += d.total_opciones || 0
-          acc.total_guarniciones += d.total_guarniciones || 0
-          acc.total_bebidas += d.total_bebidas || 0
-          acc.total_postres += d.total_postres || 0
-          return acc
-        }, { count: 0, menus_principales: 0, total_opciones: 0, total_guarniciones: 0, total_bebidas: 0, total_postres: 0 })
-        finalBreakdown = { daily_breakdown, range_totals }
-        pushLog('breakdown-fallback', { days: daily_breakdown.length, total: range_totals.count, breakdownCount, ordersCount: orders.length })
+        } else {
+          finalBreakdown = breakdown
+        }
+      } catch (err) {
+        pushLog('breakdown-error', { message: err?.message || 'unknown' })
       }
       // Evitar condiciones de carrera: solo actualizar si es la petición vigente
       if (reqId === fetchId.current) {
         setDailyData(finalBreakdown)
         setShowDailyTable(false) // requiere confirmación para desplegar
         // Indexar órdenes por día para detalles sin refetch
-        const byDay = {}
-        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/San_Juan', year: 'numeric', month: '2-digit', day: '2-digit' })
-        const bucketForOrder = (o) => {
-          if (o.delivery_date) return o.delivery_date.slice(0, 10)
-          try {
-            return fmt.format(new Date(o.created_at))
-          } catch {
-            return null
-          }
-        }
-        orders.forEach(o => {
-          const day = bucketForOrder(o)
-          if (!day) return
-          if (!byDay[day]) byDay[day] = []
-          byDay[day].push(o)
-        })
         pushLog('orders-indexed', { days: Object.keys(byDay).length, sampleDay: Object.keys(byDay)[0] })
         setOrdersByDay(byDay)
+        setRangeOrders(orders)
       }
 
       // Actualizar totalPedidos desde breakdown para consistencia
-      if (reqId === fetchId.current) {
-        setMetrics(prev => prev ? { ...prev, totalPedidos: breakdown.range_totals.count } : prev)
-        pushLog('totals-updated', { totalPedidos: breakdown.range_totals.count })
+      if (reqId === fetchId.current && finalBreakdown?.range_totals) {
+        setMetrics(prev => prev ? { ...prev, totalPedidos: finalBreakdown.range_totals.count } : prev)
+        pushLog('totals-updated', { totalPedidos: finalBreakdown.range_totals.count })
       }
     } catch (err) {
       pushLog('error', { message: err?.message || 'unknown', stack: err?.stack })
@@ -720,17 +674,59 @@ const MonthlyPanel = ({ user, loading }) => {
     setTimeout(() => URL.revokeObjectURL(url), 1200)
   }
 
+  const canExportDaily = Boolean(
+    dailyDataForView?.daily_breakdown
+    || (rangeOrders.length > 0 && dateRange?.start && dateRange?.end)
+  )
+
+  const getExportEmpresaLabel = () => {
+    if (empresaFilter === 'ALL') return 'Todas las empresas'
+    return empresaFilter || 'Sin empresa'
+  }
+
+  const getExportRangeLabel = () => {
+    const start = dateRange?.start
+    const end = dateRange?.end
+    const startLabel = formatDateDMY(start)
+    const endLabel = formatDateDMY(end)
+    if (start && end) return `${startLabel} a ${endLabel}`
+    if (start) return `Desde ${startLabel}`
+    if (end) return `Hasta ${endLabel}`
+    return 'Sin rango'
+  }
+
+  const addExportMetadataToRows = (rows, firstKey, secondKey) => {
+    const metaRows = [
+      { [firstKey]: 'Empresa', [secondKey]: getExportEmpresaLabel() },
+      { [firstKey]: 'Rango', [secondKey]: getExportRangeLabel() },
+      {}
+    ]
+    return metaRows.concat(rows || [])
+  }
+
+  const resolveDailyBreakdownForExport = () => {
+    if (dailyDataForView?.daily_breakdown) return dailyDataForView
+    const dates = buildRangeDates(dateRange?.start, dateRange?.end)
+    if (!dates.length) return null
+    const hasByDay = ordersByDayForView && Object.keys(ordersByDayForView).length > 0
+    const byDay = hasByDay ? ordersByDayForView : indexOrdersByDay(rangeOrders)
+    if (!byDay || Object.keys(byDay).length === 0) return null
+    return buildDailyBreakdownFromOrdersByDay(dates, byDay)
+  }
+
   const handleExportExcel = async () => {
     if (!metrics || !metrics.empresas) return
     // Exportación robusta: separar menús principales y opciones, y mostrar cantidades claras
     const empresasForExport = empresaFilter === 'ALL'
       ? metrics.empresas
       : metrics.empresas.filter(e => e.empresa === empresaFilter)
-    const rows = buildSummaryRows(metrics, empresasForExport)
+    const dataRows = buildSummaryRows(metrics, empresasForExport)
+    const rows = addExportMetadataToRows(dataRows, 'Empresa', 'Pedidos')
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('Resumen')
     if (rows.length > 0) {
-      ws.columns = Object.keys(rows[0]).map(k => ({ header: k, key: k, width: 20 }))
+      const columns = dataRows.length > 0 ? Object.keys(dataRows[0]) : ['Empresa', 'Pedidos']
+      ws.columns = columns.map(k => ({ header: k, key: k, width: 20 }))
       ws.addRows(rows)
     }
     const fileName = `panel-mensual-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
@@ -739,12 +735,18 @@ const MonthlyPanel = ({ user, loading }) => {
 
   // Exportar desglose diario del rango
   const handleExportDailyExcel = async () => {
-    if (!dailyDataForView || !dailyDataForView.daily_breakdown) return
-    const rows = buildDailyRows(dailyDataForView, ordersByDayForView)
+    const dailyForExport = resolveDailyBreakdownForExport()
+    if (!dailyForExport?.daily_breakdown) {
+      alert('No hay datos de desglose diario para exportar en el rango seleccionado.')
+      return
+    }
+    const dataRows = buildDailyRows(dailyForExport, ordersByDayForView)
+    const rows = addExportMetadataToRows(dataRows, 'Fecha', 'Pedidos')
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('Desglose Diario')
     if (rows.length > 0) {
-      ws.columns = Object.keys(rows[0]).map(k => ({ header: k, key: k, width: 20 }))
+      const columns = dataRows.length > 0 ? Object.keys(dataRows[0]) : ['Fecha', 'Pedidos']
+      ws.columns = columns.map(k => ({ header: k, key: k, width: 20 }))
       ws.addRows(rows)
     }
     const fileName = `desglose-diario-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
@@ -757,19 +759,39 @@ const MonthlyPanel = ({ user, loading }) => {
     const empresasForExport = empresaFilter === 'ALL'
       ? metrics.empresas
       : metrics.empresas.filter(e => e.empresa === empresaFilter)
-    const summaryRows = buildSummaryRows(metrics, empresasForExport)
+    const summaryDataRows = buildSummaryRows(metrics, empresasForExport)
+    const summaryRows = addExportMetadataToRows(summaryDataRows, 'Empresa', 'Pedidos')
     const wsSummary = wb.addWorksheet('Resumen')
     if (summaryRows.length > 0) {
-      wsSummary.columns = Object.keys(summaryRows[0]).map(k => ({ header: k, key: k, width: 20 }))
+      const columns = summaryDataRows.length > 0 ? Object.keys(summaryDataRows[0]) : ['Empresa', 'Pedidos']
+      wsSummary.columns = columns.map(k => ({ header: k, key: k, width: 20 }))
       wsSummary.addRows(summaryRows)
     }
-    if (dailyDataForView?.daily_breakdown) {
-      const dailyRows = buildDailyRows(dailyDataForView, ordersByDayForView)
-      const wsDaily = wb.addWorksheet('Desglose Diario')
+    const dailyForExport = resolveDailyBreakdownForExport()
+    if (dailyForExport?.daily_breakdown) {
+      const dailyDataRows = buildDailyRows(dailyForExport, ordersByDayForView)
+      const dailyHeader = dailyDataRows.length > 0
+        ? Object.keys(dailyDataRows[0])
+        : ['Fecha', 'Pedidos']
+      wsSummary.addRow([])
+      wsSummary.addRow(['DESGLOSE DIARIO'])
+      wsSummary.addRow(dailyHeader)
+      dailyDataRows.forEach(row => {
+        wsSummary.addRow(dailyHeader.map(key => row?.[key] ?? ''))
+      })
+    }
+    const wsDaily = wb.addWorksheet('Desglose Diario')
+    if (dailyForExport?.daily_breakdown) {
+      const dailyDataRows = buildDailyRows(dailyForExport, ordersByDayForView)
+      const dailyRows = addExportMetadataToRows(dailyDataRows, 'Fecha', 'Pedidos')
       if (dailyRows.length > 0) {
-        wsDaily.columns = Object.keys(dailyRows[0]).map(k => ({ header: k, key: k, width: 20 }))
+        const columns = dailyDataRows.length > 0 ? Object.keys(dailyDataRows[0]) : ['Fecha', 'Pedidos']
+        wsDaily.columns = columns.map(k => ({ header: k, key: k, width: 20 }))
         wsDaily.addRows(dailyRows)
       }
+    } else {
+      wsDaily.columns = [{ header: 'Mensaje', key: 'Mensaje', width: 60 }]
+      wsDaily.addRows([{ Mensaje: 'No hay datos de desglose diario para el rango seleccionado.' }])
     }
     const fileName = `panel-completo-${dateRange.start || 'inicio'}-a-${dateRange.end || 'fin'}.xlsx`
     await downloadWorkbook(wb, fileName)
@@ -875,7 +897,7 @@ const MonthlyPanel = ({ user, loading }) => {
         .join('; ')
 
       rows.push({
-        Fecha: d.date,
+        Fecha: formatDateDMY(d.date),
         Pedidos: d.count,
         'Menús principales': d.menus_principales || 0,
         'OPCIÓN 1': d.opciones?.['OPCIÓN 1'] || 0,
@@ -921,6 +943,7 @@ const MonthlyPanel = ({ user, loading }) => {
     setMetrics(null)
     setDailyData(null)
     setOrdersByDay({})
+    setRangeOrders([])
     setSelectedDate(null)
     setShowDailyTable(false)
     setError(null)
@@ -937,6 +960,7 @@ const MonthlyPanel = ({ user, loading }) => {
     setMetrics(null)
     setDailyData(null)
     setOrdersByDay({})
+    setRangeOrders([])
     setSelectedDate(null)
     setShowDailyTable(false)
     setError(null)
@@ -1082,13 +1106,18 @@ const MonthlyPanel = ({ user, loading }) => {
       {/* Exportar a Excel */}
       {metrics && (
         <div className="flex justify-end mb-2 flex-wrap gap-2">
-          <button
-            onClick={handleExportAllExcel}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
-          >
-            <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
-            Exportar panel (todo)
-          </button>
+      <button
+        onClick={handleExportAllExcel}
+        disabled={!canExportDaily}
+        className={`flex items-center gap-2 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200 ${
+          canExportDaily
+            ? 'bg-indigo-600 hover:bg-indigo-700'
+            : 'bg-gray-400 cursor-not-allowed'
+        }`}
+      >
+        <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
+        Exportar panel (todo)
+      </button>
           <button
             onClick={handleExportExcel}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
