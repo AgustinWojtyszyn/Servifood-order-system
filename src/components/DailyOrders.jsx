@@ -17,6 +17,7 @@ import { COMPANY_LOCATIONS } from '../constants/companyConfig'
 import { Sound } from '../utils/Sound'
 import excelLogo from '../assets/logoexcel.png'
 import whatsappLogo from '../assets/whatsapp.png'
+import orderImg from '../assets/order.png'
 
 const DailyOrders = ({ user, loading }) => {
   const emailLoadingRef = useRef(false)
@@ -1681,11 +1682,11 @@ const DailyOrders = ({ user, loading }) => {
         {selectedLocation === 'all' && stats.total > 0 && (
           <div className="rounded-xl bg-linear-to-br from-white to-gray-50 shadow-2xl border-2 border-primary-200 overflow-hidden">
             <div className="bg-linear-to-r from-primary-600 to-primary-800 px-8 py-6">
-              <h3 className="text-3xl font-black text-white flex items-center gap-4">
+              <h3 className="text-3xl font-black text-black flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 shadow-lg">
-                  <MapPin className="h-7 w-7 text-white" />
+                  <img src={orderImg} alt="" className="h-7 w-7" aria-hidden="true" />
                 </div>
-                📊 Resumen por Ubicación
+                Resumen por Ubicación
               </h3>
             </div>
             <div className="p-8">
