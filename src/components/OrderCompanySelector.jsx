@@ -77,15 +77,6 @@ const OrderCompanySelector = ({ user, loading }) => {
           ))}
         </div>
 
-        <div className="bg-white/15 border-2 border-white/30 rounded-2xl p-4 sm:p-6 text-white shadow-2xl flex items-center gap-3">
-          <Sparkles className="h-6 w-6 shrink-0 text-yellow-200" />
-          <div className="space-y-1">
-            <p className="text-lg font-bold">Configuraciones por empresa</p>
-            <p className="text-sm text-white/90">
-              Las preguntas adicionales solo se mostrarán en el flujo de la empresa que elijas. Así evitamos cambios globales y mantenemos experiencias separadas.
-            </p>
-          </div>
-        </div>
       </div>
     </RequireUser>
   )
