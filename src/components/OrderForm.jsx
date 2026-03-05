@@ -88,6 +88,7 @@ const OrderForm = ({ user, loading }) => {
   const [suggestionVisible, setSuggestionVisible] = useState(false)
   const [suggestionLoading, setSuggestionLoading] = useState(false)
   const [suggestionSummary, setSuggestionSummary] = useState('')
+  const [suggestionMode, setSuggestionMode] = useState('last')
   const submitLockRef = useRef(false)
   const repeatAppliedRef = useRef(false)
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
@@ -160,7 +161,6 @@ const OrderForm = ({ user, loading }) => {
     fetchMenuItems()
     fetchCustomOptions()
     checkTodayOrder()
-    loadLastOrderSuggestion()
     fetchUserFeatures()
     // Pre-fill user data
     setFormData(prev => ({
@@ -249,6 +249,7 @@ const OrderForm = ({ user, loading }) => {
 
   const checkTodayOrder = async () => {
     if (!user?.id) return
+    setSuggestionLoading(true)
     try {
       // Obtener solo los pedidos del usuario actual
       const { data, error } = await db.getOrders(user.id)
@@ -270,29 +271,33 @@ const OrderForm = ({ user, loading }) => {
         setPendingLunch(pendingLunch)
         setPendingDinner(pendingDinner)
         setHasOrderToday(pendingLunch || pendingDinner)
+
+        const repeatCandidate = findRepeatCandidate(data)
+        if (repeatCandidate) {
+          setSuggestion(repeatCandidate)
+          setSuggestionMode('repeat')
+          setSuggestionVisible(true)
+          setSuggestionSummary(buildRepeatSummary(repeatCandidate))
+          return
+        }
+
+        const latestOrder = getLatestOrder(data)
+        if (latestOrder) {
+          setSuggestion(latestOrder)
+          setSuggestionMode('last')
+          setSuggestionVisible(true)
+          setSuggestionSummary(buildSuggestionSummary(latestOrder))
+        } else {
+          setSuggestion(null)
+          setSuggestionMode('last')
+          setSuggestionVisible(false)
+          setSuggestionSummary('')
+        }
       }
     } catch (err) {
       console.error('Error checking today order:', err)
-    }
-  }
-
-  const loadLastOrderSuggestion = async () => {
-    if (!user?.id) return
-    setSuggestionLoading(true)
-    try {
-      const { data, error } = await ordersService.getLastOrderByUser(user.id)
-      if (!error && data) {
-        setSuggestion(data)
-        setSuggestionVisible(true)
-        setSuggestionSummary(buildSuggestionSummary(data))
-      } else {
-        setSuggestion(null)
-        setSuggestionVisible(false)
-        setSuggestionSummary('')
-      }
-    } catch (err) {
-      console.error('Error loading last order suggestion:', err)
       setSuggestion(null)
+      setSuggestionMode('last')
       setSuggestionVisible(false)
       setSuggestionSummary('')
     } finally {
@@ -676,6 +681,39 @@ const OrderForm = ({ user, loading }) => {
     return list ? `${list}${loc}` : `Pedido anterior${loc}`
   }
 
+  const buildOptionsSummary = (responses = []) => {
+    const list = Array.isArray(responses) ? responses : []
+    const parts = []
+    list.forEach(resp => {
+      if (!resp) return
+      const value = resp.response ?? resp.answer ?? resp.value ?? resp.options
+      if (Array.isArray(value) && value.length > 0) {
+        parts.push(`${resp.title || 'Opcion'}: ${value.join(', ')}`)
+        return
+      }
+      if (typeof value === 'string' && value.trim() !== '') {
+        parts.push(`${resp.title || 'Opcion'}: ${value}`)
+      }
+    })
+
+    if (!parts.length) return ''
+    if (parts.length <= 2) return parts.join(' | ')
+    return `${parts.slice(0, 2).join(' | ')} +${parts.length - 2} mas`
+  }
+
+  const buildRepeatSummary = (order) => {
+    if (!order) return ''
+    const items = Array.isArray(order.items) ? order.items : []
+    const itemText = items
+      .map(i => `${i.name || 'Item'}${i.quantity ? ` (x${i.quantity})` : ''}`)
+      .join(', ')
+    const optionsText = buildOptionsSummary(order.custom_responses)
+    if (itemText && optionsText) return `Menu: ${itemText} | Opciones: ${optionsText}`
+    if (itemText) return `Menu: ${itemText}`
+    if (optionsText) return `Opciones: ${optionsText}`
+    return 'Pedido anterior'
+  }
+
   const mapOrderItemsToSelection = (items = []) => {
     const selectedMap = {}
     items.forEach(it => {
@@ -704,22 +742,116 @@ const OrderForm = ({ user, loading }) => {
     return map
   }
 
+  const normalizeValueForSignature = (value) => {
+    if (Array.isArray(value)) {
+      return value.map(v => `${v}`.trim().toLowerCase()).sort().join(',')
+    }
+    if (value === null || value === undefined) return ''
+    return `${value}`.trim().toLowerCase()
+  }
+
+  const buildOrderSignature = (order = {}) => {
+    const normalizedItems = (Array.isArray(order.items) ? order.items : [])
+      .map(i => ({
+        id: i?.id || '',
+        name: (i?.name || '').toString().trim().toLowerCase(),
+        quantity: i?.quantity || 1
+      }))
+      .sort((a, b) => `${a.id}-${a.name}`.localeCompare(`${b.id}-${b.name}`))
+
+    const normalizedResponses = (Array.isArray(order.custom_responses) ? order.custom_responses : [])
+      .map(r => ({
+        title: (r?.title || '').toString().trim().toLowerCase(),
+        response: normalizeValueForSignature(r?.response ?? r?.answer ?? r?.value ?? r?.options)
+      }))
+      .sort((a, b) => `${a.title}-${a.response}`.localeCompare(`${b.title}-${b.response}`))
+
+    const normalized = {
+      items: normalizedItems,
+      responses: normalizedResponses,
+      service: (order.service || 'lunch').toString().trim().toLowerCase(),
+      location: (order.location || '').toString().trim().toLowerCase()
+    }
+
+    const json = JSON.stringify(normalized)
+    let hash = 0
+    for (let i = 0; i < json.length; i++) {
+      hash = (hash * 31 + json.charCodeAt(i)) >>> 0
+    }
+    return hash.toString(16)
+  }
+
+  const getLatestOrder = (orders = []) => {
+    if (!Array.isArray(orders) || orders.length === 0) return null
+    const valid = orders.filter(o => (o?.status || '').toLowerCase() !== 'cancelled')
+    if (valid.length === 0) return null
+    return [...valid].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+  }
+
+  const findRepeatCandidate = (orders = []) => {
+    if (!Array.isArray(orders) || orders.length === 0) return null
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const start = new Date(today)
+    start.setDate(start.getDate() - 2)
+
+    const recent = orders.filter(order => {
+      if (!order?.created_at) return false
+      if ((order?.status || '').toLowerCase() === 'cancelled') return false
+      const date = new Date(order.created_at)
+      date.setHours(0, 0, 0, 0)
+      return date >= start && date <= today
+    })
+
+    if (recent.length < 3) return null
+
+    const groups = new Map()
+    recent.forEach(order => {
+      const sig = buildOrderSignature(order)
+      if (!sig) return
+      const dayKey = new Date(order.created_at).toISOString().split('T')[0]
+      if (!groups.has(sig)) {
+        groups.set(sig, { days: new Set(), latest: order })
+      }
+      const entry = groups.get(sig)
+      entry.days.add(dayKey)
+      if (new Date(order.created_at) > new Date(entry.latest.created_at)) {
+        entry.latest = order
+      }
+    })
+
+    const candidate = Array.from(groups.values())
+      .filter(entry => entry.days.size >= 3)
+      .sort((a, b) => new Date(b.latest.created_at) - new Date(a.latest.created_at))[0]
+
+    return candidate ? candidate.latest : null
+  }
+
   const handleRepeatSuggestion = () => {
     if (!suggestion) return
 
     const suggestionService = (suggestion.service || 'lunch').toLowerCase()
     const isDinnerSuggestion = suggestionService === 'dinner'
+    const responsesMap = buildResponsesMap(suggestion.custom_responses || [])
+    const hasDinnerOverride = Object.values(responsesMap).some((value) => isDinnerOverrideValue(value))
 
     if (isGenneia && isDinnerSuggestion) {
       const selectedDinnerMap = mapOrderItemsToSelection(suggestion.items || [])
       setSelectedItems({})
-      setSelectedItemsDinner(selectedDinnerMap)
+      setSelectedItemsDinner(hasDinnerOverride ? {} : selectedDinnerMap)
       setSelectedTurns({ lunch: false, dinner: true })
       setMode('dinner')
-      clearDinnerOverrideResponses()
+      setCustomResponsesDinner(responsesMap)
+      setCustomResponses({})
+      if (!hasDinnerOverride) {
+        clearDinnerOverrideResponses()
+      }
     } else {
       const selectedMap = mapOrderItemsToSelection(suggestion.items || [])
       setSelectedItems(selectedMap)
+      setSelectedItemsDinner({})
+      setCustomResponses(responsesMap)
+      setCustomResponsesDinner({})
     }
 
     setFormData(prev => ({
@@ -783,6 +915,7 @@ const OrderForm = ({ user, loading }) => {
     setSuggestionVisible(false)
     setSuggestion(null)
     setSuggestionSummary('')
+    setSuggestionMode('last')
 
     repeatAppliedRef.current = true
     if (typeof window !== 'undefined') {
@@ -794,6 +927,7 @@ const OrderForm = ({ user, loading }) => {
     setSuggestionVisible(false)
     setSuggestion(null)
     setSuggestionSummary('')
+    setSuggestionMode('last')
   }
 
   const isOutsideWindow = () => {
@@ -1139,13 +1273,26 @@ const OrderForm = ({ user, loading }) => {
 
               {/* Sugerencias inteligentes */}
               {suggestionVisible && suggestion && (
-                <div className="bg-white border-2 border-green-300 rounded-xl p-4 sm:p-5 shadow-xl flex flex-col gap-3">
+                <div className={`bg-white border-2 rounded-xl p-4 sm:p-5 shadow-xl flex flex-col gap-3 ${
+                  suggestionMode === 'repeat' ? 'border-blue-300' : 'border-green-300'
+                }`}>
                   <div className="flex justify-between items-start gap-3">
                     <div>
-                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Sugerencias inteligentes</p>
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                        La última vez pediste: <span className="text-green-700">{suggestionSummary || '—'}</span>
-                      </h3>
+                      {suggestionMode === 'repeat' ? (
+                        <>
+                          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Repetir pedido</p>
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                            Has seleccionado: <span className="text-blue-700">{suggestionSummary || '-'}</span>
+                          </h3>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Sugerencias inteligentes</p>
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                            La ultima vez pediste: <span className="text-green-700">{suggestionSummary || '-'}</span>
+                          </h3>
+                        </>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -1156,12 +1303,18 @@ const OrderForm = ({ user, loading }) => {
                       <X className="h-5 w-5" />
                     </button>
                   </div>
-                  <p className="text-sm text-gray-700">¿Querés repetirlo?</p>
+                  {suggestionMode === 'repeat' ? (
+                    <p className="text-sm text-gray-700">en los ultimos 3 dias. Deseas repetir el pedido?</p>
+                  ) : (
+                    <p className="text-sm text-gray-700">Quieres repetirlo?</p>
+                  )}
                   <div className="flex flex-wrap gap-3">
                     <button
                       type="button"
                       onClick={handleRepeatSuggestion}
-                      className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold shadow"
+                      className={`px-4 py-2 rounded-lg text-white font-bold shadow ${
+                        suggestionMode === 'repeat' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'
+                      }`}
                     >
                       Repetir pedido
                     </button>
