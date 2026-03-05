@@ -94,6 +94,8 @@ const Dashboard = ({ user, loading }) => {
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [deleteConfirmOrder, setDeleteConfirmOrder] = useState(null)
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
@@ -101,7 +103,7 @@ const Dashboard = ({ user, loading }) => {
     archived: 0
   })
   const navigate = useNavigate()
-  useOverlayLock(!!selectedOrder)
+  useOverlayLock(!!selectedOrder || !!deleteConfirmOrder)
 
   useEffect(() => {
     if (!user?.id) return
@@ -318,20 +320,32 @@ const Dashboard = ({ user, loading }) => {
       return
     }
 
-    if (confirm('¿Estás seguro de que quieres eliminar este pedido? Esta acción no se puede deshacer.')) {
-      try {
-        const { error } = await db.deleteOrder(order.id)
-        if (error) {
-          alert('Error al eliminar el pedido: ' + error.message)
-        } else {
-          alert('Pedido eliminado exitosamente')
-          fetchOrders() // Recargar pedidos
-        }
-      } catch (err) {
-        console.error('Error:', err)
-        alert('Error al eliminar el pedido')
+    setDeleteConfirmOrder(order)
+  }
+
+  const confirmDeleteOrder = async () => {
+    if (!deleteConfirmOrder) return
+    setDeleteSubmitting(true)
+    try {
+      const { error } = await db.deleteOrder(deleteConfirmOrder.id)
+      if (error) {
+        alert('Error al eliminar el pedido: ' + error.message)
+        return
       }
+      alert('Pedido eliminado exitosamente')
+      fetchOrders() // Recargar pedidos
+      setDeleteConfirmOrder(null)
+    } catch (err) {
+      console.error('Error:', err)
+      alert('Error al eliminar el pedido')
+    } finally {
+      setDeleteSubmitting(false)
     }
+  }
+
+  const closeDeleteConfirm = () => {
+    if (deleteSubmitting) return
+    setDeleteConfirmOrder(null)
   }
 
   const formatCustomResponses = (customResponses) => {
@@ -349,6 +363,67 @@ const Dashboard = ({ user, loading }) => {
         </p>
       </div>
     ))
+  }
+
+  const DeleteConfirmModal = ({ order, onConfirm, onClose, submitting }) => {
+    if (!order) return null
+
+    return (
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <div
+          className="bg-linear-to-br from-sky-600 to-blue-700 text-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold">Eliminar pedido</h3>
+                <p className="text-sm text-white/90 mt-1">
+                  ¿Estás seguro de que quieres eliminar este pedido? Esta acción no se puede deshacer.
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 text-sm text-white/90">
+              <div className="font-semibold">Pedido #{order.id.slice(-8)}</div>
+              <div className="mt-1">{order.user_name || order.customer_name || 'Usuario'}</div>
+              {order.customer_email && (
+                <div className="mt-1">{order.customer_email}</div>
+              )}
+            </div>
+          </div>
+
+          <div className="px-6 pb-6 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-semibold rounded-lg border border-white/40 text-white hover:bg-white/10 transition-colors"
+              disabled={submitting}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="px-4 py-2 text-sm font-semibold rounded-lg border border-white/40 bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={submitting}
+            >
+              {submitting ? 'Eliminando...' : 'Eliminar pedido'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const OrderDetailsModal = ({ order, onClose }) => {
@@ -892,6 +967,15 @@ const Dashboard = ({ user, loading }) => {
           </div>
         )
       })()}
+
+      {deleteConfirmOrder && (
+        <DeleteConfirmModal
+          order={deleteConfirmOrder}
+          onConfirm={confirmDeleteOrder}
+          onClose={closeDeleteConfirm}
+          submitting={deleteSubmitting}
+        />
+      )}
 
       {/* Modal de Detalles */}
       {selectedOrder && (
