@@ -10,6 +10,7 @@ import { Sound } from '../utils/Sound'
 const ORDER_START_HOUR = 9  // 09:00 apertura
 const ORDER_CUTOFF_HOUR = 22 // 22:00 cierre
 const ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'
+const REPEAT_ORDER_STORAGE_KEY = 'repeat-order-draft'
 
 const DINNER_FALLBACK_WHITELIST = new Set([
   'e0f14abf-60f7-448f-87e2-565351b847c2',
@@ -88,6 +89,7 @@ const OrderForm = ({ user, loading }) => {
   const [suggestionLoading, setSuggestionLoading] = useState(false)
   const [suggestionSummary, setSuggestionSummary] = useState('')
   const submitLockRef = useRef(false)
+  const repeatAppliedRef = useRef(false)
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
     if (typeof window === 'undefined') return false
     const stored = localStorage.getItem('dinner_menu_enabled')
@@ -296,6 +298,19 @@ const OrderForm = ({ user, loading }) => {
     } finally {
       setSuggestionLoading(false)
     }
+  }
+
+  const normalizeDraftList = (value) => {
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    return []
   }
 
   const extractNumber = (name = '') => {
@@ -677,6 +692,18 @@ const OrderForm = ({ user, loading }) => {
     return selectedMap
   }
 
+  const buildResponsesMap = (responses = []) => {
+    const map = {}
+    responses.forEach((resp) => {
+      if (!resp) return
+      const key = resp.id || resp.option_id || resp.optionId
+      if (!key) return
+      const value = resp.response ?? resp.answer ?? resp.value ?? resp.options
+      map[key] = value
+    })
+    return map
+  }
+
   const handleRepeatSuggestion = () => {
     if (!suggestion) return
 
@@ -702,6 +729,66 @@ const OrderForm = ({ user, loading }) => {
     }))
     setSuggestionVisible(false)
   }
+
+  useEffect(() => {
+    if (repeatAppliedRef.current) return
+    if (!user?.id) return
+    if (!menuItems.length) return
+
+    let draft = null
+    if (typeof window !== 'undefined') {
+      const raw = sessionStorage.getItem(REPEAT_ORDER_STORAGE_KEY)
+      if (!raw) return
+      try {
+        draft = JSON.parse(raw)
+      } catch {
+        sessionStorage.removeItem(REPEAT_ORDER_STORAGE_KEY)
+        return
+      }
+    }
+
+    if (!draft) return
+
+    const draftItems = normalizeDraftList(draft.items)
+    const draftResponses = normalizeDraftList(draft.custom_responses)
+    const draftService = (draft.service || 'lunch').toLowerCase()
+    const responsesMap = buildResponsesMap(draftResponses)
+
+    if (draftService === 'dinner' && dinnerEnabled && dinnerMenuEnabled) {
+      const selectedDinnerMap = mapOrderItemsToSelection(draftItems)
+      setSelectedItems({})
+      setSelectedItemsDinner(selectedDinnerMap)
+      setCustomResponsesDinner(responsesMap)
+      setSelectedTurns({ lunch: false, dinner: true })
+      setMode('dinner')
+      if (selectedDinnerMap && Object.keys(selectedDinnerMap).length > 0) {
+        clearDinnerOverrideResponses()
+      }
+    } else {
+      const selectedMap = mapOrderItemsToSelection(draftItems)
+      setSelectedItems(selectedMap)
+      setSelectedItemsDinner({})
+      setCustomResponses(responsesMap)
+      setCustomResponsesDinner({})
+      setSelectedTurns({ lunch: true, dinner: false })
+      setMode('lunch')
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      comments: draft.comments || '',
+      location: draft.location || locations[0] || prev.location
+    }))
+
+    setSuggestionVisible(false)
+    setSuggestion(null)
+    setSuggestionSummary('')
+
+    repeatAppliedRef.current = true
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(REPEAT_ORDER_STORAGE_KEY)
+    }
+  }, [user?.id, menuItems.length, locations, dinnerEnabled, dinnerMenuEnabled])
 
   const handleDismissSuggestion = () => {
     setSuggestionVisible(false)

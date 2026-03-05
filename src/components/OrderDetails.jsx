@@ -15,6 +15,7 @@ import {
   Moon,
   Package,
   Phone,
+  RefreshCw,
   Sun,
   User
 } from 'lucide-react'
@@ -61,6 +62,8 @@ const statusMeta = {
   archived: { label: 'Archivado', className: 'bg-green-100 text-green-800 border-green-200' },
   cancelled: { label: 'Cancelado', className: 'bg-red-100 text-red-800 border-red-200' }
 }
+
+const REPEAT_ORDER_STORAGE_KEY = 'repeat-order-draft'
 
 const OrderDetails = ({ user, loading }) => {
   const { orderId } = useParams()
@@ -110,7 +113,8 @@ const OrderDetails = ({ user, loading }) => {
   }, [orderId, user?.id])
 
   const items = normalizeList(order?.items)
-  const customResponses = normalizeList(order?.custom_responses).filter((resp) => {
+  const rawCustomResponses = normalizeList(order?.custom_responses)
+  const customResponses = rawCustomResponses.filter((resp) => {
     const value = resp?.response ?? resp?.answer ?? resp?.options ?? resp?.value
     if (Array.isArray(value)) return value.length > 0
     if (typeof value === 'string') return value.trim().length > 0
@@ -125,6 +129,28 @@ const OrderDetails = ({ user, loading }) => {
   const statusInfo = statusMeta[status] || { label: status, className: 'bg-blue-100 text-blue-800 border-blue-200' }
 
   const company = companyByLocation.get(String(order?.location || '').toLowerCase())
+
+  const handleRepeatOrder = () => {
+    if (!order) return
+
+    const payload = {
+      order_id: order.id,
+      location: order.location || '',
+      service: order.service || 'lunch',
+      items: items,
+      custom_responses: rawCustomResponses,
+      comments: order.comments || ''
+    }
+
+    try {
+      sessionStorage.setItem(REPEAT_ORDER_STORAGE_KEY, JSON.stringify(payload))
+    } catch (err) {
+      // ignore storage errors
+    }
+
+    const target = company?.slug ? `/order/${company.slug}?repeat=1` : '/order?repeat=1'
+    navigate(target)
+  }
 
   return (
     <RequireUser user={user} loading={loading}>
@@ -183,6 +209,14 @@ const OrderDetails = ({ user, loading }) => {
                     <Package className="h-4 w-4" />
                     {order.total_items || items.length || 0} item(s)
                   </span>
+                  <button
+                    type="button"
+                    onClick={handleRepeatOrder}
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Repetir pedido
+                  </button>
                 </div>
               </div>
             </div>
