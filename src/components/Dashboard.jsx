@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun, Archive } from 'lucide-react'
@@ -96,6 +96,8 @@ const Dashboard = ({ user, loading }) => {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const [toast, setToast] = useState(null)
+  const toastTimerRef = useRef(null)
   const [refreshing, setRefreshing] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
@@ -109,6 +111,14 @@ const Dashboard = ({ user, loading }) => {
     if (!user?.id) return
     checkIfAdmin()
   }, [user])
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!user?.id || isAdmin === null) return
@@ -316,7 +326,7 @@ const Dashboard = ({ user, loading }) => {
 
   const handleDeleteOrder = async (order) => {
     if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
-      alert(`Solo puedes eliminar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+      showToast(`Solo puedes eliminar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
       return
     }
 
@@ -329,15 +339,15 @@ const Dashboard = ({ user, loading }) => {
     try {
       const { error } = await db.deleteOrder(deleteConfirmOrder.id)
       if (error) {
-        alert('Error al eliminar el pedido: ' + error.message)
+        showToast('Error al eliminar el pedido: ' + error.message, 'error')
         return
       }
-      alert('Pedido eliminado exitosamente')
+      showToast('Pedido eliminado exitosamente')
       fetchOrders() // Recargar pedidos
       setDeleteConfirmOrder(null)
     } catch (err) {
       console.error('Error:', err)
-      alert('Error al eliminar el pedido')
+      showToast('Error al eliminar el pedido', 'error')
     } finally {
       setDeleteSubmitting(false)
     }
@@ -346,6 +356,16 @@ const Dashboard = ({ user, loading }) => {
   const closeDeleteConfirm = () => {
     if (deleteSubmitting) return
     setDeleteConfirmOrder(null)
+  }
+
+  const showToast = (message, variant = 'info') => {
+    setToast({ message, variant })
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current)
+    }
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null)
+    }, 3500)
   }
 
   const formatCustomResponses = (customResponses) => {
@@ -569,6 +589,19 @@ const Dashboard = ({ user, loading }) => {
   return (
     <RequireUser user={user} loading={loading}>
       <div className="p-6 space-y-6 pb-8">
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-md">
+          <div
+            className={`rounded-2xl shadow-2xl px-4 py-3 text-sm sm:text-base font-semibold text-white border border-white/20 ${
+              toast.variant === 'error'
+                ? 'bg-linear-to-r from-rose-600 to-red-700'
+                : 'bg-linear-to-r from-sky-600 to-blue-700'
+            }`}
+          >
+            {toast.message}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
