@@ -394,7 +394,7 @@ const Dashboard = ({ user, loading }) => {
         onClick={onClose}
       >
         <div
-          className="bg-linear-to-br from-sky-600 to-blue-700 text-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+          className="bg-linear-to-br from-blue-800 to-blue-900 text-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6">
@@ -595,7 +595,7 @@ const Dashboard = ({ user, loading }) => {
             className={`rounded-2xl shadow-2xl px-4 py-3 text-sm sm:text-base font-semibold text-white border border-white/20 ${
               toast.variant === 'error'
                 ? 'bg-linear-to-r from-rose-600 to-red-700'
-                : 'bg-linear-to-r from-sky-600 to-blue-700'
+                : 'bg-linear-to-r from-blue-800 to-blue-900'
             }`}
           >
             {toast.message}

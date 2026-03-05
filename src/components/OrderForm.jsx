@@ -1646,7 +1646,7 @@ const OrderForm = ({ user, loading }) => {
           <button
             type="submit"
             onClick={() => {
-              Sound.prime()
+              Sound.primeSuccess()
             }}
             disabled={loading || submitting || !hasAnySelectedItems || hasOrderToday}
             style={{ 
