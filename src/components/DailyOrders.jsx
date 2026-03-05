@@ -228,7 +228,7 @@ const DailyOrders = ({ user, loading }) => {
           return {
             ...order,
             user_name: userName,
-            user_email: (emails[0] ? emails[0] : (order.customer_email !== undefined ? order.customer_email : ''))
+            user_email: (order.customer_email ? order.customer_email : (emails[0] ? emails[0] : ''))
           };
         }) : [];
 

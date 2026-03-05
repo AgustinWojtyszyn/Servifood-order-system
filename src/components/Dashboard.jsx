@@ -178,7 +178,7 @@ const Dashboard = ({ user, loading }) => {
             ...order,
             displayStatus,
             user_name: userName,
-            user_email: emails[0] || order.customer_email || ''
+            user_email: order.customer_email || emails[0] || ''
           }
         })
         
