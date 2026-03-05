@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, Settings, Users, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun, Archive } from 'lucide-react'
+import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun, Archive } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
@@ -93,7 +93,6 @@ const Dashboard = ({ user, loading }) => {
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [selectedOrder, setSelectedOrder] = useState(null)
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [toast, setToast] = useState(null)
@@ -105,7 +104,7 @@ const Dashboard = ({ user, loading }) => {
     archived: 0
   })
   const navigate = useNavigate()
-  useOverlayLock(!!selectedOrder || !!deleteConfirmOrder)
+  useOverlayLock(!!deleteConfirmOrder)
 
   useEffect(() => {
     if (!user?.id) return
@@ -368,21 +367,9 @@ const Dashboard = ({ user, loading }) => {
     }, 3500)
   }
 
-  const formatCustomResponses = (customResponses) => {
-    if (!customResponses || customResponses.length === 0) {
-      return null
-    }
-    
-    return customResponses.filter(resp => resp.response).map((resp, index) => (
-      <div key={index} className="border-l-4 border-purple-500 pl-3 py-2 bg-purple-50 rounded">
-        <p className="font-semibold text-gray-900 text-sm">{resp.title}</p>
-        <p className="text-gray-700 text-sm mt-1">
-          {Array.isArray(resp.response) 
-            ? resp.response.join(', ') 
-            : resp.response}
-        </p>
-      </div>
-    ))
+  const handleViewOrder = (orderId) => {
+    if (!orderId) return
+    navigate(`/orders/${orderId}`)
   }
 
   const DeleteConfirmModal = ({ order, onConfirm, onClose, submitting }) => {
@@ -440,136 +427,6 @@ const Dashboard = ({ user, loading }) => {
             >
               {submitting ? 'Eliminando...' : 'Eliminar pedido'}
             </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const OrderDetailsModal = ({ order, onClose }) => {
-    if (!order) return null
-
-    return (
-      <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-        onClick={onClose}
-      >
-        <div 
-          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="sticky top-0 bg-linear-to-r from-primary-600 to-primary-700 text-white p-6 rounded-t-2xl flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">Detalles del Pedido</h2>
-              <p className="text-primary-100 mt-1">#{order.id.slice(-8)}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {/* Información del Usuario */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary-600" />
-                Información del Cliente
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-600">Usuario:</span>
-                  <p className="font-semibold text-gray-900">{order.user_name}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Ubicación:</span>
-                  <p className="font-semibold text-gray-900">{order.location}</p>
-                </div>
-                {order.customer_name && (
-                  <div>
-                    <span className="text-gray-600">Nombre:</span>
-                    <p className="font-semibold text-gray-900">{order.customer_name}</p>
-                  </div>
-                )}
-                {order.customer_email && (
-                  <div>
-                    <span className="text-gray-600">Email:</span>
-                    <p className="font-semibold text-gray-900">{order.customer_email}</p>
-                  </div>
-                )}
-                {order.customer_phone && (
-                  <div>
-                    <span className="text-gray-600">Teléfono:</span>
-                    <p className="font-semibold text-gray-900">{order.customer_phone}</p>
-                  </div>
-                )}
-                <div>
-                  <span className="text-gray-600">Fecha de pedido:</span>
-                  <p className="font-semibold text-gray-900">{formatDate(order.created_at)}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Items del Pedido */}
-            <div className="bg-blue-50 rounded-xl p-4">
-              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <ChefHat className="h-5 w-5 text-blue-600" />
-                Platillos Ordenados
-              </h3>
-              <div className="space-y-2">
-                {order.items?.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center bg-white p-3 rounded-lg">
-                    <span className="font-medium text-gray-900">{item.name}</span>
-                    <span className="text-gray-600 bg-gray-100 px-3 py-1 rounded-full text-sm font-semibold">
-                      Cantidad: {item.quantity}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Opciones Personalizadas */}
-            {order.custom_responses && order.custom_responses.length > 0 && (
-              <div className="bg-purple-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-purple-600" />
-                  Opciones Adicionales
-                </h3>
-                <div className="space-y-3">
-                  {formatCustomResponses(order.custom_responses)}
-                </div>
-              </div>
-            )}
-
-            {/* Comentarios */}
-            {order.comments && (
-              <div className="bg-yellow-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-900 mb-2">Comentarios:</h3>
-                <p className="text-gray-700 italic">{order.comments}</p>
-              </div>
-            )}
-
-            {/* Estado */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="font-bold text-gray-900 mb-2">Estado:</h3>
-              {(() => {
-                const status = order.displayStatus || order.status
-                return (
-              <span className={`inline-flex px-4 py-2 text-sm font-bold rounded-full ${
-                status === 'archived' ? 'bg-green-100 text-green-800' :
-                status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                'bg-blue-100 text-blue-800'
-              }`}>
-                {status === 'archived' ? 'Archivado' :
-                 status === 'pending' ? 'Pendiente' : 
-                 status === 'cancelled' ? 'Cancelado' : status}
-              </span>
-                )
-              })()}
-            </div>
           </div>
         </div>
       </div>
@@ -811,11 +668,12 @@ const Dashboard = ({ user, loading }) => {
                         </>
                       )}
                       <button
-                        onClick={() => setSelectedOrder(order)}
-                        className="p-2 hover:bg-primary-100 rounded-lg transition-colors text-primary-600"
-                        title="Ver detalles"
+                        onClick={() => handleViewOrder(order.id)}
+                        className="flex items-center gap-1 p-2 rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                        title="Ver pedido"
                       >
                         <Eye className="h-4 w-4" />
+                        <span className="hidden sm:inline text-xs font-semibold">Ver pedido</span>
                       </button>
                       {isAdmin ? (
                         <>
@@ -889,11 +747,12 @@ const Dashboard = ({ user, loading }) => {
                 <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 justify-end sm:justify-start mt-2 sm:mt-0">
                   {isAdmin && (
                     <button
-                      onClick={() => setSelectedOrder(order)}
-                      className="p-2 hover:bg-green-200 rounded-lg transition-colors text-green-700"
-                      title="Ver detalles"
+                      onClick={() => handleViewOrder(order.id)}
+                      className="flex items-center gap-1 p-2 rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                      title="Ver pedido"
                     >
                       <Eye className="h-4 w-4" />
+                      <span className="hidden sm:inline text-xs font-semibold">Ver pedido</span>
                     </button>
                   )}
                   <span className="inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 whitespace-nowrap">
@@ -1010,10 +869,6 @@ const Dashboard = ({ user, loading }) => {
         />
       )}
 
-      {/* Modal de Detalles */}
-      {selectedOrder && (
-        <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
-      )}
       </div>
     </RequireUser>
   )

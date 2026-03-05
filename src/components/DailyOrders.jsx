@@ -9,6 +9,7 @@ const InternalLoader = () => (
 
 // import { useRef } from 'react' // Ya está importado arriba
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, Shield, Mail, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon, Printer } from 'lucide-react'
 import ExcelJS from 'exceljs'
@@ -45,6 +46,7 @@ const DailyOrders = ({ user, loading }) => {
   })
 
   const locations = COMPANY_LOCATIONS
+  const navigate = useNavigate()
 
   // Función robusta para detectar y extraer guarniciones personalizadas
   const getCustomSideFromResponses = (responses = []) => {
@@ -1641,11 +1643,9 @@ const DailyOrders = ({ user, loading }) => {
                     <div className="flex justify-end pt-1">
                       <button
                         className="text-sm font-semibold text-primary-700 hover:text-primary-900"
-                        onClick={() => {
-                          alert(`Detalles del pedido:\n\nCliente: ${order.user_name}\nEmail: ${order.user_email}\nUbicación: ${order.location}\nEstado: ${getStatusText(order.status)}\nItems: ${order.total_items}\nComentarios: ${order.comments || 'Sin comentarios'}`)
-                        }}
+                        onClick={() => navigate(`/orders/${order.id}`)}
                       >
-                        Ver detalles
+                        Ver pedido
                       </button>
                     </div>
                   </div>
