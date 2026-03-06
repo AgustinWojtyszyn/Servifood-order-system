@@ -1971,7 +1971,18 @@ const OrderForm = ({ user, loading }) => {
 
       {confirmOpen && confirmData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border-2 border-blue-200 overflow-hidden">
+          <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border-2 border-blue-200 overflow-hidden relative">
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmOpen(false)
+                setConfirmData(null)
+              }}
+              className="absolute top-3 right-3 p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 shadow-sm"
+              aria-label="Cerrar confirmación"
+            >
+              <X className="h-5 w-5" />
+            </button>
             <div className="p-5 sm:p-6 border-b border-blue-100 bg-blue-50/70">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Confirmá tu pedido</h2>
               <p className="text-sm sm:text-base text-gray-700">Revisá el detalle completo antes de enviar.</p>
