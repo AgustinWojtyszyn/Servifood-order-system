@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Clock, CheckCircle, ChefHat, Plus, Package, Eye, X, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun, Archive } from 'lucide-react'
+import { ShoppingCart, Clock, CheckCircle, Plus, Package, Eye, X, MessageCircle, Phone, RefreshCw, Edit, Trash2, Moon, Sun, Archive } from 'lucide-react'
+import foodDeliveryImg from '../assets/food-delivery (1).png'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
@@ -481,15 +482,6 @@ const Dashboard = ({ user, loading }) => {
             <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Actualizando...' : 'Actualizar'}
           </button>
-          {isAdmin && (
-            <button
-              onClick={handleArchiveAllPending}
-              className="inline-flex items-center justify-center bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            >
-              <Archive className="h-5 w-5 mr-2" />
-              Archivar Todos
-            </button>
-          )}
           <Link to="/order" className="btn-primary inline-flex items-center justify-center w-full sm:w-auto bg-linear-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
             <Plus className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
             Nuevo Pedido
@@ -504,7 +496,12 @@ const Dashboard = ({ user, loading }) => {
             <div className="p-3 sm:p-4 rounded-full bg-linear-to-br from-primary-500 to-primary-700 shadow-lg">
               <div className="relative">
                 <div className="flex items-center justify-center">
-                  <ChefHat className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400 bg-white rounded-full border-2 border-yellow-300 shadow-lg mx-auto shrink-0" style={{ display: 'block', margin: '0 auto' }} title="Chef" />
+                  <img
+                    src={foodDeliveryImg}
+                    alt="Entrega de comida"
+                    className="h-10 w-10 sm:h-12 sm:w-12 shadow-lg mx-auto shrink-0 object-contain"
+                    style={{ display: 'block', margin: '0 auto' }}
+                  />
                 </div>
               </div>
             </div>
