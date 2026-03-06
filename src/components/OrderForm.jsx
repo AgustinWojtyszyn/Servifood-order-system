@@ -79,6 +79,8 @@ const OrderForm = ({ user, loading }) => {
   const [dinnerEnabled, setDinnerEnabled] = useState(false)
   const [selectedTurns, setSelectedTurns] = useState({ lunch: true, dinner: false })
   const [submitting, setSubmitting] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmData, setConfirmData] = useState(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [hasOrderToday, setHasOrderToday] = useState(false)
@@ -508,6 +510,12 @@ const OrderForm = ({ user, loading }) => {
       ...prev,
       [optionId]: value
     }))
+  }
+
+  const formatResponseValue = (value) => {
+    if (Array.isArray(value)) return value.join(', ')
+    if (value === null || value === undefined) return ''
+    return String(value)
   }
 
   const getSelectedItemsList = () => {
@@ -941,11 +949,9 @@ const OrderForm = ({ user, loading }) => {
     }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e, bypassConfirm = false) => {
+    e?.preventDefault()
     if (submitting || submitLockRef.current) return
-    submitLockRef.current = true
-    setSubmitting(true)
     setError('')
     if (!user?.id) {
       setError('No se pudo validar el usuario. Intenta nuevamente.')
@@ -1094,6 +1100,40 @@ const OrderForm = ({ user, loading }) => {
       }
     }
 
+    const dinnerItemsForSummary = (dinnerSelected && selectedItemsListDinner.length === 0 && dinnerOverrideChoice)
+      ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1 }]
+      : selectedItemsListDinner
+
+    const confirmationData = {
+      company: companyConfig?.name || '',
+      location: formData.location,
+      name: formData.name || user?.user_metadata?.full_name || user?.email || '',
+      email: formData.email || user?.email || '',
+      phone: formData.phone || '',
+      deliveryDate,
+      turnos: turnosSeleccionados,
+      lunchSelected,
+      dinnerSelected,
+      lunchItems: selectedItemsList,
+      dinnerItems: dinnerItemsForSummary,
+      lunchOptions: customResponsesArray,
+      dinnerOptions: customResponsesDinnerArray,
+      comments: formData.comments || '',
+      totals: {
+        lunch: lunchSelected ? calculateTotal() : 0,
+        dinner: dinnerSelected ? (dinnerItemsForSummary?.length || 0) : 0
+      }
+    }
+
+    if (!bypassConfirm) {
+      setConfirmData(confirmationData)
+      setConfirmOpen(true)
+      return
+    }
+
+    submitLockRef.current = true
+    setSubmitting(true)
+
     let hasSubmitError = false
 
     try {
@@ -1201,6 +1241,11 @@ const OrderForm = ({ user, loading }) => {
       submitLockRef.current = false
       setSubmitting(false)
     }
+  }
+
+  const handleConfirmSubmit = () => {
+    setConfirmOpen(false)
+    handleSubmit(null, true)
   }
 
   if (success) {
@@ -1923,6 +1968,131 @@ const OrderForm = ({ user, loading }) => {
         </div>
         </form>
       </div>
+
+      {confirmOpen && confirmData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border-2 border-blue-200 overflow-hidden">
+            <div className="p-5 sm:p-6 border-b border-blue-100 bg-blue-50/70">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Confirmá tu pedido</h2>
+              <p className="text-sm sm:text-base text-gray-700">Revisá el detalle completo antes de enviar.</p>
+            </div>
+
+            <div className="p-5 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="border-2 border-gray-200 rounded-xl p-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Datos del pedido</h3>
+                <div className="space-y-1 text-sm sm:text-base text-gray-800">
+                  <p><span className="font-semibold">Empresa:</span> {confirmData.company}</p>
+                  <p><span className="font-semibold">Nombre:</span> {confirmData.name}</p>
+                  <p><span className="font-semibold">Email:</span> {confirmData.email}</p>
+                  <p><span className="font-semibold">Teléfono:</span> {confirmData.phone || '-'}</p>
+                  <p><span className="font-semibold">Entrega:</span> {confirmData.deliveryDate}</p>
+                  <p><span className="font-semibold">Turnos:</span> {confirmData.turnos.map(t => (t === 'lunch' ? 'Almuerzo' : 'Cena')).join(' + ')}</p>
+                </div>
+              </div>
+
+              {confirmData.lunchSelected && (
+                <div className="border-2 border-gray-200 rounded-xl p-4">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Almuerzo</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Menús</p>
+                      <div className="space-y-1">
+                        {confirmData.lunchItems.map(item => (
+                          <div key={item.id} className="text-sm sm:text-base">
+                            <p className="font-semibold text-gray-900">{item.name}</p>
+                            {item.description && <p className="text-gray-600">{item.description}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-sm text-gray-700">
+                        <span className="font-semibold">Total items:</span> {confirmData.totals.lunch}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Opciones</p>
+                      {confirmData.lunchOptions.length > 0 ? (
+                        <div className="space-y-1 text-sm sm:text-base">
+                          {confirmData.lunchOptions.map(opt => (
+                            <p key={opt.id}>
+                              <span className="font-semibold">{opt.title}:</span> {formatResponseValue(opt.response)}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">Sin opciones adicionales.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {confirmData.dinnerSelected && (
+                <div className="border-2 border-gray-200 rounded-xl p-4">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Cena</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Menús</p>
+                      <div className="space-y-1">
+                        {confirmData.dinnerItems.map(item => (
+                          <div key={item.id} className="text-sm sm:text-base">
+                            <p className="font-semibold text-gray-900">{item.name}</p>
+                            {item.description && <p className="text-gray-600">{item.description}</p>}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-sm text-gray-700">
+                        <span className="font-semibold">Total items:</span> {confirmData.totals.dinner}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Opciones</p>
+                      {confirmData.dinnerOptions.length > 0 ? (
+                        <div className="space-y-1 text-sm sm:text-base">
+                          {confirmData.dinnerOptions.map(opt => (
+                            <p key={opt.id}>
+                              <span className="font-semibold">{opt.title}:</span> {formatResponseValue(opt.response)}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">Sin opciones adicionales.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-2 border-gray-200 rounded-xl p-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Comentarios</h3>
+                <p className="text-sm sm:text-base text-gray-700">
+                  {confirmData.comments ? confirmData.comments : 'Sin comentarios adicionales.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col sm:flex-row gap-3 justify-end bg-white">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmOpen(false)
+                  setConfirmData(null)
+                }}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-all"
+              >
+                Volver y editar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSubmit}
+                disabled={submitting}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-lg transition-all disabled:opacity-60"
+              >
+                {submitting ? 'Enviando...' : 'Confirmar y enviar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </RequireUser>
   )
 }
