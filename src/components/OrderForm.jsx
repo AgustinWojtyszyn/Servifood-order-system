@@ -681,46 +681,53 @@ const OrderForm = ({ user, loading }) => {
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`
   }
 
-  const buildSuggestionSummary = (order) => {
-    if (!order) return ''
-    const items = Array.isArray(order.items) ? order.items : []
-    const list = items.map(i => `${i.name || 'Item'}${i.quantity ? ` (x${i.quantity})` : ''}`).join(', ')
-    const loc = order.location ? ` en ${order.location}` : ''
-    return list ? `${list}${loc}` : `Pedido anterior${loc}`
+  const hasMainMenuSelected = (items = []) => {
+    const list = Array.isArray(items) ? items : []
+    return list.some(item => {
+      const name = (item?.name || '').toString().toLowerCase()
+      return (
+        name.includes('menú principal') ||
+        name.includes('menu principal') ||
+        name.includes('plato principal')
+      )
+    })
   }
 
   const buildOptionsSummary = (responses = []) => {
     const list = Array.isArray(responses) ? responses : []
-    const parts = []
+    const titles = []
     list.forEach(resp => {
       if (!resp) return
       const value = resp.response ?? resp.answer ?? resp.value ?? resp.options
-      if (Array.isArray(value) && value.length > 0) {
-        parts.push(`${resp.title || 'Opcion'}: ${value.join(', ')}`)
-        return
-      }
-      if (typeof value === 'string' && value.trim() !== '') {
-        parts.push(`${resp.title || 'Opcion'}: ${value}`)
-      }
+      const hasValue = Array.isArray(value)
+        ? value.length > 0
+        : (typeof value === 'string' ? value.trim() !== '' : value !== null && value !== undefined)
+      if (!hasValue) return
+      const title = (resp.title || 'Opcion').toString().trim()
+      if (title && !titles.includes(title)) titles.push(title)
     })
 
-    if (!parts.length) return ''
-    if (parts.length <= 2) return parts.join(' | ')
-    return `${parts.slice(0, 2).join(' | ')} +${parts.length - 2} mas`
+    if (!titles.length) return ''
+    if (titles.length <= 2) return titles.join(' | ')
+    return `${titles.slice(0, 2).join(' | ')} +${titles.length - 2} mas`
   }
 
-  const buildRepeatSummary = (order) => {
+  const buildSuggestionSummary = (order) => {
     if (!order) return ''
     const items = Array.isArray(order.items) ? order.items : []
-    const itemText = items
-      .map(i => `${i.name || 'Item'}${i.quantity ? ` (x${i.quantity})` : ''}`)
-      .join(', ')
+    const parts = []
+    if (hasMainMenuSelected(items)) {
+      parts.push('Menú principal')
+    }
     const optionsText = buildOptionsSummary(order.custom_responses)
-    if (itemText && optionsText) return `Menu: ${itemText} | Opciones: ${optionsText}`
-    if (itemText) return `Menu: ${itemText}`
-    if (optionsText) return `Opciones: ${optionsText}`
+    if (optionsText) {
+      parts.push(`Opciones: ${optionsText}`)
+    }
+    if (parts.length) return parts.join(' | ')
     return 'Pedido anterior'
   }
+
+  const buildRepeatSummary = (order) => buildSuggestionSummary(order)
 
   const mapOrderItemsToSelection = (items = []) => {
     const selectedMap = {}
@@ -948,6 +955,7 @@ const OrderForm = ({ user, loading }) => {
       return false
     }
   }
+
 
   const handleSubmit = async (e, bypassConfirm = false) => {
     e?.preventDefault()
@@ -1300,7 +1308,7 @@ const OrderForm = ({ user, loading }) => {
                   )}
                 </div>
               </div>
-              {!hasOrderToday && (
+                {!hasOrderToday && (
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 shadow-lg">
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-blue-600 shrink-0" />

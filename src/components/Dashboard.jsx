@@ -9,6 +9,9 @@ import RequireUser from './RequireUser'
 import { useOverlayLock } from '../contexts/OverlayLockContext'
 
 const EDIT_WINDOW_MINUTES = 15
+const ORDER_START_HOUR = 9
+const ORDER_CUTOFF_HOUR = 22
+const ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'
 
 const ensureArray = (value) => {
   if (Array.isArray(value)) return value
@@ -104,6 +107,9 @@ const Dashboard = ({ user, loading }) => {
     pending: 0,
     archived: 0
   })
+  const [countdownLabel, setCountdownLabel] = useState('Cierra en')
+  const [countdownValue, setCountdownValue] = useState('--:--:--')
+  const [countdownTone, setCountdownTone] = useState('normal')
   const navigate = useNavigate()
   useOverlayLock(!!deleteConfirmOrder)
 
@@ -118,6 +124,60 @@ const Dashboard = ({ user, loading }) => {
         clearTimeout(toastTimerRef.current)
       }
     }
+  }, [])
+
+  useEffect(() => {
+    const formatCountdown = (ms) => {
+      const totalSeconds = Math.max(Math.floor(ms / 1000), 0)
+      const hours = Math.floor(totalSeconds / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
+      const pad = (n) => String(n).padStart(2, '0')
+      return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+    }
+
+    const updateCountdown = () => {
+      try {
+        const nowBA = new Date(new Date().toLocaleString('en-US', { timeZone: ORDER_TIMEZONE }))
+        const openTime = new Date(nowBA)
+        openTime.setHours(ORDER_START_HOUR, 0, 0, 0)
+        const closeTime = new Date(nowBA)
+        closeTime.setHours(ORDER_CUTOFF_HOUR, 0, 0, 0)
+
+        let label = 'Cierra en'
+        let target = closeTime
+
+        if (nowBA < openTime) {
+          label = 'Abre en'
+          target = openTime
+        } else if (nowBA >= closeTime) {
+          label = 'Abre en'
+          const nextOpen = new Date(openTime)
+          nextOpen.setDate(nextOpen.getDate() + 1)
+          target = nextOpen
+        }
+
+        const remainingMs = target - nowBA
+        let tone = 'normal'
+        if (label === 'Cierra en') {
+          if (remainingMs <= 15 * 60 * 1000) {
+            tone = 'urgent'
+          } else if (remainingMs < 60 * 60 * 1000) {
+            tone = 'warn'
+          }
+        }
+
+        setCountdownLabel(label)
+        setCountdownValue(formatCountdown(remainingMs))
+        setCountdownTone(tone)
+      } catch (err) {
+        console.error('Error updating countdown', err)
+      }
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -468,6 +528,19 @@ const Dashboard = ({ user, loading }) => {
             ¡Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}!
           </p>
           <p className="text-base sm:text-lg text-white/90 mt-1">Aquí está el resumen de tus pedidos</p>
+          <div
+            className={`mt-3 inline-flex flex-wrap items-center gap-2 px-4 py-3 rounded-xl border-2 shadow-lg ${
+              countdownTone === 'urgent'
+                ? 'bg-red-500/25 border-red-200/70 text-red-50'
+                : countdownTone === 'warn'
+                ? 'bg-orange-500/25 border-orange-200/70 text-orange-50'
+                : 'bg-white/15 border-white/30 text-white'
+            }`}
+          >
+            <Clock className="h-5 w-5" />
+            <span className="text-base sm:text-lg font-bold">Horario pedidos: 09:00 a 22:00</span>
+            <span className="text-base sm:text-lg font-bold">• {countdownLabel} {countdownValue}</span>
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0 w-full sm:w-auto">
           <button
