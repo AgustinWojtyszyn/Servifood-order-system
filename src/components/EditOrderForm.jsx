@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle, Save } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle, Save, CheckCircle } from 'lucide-react'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
@@ -463,43 +463,42 @@ export default function EditOrderForm({ user, loading }) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {menuItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="card bg-white border-2 border-gray-200 rounded-2xl p-5
-                             hover:border-primary-500 hover:shadow-xl transition-all duration-300
-                             flex flex-col justify-between min-h-[260px]"
-                >
-                  <div>
-                    <h3 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">
-                      {item.name}
-                    </h3>
+              {menuItems.map((item) => {
+                const isSelected = selectedItems[item.id] === true
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleItemSelect(item.id, !isSelected)}
+                    aria-pressed={isSelected}
+                    className={`card text-left bg-white border-2 rounded-2xl p-5
+                               transition-all duration-300 flex flex-col justify-between min-h-[260px] cursor-pointer
+                               focus:outline-none focus:ring-2 focus:ring-blue-400
+                               ${isSelected ? 'border-blue-500 bg-blue-50/60 shadow-xl' : 'border-gray-200 hover:border-blue-400 hover:shadow-xl'}`}
+                  >
+                    <div>
+                      <h3 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">
+                        {item.name}
+                      </h3>
 
-                    {item.description && (
-                      <p className="text-lg text-gray-800 leading-snug font-medium">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
+                      {item.description && (
+                        <p className="text-lg text-gray-800 leading-snug font-medium">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="flex justify-end mt-6">
-                    <label className="flex items-center gap-2 cursor-pointer" htmlFor={`item-${item.id}`}>
-                      <input
-                        id={`item-${item.id}`}
-                        name={`item-${item.id}`}
-                        type="checkbox"
-                        checked={selectedItems[item.id] === true}
-                        onChange={(e) => handleItemSelect(item.id, e.target.checked)}
-                        className="h-6 w-6 rounded border-gray-400 text-primary-600
-                                   focus:ring-primary-500 focus:outline-none"
-                      />
-                      <span className="text-base font-semibold text-gray-700">
-                        {selectedItems[item.id] ? 'Seleccionado' : 'Seleccionar'}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              ))}
+                    <div className="flex justify-end mt-6 min-h-[36px]">
+                      {isSelected && (
+                        <span className="flex items-center gap-2 text-blue-600 font-bold text-lg">
+                          <CheckCircle className="h-8 w-8" />
+                          Seleccionado
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -573,27 +572,22 @@ export default function EditOrderForm({ user, loading }) {
                       {option.options.map((opt, index) => {
                         const isSelected = customResponses[option.id] === opt
                         return (
-                          <label
+                          <button
                             key={index}
-                            className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer"
-                            onClick={(e) => {
-                              if (isSelected) {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                handleCustomResponse(option.id, null, 'multiple_choice')
-                              }
-                            }}
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={() => handleCustomResponse(option.id, opt, 'multiple_choice')}
+                            className={`w-full text-left p-3 border-2 rounded-lg transition-all
+                              focus:outline-none focus:ring-2 focus:ring-blue-400
+                              ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
                           >
-                            <input
-                              type="radio"
-                              name={`option-${option.id}`}
-                              value={opt}
-                              checked={isSelected}
-                              onChange={(e) => handleCustomResponse(option.id, e.target.value, 'multiple_choice')}
-                              className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                            />
-                            <span className="ml-3 text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
-                          </label>
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
+                              {isSelected && (
+                                <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                              )}
+                            </div>
+                          </button>
                         )
                       })}
                     </div>
@@ -601,18 +595,27 @@ export default function EditOrderForm({ user, loading }) {
 
                     {option.type === 'checkbox' && option.options && (
                       <div className="space-y-2">
-                        {option.options.map((opt, index) => (
-                          <label key={index} className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
-                            <input
-                              type="checkbox"
-                              value={opt}
-                              checked={(customResponses[option.id] || []).includes(opt)}
-                              onChange={(e) => handleCustomResponse(option.id, e.target.value, 'checkbox')}
-                              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                            />
-                            <span className="ml-3 text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
-                          </label>
-                        ))}
+                        {option.options.map((opt, index) => {
+                          const isChecked = (customResponses[option.id] || []).includes(opt)
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              aria-pressed={isChecked}
+                              onClick={() => handleCustomResponse(option.id, opt, 'checkbox')}
+                              className={`w-full text-left p-3 border-2 rounded-lg transition-all
+                                focus:outline-none focus:ring-2 focus:ring-blue-400
+                                ${isChecked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
+                                {isChecked && (
+                                  <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })}
                       </div>
                     )}
 

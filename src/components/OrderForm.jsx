@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ordersService } from '../services/orders'
-import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2 } from 'lucide-react'
+import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2, CheckCircle } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
 import { Sound } from '../utils/Sound'
@@ -1425,46 +1425,42 @@ const OrderForm = ({ user, loading }) => {
 
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     {[...menuItems.filter(item => item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))),
-      ...menuItems.filter(item => !(item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))))].map((item) => (
-      <div
-        key={item.id}
-        className="card bg-white border-2 border-gray-200 rounded-2xl p-5
-                   hover:border-primary-500 hover:shadow-xl transition-all duration-300
-                   flex flex-col justify-between min-h-[260px]"
-      >
-        <div>
-          {/* 🔥 Título más grande y en negrita */}
-          <h3 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">
-            {item.name}
-          </h3>
+      ...menuItems.filter(item => !(item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))))].map((item) => {
+      const isSelected = selectedItems[item.id] === true
+      return (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => handleItemSelect(item.id, !isSelected)}
+          aria-pressed={isSelected}
+          className={`card text-left bg-white border-2 rounded-2xl p-5
+                     transition-all duration-300 flex flex-col justify-between min-h-[260px] cursor-pointer
+                     focus:outline-none focus:ring-2 focus:ring-blue-400
+                     ${isSelected ? 'border-blue-500 bg-blue-50/60 shadow-xl' : 'border-gray-200 hover:border-blue-400 hover:shadow-xl'}`}
+        >
+          <div>
+            <h3 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">
+              {item.name}
+            </h3>
 
-          {/* 🔥 Descripción un poco más grande y legible */}
-          {item.description && (
-            <p className="text-lg text-gray-800 leading-snug font-medium">
-              {item.description}
-            </p>
-          )}
-        </div>
+            {item.description && (
+              <p className="text-lg text-gray-800 leading-snug font-medium">
+                {item.description}
+              </p>
+            )}
+          </div>
 
-        {/* Checkbox funcional */}
-        <div className="flex justify-end mt-6">
-          <label className="flex items-center gap-2 cursor-pointer" htmlFor={`select-item-${item.id}`}>
-            <input
-              type="checkbox"
-              id={`select-item-${item.id}`}
-              name={`select-item-${item.id}`}
-              checked={selectedItems[item.id] === true}
-              onChange={(e) => handleItemSelect(item.id, e.target.checked)}
-              className="h-6 w-6 rounded border-gray-400 text-primary-600
-                         focus:ring-primary-500 focus:outline-none"
-            />
-            <span className="text-base font-semibold text-gray-700">
-              Seleccionar
-            </span>
-          </label>
-        </div>
-      </div>
-    ))}
+          <div className="flex justify-end mt-6 min-h-[36px]">
+            {isSelected && (
+              <span className="flex items-center gap-2 text-blue-600 font-bold text-lg">
+                <CheckCircle className="h-8 w-8" />
+                Seleccionado
+              </span>
+            )}
+          </div>
+        </button>
+      )
+    })}
   </div>
 </div>
 
@@ -1551,65 +1547,62 @@ const OrderForm = ({ user, loading }) => {
                           option.title?.toLowerCase().includes('postre') &&
                           opt?.toLowerCase().includes('postre')
                         const disablePostre = isPostreOption && !isGenneiaPostreDay
-                        const inputId = `option-${option.id}-choice-${index}`
                         return (
-                        <label
-                          key={index}
-                          className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer"
-                          htmlFor={inputId}
-                          onClick={(e) => {
-                            if (disablePostre) {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              return
-                            }
-                            if (isSelected) {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              handleCustomResponse(option.id, null, 'multiple_choice')
-                            }
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            id={inputId}
-                            name={`option-${option.id}`}
-                            value={opt}
-                            checked={isSelected}
+                          <button
+                            key={index}
+                            type="button"
                             disabled={disablePostre}
-                            onChange={(e) => handleCustomResponse(option.id, e.target.value, 'multiple_choice')}
-                            className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                          <span
-                            className={`ml-3 text-sm ${disablePostre ? 'text-gray-400' : 'text-gray-900'}`}
-                            style={{ fontWeight: '900' }}
+                            aria-pressed={isSelected}
+                            onClick={() => {
+                              if (disablePostre) return
+                              handleCustomResponse(option.id, opt, 'multiple_choice')
+                            }}
+                            className={`w-full text-left p-3 border-2 rounded-lg transition-all
+                              focus:outline-none focus:ring-2 focus:ring-blue-400
+                              ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}
+                              ${disablePostre ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
-                            {opt}
-                            {disablePostre && ' (no disponible hoy)'}
-                          </span>
-                        </label>
-                      )})}
+                            <div className="flex items-center justify-between gap-3">
+                              <span
+                                className={`text-sm ${disablePostre ? 'text-gray-400' : 'text-gray-900'}`}
+                                style={{ fontWeight: '900' }}
+                              >
+                                {opt}
+                                {disablePostre && ' (no disponible hoy)'}
+                              </span>
+                              {isSelected && (
+                                <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
 
                   {option.type === 'checkbox' && option.options && (
                     <div className="space-y-2">
                       {option.options.map((opt, index) => {
-                        const inputId = `option-${option.id}-checkbox-${index}`
+                        const isChecked = (customResponses[option.id] || []).includes(opt)
                         return (
-                        <label key={index} htmlFor={inputId} className="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
-                          <input
-                            type="checkbox"
-                            id={inputId}
-                            name={`option-${option.id}-checkbox`}
-                            value={opt}
-                            checked={(customResponses[option.id] || []).includes(opt)}
-                            onChange={(e) => handleCustomResponse(option.id, e.target.value, 'checkbox')}
-                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                          />
-                          <span className="ml-3 text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
-                        </label>
-                      )})}
+                          <button
+                            key={index}
+                            type="button"
+                            aria-pressed={isChecked}
+                            onClick={() => handleCustomResponse(option.id, opt, 'checkbox')}
+                            className={`w-full text-left p-3 border-2 rounded-lg transition-all
+                              focus:outline-none focus:ring-2 focus:ring-blue-400
+                              ${isChecked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
+                              {isChecked && (
+                                <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
 
@@ -1642,25 +1635,37 @@ const OrderForm = ({ user, loading }) => {
                 <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Selecciona qué turnos querés pedir hoy.</p>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="flex items-start gap-3 text-sm sm:text-base text-gray-900 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={selectedTurns.lunch}
-                  onChange={(e) => setSelectedTurns(prev => ({ ...prev, lunch: e.target.checked }))}
-                  className="mt-1 h-4 w-4 text-primary-600 border-gray-300"
-                />
-                <span>Almuerzo</span>
-              </label>
-              <label className="flex items-start gap-3 text-sm sm:text-base text-gray-900 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={selectedTurns.dinner}
-                  onChange={(e) => setSelectedTurns(prev => ({ ...prev, dinner: e.target.checked }))}
-                  className="mt-1 h-4 w-4 text-primary-600 border-gray-300"
-                />
-                <span>Cena (solo whitelist)</span>
-              </label>
+            <div className="space-y-3">
+              <button
+                type="button"
+                aria-pressed={selectedTurns.lunch}
+                onClick={() => setSelectedTurns(prev => ({ ...prev, lunch: !prev.lunch }))}
+                className={`w-full text-left p-4 border-2 rounded-xl transition-all
+                  focus:outline-none focus:ring-2 focus:ring-blue-400
+                  ${selectedTurns.lunch ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm sm:text-base text-gray-900 font-semibold">Almuerzo</span>
+                  {selectedTurns.lunch && (
+                    <CheckCircle className="h-7 w-7 text-blue-600 shrink-0" />
+                  )}
+                </div>
+              </button>
+              <button
+                type="button"
+                aria-pressed={selectedTurns.dinner}
+                onClick={() => setSelectedTurns(prev => ({ ...prev, dinner: !prev.dinner }))}
+                className={`w-full text-left p-4 border-2 rounded-xl transition-all
+                  focus:outline-none focus:ring-2 focus:ring-blue-400
+                  ${selectedTurns.dinner ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm sm:text-base text-gray-900 font-semibold">Cena (solo whitelist)</span>
+                  {selectedTurns.dinner && (
+                    <CheckCircle className="h-7 w-7 text-blue-600 shrink-0" />
+                  )}
+                </div>
+              </button>
               <p className="text-xs text-gray-600">Puedes pedir uno o ambos. Si marcas ambos, se abrirá el formulario de cena completo debajo.</p>
             </div>
           </div>
@@ -1681,25 +1686,34 @@ const OrderForm = ({ user, loading }) => {
               <div className="space-y-3">
                 {menuItems.map((item) => {
                   const isSelected = selectedItemsDinner[item.id]
-                  const itemId = `dinner-item-${item.id}`
                   const isDisabled = item.name?.toLowerCase().includes('menú principal') || item.name?.toLowerCase().includes('plato principal')
                     ? Object.keys(selectedItemsDinner).some(id => selectedItemsDinner[id] && (menuItems.find(mi => mi.id === id)?.name || '').toLowerCase().includes('menú principal')) && !isSelected
                     : false
                   return (
-                    <label key={item.id} htmlFor={itemId} className={`flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${isSelected ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/60'} ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
-                      <input
-                        id={itemId}
-                        type="checkbox"
-                        checked={!!isSelected}
-                        disabled={isDisabled}
-                        onChange={(e) => handleItemSelectDinner(item.id, e.target.checked)}
-                        className="mt-1 h-4 w-4 text-amber-600 border-gray-300"
-                      />
-                      <div className="space-y-1">
-                        <p className="text-base sm:text-lg font-semibold text-gray-900">{item.name}</p>
-                        {item.description && <p className="text-sm sm:text-base text-gray-700">{item.description}</p>}
+                    <button
+                      key={item.id}
+                      type="button"
+                      disabled={isDisabled}
+                      aria-pressed={!!isSelected}
+                      onClick={() => {
+                        if (isDisabled) return
+                        handleItemSelectDinner(item.id, !isSelected)
+                      }}
+                      className={`w-full text-left p-4 border-2 rounded-xl transition-all
+                        focus:outline-none focus:ring-2 focus:ring-blue-400
+                        ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}
+                        ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <p className="text-base sm:text-lg font-semibold text-gray-900">{item.name}</p>
+                          {item.description && <p className="text-sm sm:text-base text-gray-700">{item.description}</p>}
+                        </div>
+                        {isSelected && (
+                          <CheckCircle className="h-7 w-7 text-blue-600 shrink-0" />
+                        )}
                       </div>
-                    </label>
+                    </button>
                   )
                 })}
               </div>
@@ -1738,34 +1752,17 @@ const OrderForm = ({ user, loading }) => {
         <div className="space-y-2">
           {option.options.map((opt, index) => {
             const isSelected = customResponsesDinner[option.id] === opt
-            const inputId = `dinner-option-${option.id}-choice-${index}`
             return (
-            <label
-              key={index}
-              className={`flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer ${isSelected ? 'border-amber-500 bg-amber-50' : ''}`}
-              htmlFor={inputId}
-              onClick={(e) => {
-                if (isSelected) {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setCustomResponsesDinner(prev => ({ ...prev, [option.id]: null }))
-                }
-              }}
-            >
-              <input
-                type="radio"
-                id={inputId}
-                name={`dinner-option-${option.id}`}
-                value={opt}
-                checked={isSelected}
-                onChange={(e) => {
-                  const value = e.target.value
-                  // Si es override, limpia platos de cena y otros overrides
+              <button
+                key={index}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => {
+                  const value = opt
                   if (isDinnerOverrideValue(value)) {
                     clearDinnerMenuSelections()
                   }
                   setCustomResponsesDinner(prev => {
-                    // Si se selecciona override, limpiar cualquier otra respuesta override previa
                     if (isDinnerOverrideValue(value)) {
                       const next = {}
                       Object.entries(prev || {}).forEach(([k, v]) => {
@@ -1777,45 +1774,56 @@ const OrderForm = ({ user, loading }) => {
                     return { ...prev, [option.id]: prev[option.id] === value ? null : value }
                   })
                 }}
-                className="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500"
-              />
-              <span className="ml-3 text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
-            </label>
-          )})}
+                className={`w-full text-left p-3 border-2 rounded-lg transition-all
+                  focus:outline-none focus:ring-2 focus:ring-blue-400
+                  ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
+                  {isSelected && (
+                    <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                  )}
+                </div>
+              </button>
+            )
+          })}
                         </div>
                       )}
 
                       {option.type === 'checkbox' && option.options && (
                         <div className="space-y-2">
                           {option.options.map((opt, index) => {
-                            const inputId = `dinner-option-${option.id}-checkbox-${index}`
                             const list = customResponsesDinner[option.id] || []
                             const isChecked = list.includes(opt)
                             return (
-                            <label key={index} htmlFor={inputId} className={`flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer ${isChecked ? 'border-amber-500 bg-amber-50' : ''}`}>
-                              <input
-                                type="checkbox"
-                                id={inputId}
-                                name={`dinner-option-${option.id}-checkbox`}
-                                value={opt}
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  const checked = e.target.checked
+                              <button
+                                key={index}
+                                type="button"
+                                aria-pressed={isChecked}
+                                onClick={() => {
                                   setCustomResponsesDinner(prev => {
                                     const current = prev[option.id] || []
                                     return {
                                       ...prev,
-                                      [option.id]: checked
-                                        ? [...current, opt]
-                                        : current.filter(v => v !== opt)
+                                      [option.id]: isChecked
+                                        ? current.filter(v => v !== opt)
+                                        : [...current, opt]
                                     }
                                   })
                                 }}
-                                className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
-                              />
-                              <span className="ml-3 text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
-                            </label>
-                          )})}
+                                className={`w-full text-left p-3 border-2 rounded-lg transition-all
+                                  focus:outline-none focus:ring-2 focus:ring-blue-400
+                                  ${isChecked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
+                                  {isChecked && (
+                                    <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                                  )}
+                                </div>
+                              </button>
+                            )
+                          })}
                         </div>
                       )}
 
