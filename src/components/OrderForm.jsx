@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ordersService } from '../services/orders'
 import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2, CheckCircle } from 'lucide-react'
@@ -10,7 +10,6 @@ import { Sound } from '../utils/Sound'
 const ORDER_START_HOUR = 9  // 09:00 apertura
 const ORDER_CUTOFF_HOUR = 22 // 22:00 cierre
 const ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'
-const REPEAT_ORDER_STORAGE_KEY = 'repeat-order-draft'
 
 const DINNER_FALLBACK_WHITELIST = new Set([
   'e0f14abf-60f7-448f-87e2-565351b847c2',
@@ -91,8 +90,8 @@ const OrderForm = ({ user, loading }) => {
   const [suggestionLoading, setSuggestionLoading] = useState(false)
   const [suggestionSummary, setSuggestionSummary] = useState('')
   const [suggestionMode, setSuggestionMode] = useState('last')
-  const submitLockRef = useRef(false)
   const repeatAppliedRef = useRef(false)
+  const submitLockRef = useRef(false)
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
     if (typeof window === 'undefined') return false
     const stored = localStorage.getItem('dinner_menu_enabled')
@@ -100,6 +99,7 @@ const OrderForm = ({ user, loading }) => {
     return stored === null ? true : stored === 'true'
   })
   const navigate = useNavigate()
+  const locationState = useLocation()
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
   const defaultCompanySlug = COMPANY_LIST[0]?.slug || 'laja'
@@ -190,6 +190,46 @@ const OrderForm = ({ user, loading }) => {
   }, [locations])
 
   useEffect(() => {
+    if (repeatAppliedRef.current) return
+    if (!menuItems.length) return
+    const payload = locationState?.state?.repeatPayload
+    if (!payload) return
+
+    const draftItems = Array.isArray(payload.items) ? payload.items : []
+    const draftResponses = Array.isArray(payload.custom_responses) ? payload.custom_responses : []
+    const draftService = (payload.service || 'lunch').toLowerCase()
+    const responsesMap = buildResponsesMap(draftResponses)
+
+    if (draftService === 'dinner' && dinnerEnabled && dinnerMenuEnabled) {
+      const selectedDinnerMap = mapOrderItemsToSelection(draftItems)
+      setSelectedItems({})
+      setSelectedItemsDinner(selectedDinnerMap)
+      setCustomResponsesDinner(responsesMap)
+      setSelectedTurns({ lunch: false, dinner: true })
+      setMode('dinner')
+      if (selectedDinnerMap && Object.keys(selectedDinnerMap).length > 0) {
+        clearDinnerOverrideResponses()
+      }
+    } else {
+      const selectedMap = mapOrderItemsToSelection(draftItems)
+      setSelectedItems(selectedMap)
+      setSelectedItemsDinner({})
+      setCustomResponses(responsesMap)
+      setCustomResponsesDinner({})
+      setSelectedTurns({ lunch: true, dinner: false })
+      setMode('lunch')
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      comments: payload.comments || '',
+      location: payload.location || locations[0] || prev.location
+    }))
+
+    repeatAppliedRef.current = true
+  }, [locationState, menuItems.length, dinnerEnabled, dinnerMenuEnabled, locations])
+
+  useEffect(() => {
     setCustomResponses({})
   }, [rawCompanySlug])
 
@@ -274,21 +314,24 @@ const OrderForm = ({ user, loading }) => {
         setPendingDinner(pendingDinner)
         setHasOrderToday(pendingLunch || pendingDinner)
 
-        const repeatCandidate = findRepeatCandidate(data)
-        if (repeatCandidate) {
-          setSuggestion(repeatCandidate)
-          setSuggestionMode('repeat')
-          setSuggestionVisible(true)
-          setSuggestionSummary(buildRepeatSummary(repeatCandidate))
-          return
-        }
+        const yesterday = new Date()
+        yesterday.setHours(0, 0, 0, 0)
+        yesterday.setDate(yesterday.getDate() - 1)
 
-        const latestOrder = getLatestOrder(data)
-        if (latestOrder) {
-          setSuggestion(latestOrder)
+        const ordersFromYesterday = data.filter(order => {
+          if (!order?.created_at) return false
+          if ((order?.status || '').toLowerCase() === 'cancelled') return false
+          const d = new Date(order.created_at)
+          d.setHours(0, 0, 0, 0)
+          return d.getTime() === yesterday.getTime()
+        })
+
+        if (ordersFromYesterday.length > 0) {
+          const latestYesterday = [...ordersFromYesterday].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+          setSuggestion(latestYesterday)
           setSuggestionMode('last')
           setSuggestionVisible(true)
-          setSuggestionSummary(buildSuggestionSummary(latestOrder))
+          setSuggestionSummary(buildSuggestionSummary(latestYesterday))
         } else {
           setSuggestion(null)
           setSuggestionMode('last')
@@ -305,19 +348,6 @@ const OrderForm = ({ user, loading }) => {
     } finally {
       setSuggestionLoading(false)
     }
-  }
-
-  const normalizeDraftList = (value) => {
-    if (Array.isArray(value)) return value
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value)
-        return Array.isArray(parsed) ? parsed : []
-      } catch {
-        return []
-      }
-    }
-    return []
   }
 
   const extractNumber = (name = '') => {
@@ -695,35 +725,26 @@ const OrderForm = ({ user, loading }) => {
 
   const buildOptionsSummary = (responses = []) => {
     const list = Array.isArray(responses) ? responses : []
-    const titles = []
-    list.forEach(resp => {
-      if (!resp) return
+    for (const resp of list) {
+      if (!resp) continue
       const value = resp.response ?? resp.answer ?? resp.value ?? resp.options
       const hasValue = Array.isArray(value)
         ? value.length > 0
         : (typeof value === 'string' ? value.trim() !== '' : value !== null && value !== undefined)
-      if (!hasValue) return
-      const title = (resp.title || 'Opcion').toString().trim()
-      if (title && !titles.includes(title)) titles.push(title)
-    })
-
-    if (!titles.length) return ''
-    if (titles.length <= 2) return titles.join(' | ')
-    return `${titles.slice(0, 2).join(' | ')} +${titles.length - 2} mas`
+      if (!hasValue) continue
+      return (resp.title || 'Opcion').toString().trim()
+    }
+    return ''
   }
 
   const buildSuggestionSummary = (order) => {
     if (!order) return ''
     const items = Array.isArray(order.items) ? order.items : []
-    const parts = []
     if (hasMainMenuSelected(items)) {
-      parts.push('Menú principal')
+      return 'Menú principal'
     }
-    const optionsText = buildOptionsSummary(order.custom_responses)
-    if (optionsText) {
-      parts.push(`Opciones: ${optionsText}`)
-    }
-    if (parts.length) return parts.join(' | ')
+    const optionTitle = buildOptionsSummary(order.custom_responses)
+    if (optionTitle) return optionTitle
     return 'Pedido anterior'
   }
 
@@ -876,67 +897,6 @@ const OrderForm = ({ user, loading }) => {
     }))
     setSuggestionVisible(false)
   }
-
-  useEffect(() => {
-    if (repeatAppliedRef.current) return
-    if (!user?.id) return
-    if (!menuItems.length) return
-
-    let draft = null
-    if (typeof window !== 'undefined') {
-      const raw = sessionStorage.getItem(REPEAT_ORDER_STORAGE_KEY)
-      if (!raw) return
-      try {
-        draft = JSON.parse(raw)
-      } catch {
-        sessionStorage.removeItem(REPEAT_ORDER_STORAGE_KEY)
-        return
-      }
-    }
-
-    if (!draft) return
-
-    const draftItems = normalizeDraftList(draft.items)
-    const draftResponses = normalizeDraftList(draft.custom_responses)
-    const draftService = (draft.service || 'lunch').toLowerCase()
-    const responsesMap = buildResponsesMap(draftResponses)
-
-    if (draftService === 'dinner' && dinnerEnabled && dinnerMenuEnabled) {
-      const selectedDinnerMap = mapOrderItemsToSelection(draftItems)
-      setSelectedItems({})
-      setSelectedItemsDinner(selectedDinnerMap)
-      setCustomResponsesDinner(responsesMap)
-      setSelectedTurns({ lunch: false, dinner: true })
-      setMode('dinner')
-      if (selectedDinnerMap && Object.keys(selectedDinnerMap).length > 0) {
-        clearDinnerOverrideResponses()
-      }
-    } else {
-      const selectedMap = mapOrderItemsToSelection(draftItems)
-      setSelectedItems(selectedMap)
-      setSelectedItemsDinner({})
-      setCustomResponses(responsesMap)
-      setCustomResponsesDinner({})
-      setSelectedTurns({ lunch: true, dinner: false })
-      setMode('lunch')
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      comments: draft.comments || '',
-      location: draft.location || locations[0] || prev.location
-    }))
-
-    setSuggestionVisible(false)
-    setSuggestion(null)
-    setSuggestionSummary('')
-    setSuggestionMode('last')
-
-    repeatAppliedRef.current = true
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem(REPEAT_ORDER_STORAGE_KEY)
-    }
-  }, [user?.id, menuItems.length, locations, dinnerEnabled, dinnerMenuEnabled])
 
   const handleDismissSuggestion = () => {
     setSuggestionVisible(false)
@@ -1324,6 +1284,9 @@ const OrderForm = ({ user, loading }) => {
                 </div>
               )}
 
+            </div>
+              
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Sugerencias inteligentes */}
               {suggestionVisible && suggestion && (
                 <div className={`bg-white border-2 rounded-xl p-4 sm:p-5 shadow-xl flex flex-col gap-3 ${
@@ -1384,9 +1347,6 @@ const OrderForm = ({ user, loading }) => {
                   )}
                 </div>
               )}
-            </div>
-              
-            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Información Personal */}
               <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
                 <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">

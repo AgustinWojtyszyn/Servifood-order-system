@@ -63,7 +63,6 @@ const statusMeta = {
   cancelled: { label: 'Cancelado', className: 'bg-red-100 text-red-800 border-red-200' }
 }
 
-const REPEAT_ORDER_STORAGE_KEY = 'repeat-order-draft'
 
 const OrderDetails = ({ user, loading }) => {
   const { orderId } = useParams()
@@ -142,14 +141,8 @@ const OrderDetails = ({ user, loading }) => {
       comments: order.comments || ''
     }
 
-    try {
-      sessionStorage.setItem(REPEAT_ORDER_STORAGE_KEY, JSON.stringify(payload))
-    } catch (err) {
-      // ignore storage errors
-    }
-
-    const target = company?.slug ? `/order/${company.slug}?repeat=1` : '/order?repeat=1'
-    navigate(target)
+    const target = company?.slug ? `/order/${company.slug}` : '/order'
+    navigate(target, { state: { repeatPayload: payload } })
   }
 
   return (
