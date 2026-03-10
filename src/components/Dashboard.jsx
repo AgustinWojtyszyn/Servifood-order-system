@@ -93,6 +93,57 @@ const serviceBadge = (service = 'lunch') => {
   )
 }
 
+const parseDeliveryDate = (value) => {
+  if (!value) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const getStartOfWeek = (date) => {
+  const start = new Date(date)
+  start.setHours(0, 0, 0, 0)
+  const day = start.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  start.setDate(start.getDate() + diff)
+  return start
+}
+
+const formatWeeklyDate = (value) => {
+  const date = parseDeliveryDate(value)
+  if (!date) return 'Fecha sin definir'
+  const weekday = date.toLocaleDateString('es-ES', { weekday: 'long' })
+  return weekday.charAt(0).toUpperCase() + weekday.slice(1)
+}
+
+const getServiceLabel = (service = 'lunch') => {
+  return (service || 'lunch').toLowerCase() === 'dinner' ? 'Cena' : 'Almuerzo'
+}
+
+const getStatusLabel = (status = 'pending') => {
+  if (status === 'archived') return 'Archivado'
+  if (status === 'cancelled') return 'Cancelado'
+  return 'Pendiente'
+}
+
+const getMainMenuLabel = (order) => {
+  const items = ensureArray(order?.items)
+  const mainItem = items.find((item) => {
+    const name = (item?.name || '').toLowerCase()
+    return name.includes('menú principal') || name.includes('menu principal') || name.includes('plato principal')
+  })
+
+  if (mainItem) {
+    return (mainItem.description || mainItem.name || '').trim() || 'Menú no disponible'
+  }
+
+  const summary = summarizeOrderItems(items)
+  return summary.principal[0]?.name || summary.others[0]?.name || 'Menú no disponible'
+}
+
 const Dashboard = ({ user, loading }) => {
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(true)
@@ -504,6 +555,20 @@ const Dashboard = ({ user, loading }) => {
     )
   }
 
+  const startOfWeek = getStartOfWeek(new Date())
+  const endOfWeek = new Date(startOfWeek)
+  endOfWeek.setDate(endOfWeek.getDate() + 7)
+  const weeklyOrders = orders
+    .filter((order) => {
+      const deliveryDate = parseDeliveryDate(order.delivery_date)
+      return deliveryDate && deliveryDate >= startOfWeek && deliveryDate < endOfWeek
+    })
+    .sort(
+      (a, b) =>
+        parseDeliveryDate(b.delivery_date) -
+        parseDeliveryDate(a.delivery_date)
+    )
+
   return (
     <RequireUser user={user} loading={loading}>
       <div className="p-6 space-y-6 pb-8">
@@ -610,6 +675,44 @@ const Dashboard = ({ user, loading }) => {
         </div>
       </div>
 
+      <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 drop-shadow">Tus pedidos de esta semana</h2>
+        </div>
+
+        {weeklyOrders.length === 0 ? (
+          <div className="space-y-4">
+            <p className="text-gray-600 font-semibold">Sin pedidos esta semana.</p>
+            <Link to="/order" className="btn-primary inline-flex items-center justify-center w-full sm:w-auto bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-6 text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+              Hacer pedido
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {weeklyOrders.map((order) => {
+              const status = order.displayStatus || order.status
+              return (
+                <div
+                  key={order.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-white/95"
+                >
+                  <p className="text-sm sm:text-base text-gray-900 font-semibold wrap-break-word">
+                    {formatWeeklyDate(order.delivery_date)} · {getServiceLabel(order.service)} · {getMainMenuLabel(order)}
+                  </p>
+                  <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap self-start sm:self-auto ${
+                    status === 'archived' ? 'bg-green-100 text-green-800' :
+                    status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {getStatusLabel(status)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Support Card - Para usuarios normales */}
       {!isAdmin && (
         <div className="card bg-linear-to-br from-green-50 to-emerald-50 shadow-xl border-2 border-green-300">
@@ -636,153 +739,6 @@ const Dashboard = ({ user, loading }) => {
           </div>
         </div>
       )}
-
-      {/* Historial de pedidos */}
-      <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Historial de pedidos</h2>
-          <Link to="/order" className="text-secondary-600 hover:text-secondary-700 text-lg font-bold hover:underline">
-            Nuevo Pedido →
-          </Link>
-        </div>
-
-        {orders.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center mx-auto mb-4 rounded-2xl bg-blue-600/90 shadow-md p-2 relative -left-2">
-              <img src={servifoodLogo} alt="Servifood Logo" className="h-20 w-20 object-contain" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">No hay pedidos en el historial</h3>
-            <p className="text-xl text-gray-600 mb-6">¡Crea un pedido para comenzar!</p>
-            <Link to="/order" className="btn-primary bg-linear-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-black font-bold py-4 px-8 text-lg rounded-xl shadow-lg">
-              Crear Pedido
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {[...orders]
-              .map(o => ({ ...o, displayStatus: o.displayStatus || o.status }))
-              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-              .map((order) => {
-                const status = order.displayStatus || order.status
-                const service = (order.service || 'lunch').toLowerCase()
-                const summary = summarizeOrderItems(order.items)
-                const customSide = getCustomSideFromResponses(order.custom_responses)
-                return (
-                  <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-lg transition-all">
-                    <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                      <div className={`p-2 rounded-full shrink-0 ${
-                        status === 'archived' ? 'bg-green-100' :
-                        status === 'pending' ? 'bg-yellow-100' :
-                        status === 'cancelled' ? 'bg-red-100' : 'bg-blue-100'
-                      }`}>
-                        {status === 'archived' ? (
-                          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                        ) : status === 'pending' ? (
-                          <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                        ) : status === 'cancelled' ? (
-                          <X className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
-                        ) : (
-                          <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                            {isAdmin ? `${order.user_name} - ` : ''}Pedido #{order.id.slice(-8)}
-                          </p>
-                          {serviceBadge(service)}
-                        </div>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate flex items-center gap-2">
-                          {order.location} • {formatDate(order.created_at)} • {service === 'dinner' ? 'Cena' : 'Almuerzo'}
-                        </p>
-                        <div className="mt-1 text-xs sm:text-sm text-gray-800 space-y-0.5">
-                          {summary.principal.map((item, idx) => (
-                            <p key={`${order.id}-principal-${idx}`} className="truncate font-semibold">
-                              {item.name} (x{item.qty})
-                            </p>
-                          ))}
-                          {summary.principalRemaining > 0 && (
-                            <p className="text-[11px] sm:text-xs text-gray-700">+{summary.principalRemaining} menú(es) principal(es) más</p>
-                          )}
-                          {summary.others.slice(0, 2).map((item, idx) => (
-                            <p key={`${order.id}-item-${idx}`} className="truncate">{item.name} (x{item.qty})</p>
-                          ))}
-                          {summary.remaining > 0 && (
-                            <p className="text-[11px] sm:text-xs text-gray-700">+{summary.remaining} alimento(s) más</p>
-                          )}
-                          {customSide && (
-                            <p className="text-[11px] sm:text-xs italic text-gray-700">Guarnición: {customSide}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start flex-wrap">
-                      {(isAdmin || isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) && (
-                        <>
-                          <button
-                            onClick={() => handleEditOrder(order)}
-                            className="flex items-center gap-1 p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
-                            title="Editar pedido"
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span className="hidden sm:inline text-xs font-semibold">Editar</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteOrder(order)}
-                            className="flex items-center gap-1 p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
-                            title="Eliminar pedido"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="hidden sm:inline text-xs font-semibold">Eliminar</span>
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleViewOrder(order.id)}
-                        className="flex items-center gap-1 p-2 rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-700"
-                        title="Ver pedido"
-                      >
-                        <Eye className="h-4 w-4" />
-                        <span className="hidden sm:inline text-xs font-semibold">Ver pedido</span>
-                      </button>
-                      {isAdmin ? (
-                        <>
-                          <label htmlFor={`order-status-${order.id}`} className="sr-only">
-                            Cambiar estado del pedido {order.id}
-                          </label>
-                          <select
-                            id={`order-status-${order.id}`}
-                            value={status}
-                            onChange={(e) => handleStatusChange(order.id, e.target.value, status)}
-                            className={`text-xs font-semibold rounded-full px-2 sm:px-3 py-1 border-2 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                              status === 'archived' ? 'bg-green-100 text-green-800 border-green-300' :
-                              status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-300' :
-                              'bg-yellow-100 text-yellow-800 border-yellow-300'
-                            }`}
-                          >
-                            <option value="pending">Pendiente</option>
-                            <option value="archived">Archivado</option>
-                            <option value="cancelled">Cancelado</option>
-                          </select>
-                        </>
-                      ) : (
-                        <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                          status === 'archived' ? 'bg-green-100 text-green-800' :
-                          status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-50 text-blue-800'
-                        }`}>
-                          {status === 'archived' ? 'Archivado' :
-                           status === 'pending' ? 'Pendiente' :
-                           status === 'cancelled' ? 'Cancelado' : status}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-          </div>
-        )}
-      </div>
 
       {/* Archived Orders - Solo para admins */}
       {isAdmin && orders.filter(o => (o.displayStatus || o.status) === 'archived').length > 0 && (

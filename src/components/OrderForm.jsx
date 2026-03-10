@@ -1463,7 +1463,7 @@ const OrderForm = ({ user, loading }) => {
             )}
           </div>
 
-          <div className="flex justify-end mt-6 min-h-[36px]">
+          <div className="flex justify-end mt-6 min-h-9">
             {isSelected && (
               <span className="flex items-center gap-2 text-blue-600 font-bold text-lg">
                 <CheckCircle className="h-8 w-8" />
