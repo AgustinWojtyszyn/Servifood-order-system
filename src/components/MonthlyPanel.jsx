@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Package, TrendingUp, User, Printer } from 'lucide-react'
+import { Calendar, Package, TrendingUp, User, Printer, Download } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
@@ -28,9 +28,9 @@ function DateRangePicker({ value, onChange }) {
   const startDate = parseDate(value.start)
   const endDate = parseDate(value.end)
   return (
-    <div className="flex flex-col gap-2 md:flex-row md:gap-6">
-      <div className="flex flex-col">
-        <label className="font-semibold mb-1">Desde:</label>
+    <div className="flex items-end gap-3 flex-nowrap">
+      <div className="flex flex-col min-w-[170px]">
+        <label className="text-xs font-semibold text-slate-600 mb-1">Desde</label>
         <DatePicker
           selected={startDate}
           locale="es"
@@ -44,14 +44,14 @@ function DateRangePicker({ value, onChange }) {
             }
           }}
           dateFormat="dd/MM/yyyy"
-          className="border rounded px-3 py-2 text-base"
+          className="w-36 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm bg-white"
           placeholderText="Desde"
           // Permitir cualquier fecha (pasada, presente o futura)
           isClearable
         />
       </div>
-      <div className="flex flex-col">
-        <label className="font-semibold mb-1">Hasta:</label>
+      <div className="flex flex-col min-w-[170px]">
+        <label className="text-xs font-semibold text-slate-600 mb-1">Hasta</label>
         <DatePicker
           selected={endDate}
           locale="es"
@@ -65,7 +65,7 @@ function DateRangePicker({ value, onChange }) {
             }
           }}
           dateFormat="dd/MM/yyyy"
-          className="border rounded px-3 py-2 text-base"
+          className="w-36 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm bg-white"
           placeholderText="Hasta"
           minDate={null}
           maxDate={null}
@@ -999,8 +999,9 @@ const MonthlyPanel = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
+    <div className="monthly-page min-h-screen bg-[#f6f7f9] py-6">
     <div
-      className="monthly-container w-full space-y-6 px-2 sm:px-4 md:px-6 md:max-w-7xl md:mx-auto pb-32"
+      className="monthly-container w-full max-w-[1180px] mx-auto space-y-3 px-3 sm:px-4 md:px-6 pb-20 bg-white rounded-2xl shadow-sm border border-slate-200"
       style={{
         overflowY: 'auto',
         overflowX: 'hidden',
@@ -1012,6 +1013,7 @@ const MonthlyPanel = ({ user, loading }) => {
         @media print {
           @page { size: A4 portrait; margin: 10mm; }
           html, body { width: 100%; margin: 0; padding: 0; background: #fff !important; }
+          .monthly-page { background: #fff !important; padding: 0 !important; }
           .monthly-container {
             max-width: 100% !important;
             width: 100% !important;
@@ -1039,23 +1041,25 @@ const MonthlyPanel = ({ user, loading }) => {
         }
       `}</style>
       {/* Título arriba de los tips */}
-      <div className="bg-linear-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-8 text-white shadow-2xl mb-6">
+      <div className="bg-linear-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-5 text-white shadow-xl mb-3">
         <div className="flex flex-col gap-4">
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
               <Calendar className="h-8 w-8 md:h-10 md:w-10" />
-              <h1 className="text-2xl md:text-4xl font-bold">Panel Mensual</h1>
+              <h1 className="text-3xl md:text-4xl font-bold">Panel Mensual</h1>
             </div>
-            <p className="text-blue-100 text-base md:text-lg">Resumen y métricas de pedidos mensuales</p>
+            <p className="text-blue-200 text-base md:text-lg">Resumen y métricas de pedidos mensuales</p>
           </div>
         </div>
       </div>
       {/* Modo de uso */}
-      <div className="bg-blue-50 border-l-4 border-blue-400 rounded-xl p-5 mb-6 shadow flex items-start gap-4">
-        <span className="text-blue-600 mt-1"><Calendar className="h-6 w-6" /></span>
-        <div>
-          <div className="font-bold text-blue-900 mb-2 text-lg">Modo de uso del Panel Mensual</div>
-          <ol className="list-decimal pl-6 text-blue-900 text-base space-y-1">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-2 shadow-sm">
+        <div className="flex items-center gap-3 text-slate-800 mb-3">
+          <Calendar className="h-6 w-6 text-blue-600" />
+          <span className="text-lg font-bold">Modo de uso del Panel Mensual</span>
+        </div>
+        <div className="rounded-lg bg-white p-4">
+          <ol className="list-decimal pl-6 text-slate-800 text-base space-y-2">
             <li>Selecciona el <b>rango de fechas</b> y presiona <b>“Aplicar rango”</b> para ver el resumen de pedidos por empresa.</li>
             <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
             <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
@@ -1067,15 +1071,15 @@ const MonthlyPanel = ({ user, loading }) => {
       </div>
 
       {/* Selector de fechas */}
-      <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full mb-4">
-        <div className="flex flex-col gap-3">
+      <div className="bg-white rounded-xl p-4 md:p-4 shadow-sm border border-slate-200 w-full mb-3">
+        <div className="flex items-end gap-3 overflow-x-auto">
           <DateRangePicker value={draftRange} onChange={setDraftRange} />
-          <div className="flex justify-end gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             <button
               type="button"
               onClick={handleClearRange}
               disabled={!dateRange.start && !dateRange.end && !draftRange.start && !draftRange.end}
-              className={`px-4 py-2 rounded-lg font-bold text-blue-700 border-2 border-blue-200 shadow transition-all duration-200 ${
+              className={`h-9 px-3 rounded-md font-semibold text-blue-700 border border-blue-200 shadow-sm transition-all duration-200 ${
                 dateRange.start || dateRange.end || draftRange.start || draftRange.end
                   ? 'bg-white hover:bg-blue-50 hover:border-blue-400'
                   : 'bg-gray-200 cursor-not-allowed text-gray-500 border-gray-200'
@@ -1086,9 +1090,9 @@ const MonthlyPanel = ({ user, loading }) => {
             <button
               onClick={handleApplyRange}
               disabled={!isDraftValid}
-              className={`px-4 py-2 rounded-lg font-bold text-white shadow transition-all duration-200 ${
+              className={`h-9 px-3 rounded-md font-semibold text-white shadow-sm transition-all duration-200 ${
                 isDraftValid
-                  ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'
+                  ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-md'
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
             >
@@ -1101,39 +1105,39 @@ const MonthlyPanel = ({ user, loading }) => {
       {/* Exportar a Excel */}
       {metrics && (
         <div className="flex justify-end mb-2 flex-wrap gap-2">
-      <button
-        onClick={handleExportAllExcel}
-        disabled={!canExportDaily}
-        className={`flex items-center gap-2 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200 ${
-          canExportDaily
-            ? 'bg-indigo-600 hover:bg-indigo-700'
-            : 'bg-gray-400 cursor-not-allowed'
-        }`}
-      >
-        <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
-        Exportar panel (todo)
-      </button>
+          <button
+            onClick={handleExportAllExcel}
+            disabled={!canExportDaily}
+            className={`flex items-center gap-2 text-white font-semibold h-9 px-4 rounded-lg shadow-sm transition-all duration-200 ${
+              canExportDaily
+                ? 'bg-slate-800 hover:bg-slate-900'
+                : 'bg-gray-400 cursor-not-allowed'
+            }`}
+          >
+            <img src={excelLogo} alt="" className="h-4 w-4" aria-hidden="true" />
+            Exportar panel (todo)
+          </button>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-9 px-4 rounded-lg shadow-md transition-all duration-200"
           >
-            <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
+            <Download className="h-4 w-4" />
             Exportar Excel
           </button>
           {dailyDataForView?.daily_breakdown && (
             <button
               onClick={handleExportDailyExcel}
-              className="ml-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
+              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white font-semibold h-9 px-4 rounded-lg shadow-sm transition-all duration-200"
             >
-              <img src={excelLogo} alt="" className="h-5 w-5" aria-hidden="true" />
+              <img src={excelLogo} alt="" className="h-4 w-4" aria-hidden="true" />
               Exportar rango (diario)
             </button>
           )}
           <button
             onClick={handlePrintPdf}
-            className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white font-bold py-2 px-4 rounded-xl shadow transition-all duration-200"
+            className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white font-semibold h-9 px-4 rounded-lg shadow-sm transition-all duration-200"
           >
-            <Printer className="h-5 w-5" />
+            <Printer className="h-4 w-4" />
             Imprimir / PDF
           </button>
         </div>
@@ -1141,90 +1145,105 @@ const MonthlyPanel = ({ user, loading }) => {
       {/* Métricas y tabla */}
       {metricsLoading && (
         <div className="mt-4 mx-auto max-w-2xl">
-          <div className="flex items-center gap-3 bg-blue-50 border-2 border-blue-300 rounded-xl p-4 shadow-lg">
-            <div className="h-10 w-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
+          <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
             <div>
-              <p className="text-base sm:text-lg font-extrabold text-blue-900">Cargando métricas del rango...</p>
-              <p className="text-sm text-blue-800">Esto debería tardar solo un momento.</p>
+              <p className="text-base sm:text-lg font-extrabold text-slate-800">Cargando métricas del rango...</p>
+              <p className="text-sm text-slate-600">Esto debería tardar solo un momento.</p>
             </div>
+          </div>
+        </div>
+      )}
+      {!metrics && !metricsLoading && (
+        <div className="flex items-center justify-center text-center rounded-xl border border-slate-200 bg-white shadow-sm min-h-[260px]">
+          <div className="max-w-md px-4">
+            <p className="text-base font-semibold text-slate-800">Selecciona un rango de fechas</p>
+            <p className="text-sm text-slate-600 mt-1">
+              Aplica un rango para visualizar el resumen mensual y exportaciones.
+            </p>
           </div>
         </div>
       )}
       {/* Error suprimido visualmente para no bloquear la vista */}
       {metrics && (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Desglose diario del rango */}
           {dailyDataForView?.daily_breakdown && (
-            <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg border-2 border-blue-200 w-full print-no-break print-full-width">
+            <div className="bg-white rounded-xl p-4 md:p-5 shadow-sm border border-slate-200 w-full print-no-break print-full-width">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="h-5 w-5 text-blue-600" />
-                <div className="font-bold text-blue-900 text-lg">Desglose diario del rango</div>
+                <div className="font-bold text-slate-800 text-lg">Desglose diario del rango</div>
               </div>
-              {selectedDate && (
-                <DailyDetailPanel
-                  date={selectedDate}
-                  orders={ordersByDayForView[selectedDate] || []}
-                  dailyBreakdown={dailyDataForView.daily_breakdown.find(d => d.date === selectedDate)}
-                  onClose={() => setSelectedDate(null)}
-                />
-              )}
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm text-gray-700">
-                  {dailyDataForView.daily_breakdown.length} días en el rango seleccionado.
-                </p>
-                <button
-                  onClick={() => setShowDailyTable(prev => !prev)}
-                  className="px-3 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all shadow disabled:opacity-60"
-                >
-                  {showDailyTable ? 'Ocultar tabla' : 'Ver tabla diaria'}
-                </button>
-              </div>
+              <p className="text-sm text-slate-600 mb-3">
+                {dailyDataForView.daily_breakdown.length} días en el rango seleccionado.
+              </p>
+              <div className="space-y-2">
+                {dailyDataForView.daily_breakdown.map(d => {
+                  const dayOrders = ordersByDayForView[d.date] || []
+                  const empresasActivas = new Set(
+                    (dayOrders || []).map(o => o.location || 'Sin ubicación')
+                  ).size
+                  const isOpen = selectedDate === d.date
+                  const menusCount = d.menus_principales ?? 0
 
-              {showDailyTable && (
-                <div className="overflow-x-auto print-unclamp print-full-width">
-                  <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
-                    <thead className="bg-blue-50">
-                      <tr>
-                        <th className="px-4 py-2 text-left">Fecha (DD/MM/AAAA)</th>
-                        <th className="px-4 py-2 text-right">Cantidad de pedidos</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dailyDataForView.daily_breakdown.map(d => (
-                        <tr
-                          key={d.date}
-                          onClick={() => setSelectedDate(d.date)}
-                          className={`border-t hover:bg-blue-50 transition-all cursor-pointer ${selectedDate === d.date ? 'bg-blue-100' : ''}`}
-                        >
-                          <td className="px-4 py-2">{formatDateDMY(d.date)}</td>
-                          <td className="px-4 py-2 text-right">{d.count}</td>
-                        </tr>
-                      ))}
-                      <tr className="border-t bg-blue-100">
-                        <td className="px-4 py-2 font-semibold">Totales del rango</td>
-                        <td className="px-4 py-2 text-right font-semibold">{dailyDataForView.range_totals.count}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                  return (
+                    <div key={d.date} className="border border-slate-200 rounded-lg overflow-hidden">
+                      <div
+                        className={`flex items-center justify-between px-3 py-2 ${isOpen ? 'bg-slate-50' : 'bg-white'}`}
+                        onClick={() => setSelectedDate(isOpen ? null : d.date)}
+                      >
+                        <div className="grid w-full grid-cols-2 md:grid-cols-5 gap-2 text-sm items-center">
+                          <div className="font-semibold text-slate-800">{formatDateDMY(d.date)}</div>
+                          <div className="text-slate-600">Pedidos: <span className="font-semibold text-slate-800">{d.count}</span></div>
+                          <div className="text-slate-600">Empresas: <span className="font-semibold text-slate-800">{empresasActivas}</span></div>
+                          <div className="text-slate-600">Menús: <span className="font-semibold text-slate-800">{menusCount}</span></div>
+                          <div className="flex md:justify-end">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedDate(isOpen ? null : d.date)
+                              }}
+                              className="px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 rounded-md bg-white hover:bg-blue-50 transition-colors"
+                            >
+                              {isOpen ? 'Ocultar detalle' : 'Ver detalle'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      {isOpen && (
+                        <div className="bg-slate-50 border-t border-slate-200 p-3">
+                          <div className="max-h-[420px] overflow-y-auto pr-1">
+                            <DailyDetailPanel
+                              date={d.date}
+                              orders={ordersByDayForView[d.date] || []}
+                              dailyBreakdown={dailyDataForView.daily_breakdown.find(x => x.date === d.date)}
+                              onClose={() => setSelectedDate(null)}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
 
           {/* Tarjetas de métricas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4 w-full print-no-break print-full-width">
-            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-blue-200 w-full">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
               <div className="text-center">
                 <img
                   src={clipboardImg}
                   alt="Total pedidos"
                   className="h-8 w-8 mx-auto mb-2 object-contain"
                 />
-                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Pedidos</p>
+                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Pedidos</p>
                 <p className="text-2xl md:text-3xl font-bold text-blue-600">{totalsForView.pedidos}</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-green-200 w-full">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
               <div className="text-center">
                 <svg
                   viewBox="0 0 24 24"
@@ -1253,22 +1272,22 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M19.8 6c0-.6 1-.6 1 0" />
                   <path d="M19.8 15.5c0 .8.8 1.5 1.5 1.5" />
                 </svg>
-                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Menús Principales</p>
+                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Menús Principales</p>
                 <p className="text-2xl md:text-3xl font-bold text-green-600">{totalsForView.menusPrincipales}</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-yellow-200 w-full">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
               <div className="text-center">
                 <img
                   src={choiceImg}
                   alt="Total opciones"
                   className="h-8 w-8 mx-auto mb-2 object-contain"
                 />
-                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Opciones</p>
+                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Opciones</p>
                 <p className="text-2xl md:text-3xl font-bold text-yellow-600">{totalsForView.opciones}</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-purple-200 w-full">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
               <div className="text-center">
                 <svg
                   viewBox="0 0 24 24"
@@ -1288,11 +1307,11 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M16 9L15 4.5" />
                   <path d="M9 14h6" />
                 </svg>
-                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Guarniciones</p>
+                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Guarniciones</p>
                 <p className="text-2xl md:text-3xl font-bold text-purple-600">{totalsForView.guarniciones}</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-sky-200 w-full">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
               <div className="text-center">
                 <svg
                   viewBox="0 0 24 24"
@@ -1308,11 +1327,11 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M7 3v16" />
                   <path d="M7 10h10" />
                 </svg>
-                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Bebidas</p>
+                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Bebidas</p>
                 <p className="text-2xl md:text-3xl font-bold text-sky-600">{totalsForView.bebidas}</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-3 md:p-6 shadow-lg border-2 border-pink-200 w-full">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
               <div className="text-center">
                 <svg
                   viewBox="0 0 24 24"
@@ -1328,111 +1347,14 @@ const MonthlyPanel = ({ user, loading }) => {
                   <path d="M6 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
                   <path d="M8 18h8" />
                 </svg>
-                <p className="text-xs md:text-sm text-gray-600 font-semibold">Total Postres</p>
+                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Postres</p>
                 <p className="text-2xl md:text-3xl font-bold text-pink-600">{totalsForView.postres}</p>
               </div>
             </div>
           </div>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
-            <div className="font-semibold text-center md:text-left">
-              Mostrando los pedidos del <span className="font-bold">{dateRange.start || '...'}</span> al <span className="font-bold">{dateRange.end || '...'}</span>
-            </div>
-            <div className="flex flex-col md:flex-row md:items-center gap-2 justify-center md:justify-end">
-              <label className="text-sm font-semibold text-gray-700">Empresa:</label>
-              <input
-                type="text"
-                value={empresaSearch}
-                onChange={(e) => setEmpresaSearch(e.target.value)}
-                placeholder="Buscar empresa..."
-                className="border rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 bg-white shadow-sm"
-              />
-              <select
-                value={empresaFilter}
-                onChange={(e) => setEmpresaFilter(e.target.value)}
-                className="border rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 bg-white shadow-sm"
-              >
-                <option value="ALL">Todas las empresas</option>
-                {empresasForDropdown.map(e => (
-                  <option key={e.empresa} value={e.empresa}>{e.empresa}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmpresaFilter('ALL')
-                  setEmpresaSearch('')
-                }}
-                className="px-3 py-2 text-sm font-semibold text-blue-700 border border-blue-200 rounded-lg bg-white hover:bg-blue-50 transition-colors"
-              >
-                Limpiar
-              </button>
-            </div>
-          </div>
-          {empresasForView.length === 0 ? (
-            <div className="text-gray-600 text-center">No hay datos para el rango seleccionado.</div>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-blue-900">Resumen por empresa (rango seleccionado)</div>
-                <button
-                  type="button"
-                  onClick={() => setShowEmpresaSummary(prev => !prev)}
-                  className="px-3 py-2 text-sm font-semibold text-blue-700 border border-blue-200 rounded-lg bg-white hover:bg-blue-50 transition-colors"
-                >
-                  {showEmpresaSummary ? 'Ocultar resumen' : 'Ver resumen'}
-                </button>
-              </div>
-              {showEmpresaSummary && (
-                <div className="overflow-x-auto print-unclamp print-full-width">
-                  <table className="min-w-full bg-white rounded-xl shadow-lg text-black border-2 border-blue-200">
-                    <thead className="bg-blue-50">
-                      <tr>
-                        <th className="px-4 py-2">Empresa</th>
-                        <th className="px-4 py-2">Pedidos</th>
-                        <th className="px-4 py-2">Menús principales</th>
-                        <th className="px-4 py-2">Opciones</th>
-                        <th className="px-4 py-2">Guarniciones</th>
-                        <th className="px-4 py-2">Bebidas</th>
-                        <th className="px-4 py-2">Postres</th>
-                        <th className="px-4 py-2">Total menús principales</th>
-                        <th className="px-4 py-2">Total opciones</th>
-                        <th className="px-4 py-2">Total menús (total)</th>
-                        <th className="px-4 py-2">Total guarniciones</th>
-                        <th className="px-4 py-2">Total bebidas</th>
-                        <th className="px-4 py-2">Total postres</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {empresasForView.map(e => (
-                        <tr
-                          key={e.empresa}
-                          onClick={() => setEmpresaFilter(e.empresa)}
-                          title="Filtrar por empresa"
-                          className="border-t hover:bg-blue-50 transition-all cursor-pointer"
-                        >
-                          <td className="px-4 py-2 font-bold">{e.empresa}</td>
-                          <td className="px-4 py-2">{e.cantidadPedidos}</td>
-                          <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '').map(([k, v]) => (<span key={k} className="inline-block bg-blue-100 text-blue-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                          <td className="px-4 py-2">{Object.entries(e.tiposMenus).filter(([nombre]) => /^OPC(ION|IÓN)\s*\d+/i.test(nombre)).map(([k, v]) => (<span key={k} className="inline-block bg-yellow-100 text-yellow-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                          <td className="px-4 py-2">{Object.entries(e.tiposGuarniciones).map(([k, v]) => (<span key={k} className="inline-block bg-purple-100 text-purple-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                          <td className="px-4 py-2">{Object.entries(e.tiposBebidas || {}).map(([k, v]) => (<span key={k} className="inline-block bg-sky-100 text-sky-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                          <td className="px-4 py-2">{Object.entries(e.tiposPostres || {}).map(([k, v]) => (<span key={k} className="inline-block bg-pink-100 text-pink-800 rounded px-2 py-1 m-1 text-xs font-semibold">{k}: {v}</span>))}</td>
-                          <td className="px-4 py-2 text-center">{e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones)}</td>
-                          <td className="px-4 py-2 text-center">{e.totalOpciones}</td>
-                          <td className="px-4 py-2 text-center">{e.totalMenusTotal ?? e.totalMenus}</td>
-                          <td className="px-4 py-2 text-center">{e.totalGuarniciones}</td>
-                          <td className="px-4 py-2 text-center">{e.totalBebidas || 0}</td>
-                          <td className="px-4 py-2 text-center">{e.totalPostres || 0}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
+    </div>
     </div>
     </RequireUser>
   )
@@ -1522,22 +1444,22 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
   }
 
   return (
-    <div className="mb-4 border-2 border-blue-200 rounded-xl p-4 bg-blue-50/60 shadow-inner">
+    <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h4 className="text-lg font-bold text-blue-900">Detalle del {date}</h4>
-          <p className="text-sm text-blue-800">Pedidos: {summary.count ?? totals.pedidos}</p>
+          <h4 className="text-lg font-bold text-slate-800">Detalle del {date}</h4>
+          <p className="text-sm text-slate-600">Pedidos: {summary.count ?? totals.pedidos}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowDetails(prev => !prev)}
-            className="px-3 py-2 text-sm font-semibold text-blue-700 border border-blue-200 bg-white hover:bg-blue-50 rounded-lg shadow"
+            className="px-3 py-2 text-sm font-semibold text-blue-700 border border-blue-200 bg-white hover:bg-blue-50 rounded-md shadow-sm"
           >
             {showDetails ? 'Ocultar detalle' : 'Ver detalle'}
           </button>
           <button
             onClick={onClose}
-            className="px-3 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow"
+            className="px-3 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm"
           >
             Cerrar detalle
           </button>
@@ -1546,7 +1468,7 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
 
       {showDetails && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
             <Stat label="Total pedidos" value={summary.count ?? totals.pedidos} />
             <Stat label="Total menús" value={summary.menus_principales ?? totals.menus} />
             <Stat label="Total opciones" value={summary.total_opciones ?? totals.opciones} />
@@ -1555,70 +1477,71 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
             <Stat label="Total postres" value={summary.total_postres} />
           </div>
 
-          <Section title="Desglose por empresa">
-            <ChipList data={byEmpresa} />
-          </Section>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {[
+              { title: 'Empresas activas', data: byEmpresa, maxHeight: 'max-h-28' },
+              { title: 'Menús principales', data: byMenu, maxHeight: 'max-h-36' },
+              { title: 'Opciones', data: byOpcion, maxHeight: 'max-h-36' },
+              { title: 'Guarniciones', data: sideBuckets.tiposGuarniciones, maxHeight: 'max-h-36' },
+              { title: 'Bebidas', data: sideBuckets.tiposBebidas, maxHeight: 'max-h-36' },
+              { title: 'Postres', data: sideBuckets.tiposPostres, maxHeight: 'max-h-36' }
+            ].map(section => (
+              <div key={section.title} className="rounded-lg border border-slate-200 bg-white p-2">
+                <div className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
+                  {section.title}
+                </div>
+                <div className={`mt-2 ${section.maxHeight} overflow-y-auto pr-1`}>
+                  <ChipList data={section.data} />
+                </div>
+              </div>
+            ))}
+          </div>
 
-          <Section title="Menús principales">
-            <ChipList data={byMenu} />
-          </Section>
-
-          <Section title="Opciones">
-            <ChipList data={byOpcion} />
-          </Section>
-
-          <Section title="Guarniciones">
-            <ChipList data={sideBuckets.tiposGuarniciones} />
-          </Section>
-
-          <Section title="Bebidas">
-            <ChipList data={sideBuckets.tiposBebidas} />
-          </Section>
-
-          <Section title="Postres">
-            <ChipList data={sideBuckets.tiposPostres} />
-          </Section>
-
-          <Section title="Pedidos del día">
+          <div className="mt-3">
+            <div className="text-xs font-bold uppercase tracking-wide text-slate-700 mb-2">
+              Pedidos del día
+            </div>
             {orders.length === 0 ? (
-              <p className="text-sm text-gray-600">No hay pedidos en este día.</p>
+              <p className="text-sm text-slate-600">No hay pedidos en este día.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm bg-white border rounded-xl shadow">
-                  <thead className="bg-blue-100 text-blue-900">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Hora</th>
-                      <th className="px-3 py-2 text-left">Empresa</th>
-                      <th className="px-3 py-2 text-left">Turno</th>
-                      <th className="px-3 py-2 text-left">Items</th>
-                      <th className="px-3 py-2 text-left">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((o, i) => (
-                      <tr key={`${o.id}-${i}`} className="border-t hover:bg-blue-50">
-                        <td className="px-3 py-2">{fmtTime(o.created_at)}</td>
-                        <td className="px-3 py-2">{o.location || '—'}</td>
-                        <td className="px-3 py-2">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${
-                            (o.service || 'lunch') === 'dinner'
-                              ? 'bg-amber-100 text-amber-800 border-amber-200'
-                              : 'bg-sky-100 text-sky-800 border-sky-200'
-                          }`}>
-                            {(o.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2">
-                          {renderItems(o, isOption)}
-                        </td>
-                        <td className="px-3 py-2 capitalize">{o.status || '—'}</td>
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-slate-800 text-slate-100 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Hora</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Empresa</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Turno</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Items</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Estado</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {orders.map((o, i) => (
+                        <tr key={`${o.id}-${i}`} className="border-t border-slate-200 hover:bg-slate-100 odd:bg-white even:bg-slate-50">
+                          <td className="px-3 py-1.5">{fmtTime(o.created_at)}</td>
+                          <td className="px-3 py-1.5">{o.location || '—'}</td>
+                          <td className="px-3 py-1.5">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${
+                              (o.service || 'lunch') === 'dinner'
+                                ? 'bg-amber-200 text-amber-900 border-amber-300'
+                                : 'bg-sky-200 text-sky-900 border-sky-300'
+                            }`}>
+                              {(o.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-1.5">
+                            {renderItems(o, isOption)}
+                          </td>
+                          <td className="px-3 py-1.5 capitalize">{o.status || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
-          </Section>
+          </div>
         </>
       )}
     </div>
@@ -1626,26 +1549,19 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
 }
 
 const Stat = ({ label, value }) => (
-  <div className="bg-white rounded-lg border border-blue-200 p-3 text-center shadow-sm">
-    <p className="text-xs font-semibold text-gray-600">{label}</p>
-    <p className="text-xl font-bold text-blue-800">{value ?? 0}</p>
-  </div>
-)
-
-const Section = ({ title, children }) => (
-  <div className="mb-4">
-    <h5 className="text-sm font-bold text-blue-900 mb-2">{title}</h5>
-    {children}
+  <div className="bg-white rounded-md border border-slate-200 p-2 text-center shadow-sm">
+    <p className="text-[11px] font-semibold text-slate-600">{label}</p>
+    <p className="text-lg font-bold text-slate-800">{value ?? 0}</p>
   </div>
 )
 
 const ChipList = ({ data }) => {
   const entries = Object.entries(data || {})
-  if (!entries.length) return <p className="text-sm text-gray-600">Sin datos.</p>
+  if (!entries.length) return <p className="text-sm text-slate-600">Sin datos.</p>
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {entries.map(([k, v]) => (
-        <span key={k} className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+        <span key={k} className="px-2.5 py-0.5 text-[11px] font-semibold rounded-md bg-slate-300 text-slate-900 border border-slate-400">
           {k}: {v}
         </span>
       ))}
@@ -1669,7 +1585,7 @@ const renderItems = (order, isOptionFn) => {
     const qty = it?.quantity || 1
     const tag = isOptionFn(name) ? 'Opción' : 'Menú'
     return (
-      <span key={idx} className="inline-block mr-2 mb-1 px-2 py-1 rounded bg-gray-100 text-gray-800 text-xs font-semibold">
+      <span key={idx} className="inline-block mr-2 mb-1 px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-[11px] font-semibold">
         {tag}: {name} (x{qty})
       </span>
     )
