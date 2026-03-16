@@ -8,10 +8,10 @@ const InternalLoader = () => (
 )
 
 // import { useRef } from 'react' // Ya está importado arriba
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { Calendar, MapPin, Clock, User, MessageCircle, Package, TrendingUp, Filter, CheckCircle, XCircle, Download, Shield, Mail, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon, Printer } from 'lucide-react'
+import { MapPin, User, Package, Shield, RefreshCw, Archive as ArchiveIcon, AlertTriangle as AlertIcon, Printer } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
@@ -41,8 +41,7 @@ const DailyOrders = ({ user, loading }) => {
     byDish: {},
     totalItems: 0,
     archived: 0,
-    pending: 0,
-    cancelled: 0
+    pending: 0
   })
 
   const locations = COMPANY_LOCATIONS
@@ -234,12 +233,9 @@ const DailyOrders = ({ user, loading }) => {
           };
         }) : [];
 
-        // Ocultar pedidos ya archivados
-        const visibleTodayOrders = todayOrders.filter(order => order.status !== 'archived')
-        
-        setOrders(visibleTodayOrders)
+        setOrders(todayOrders)
         setAvailableDishes(Array.from(dishesSet).sort())
-        calculateStats(visibleTodayOrders)
+        calculateStats(todayOrders)
       }
     } catch (err) {
       console.error('Error:', err)
@@ -257,6 +253,20 @@ const DailyOrders = ({ user, loading }) => {
     setRefreshing(false)
   }
 
+  const handleArchiveOrder = async (order) => {
+    if (!order?.id || order.status === 'archived') return
+    const confirmArchive = window.confirm(`¿Archivar el pedido de ${order.user_name || 'cliente'}?`)
+    if (!confirmArchive) return
+
+    const { error } = await db.updateOrderStatus(order.id, 'archived')
+    if (error) {
+      alert('Error al archivar el pedido: ' + error.message)
+      return
+    }
+    Sound.playSuccess()
+    handleRefresh()
+  }
+
   // Función para normalizar nombres de platillos
   const normalizeDishName = (dishName) => {
     if (!dishName) return dishName
@@ -270,8 +280,6 @@ const DailyOrders = ({ user, loading }) => {
     let totalItems = 0
     let archived = 0
     let pending = 0
-    let cancelled = 0
-
     Array.isArray(ordersData) && ordersData.forEach(order => {
       // Contar por ubicación
       if (!byLocation[order.location]) {
@@ -298,8 +306,6 @@ const DailyOrders = ({ user, loading }) => {
       // Contar por estado
       if (order.status === 'archived') {
         archived++
-      } else if (order.status === 'cancelled') {
-        cancelled++
       } else {
         pending++
       }
@@ -311,8 +317,7 @@ const DailyOrders = ({ user, loading }) => {
       byDish,
       totalItems,
       archived,
-      pending,
-      cancelled
+      pending
     })
   }
 
@@ -337,13 +342,11 @@ const DailyOrders = ({ user, loading }) => {
   const getStatusColor = (status) => {
     switch(status) {
       case 'archived':
-        return 'bg-green-100 text-green-800 border-green-300'
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-300'
+        return 'bg-emerald-100 text-emerald-900 border-emerald-300'
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+        return 'bg-amber-100 text-amber-900 border-amber-300'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-amber-100 text-amber-900 border-amber-300'
     }
   }
 
@@ -351,19 +354,17 @@ const DailyOrders = ({ user, loading }) => {
     switch(status) {
       case 'archived':
         return 'Archivado'
-      case 'cancelled':
-        return 'Cancelado'
       case 'pending':
         return 'Pendiente'
       default:
-        return status
+        return 'Pendiente'
     }
   }
 
   // Colores distintivos por ubicación para mejorar legibilidad
   const getLocationBadgeColor = (location) => {
     // Estilo neutro: blanco con texto negro para máxima legibilidad
-    return 'bg-white text-black border-gray-300'
+    return 'bg-slate-50 text-slate-700 border-slate-200'
   }
 
   const allOrders = Array.isArray(orders) ? orders : []
@@ -380,7 +381,10 @@ const DailyOrders = ({ user, loading }) => {
         if (selectedStatus === 'archived') {
           return order.status === 'archived'
         }
-        return order.status === selectedStatus
+        if (selectedStatus === 'pending') {
+          return order.status !== 'archived'
+        }
+        return order.status !== 'archived'
       }) : []
 
   // Aplicar filtro por platillo
@@ -509,7 +513,7 @@ const DailyOrders = ({ user, loading }) => {
       case 'archived':
         return companyFiltered.filter(order => order.status === 'archived')
       case 'pending':
-        return companyFiltered.filter(order => order.status === 'pending')
+        return companyFiltered.filter(order => order.status !== 'archived')
       default:
         return companyFiltered
     }
@@ -622,7 +626,6 @@ const DailyOrders = ({ user, loading }) => {
         { Concepto: 'Total de Pedidos', Valor: stats.total },
         { Concepto: 'Pedidos Archivados', Valor: stats.archived },
         { Concepto: 'Pedidos Pendientes', Valor: stats.pending },
-        { Concepto: 'Pedidos Cancelados', Valor: stats.cancelled },
         { Concepto: 'Total de Items', Valor: stats.totalItems },
         { Concepto: '', Valor: '' },
         { Concepto: 'PEDIDOS POR UBICACIÓN', Valor: '' },
@@ -966,6 +969,101 @@ const DailyOrders = ({ user, loading }) => {
     }
   }
 
+  const activeLocationsCount = useMemo(
+    () => Object.values(stats.byLocation || {}).filter(count => Number(count) > 0).length,
+    [stats.byLocation]
+  )
+
+  const operationalSummary = useMemo(() => {
+    const dishCounts = {}
+    const sideCounts = {}
+    const beverageCounts = {}
+
+    ;(sortedOrders || []).forEach(order => {
+      if (!order) return
+
+      if (Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          if (!item?.name) return
+          const normalizedName = normalizeDishName(item.name)
+          dishCounts[normalizedName] = (dishCounts[normalizedName] || 0) + (item.quantity || 1)
+        })
+      }
+
+      const side = getCustomSideFromResponses(order.custom_responses || [])
+      if (side) {
+        sideCounts[side] = (sideCounts[side] || 0) + 1
+      }
+
+      const customResponses = Array.isArray(order.custom_responses) ? order.custom_responses : []
+      customResponses.forEach(resp => {
+        const pushBeverage = (value) => {
+          if (!value) return
+          const label = String(value).trim()
+          if (!label || !isBeverage(label)) return
+          beverageCounts[label] = (beverageCounts[label] || 0) + 1
+        }
+        if (Array.isArray(resp?.response)) {
+          resp.response.forEach(pushBeverage)
+        } else {
+          pushBeverage(resp?.response)
+        }
+        if (Array.isArray(resp?.options)) {
+          resp.options.forEach(pushBeverage)
+        }
+      })
+    })
+
+    const sortCounts = (counts) =>
+      Object.entries(counts).sort((a, b) => Number(b[1]) - Number(a[1]))
+
+    return {
+      dishes: sortCounts(dishCounts),
+      sides: sortCounts(sideCounts),
+      beverages: sortCounts(beverageCounts)
+    }
+  }, [sortedOrders])
+
+  const locationCards = useMemo(() => {
+    const byLocation = {}
+
+    ;(allOrders || []).forEach(order => {
+      if (!order) return
+      const loc = order.location || 'Sin ubicación'
+      if (!byLocation[loc]) {
+        byLocation[loc] = { total: 0, dishCounts: {}, sideCounts: {} }
+      }
+      byLocation[loc].total += 1
+
+      if (Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          if (!item?.name) return
+          const normalizedName = normalizeDishName(item.name)
+          byLocation[loc].dishCounts[normalizedName] =
+            (byLocation[loc].dishCounts[normalizedName] || 0) + (item.quantity || 1)
+        })
+      }
+
+      const side = getCustomSideFromResponses(order.custom_responses || [])
+      if (side) {
+        byLocation[loc].sideCounts[side] = (byLocation[loc].sideCounts[side] || 0) + 1
+      }
+    })
+
+    return Object.entries(byLocation)
+      .filter(([, data]) => data.total > 0)
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([location, data]) => {
+        const topDishes = Object.entries(data.dishCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 2)
+        const topSides = Object.entries(data.sideCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 2)
+        return { location, total: data.total, topDishes, topSides }
+      })
+  }, [allOrders])
+
   if (!isAdmin) {
     return (
       <RequireUser user={user} loading={loading}>
@@ -993,7 +1091,6 @@ const DailyOrders = ({ user, loading }) => {
   }
 
   const exportableOrdersCount = filterOrdersByCompany(sortedOrders, exportCompany).length
-  const companyExportableOrdersCount = filterOrdersForCompanyExport(sortedOrders, exportCompany, exportStatusFilter).length
 
   // Datos agregados específicos para la impresión/PDF
   const printStats = (() => {
@@ -1058,7 +1155,7 @@ const DailyOrders = ({ user, loading }) => {
           .print-only { display: none; }
         }
       `}</style>
-      <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10 print-wrap print-content">
+      <div className="mx-auto max-w-screen-2xl rounded-3xl bg-slate-50/70 p-4 md:p-6 2xl:p-10 print-wrap print-content">
         {/* Resumen compacto solo para impresión (cantidades y detalles agregados) */}
         <div className="print-only mb-4">
           <h2 className="text-lg font-black mb-1">📋 Resumen estadístico para PDF</h2>
@@ -1175,117 +1272,147 @@ const DailyOrders = ({ user, loading }) => {
           </table>
         </div>
         {/* Page Header */}
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 print-hide">
-          <div>
-            <h4 className="text-3xl font-black text-black dark:text-white flex items-center gap-3">
-              <img src={dinnerImg} alt="" className="h-10 w-10" aria-hidden="true" />
-              Pedidos Diarios
-            </h4>
-            <p className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
-              Gestión de pedidos para entrega mañana - {getTomorrowDate()}
-            </p>
-          </div>
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-linear-to-br from-white via-white to-slate-50 shadow-lg shadow-slate-200/60 print-hide">
+          <div className="flex flex-col gap-6 p-5">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <img src={dinnerImg} alt="" className="h-10 w-10" aria-hidden="true" />
+                  <div>
+                    <h1 className="text-3xl font-black text-slate-900">Pedidos diarios</h1>
+                    <p className="text-sm font-semibold text-slate-600">
+                      Entrega: {getTomorrowDate()}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: 'Total del día', value: stats.total },
+                    { label: 'Pendientes', value: stats.pending },
+                    { label: 'Archivados', value: stats.archived },
+                    { label: 'Ubicaciones activas', value: activeLocationsCount }
+                  ].map(metric => (
+                    <div
+                      key={metric.label}
+                      className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-sm"
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {metric.label}
+                      </p>
+                      <p className="text-2xl font-black text-slate-900">{metric.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className={`inline-flex items-center justify-center rounded-xl border-2 border-gray-300 bg-white px-6 py-4 text-lg font-bold text-gray-700 shadow-xl hover:bg-gray-50 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 ${
-                refreshing ? 'animate-pulse' : ''
-              }`}
-            >
-              <RefreshCw className={`mr-3 h-6 w-6 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Actualizando...' : '🔄 Actualizar'}
-            </button>
+              <div className="flex flex-col gap-3 xl:min-w-[420px]">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="min-w-[200px]">
+                    <label htmlFor="export-company" className="text-xs font-semibold text-slate-600">
+                      Empresa (para exportar)
+                    </label>
+                    <select
+                      id="export-company"
+                      value={exportCompany}
+                      onChange={(e) => setExportCompany(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="all">Todas las empresas</option>
+                      {locations.map(loc => (
+                        <option key={loc} value={loc}>
+                          {loc}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-            <div className="flex flex-col">
-              <label htmlFor="export-company" className="text-xs font-semibold text-gray-700 mb-1">Empresa para exportar</label>
-              <select
-                id="export-company"
-                value={exportCompany}
-                onChange={(e) => setExportCompany(e.target.value)}
-                className="rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500"
-              >
-                <option value="all">Todas las empresas</option>
-                {locations.map(loc => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-              </select>
+                  <button
+                    onClick={exportToExcel}
+                    disabled={exportableOrdersCount === 0}
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
+                  >
+                    <img src={excelLogo} alt="" className="mr-2 h-5 w-5" aria-hidden="true" />
+                    Exportar Excel
+                    <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">
+                      {exportableOrdersCount}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={shareViaWhatsApp}
+                    disabled={sortedOrders.length === 0}
+                    className="inline-flex w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
+                  >
+                    <img src={whatsappLogo} alt="" className="mr-2 h-5 w-5" aria-hidden="true" />
+                    Enviar resumen por WhatsApp
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className={`inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto ${
+                      refreshing ? 'animate-pulse' : ''
+                    }`}
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Actualizando...' : 'Actualizar'}
+                  </button>
+
+                  <button
+                    onClick={exportToPdf}
+                    disabled={sortedOrders.length === 0}
+                    className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    Exportar / Imprimir PDF
+                  </button>
+
+                  {isAdmin && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm('¿Archivar TODOS los pedidos pendientes? Esta acción no se puede deshacer.')) {
+                          const { data, error } = await db.archiveAllPendingOrders()
+                          if (!error) {
+                            const affected = Array.isArray(data) ? data.length : 0
+                            alert(
+                              affected === 0
+                                ? 'No hay pedidos pendientes para archivar.'
+                                : `Pedidos archivados correctamente: ${affected}`
+                            )
+                            Sound.playSuccess()
+                            handleRefresh()
+                          } else {
+                            alert('Error al archivar pedidos: ' + error.message)
+                          }
+                        }
+                      }}
+                      className="inline-flex w-full items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:w-auto"
+                      title="Archiva todos los pedidos pendientes al final del día"
+                    >
+                      <ArchiveIcon className="mr-2 h-4 w-4" />
+                      Archivar pedidos
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-
-            <button
-              onClick={exportToExcel}
-              disabled={exportableOrdersCount === 0}
-              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-green-500 to-green-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-600 hover:to-green-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
-            >
-              <img src={excelLogo} alt="" className="mr-3 h-7 w-7" aria-hidden="true" />
-              Exportar por Excel ({exportableOrdersCount})
-            </button>
-
-            <button
-              onClick={exportToPdf}
-              disabled={sortedOrders.length === 0}
-              className="inline-flex items-center justify-center rounded-xl bg-gray-900 px-6 py-4 text-lg font-bold text-white shadow-xl hover:bg-black hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
-            >
-              <Printer className="mr-3 h-6 w-6" />
-              🖨️ Exportar / Imprimir PDF
-            </button>
-
-            <button
-              onClick={shareViaWhatsApp}
-              disabled={sortedOrders.length === 0}
-              className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-green-600 to-green-700 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-green-700 hover:to-green-800 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
-            >
-              <img src={whatsappLogo} alt="" className="mr-3 h-7 w-7" aria-hidden="true" />
-              Exportar por WSP
-            </button>
-
-            {isAdmin && (
-              <button
-                onClick={async () => {
-                  if (window.confirm('¿Archivar TODOS los pedidos pendientes? Esta acción no se puede deshacer.')) {
-                    const { data, error } = await db.archiveAllPendingOrders()
-                    if (!error) {
-                      const affected = Array.isArray(data) ? data.length : 0
-                      alert(
-                        affected === 0
-                          ? 'No hay pedidos pendientes para archivar.'
-                          : `Pedidos archivados correctamente: ${affected}`
-                      )
-                      Sound.playSuccess()
-                      handleRefresh()
-                    } else {
-                      alert('Error al archivar pedidos: ' + error.message)
-                    }
-                  }
-                }}
-                className="inline-flex items-center justify-center rounded-xl bg-linear-to-r from-blue-500 to-blue-600 px-6 py-4 text-lg font-bold text-white shadow-xl hover:from-blue-600 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200"
-                title="Archiva todos los pedidos pendientes al final del día para mantener el sistema limpio"
-              >
-                <ArchiveIcon className="mr-3 h-6 w-6" />
-                📁 Archivar Pedidos
-              </button>
-            )}
           </div>
         </div>
 
         {/* Admin Warning */}
         {isAdmin && (
-          <div className="mb-8 rounded-xl border-2 border-yellow-400 bg-white p-6 shadow-xl">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 shadow-lg">
-                <AlertIcon className="h-7 w-7 text-yellow-600" />
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm print-hide">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                <AlertIcon className="h-5 w-5 text-amber-700" />
               </div>
               <div>
-                <h5 className="text-xl font-bold text-black mb-2">
-                  ⚠️ Recordatorio Importante
-                </h5>
-                <p className="text-lg text-black font-semibold leading-relaxed">
-                  Exporta los pedidos a Excel y archiva los pedidos pendientes al final de cada día.
-                  Esto asegura que los pedidos queden contabilizados y no bloqueen nuevos pedidos.
+                <h5 className="text-sm font-bold text-amber-900">Recordatorio operativo</h5>
+                <p className="text-sm text-amber-900/90">
+                  Exporta a Excel y archiva los pedidos pendientes al cierre del día para mantener el
+                  conteo limpio.
                 </p>
               </div>
             </div>
@@ -1293,120 +1420,164 @@ const DailyOrders = ({ user, loading }) => {
         )}
 
         {/* Filters */}
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <div>
-            <label htmlFor="filter-location" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Ubicación
-            </label>
-            <select
-              id="filter-location"
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">Todas ({stats.total})</option>
-              {locations.map(location => (
-                <option key={location} value={location}>
-                  {location} ({stats.byLocation[location] || 0})
-                </option>
-              ))}
-            </select>
+        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/50 print-hide">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700">Filtros rápidos</h3>
+            <span className="text-xs text-slate-500">Aplican al listado y al resumen operativo</span>
           </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div>
+              <label htmlFor="filter-location" className="mb-2 block text-xs font-semibold text-slate-600">
+                Ubicación
+              </label>
+              <select
+                id="filter-location"
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="all">Todas ({stats.total})</option>
+                {locations.map(location => (
+                  <option key={location} value={location}>
+                    {location} ({stats.byLocation[location] || 0})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label htmlFor="filter-status" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Estado
-            </label>
-            <select
-              id="filter-status"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">Todos</option>
-              <option value="pending">Pendientes ({stats.pending})</option>
-              <option value="archived">Archivados ({stats.archived})</option>
-              <option value="cancelled">Cancelados ({stats.cancelled})</option>
-            </select>
-          </div>
+            <div>
+              <label htmlFor="filter-status" className="mb-2 block text-xs font-semibold text-slate-600">
+                Estado
+              </label>
+              <select
+                id="filter-status"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="all">Todos</option>
+                <option value="pending">Pendientes ({stats.pending})</option>
+                <option value="archived">Archivados ({stats.archived})</option>
+              </select>
+            </div>
 
-          <div>
-            <label htmlFor="filter-dish" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Platillo
-            </label>
-            <select
-              id="filter-dish"
-              value={selectedDish}
-              onChange={(e) => setSelectedDish(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">Todos</option>
-              {availableDishes.map(dish => (
-                <option key={dish} value={dish}>
-                  {dish} ({stats.byDish[dish] || 0})
-                </option>
-              ))}
-            </select>
-          </div>
+            <div>
+              <label htmlFor="filter-dish" className="mb-2 block text-xs font-semibold text-slate-600">
+                Platillo
+              </label>
+              <select
+                id="filter-dish"
+                value={selectedDish}
+                onChange={(e) => setSelectedDish(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="all">Todos</option>
+                {availableDishes.map(dish => (
+                  <option key={dish} value={dish}>
+                    {dish} ({stats.byDish[dish] || 0})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label htmlFor="filter-side" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Guarnición
-            </label>
-            <select
-              id="filter-side"
-              value={selectedSide}
-              onChange={(e) => setSelectedSide(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">Todas</option>
-              {(() => {
-                const sides = orders.map(order => {
-                  if (order && Array.isArray(order.custom_responses)) {
-                    return getCustomSideFromResponses(order.custom_responses)
-                  }
-                  return null
-                }).filter(Boolean)
-                const uniqueSides = [...new Set(sides)]
-                return uniqueSides.map(side => (
-                  <option key={side} value={side}>{side}</option>
-                ))
-              })()}
-            </select>
-          </div>
+            <div>
+              <label htmlFor="filter-side" className="mb-2 block text-xs font-semibold text-slate-600">
+                Guarnición
+              </label>
+              <select
+                id="filter-side"
+                value={selectedSide}
+                onChange={(e) => setSelectedSide(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="all">Todas</option>
+                {(() => {
+                  const sides = orders.map(order => {
+                    if (order && Array.isArray(order.custom_responses)) {
+                      return getCustomSideFromResponses(order.custom_responses)
+                    }
+                    return null
+                  }).filter(Boolean)
+                  const uniqueSides = [...new Set(sides)]
+                  return uniqueSides.map(side => (
+                    <option key={side} value={side}>{side}</option>
+                  ))
+                })()}
+              </select>
+            </div>
 
-          <div>
-            <label htmlFor="filter-sort" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Ordenar por
-            </label>
-            <select
-              id="filter-sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="recent">Recientes</option>
-              <option value="location">Empresa</option>
-              <option value="hour">Hora (asc)</option>
-                    {/* Estado oculto en vista principal */}
-            </select>
+            <div>
+              <label htmlFor="filter-sort" className="mb-2 block text-xs font-semibold text-slate-600">
+                Ordenar por
+              </label>
+              <select
+                id="filter-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="recent">Recientes</option>
+                <option value="location">Empresa</option>
+                <option value="hour">Hora (asc)</option>
+              </select>
+            </div>
           </div>
         </div>
 
+        {/* Resumen Operativo */}
+        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3 print-hide">
+          {[
+            { title: 'Resumen de platillos', items: operationalSummary.dishes, empty: 'Sin platillos' },
+            { title: 'Resumen de guarniciones', items: operationalSummary.sides, empty: 'Sin guarniciones' },
+            { title: 'Resumen de bebidas', items: operationalSummary.beverages, empty: 'Sin bebidas' }
+          ].map(section => {
+            const maxItems = 6
+            const visibleItems = section.items.slice(0, maxItems)
+            const remaining = Math.max(section.items.length - visibleItems.length, 0)
+            const totalCount = section.items.reduce((sum, [, count]) => sum + Number(count || 0), 0)
+
+            return (
+              <div key={section.title} className="rounded-xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/40">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">{section.title}</h3>
+                    <p className="text-xs text-slate-500">Total: {totalCount}</p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+                    {sortedOrders.length} pedidos
+                  </span>
+                </div>
+
+                {visibleItems.length === 0 ? (
+                  <p className="text-sm text-slate-500">{section.empty}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {visibleItems.map(([label, count]) => (
+                      <div key={label} className="flex items-center justify-between rounded-lg bg-slate-100/70 px-3 py-2 text-sm">
+                        <span className="font-semibold text-slate-800">{label}</span>
+                        <span className="text-sm font-bold text-slate-700">{count}</span>
+                      </div>
+                    ))}
+                    {remaining > 0 && (
+                      <p className="text-xs font-semibold text-slate-500">+{remaining} más</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
         {/* Orders Table / Mobile Cards */}
-        <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark print-hide">
-          <div className="border-b-2 border-primary-200 px-6 py-6 dark:border-strokedark sm:px-8 xl:px-9">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50 print-hide">
+          <div className="border-b border-slate-200 px-6 py-4 sm:px-8 xl:px-9">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3
-                  className="orders-heading text-2xl font-black"
-                >
-                  📋 Pedidos del Día ({sortedOrders.length})
+                <h3 className="text-xl font-black text-slate-900">
+                  Pedidos del día ({sortedOrders.length})
                 </h3>
-                <p
-                  className="orders-sorting text-xl font-semibold"
-                >
-                  Ordenado por: {
+                <p className="text-sm font-semibold text-slate-600">
+                  Orden: {
                     sortBy === 'recent' ? 'Más recientes' :
                     sortBy === 'location' ? 'Empresa' :
                     sortBy === 'hour' ? 'Hora ascendente' :
@@ -1438,60 +1609,69 @@ const DailyOrders = ({ user, loading }) => {
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full table-auto">
                 <thead>
-                  <tr className="bg-white text-left border-b-2 border-gray-200">
-                    <th className="min-w-[220px] px-6 py-5 font-bold text-black text-lg xl:pl-11">
-                      👤 Cliente
+                  <tr className="bg-slate-900 text-left border-b border-slate-800">
+                    <th className="min-w-[220px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100 xl:pl-11">
+                      Cliente
                     </th>
-                    <th className="min-w-[150px] px-6 py-5 font-bold text-black text-lg">
-                      📍 Ubicación
+                    <th className="min-w-40 px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                      Ubicación
                     </th>
-                    <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
-                      📦 Items
+                    <th className="min-w-[100px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                      Items
                     </th>
-                    <th className="min-w-[150px] px-6 py-5 font-bold text-black text-lg">
-                      🍽️ Platillos
+                    <th className="min-w-[220px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                      Platillos
                     </th>
-                    <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
-                      🥤 Bebida
+                    <th className="min-w-[140px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                      Bebida
                     </th>
-                    <th className="min-w-[110px] px-6 py-5 font-bold text-black text-lg">
-                      🍽️ Turno
+                    <th className="min-w-[110px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                      Turno
                     </th>
-                    <th className="min-w-[120px] px-6 py-5 font-bold text-black text-lg">
-                      🕐 Hora
+                    <th className="min-w-[110px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                      Hora
+                    </th>
+                    <th className="min-w-[120px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                      Estado
+                    </th>
+                    <th className="min-w-[120px] px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-100">
+                      Acción
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {sortedOrders.map((order, index) => (
-                    <tr key={order.id} className={'bg-white'}>
-                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark xl:pl-11">
+                    <tr
+                      key={order.id}
+                      className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'} hover:bg-slate-100`}
+                    >
+                      <td className="border-b border-slate-200/70 px-4 py-5 xl:pl-11">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                             <User className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h5 className="text-xl font-extrabold text-black tracking-wide">
+                            <h5 className="text-base font-extrabold text-slate-900 tracking-wide">
                               {order.user_name}
                             </h5>
-                            <p className="text-sm text-black">
-                              {order.user_email}
+                            <p className="text-xs text-slate-500">
+                              {order.user_email || 'Sin email'}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
+                      <td className="border-b border-slate-200/70 px-4 py-5">
                         <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold border ${getLocationBadgeColor(order.location)}`}
                           title={`Ubicación: ${order.location}`}>
                           {order.location}
                         </span>
                       </td>
-                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
-                        <span className="inline-flex items-center rounded-full border-2 border-gray-300 bg-white px-3 py-1 text-base font-extrabold text-black">
+                      <td className="border-b border-slate-200/70 px-4 py-5">
+                        <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-sm font-extrabold text-slate-900">
                           {order.total_items}
                         </span>
                       </td>
-                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
+                      <td className="border-b border-slate-200/70 px-4 py-5">
                         <div className="max-w-[360px]">
                           {(() => {
                             const summary = summarizeOrderItems(order.items)
@@ -1499,22 +1679,22 @@ const DailyOrders = ({ user, loading }) => {
                             return (
                               <div className="space-y-1" title={summary.title}>
                                 {summary.principalCount > 0 && (
-                                  <div className="text-base font-extrabold text-black">
+                                  <div className="text-sm font-bold text-slate-900">
                                     Plato Principal: {summary.principalCount}
                                   </div>
                                 )}
                                 {summary.others.map((o, idx) => (
-                                  <div key={idx} className="text-base text-black wrap-break-word">
+                                  <div key={idx} className="text-sm text-slate-700 wrap-break-word">
                                     {o.name} (x{o.qty})
                                   </div>
                                 ))}
                                 {summary.remaining > 0 && (
-                                  <div className="text-sm text-black font-semibold">
+                                  <div className="text-xs text-slate-500 font-semibold">
                                     +{summary.remaining} más...
                                   </div>
                                 )}
                                 {customSide && (
-                                  <div className="text-sm italic text-black mt-2 font-bold">
+                                  <div className="text-xs italic text-slate-600 mt-2 font-semibold">
                                     Guarnición: {customSide}
                                   </div>
                                 )}
@@ -1523,13 +1703,13 @@ const DailyOrders = ({ user, loading }) => {
                           })()}
                         </div>
                       </td>
-                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
-                        <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-base font-bold text-blue-800 max-w-[200px] truncate">
+                      <td className="border-b border-slate-200/70 px-4 py-5">
+                        <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-100/70 px-3 py-1 text-xs font-bold text-blue-900 max-w-[200px] truncate">
                           {getBeverageLabel(order.custom_responses)}
                         </span>
                       </td>
-                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold border ${
+                      <td className="border-b border-slate-200/70 px-4 py-5">
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${
                           (order.service || 'lunch') === 'dinner'
                             ? 'bg-amber-100 text-amber-800 border-amber-200'
                             : 'bg-sky-100 text-sky-800 border-sky-200'
@@ -1537,10 +1717,27 @@ const DailyOrders = ({ user, loading }) => {
                           {(order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
                         </span>
                       </td>
-                      <td className="border-b border-[#eee] px-4 py-6 dark:border-strokedark">
-                        <p className="text-base font-mono font-bold text-black">
+                      <td className="border-b border-slate-200/70 px-4 py-5">
+                        <p className="text-sm font-mono font-bold text-slate-900">
                           {formatTime(order.created_at)}
                         </p>
+                      </td>
+                      <td className="border-b border-slate-200/70 px-4 py-5">
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${getStatusColor(order.status)}`}>
+                          {getStatusText(order.status)}
+                        </span>
+                      </td>
+                      <td className="border-b border-slate-200/70 px-4 py-5">
+                        {order.status !== 'archived' ? (
+                          <button
+                            onClick={() => handleArchiveOrder(order)}
+                            className="inline-flex items-center rounded-lg border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 hover:bg-primary-100"
+                          >
+                            Archivar
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1556,21 +1753,23 @@ const DailyOrders = ({ user, loading }) => {
                 return (
                   <div
                     key={order.id}
-                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col gap-3"
+                    className={`relative rounded-2xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/40 flex flex-col gap-3 ${
+                      order.status === 'archived' ? 'border-l-4 border-l-emerald-400' : 'border-l-4 border-l-amber-400'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                         <User className="h-5 w-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-base font-bold text-black truncate">
+                        <p className="text-base font-bold text-slate-900 truncate">
                           {order.user_name}
                         </p>
-                        <p className="text-xs text-gray-600 truncate">
-                          {order.user_email}
+                        <p className="text-xs text-slate-500 truncate">
+                          {order.user_email || 'Sin email'}
                         </p>
                       </div>
-                      <p className="text-xs font-mono font-semibold text-black ml-2">
+                      <p className="text-xs font-mono font-semibold text-slate-700 ml-2">
                         {formatTime(order.created_at)}
                       </p>
                     </div>
@@ -1595,17 +1794,17 @@ const DailyOrders = ({ user, loading }) => {
                       >
                         {getStatusText(order.status)}
                       </span>
-                      <span className="inline-flex items-center rounded-full border-2 border-gray-300 bg-white px-3 py-1 text-xs font-extrabold text-black ml-auto">
+                      <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-900 ml-auto">
                         {order.total_items} items
                       </span>
-                      <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
+                      <span className="inline-flex items-center rounded-full border border-blue-300 bg-blue-100/70 px-3 py-1 text-xs font-bold text-blue-900">
                         {getBeverageLabel(order.custom_responses)}
                       </span>
                     </div>
 
-                    <div className="text-sm text-black space-y-1" title={summary.title}>
+                    <div className="text-sm text-slate-800 space-y-1" title={summary.title}>
                       {summary.principalCount > 0 && (
-                        <div className="font-semibold">
+                        <div className="font-semibold text-slate-900">
                           Plato Principal: {summary.principalCount}
                         </div>
                       )}
@@ -1615,24 +1814,24 @@ const DailyOrders = ({ user, loading }) => {
                         </div>
                       ))}
                       {summary.remaining > 0 && (
-                        <div className="text-xs font-semibold text-gray-700">
+                        <div className="text-xs font-semibold text-slate-500">
                           +{summary.remaining} más...
                         </div>
                       )}
                       {customSide && (
-                        <div className="text-xs italic font-semibold mt-1">
+                        <div className="text-xs italic font-semibold mt-1 text-slate-600">
                           Guarnición: {customSide}
                         </div>
                       )}
                     </div>
 
                     {/* Vista previa tipo Excel */}
-                    <div className="mt-3 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                       {(() => {
                         const preview = buildOrderPreview(order)
                         return (
-                          <div className="text-xs text-gray-800 space-y-1">
-                            <div className="font-semibold text-gray-900">Vista previa (exportable):</div>
+                          <div className="text-xs text-slate-700 space-y-1">
+                            <div className="font-semibold text-slate-900">Vista previa (exportable):</div>
                             <div><span className="font-semibold">Menú:</span> {preview.itemsText}</div>
                             <div><span className="font-semibold">Opciones:</span> {preview.optionsText}</div>
                           </div>
@@ -1640,7 +1839,17 @@ const DailyOrders = ({ user, loading }) => {
                       })()}
                     </div>
 
-                    <div className="flex justify-end pt-1">
+                    <div className="flex items-center justify-between pt-1">
+                      {order.status !== 'archived' ? (
+                        <button
+                          className="text-xs font-semibold text-primary-700 hover:text-primary-900"
+                          onClick={() => handleArchiveOrder(order)}
+                        >
+                          Archivar pedido
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-400">Archivado</span>
+                      )}
                       <button
                         className="text-sm font-semibold text-primary-700 hover:text-primary-900"
                         onClick={() => navigate(`/orders/${order.id}`)}
@@ -1658,41 +1867,59 @@ const DailyOrders = ({ user, loading }) => {
 
         {/* Location Summary */}
         {selectedLocation === 'all' && stats.total > 0 && (
-          <div className="rounded-xl bg-linear-to-br from-white to-gray-50 shadow-2xl border-2 border-primary-200 overflow-hidden">
-            <div className="bg-linear-to-r from-primary-600 to-primary-800 px-8 py-6">
-              <h3 className="text-3xl font-black text-black flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 shadow-lg">
-                  <img src={orderImg} alt="" className="h-7 w-7" aria-hidden="true" />
+          <div className="rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50 print-hide">
+            <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
+                  <img src={orderImg} alt="" className="h-5 w-5" aria-hidden="true" />
                 </div>
-                Resumen por Ubicación
-              </h3>
-            </div>
-            <div className="p-8">
-              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                {locations.map((location, index) => (
-                  <div key={location} className="relative overflow-hidden rounded-xl bg-linear-to-br from-white to-gray-100 p-8 shadow-2xl border-2 border-gray-200 hover:shadow-3xl transition-all duration-300 hover:scale-105">
-                    <div className="flex items-center justify-between">
-                      <div className="z-10">
-                        <h4 className="text-3xl font-black text-gray-800 mb-3 flex items-center gap-3">
-                          📍 {location}
-                        </h4>
-                        <span className="text-xl text-gray-600 font-bold">Total de Pedidos</span>
-                      </div>
-                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-2xl border-4 border-gray-300">
-                        <span className="text-3xl font-black text-black">
-                          {stats.byLocation[location] || 0}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="absolute -right-4 -bottom-4 opacity-5">
-                      <MapPin className={`h-28 w-28 text-primary-600`} />
-                    </div>
-                    <div className="absolute top-4 right-4 opacity-10">
-                      <div className={`w-10 h-10 rounded-full bg-primary-500`}></div>
-                    </div>
-                  </div>
-                ))}
+                <div>
+                  <h3 className="text-lg font-black text-slate-100">Resumen por ubicación</h3>
+                  <p className="text-xs font-semibold text-slate-300">Solo ubicaciones con pedidos del día</p>
+                </div>
               </div>
+            </div>
+            <div className="p-6">
+              {locationCards.length === 0 ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                  No hay pedidos para mostrar.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {locationCards.map((card) => {
+                    const topDishesText = card.topDishes.length
+                      ? card.topDishes.map(([name, count]) => `${name} (${count})`).join(' · ')
+                      : 'Sin detalle de platillos'
+                    const topSidesText = card.topSides.length
+                      ? card.topSides.map(([name, count]) => `${name} (${count})`).join(' · ')
+                      : 'Sin guarniciones'
+
+                    return (
+                      <div
+                        key={card.location}
+                        className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/40"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ubicación</p>
+                            <h4 className="text-lg font-bold text-slate-900">{card.location}</h4>
+                          </div>
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-lg font-black text-slate-800">
+                            {card.total}
+                          </div>
+                        </div>
+                        <div className="mt-3 text-xs font-semibold text-slate-600">Top platillos</div>
+                        <p className="text-xs text-slate-700">{topDishesText}</p>
+                        <div className="mt-2 text-xs font-semibold text-slate-600">Guarniciones</div>
+                        <p className="text-xs text-slate-700">{topSidesText}</p>
+                        <div className="absolute -right-6 -bottom-6 opacity-5">
+                          <MapPin className="h-20 w-20 text-primary-600" />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
