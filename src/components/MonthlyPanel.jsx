@@ -339,6 +339,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const [rangeOrders, setRangeOrders] = useState([])
   const [selectedDate, setSelectedDate] = useState(null)
   const [showDailyTable, setShowDailyTable] = useState(false)
+  const [showInstructions, setShowInstructions] = useState(false)
   const [, setDebugLogs] = useState([])
   const [debugEnabled, setDebugEnabled] = useState(true)
   const fetchId = useRef(0)
@@ -1003,8 +1004,6 @@ const MonthlyPanel = ({ user, loading }) => {
     <div
       className="monthly-container w-full max-w-[1180px] mx-auto space-y-3 px-3 sm:px-4 md:px-6 pb-20 bg-white rounded-2xl shadow-sm border border-slate-200"
       style={{
-        overflowY: 'auto',
-        overflowX: 'hidden',
         minHeight: '100vh',
         WebkitOverflowScrolling: 'touch'
       }}
@@ -1053,21 +1052,32 @@ const MonthlyPanel = ({ user, loading }) => {
         </div>
       </div>
       {/* Modo de uso */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-2 shadow-sm">
-        <div className="flex items-center gap-3 text-slate-800 mb-3">
-          <Calendar className="h-6 w-6 text-blue-600" />
-          <span className="text-lg font-bold">Modo de uso del Panel Mensual</span>
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-2 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-slate-800">
+            <Calendar className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-bold">Modo de uso del Panel Mensual</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowInstructions(prev => !prev)}
+            className="px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 rounded-md bg-white hover:bg-blue-50 transition-colors"
+          >
+            {showInstructions ? 'Ocultar' : 'Ver instrucciones'}
+          </button>
         </div>
-        <div className="rounded-lg bg-white p-4">
-          <ol className="list-decimal pl-6 text-slate-800 text-base space-y-2">
-            <li>Selecciona el <b>rango de fechas</b> y presiona <b>“Aplicar rango”</b> para ver el resumen de pedidos por empresa.</li>
-            <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
-            <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
-            <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
-            <li>Haz clic en una <b>fila de la tabla diaria</b> para ver el detalle completo de ese día (totales, desglose por empresa/menús/opciones/guarniciones/bebidas/postres y lista de pedidos). Usa “Cerrar detalle” para volver.</li>
-            <li>El <b>desglose diario en tabla</b> se muestra solo cuando presionas “Ver tabla diaria”, para evitar scroll en rangos grandes.</li>
-          </ol>
-        </div>
+        {showInstructions && (
+          <div className="mt-2 rounded-lg bg-white p-3">
+            <ol className="list-decimal pl-5 text-slate-800 text-sm space-y-1.5">
+              <li>Selecciona el <b>rango de fechas</b> y presiona <b>“Aplicar rango”</b> para ver el resumen de pedidos por empresa.</li>
+              <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
+              <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
+              <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
+              <li>Haz clic en una <b>fila</b> para ver el detalle completo de ese día. Usa el botón “Ver detalle” para abrir/cerrar.</li>
+              <li>Explora los días desde el resumen, evitando scrolls internos.</li>
+            </ol>
+          </div>
+        )}
       </div>
 
       {/* Selector de fechas */}
@@ -1213,7 +1223,7 @@ const MonthlyPanel = ({ user, loading }) => {
                       </div>
                       {isOpen && (
                         <div className="bg-slate-50 border-t border-slate-200 p-3">
-                          <div className="max-h-[420px] overflow-y-auto pr-1">
+                          <div>
                             <DailyDetailPanel
                               date={d.date}
                               orders={ordersByDayForView[d.date] || []}
@@ -1364,7 +1374,6 @@ export default MonthlyPanel
 
 // Panel de detalle diario
 const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
-  const [showDetails, setShowDetails] = useState(false)
   if (!date) return null
 
   const fmtTime = (ts) => {
@@ -1450,100 +1459,48 @@ const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
           <h4 className="text-lg font-bold text-slate-800">Detalle del {date}</h4>
           <p className="text-sm text-slate-600">Pedidos: {summary.count ?? totals.pedidos}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowDetails(prev => !prev)}
-            className="px-3 py-2 text-sm font-semibold text-blue-700 border border-blue-200 bg-white hover:bg-blue-50 rounded-md shadow-sm"
-          >
-            {showDetails ? 'Ocultar detalle' : 'Ver detalle'}
-          </button>
-          <button
-            onClick={onClose}
-            className="px-3 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm"
-          >
-            Cerrar detalle
-          </button>
-        </div>
+        <div />
       </div>
 
-      {showDetails && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-            <Stat label="Total pedidos" value={summary.count ?? totals.pedidos} />
-            <Stat label="Total menús" value={summary.menus_principales ?? totals.menus} />
-            <Stat label="Total opciones" value={summary.total_opciones ?? totals.opciones} />
-            <Stat label="Total guarniciones" value={summary.total_guarniciones} />
-            <Stat label="Total bebidas" value={summary.total_bebidas} />
-            <Stat label="Total postres" value={summary.total_postres} />
-          </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+        <Stat label="Total pedidos" value={summary.count ?? totals.pedidos} />
+        <Stat label="Total menús" value={summary.menus_principales ?? totals.menus} />
+        <Stat label="Total opciones" value={summary.total_opciones ?? totals.opciones} />
+        <Stat label="Total guarniciones" value={summary.total_guarniciones} />
+        <Stat label="Total bebidas" value={summary.total_bebidas} />
+        <Stat label="Total postres" value={summary.total_postres} />
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {[
-              { title: 'Empresas activas', data: byEmpresa, maxHeight: 'max-h-28' },
-              { title: 'Menús principales', data: byMenu, maxHeight: 'max-h-36' },
-              { title: 'Opciones', data: byOpcion, maxHeight: 'max-h-36' },
-              { title: 'Guarniciones', data: sideBuckets.tiposGuarniciones, maxHeight: 'max-h-36' },
-              { title: 'Bebidas', data: sideBuckets.tiposBebidas, maxHeight: 'max-h-36' },
-              { title: 'Postres', data: sideBuckets.tiposPostres, maxHeight: 'max-h-36' }
-            ].map(section => (
-              <div key={section.title} className="rounded-lg border border-slate-200 bg-white p-2">
-                <div className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
-                  {section.title}
-                </div>
-                <div className={`mt-2 ${section.maxHeight} overflow-y-auto pr-1`}>
-                  <ChipList data={section.data} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-3">
-            <div className="text-xs font-bold uppercase tracking-wide text-slate-700 mb-2">
-              Pedidos del día
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {[
+          { title: 'Empresas activas', data: byEmpresa, id: 'empresas' },
+          { title: 'Menús principales', data: byMenu, id: 'menus' },
+          { title: 'Opciones', data: byOpcion, id: 'opciones' },
+          { title: 'Guarniciones', data: sideBuckets.tiposGuarniciones, id: 'guarniciones' },
+          { title: 'Bebidas', data: sideBuckets.tiposBebidas, id: 'bebidas' },
+          { title: 'Postres', data: sideBuckets.tiposPostres, id: 'postres' }
+        ].map(section => (
+          <div key={section.id} className="rounded-lg border border-slate-200 bg-white p-2">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-slate-700">
+              {section.title}
             </div>
-            {orders.length === 0 ? (
-              <p className="text-sm text-slate-600">No hay pedidos en este día.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-slate-800 text-slate-100 sticky top-0 z-10">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Hora</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Empresa</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Turno</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Items</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((o, i) => (
-                        <tr key={`${o.id}-${i}`} className="border-t border-slate-200 hover:bg-slate-100 odd:bg-white even:bg-slate-50">
-                          <td className="px-3 py-1.5">{fmtTime(o.created_at)}</td>
-                          <td className="px-3 py-1.5">{o.location || '—'}</td>
-                          <td className="px-3 py-1.5">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${
-                              (o.service || 'lunch') === 'dinner'
-                                ? 'bg-amber-200 text-amber-900 border-amber-300'
-                                : 'bg-sky-200 text-sky-900 border-sky-300'
-                            }`}>
-                              {(o.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-1.5">
-                            {renderItems(o, isOption)}
-                          </td>
-                          <td className="px-3 py-1.5 capitalize">{o.status || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            <div className="mt-2">
+              <ExpandableChipList data={section.data} limit={5} />
+            </div>
           </div>
-        </>
-      )}
+        ))}
+      </div>
+
+      <div className="mt-3">
+        <div className="text-xs font-bold uppercase tracking-wide text-slate-700 mb-2">
+          Pedidos del día
+        </div>
+        {orders.length === 0 ? (
+          <p className="text-sm text-slate-600">No hay pedidos en este día.</p>
+        ) : (
+          <DailyOrdersTable orders={orders} fmtTime={fmtTime} />
+        )}
+      </div>
     </div>
   )
 }
@@ -1555,16 +1512,85 @@ const Stat = ({ label, value }) => (
   </div>
 )
 
-const ChipList = ({ data }) => {
+const ExpandableChipList = ({ data, limit = 5 }) => {
   const entries = Object.entries(data || {})
+  const [expanded, setExpanded] = useState(false)
   if (!entries.length) return <p className="text-sm text-slate-600">Sin datos.</p>
+  const visible = expanded ? entries : entries.slice(0, limit)
+  const remaining = Math.max(entries.length - visible.length, 0)
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {entries.map(([k, v]) => (
-        <span key={k} className="px-2.5 py-0.5 text-[11px] font-semibold rounded-md bg-slate-300 text-slate-900 border border-slate-400">
-          {k}: {v}
-        </span>
-      ))}
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {visible.map(([k, v]) => (
+          <span key={k} className="px-2.5 py-0.5 text-[11px] font-semibold rounded-md bg-slate-300 text-slate-900 border border-slate-400">
+            {k} x{v}
+          </span>
+        ))}
+      </div>
+      {remaining > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(prev => !prev)}
+          className="mt-2 text-xs font-semibold text-blue-700 hover:text-blue-800"
+        >
+          {expanded ? 'Ver menos' : `Ver más (${remaining})`}
+        </button>
+      )}
+    </div>
+  )
+}
+
+const DailyOrdersTable = ({ orders, fmtTime }) => {
+  const [showAll, setShowAll] = useState(false)
+  const limit = 8
+  const visibleOrders = showAll ? orders : orders.slice(0, limit)
+  const remaining = Math.max(orders.length - visibleOrders.length, 0)
+
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm bg-white border border-slate-200 rounded-lg shadow-sm">
+          <thead className="bg-slate-800 text-slate-100 sticky top-0 z-10">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Hora</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Empresa</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Turno</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Items</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleOrders.map((o, i) => (
+              <tr key={`${o.id}-${i}`} className="border-t border-slate-200 hover:bg-slate-100 odd:bg-white even:bg-slate-50">
+                <td className="px-3 py-1.5">{fmtTime(o.created_at)}</td>
+                <td className="px-3 py-1.5">{o.location || '—'}</td>
+                <td className="px-3 py-1.5">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${
+                    (o.service || 'lunch') === 'dinner'
+                      ? 'bg-amber-200 text-amber-900 border-amber-300'
+                      : 'bg-sky-200 text-sky-900 border-sky-300'
+                  }`}>
+                    {(o.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
+                  </span>
+                </td>
+                <td className="px-3 py-1.5">
+                  {renderItems(o, isOptionName)}
+                </td>
+                <td className="px-3 py-1.5 capitalize">{o.status || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {remaining > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(prev => !prev)}
+          className="mt-2 text-xs font-semibold text-blue-700 hover:text-blue-800"
+        >
+          {showAll ? 'Ver menos pedidos' : `Ver más pedidos (${remaining})`}
+        </button>
+      )}
     </div>
   )
 }
