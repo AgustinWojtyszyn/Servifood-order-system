@@ -69,6 +69,10 @@ Algunos detalles técnicos y configuraciones internas fueron omitidos del reposi
 Agustin Wojtyszyn  
 Desarrollador Web Full Stack
 
+
+## Vista del sistema
+
+Interfaz principal del sistema de pedidos utilizada por los usuarios para seleccionar su menú diario.
 <img width="1920" height="4081" alt="screencapture-servifoodapp-site-order-ccp-2026-03-17-10_07_54" src="https://github.com/user-attachments/assets/fcb25a81-79cd-42a2-b555-1d64453f6e75" />
 
 
