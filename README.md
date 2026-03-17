@@ -68,7 +68,7 @@ Algunos detalles técnicos y configuraciones internas fueron omitidos del reposi
 
 Agustin Wojtyszyn  
 Desarrollador Web Full Stack
-<img width="1920" height="4081" alt="screencapture-servifoodapp-site-order-ccp-2026-03-17-09_57_45" src="https://github.com/user-attachments/assets/61387688-57ba-41a6-90de-cd58e2a4ad8c" />
+
 <img width="1920" height="4081" alt="screencapture-servifoodapp-site-order-ccp-2026-03-17-10_07_54" src="https://github.com/user-attachments/assets/fcb25a81-79cd-42a2-b555-1d64453f6e75" />
 
 
