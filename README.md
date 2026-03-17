@@ -70,6 +70,29 @@ Agustin Wojtyszyn
 Desarrollador Web Full Stack
 
 
+## Arquitectura general
+
+La aplicación sigue una arquitectura web moderna:
+
+- Frontend SPA construido con React
+- Backend y base de datos gestionados mediante Supabase
+- Autenticación integrada para control de acceso
+- Panel administrativo para gestión del sistema
+
+
+## Estado del proyecto
+
+Proyecto en desarrollo activo.
+
+Incluye mejoras continuas en:
+
+- experiencia de usuario
+- optimización del sistema
+- nuevas funcionalidades administrativas
+
+
+
+
 ## Vista del sistema
 
 Interfaz principal del sistema de pedidos utilizada por los usuarios para seleccionar su menú diario.
