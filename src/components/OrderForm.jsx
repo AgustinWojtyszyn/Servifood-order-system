@@ -2,10 +2,41 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { ordersService } from '../services/orders'
-import { ShoppingCart, X, ChefHat, User, Settings, Clock, Building2, CheckCircle } from 'lucide-react'
+import { ShoppingCart, Settings, CheckCircle } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
 import { Sound } from '../utils/Sound'
+import OrderErrorBanner from './order-form/OrderErrorBanner'
+import OrderFormHeader from './order-form/OrderFormHeader'
+import OrderCommentsSection from './order-form/OrderCommentsSection'
+import OrderPersonalInfoSection from './order-form/OrderPersonalInfoSection'
+import OrderLunchSummary from './order-form/OrderLunchSummary'
+import OrderSuggestionPanel from './order-form/OrderSuggestionPanel'
+import OrderTurnSelector from './order-form/OrderTurnSelector'
+import OrderLunchMenuSection from './order-form/OrderLunchMenuSection'
+import OrderConfirmModal from './order-form/OrderConfirmModal'
+import OrderLunchOptionsSection from './order-form/OrderLunchOptionsSection'
+import OrderDinnerMenuSection from './order-form/OrderDinnerMenuSection'
+import OrderSuccessScreen from './order-form/OrderSuccessScreen'
+import OrderHoursBanner from './order-form/OrderHoursBanner'
+import {
+  buildIdempotencyStorageKey,
+  buildOrderSignature,
+  computePayloadSignature,
+  generateIdempotencyKey
+} from '../utils/order/orderIdempotency'
+import { sortMenuItems } from '../utils/order/orderMenuHelpers'
+import {
+  buildOrderItemLabel,
+  buildOptionsSummary,
+  buildSuggestionSummary,
+  formatResponseValue
+} from '../utils/order/orderFormatters'
+import {
+  buildResponsesMap,
+  hasMainMenuSelected,
+  mapOrderItemsToSelection
+} from '../utils/order/orderSelectionHelpers'
 
 const ORDER_START_HOUR = 9  // 09:00 apertura
 const ORDER_CUTOFF_HOUR = 22 // 22:00 cierre
@@ -141,6 +172,61 @@ const OrderForm = ({ user, loading }) => {
     [activeOptions]
   )
 
+  const lunchOptionsUI = useMemo(() => {
+    return visibleLunchOptions.map(option => {
+      const isPostreGroup = isGenneia && option.title?.toLowerCase().includes('postre')
+      const helperPostreContent = isPostreGroup ? (
+        <>
+          Solo elegí <b>Postre del día</b> lunes y miércoles (entrega martes y jueves). El resto de los días marcá <b>Fruta</b>. Los martes, jueves y viernes el postre queda deshabilitado.
+        </>
+      ) : null
+      const choices = (option.options || []).map(opt => {
+        const isSelected = customResponses[option.id] === opt
+        const isChecked = (customResponses[option.id] || []).includes(opt)
+        const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
+        const isDisabled = isPostreOption && !isGenneiaPostreDay
+        return {
+          value: opt,
+          isSelected,
+          isChecked,
+          isDisabled,
+          showUnavailableLabel: isDisabled
+        }
+      })
+        return {
+          id: option.id,
+          title: option.title,
+          required: option.required,
+          type: option.type,
+          helperPostreContent,
+          choices,
+          textValue: option.type === 'text' ? (customResponses[option.id] || '') : ''
+        }
+      })
+  }, [visibleLunchOptions, customResponses, isGenneia, isGenneiaPostreDay])
+
+  const dinnerMenuItemsUI = useMemo(() => {
+    return menuItems.map(item => {
+      const isSelected = !!selectedItemsDinner[item.id]
+      const isMain =
+        item.name?.toLowerCase().includes('menú principal') ||
+        item.name?.toLowerCase().includes('plato principal')
+      const hasMainSelected = Object.keys(selectedItemsDinner).some(id => {
+        if (!selectedItemsDinner[id]) return false
+        const name = (menuItems.find(mi => mi.id === id)?.name || '').toLowerCase()
+        return name.includes('menú principal')
+      })
+      const isDisabled = isMain ? hasMainSelected && !isSelected : false
+      return {
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        isSelected,
+        isDisabled
+      }
+    })
+  }, [menuItems, selectedItemsDinner])
+
   // Opciones visibles para cena (incluye comunes + solo cena; se vacía si el usuario no tiene cena habilitada)
   const visibleDinnerOptions = useMemo(() => {
     if (!dinnerEnabled) return []
@@ -201,7 +287,7 @@ const OrderForm = ({ user, loading }) => {
     const responsesMap = buildResponsesMap(draftResponses)
 
     if (draftService === 'dinner' && dinnerEnabled && dinnerMenuEnabled) {
-      const selectedDinnerMap = mapOrderItemsToSelection(draftItems)
+      const selectedDinnerMap = mapOrderItemsToSelection(draftItems, menuItems)
       setSelectedItems({})
       setSelectedItemsDinner(selectedDinnerMap)
       setCustomResponsesDinner(responsesMap)
@@ -211,7 +297,7 @@ const OrderForm = ({ user, loading }) => {
         clearDinnerOverrideResponses()
       }
     } else {
-      const selectedMap = mapOrderItemsToSelection(draftItems)
+      const selectedMap = mapOrderItemsToSelection(draftItems, menuItems)
       setSelectedItems(selectedMap)
       setSelectedItemsDinner({})
       setCustomResponses(responsesMap)
@@ -331,7 +417,7 @@ const OrderForm = ({ user, loading }) => {
           setSuggestion(latestYesterday)
           setSuggestionMode('last')
           setSuggestionVisible(true)
-          setSuggestionSummary(buildSuggestionSummary(latestYesterday))
+          setSuggestionSummary(buildSuggestionSummary(latestYesterday, hasMainMenuSelected, buildOptionsSummary))
         } else {
           setSuggestion(null)
           setSuggestionMode('last')
@@ -348,50 +434,6 @@ const OrderForm = ({ user, loading }) => {
     } finally {
       setSuggestionLoading(false)
     }
-  }
-
-  const extractNumber = (name = '') => {
-    const match = name.match(/(\d+)/)
-    return match ? parseInt(match[1], 10) : Infinity
-  }
-
-  const isMainMenu = (name = '') => {
-    const normalized = name.toLowerCase()
-    return normalized.includes('menú principal') || normalized.includes('menu principal') || normalized.includes('plato principal')
-  }
-
-  const sortMenuItems = (items) => {
-    return [...items].sort((a, b) => {
-      const aMain = isMainMenu(a.name)
-      const bMain = isMainMenu(b.name)
-      if (aMain !== bMain) return aMain ? -1 : 1
-
-      const aNum = extractNumber(a.name)
-      const bNum = extractNumber(b.name)
-      const aHasNum = Number.isFinite(aNum) && aNum !== Infinity
-      const bHasNum = Number.isFinite(bNum) && bNum !== Infinity
-
-      if (aHasNum && bHasNum) return aNum - bNum
-      if (aHasNum !== bHasNum) return aHasNum ? -1 : 1
-
-      return (a.name || '').localeCompare(b.name || '')
-    })
-  }
-
-  const buildOrderItemLabel = (item = {}) => {
-    const baseName = (item?.name || '').trim()
-    if (!baseName) return 'Item'
-    const description = (item?.description || '').trim()
-    if (!description) return baseName
-
-    const normalized = baseName.toLowerCase()
-    const isGenericMenu =
-      normalized.includes('menú principal') ||
-      normalized.includes('menu principal') ||
-      normalized.includes('plato principal') ||
-      /^opci[oó]n\s*\d+$/i.test(baseName)
-
-    return isGenericMenu ? `${baseName} - ${description}` : baseName
   }
 
   const fetchMenuItems = async () => {
@@ -542,12 +584,6 @@ const OrderForm = ({ user, loading }) => {
     }))
   }
 
-  const formatResponseValue = (value) => {
-    if (Array.isArray(value)) return value.join(', ')
-    if (value === null || value === undefined) return ''
-    return String(value)
-  }
-
   const getSelectedItemsList = () => {
     // Unificar filtro para menú principal
     const selected = menuItems.filter(item => selectedItems[item.id] === true)
@@ -665,203 +701,6 @@ const OrderForm = ({ user, loading }) => {
     selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled && (getSelectedItemsListDinner().length > 0 || !!getDinnerOverrideChoice())
   const hasAnySelectedItems = hasLunchSelection || hasDinnerSelection
 
-  const computePayloadSignature = (items = [], responses = [], comments = '', deliveryDate = '', location = '', service = 'lunch') => {
-    const sortedItems = [...(items || [])].map(i => ({
-      id: i.id,
-      name: i.name,
-      quantity: i.quantity || 1
-    })).sort((a, b) => (a.id || '').toString().localeCompare((b.id || '').toString()))
-
-    const sortedResponses = [...(responses || [])].map(r => ({
-      id: r.id,
-      title: r.title,
-      response: r.response
-    })).sort((a, b) => (a.id || '').toString().localeCompare((b.id || '').toString()))
-
-    const normalized = {
-      location: (location || '').trim().toLowerCase(),
-      items: sortedItems,
-      responses: sortedResponses,
-      comments: comments || '',
-      deliveryDate: deliveryDate || '',
-      service: (service || '').toLowerCase()
-    }
-
-    const json = JSON.stringify(normalized)
-    let hash = 0
-    for (let i = 0; i < json.length; i++) {
-      hash = (hash * 31 + json.charCodeAt(i)) >>> 0
-    }
-    return hash.toString(16)
-  }
-
-  const buildIdempotencyStorageKey = (items = [], location = '', signature = '', service = 'lunch') => {
-    const userPart = user?.id || 'anon'
-    const itemsPart = (items || []).map(item => item.id).filter(Boolean).sort().join('-') || 'no-items'
-    const locationPart = (location || 'no-location').toString().trim().toLowerCase().replace(/\s+/g, '-')
-    const servicePart = (service || 'lunch').toLowerCase()
-    const signaturePart = signature || 'no-signature'
-    return `order-idempotency-${userPart}-${locationPart}-${servicePart}-${itemsPart}-${signaturePart}`
-  }
-
-  const generateIdempotencyKey = () => {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID()
-    }
-    return `${Date.now()}-${Math.random().toString(16).slice(2)}`
-  }
-
-  const hasMainMenuSelected = (items = []) => {
-    const list = Array.isArray(items) ? items : []
-    return list.some(item => {
-      const name = (item?.name || '').toString().toLowerCase()
-      return (
-        name.includes('menú principal') ||
-        name.includes('menu principal') ||
-        name.includes('plato principal')
-      )
-    })
-  }
-
-  const buildOptionsSummary = (responses = []) => {
-    const list = Array.isArray(responses) ? responses : []
-    for (const resp of list) {
-      if (!resp) continue
-      const value = resp.response ?? resp.answer ?? resp.value ?? resp.options
-      const hasValue = Array.isArray(value)
-        ? value.length > 0
-        : (typeof value === 'string' ? value.trim() !== '' : value !== null && value !== undefined)
-      if (!hasValue) continue
-      return (resp.title || 'Opcion').toString().trim()
-    }
-    return ''
-  }
-
-  const buildSuggestionSummary = (order) => {
-    if (!order) return ''
-    const items = Array.isArray(order.items) ? order.items : []
-    if (hasMainMenuSelected(items)) {
-      return 'Menú principal'
-    }
-    const optionTitle = buildOptionsSummary(order.custom_responses)
-    if (optionTitle) return optionTitle
-    return 'Pedido anterior'
-  }
-
-  const buildRepeatSummary = (order) => buildSuggestionSummary(order)
-
-  const mapOrderItemsToSelection = (items = []) => {
-    const selectedMap = {}
-    items.forEach(it => {
-      const byId = menuItems.find(m => m.id === it.id)
-      if (byId) {
-        selectedMap[byId.id] = true
-        return
-      }
-      const byName = menuItems.find(m => m.name?.toLowerCase() === (it.name || '').toLowerCase())
-      if (byName) {
-        selectedMap[byName.id] = true
-      }
-    })
-    return selectedMap
-  }
-
-  const buildResponsesMap = (responses = []) => {
-    const map = {}
-    responses.forEach((resp) => {
-      if (!resp) return
-      const key = resp.id || resp.option_id || resp.optionId
-      if (!key) return
-      const value = resp.response ?? resp.answer ?? resp.value ?? resp.options
-      map[key] = value
-    })
-    return map
-  }
-
-  const normalizeValueForSignature = (value) => {
-    if (Array.isArray(value)) {
-      return value.map(v => `${v}`.trim().toLowerCase()).sort().join(',')
-    }
-    if (value === null || value === undefined) return ''
-    return `${value}`.trim().toLowerCase()
-  }
-
-  const buildOrderSignature = (order = {}) => {
-    const normalizedItems = (Array.isArray(order.items) ? order.items : [])
-      .map(i => ({
-        id: i?.id || '',
-        name: (i?.name || '').toString().trim().toLowerCase(),
-        quantity: i?.quantity || 1
-      }))
-      .sort((a, b) => `${a.id}-${a.name}`.localeCompare(`${b.id}-${b.name}`))
-
-    const normalizedResponses = (Array.isArray(order.custom_responses) ? order.custom_responses : [])
-      .map(r => ({
-        title: (r?.title || '').toString().trim().toLowerCase(),
-        response: normalizeValueForSignature(r?.response ?? r?.answer ?? r?.value ?? r?.options)
-      }))
-      .sort((a, b) => `${a.title}-${a.response}`.localeCompare(`${b.title}-${b.response}`))
-
-    const normalized = {
-      items: normalizedItems,
-      responses: normalizedResponses,
-      service: (order.service || 'lunch').toString().trim().toLowerCase(),
-      location: (order.location || '').toString().trim().toLowerCase()
-    }
-
-    const json = JSON.stringify(normalized)
-    let hash = 0
-    for (let i = 0; i < json.length; i++) {
-      hash = (hash * 31 + json.charCodeAt(i)) >>> 0
-    }
-    return hash.toString(16)
-  }
-
-  const getLatestOrder = (orders = []) => {
-    if (!Array.isArray(orders) || orders.length === 0) return null
-    const valid = orders.filter(o => (o?.status || '').toLowerCase() !== 'cancelled')
-    if (valid.length === 0) return null
-    return [...valid].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-  }
-
-  const findRepeatCandidate = (orders = []) => {
-    if (!Array.isArray(orders) || orders.length === 0) return null
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const start = new Date(today)
-    start.setDate(start.getDate() - 2)
-
-    const recent = orders.filter(order => {
-      if (!order?.created_at) return false
-      if ((order?.status || '').toLowerCase() === 'cancelled') return false
-      const date = new Date(order.created_at)
-      date.setHours(0, 0, 0, 0)
-      return date >= start && date <= today
-    })
-
-    if (recent.length < 3) return null
-
-    const groups = new Map()
-    recent.forEach(order => {
-      const sig = buildOrderSignature(order)
-      if (!sig) return
-      const dayKey = new Date(order.created_at).toISOString().split('T')[0]
-      if (!groups.has(sig)) {
-        groups.set(sig, { days: new Set(), latest: order })
-      }
-      const entry = groups.get(sig)
-      entry.days.add(dayKey)
-      if (new Date(order.created_at) > new Date(entry.latest.created_at)) {
-        entry.latest = order
-      }
-    })
-
-    const candidate = Array.from(groups.values())
-      .filter(entry => entry.days.size >= 3)
-      .sort((a, b) => new Date(b.latest.created_at) - new Date(a.latest.created_at))[0]
-
-    return candidate ? candidate.latest : null
-  }
 
   const handleRepeatSuggestion = () => {
     if (!suggestion) return
@@ -872,7 +711,7 @@ const OrderForm = ({ user, loading }) => {
     const hasDinnerOverride = Object.values(responsesMap).some((value) => isDinnerOverrideValue(value))
 
     if (isGenneia && isDinnerSuggestion) {
-      const selectedDinnerMap = mapOrderItemsToSelection(suggestion.items || [])
+      const selectedDinnerMap = mapOrderItemsToSelection(suggestion.items || [], menuItems)
       setSelectedItems({})
       setSelectedItemsDinner(hasDinnerOverride ? {} : selectedDinnerMap)
       setSelectedTurns({ lunch: false, dinner: true })
@@ -883,7 +722,7 @@ const OrderForm = ({ user, loading }) => {
         clearDinnerOverrideResponses()
       }
     } else {
-      const selectedMap = mapOrderItemsToSelection(suggestion.items || [])
+      const selectedMap = mapOrderItemsToSelection(suggestion.items || [], menuItems)
       setSelectedItems(selectedMap)
       setSelectedItemsDinner({})
       setCustomResponses(responsesMap)
@@ -1145,7 +984,13 @@ const OrderForm = ({ user, loading }) => {
           service
         )
 
-        const idempotencyStorageKey = buildIdempotencyStorageKey(itemsForService, formData.location, idempotencySignature, service)
+        const idempotencyStorageKey = buildIdempotencyStorageKey(
+          itemsForService,
+          formData.location,
+          idempotencySignature,
+          service,
+          user?.id || 'anon'
+        )
         let idempotencyKey = null
 
         if (typeof window !== 'undefined') {
@@ -1219,20 +1064,7 @@ const OrderForm = ({ user, loading }) => {
   if (success) {
     return (
       <RequireUser user={user} loading={loading}>
-        <div className="p-3 sm:p-6 flex items-center justify-center min-h-dvh">
-          <div className="max-w-2xl mx-auto text-center px-4">
-            <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-6 sm:p-8 shadow-2xl">
-              <div className="flex justify-center mb-3 sm:mb-4">
-                <div className="p-3 sm:p-4 rounded-full bg-green-100">
-                  <ChefHat className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" />
-                </div>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
-              <p className="text-base sm:text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
-              <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al panel principal...</p>
-            </div>
-          </div>
-        </div>
+        <OrderSuccessScreen />
       </RequireUser>
     )
   }
@@ -1246,562 +1078,135 @@ const OrderForm = ({ user, loading }) => {
         }}
       >
         <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
-              <div className="text-center">
-                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/15 border-2 border-white/30 shadow-lg text-white mb-3">
-                  <Building2 className="h-5 w-5" />
-                  <div className="text-left">
-                    <p className="text-xs font-semibold uppercase tracking-wide">Empresa seleccionada</p>
-                    <p className="text-base sm:text-lg font-bold">{companyConfig.name}</p>
-                  </div>
-                </div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-2xl mb-2 sm:mb-3">Nuevo Pedido</h1>
-                <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold drop-shadow-lg">Seleccioná tu menú y completa tus datos</p>
-                <p className="text-base sm:text-lg text-white/90 mt-1 sm:mt-2">¡Es rápido y fácil!</p>
-                <div className="mt-4 mx-auto max-w-2xl">
-                  <div className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded-lg shadow text-yellow-900 text-sm sm:text-base">
-                    <strong>Importante:</strong> No realices <b>pedidos de prueba</b>. Todos los pedidos se contabilizan para el día siguiente y serán preparados. Si necesitas cancelar un pedido, hazlo desde la aplicación o comunícate por WhatsApp dentro de los <b>15 minutos</b> posteriores a haberlo realizado.
-                  </div>
-                  {isGenneia && (
-                    <div className="mt-3 bg-amber-50 border-l-4 border-amber-500 p-3 rounded-lg shadow text-amber-900 text-sm sm:text-base">
-                      <strong>Postre Genneia:</strong> Elegí <b>Postre del día</b> solo los <b>lunes y miércoles</b> (entrega martes y jueves). El resto de los días <b>marcá siempre Fruta</b> como opción (martes, jueves y viernes).
-                    </div>
-                  )}
-                </div>
-              </div>
-                {!hasOrderToday && (
-                <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 sm:p-4 shadow-lg">
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-blue-600 shrink-0" />
-                    <div>
-                      <p className="text-sm sm:text-base text-blue-800 font-medium">
-                        Horario de pedidos: <strong>09:00 a 22:00</strong> (hora Buenos Aires)
-                      </p>
-                      <p className="text-xs sm:text-sm text-blue-700 mt-1">
-                        Si necesitas realizar cambios, presiona el botón <strong>"¿Necesitas ayuda?"</strong>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <OrderFormHeader companyName={companyConfig.name} isGenneia={isGenneia} />
+              {!hasOrderToday && <OrderHoursBanner />}
 
             </div>
               
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Sugerencias inteligentes */}
-              {suggestionVisible && suggestion && (
-                <div className={`bg-white border-2 rounded-xl p-4 sm:p-5 shadow-xl flex flex-col gap-3 ${
-                  suggestionMode === 'repeat' ? 'border-blue-300' : 'border-green-300'
-                }`}>
-                  <div className="flex justify-between items-start gap-3">
-                    <div>
-                      {suggestionMode === 'repeat' ? (
-                        <>
-                          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Repetir pedido</p>
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                            Has seleccionado: <span className="text-blue-700">{suggestionSummary || '-'}</span>
-                          </h3>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Sugerencias inteligentes</p>
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                            La ultima vez pediste: <span className="text-green-700">{suggestionSummary || '-'}</span>
-                          </h3>
-                        </>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleDismissSuggestion}
-                      className="text-gray-500 hover:text-gray-700"
-                      aria-label="Cerrar sugerencia"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-                  {suggestionMode === 'repeat' ? (
-                    <p className="text-sm text-gray-700">en los ultimos 3 dias. Deseas repetir el pedido?</p>
-                  ) : (
-                    <p className="text-sm text-gray-700">Quieres repetirlo?</p>
-                  )}
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={handleRepeatSuggestion}
-                      className={`px-4 py-2 rounded-lg text-white font-bold shadow ${
-                        suggestionMode === 'repeat' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'
-                      }`}
-                    >
-                      Repetir pedido
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDismissSuggestion}
-                      className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold shadow"
-                    >
-                      No, hacer uno nuevo
-                    </button>
-                  </div>
-                  {suggestionLoading && (
-                    <p className="text-xs text-gray-500">Cargando sugerencia...</p>
-                  )}
-                </div>
-              )}
+              <OrderSuggestionPanel
+                suggestionVisible={suggestionVisible}
+                suggestion={suggestion}
+                suggestionMode={suggestionMode}
+                suggestionSummary={suggestionSummary}
+                suggestionLoading={suggestionLoading}
+                onRepeat={handleRepeatSuggestion}
+                onDismiss={handleDismissSuggestion}
+              />
               {/* Información Personal */}
-              <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                  <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
-                    <User className="h-5 w-5 sm:h-6 sm:w-6" />
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Información Personal</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  <div>
-                    <label htmlFor="location" className="block text-sm font-bold text-gray-700 mb-2">
-                      Lugar de trabajo *
-                    </label>
-                    <select
-                      id="location"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleFormChange}
-                      className="input-field"
-                      required
-                      autoComplete="organization"
-                    >
-                      <option value="">Seleccionar lugar</option>
-                      {locations.map(location => (
-                        <option key={location} value={location}>{location}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
-                      Nombre completo *
-                    </label>
-                    <input
-                      id="name"
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleFormChange}
-                      className="input-field"
-                      required
-                      autoComplete="name"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
-                      Correo electrónico *
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleFormChange}
-                      className="input-field"
-                      required
-                      autoComplete="email"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-bold text-gray-700 mb-2">
-                      Teléfono
-                    </label>
-                    <input
-                      id="phone"
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleFormChange}
-                      className="input-field"
-                      autoComplete="tel"
-                    />
-                  </div>
-                </div>
-              </div>
+              <OrderPersonalInfoSection
+                formData={formData}
+                locations={locations}
+                onChange={handleFormChange}
+              />
 
-{/* Selección de Menú */}
-<div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-  <div className="flex items-center gap-3 mb-6">
-    <div className="bg-linear-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
-      <ChefHat className="h-6 w-6" />
-    </div>
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900">Seleccioná tu Menú</h2>
-      <p className="text-sm text-gray-600 font-semibold mt-1">
-        Elegí uno o más platos disponibles
-      </p>
-    </div>
-  </div>
+              {/* Selección de Menú */}
+              <OrderLunchMenuSection
+                items={[
+                  ...menuItems.filter(item => item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))),
+                  ...menuItems.filter(item => !(item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))))
+                ]}
+                selectedItems={selectedItems}
+                onToggleItem={handleItemSelect}
+              />
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    {[...menuItems.filter(item => item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))),
-      ...menuItems.filter(item => !(item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))))].map((item) => {
-      const isSelected = selectedItems[item.id] === true
-      return (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => handleItemSelect(item.id, !isSelected)}
-          aria-pressed={isSelected}
-          className={`card text-left bg-white border-2 rounded-2xl p-5
-                     transition-all duration-300 flex flex-col justify-between min-h-[260px] cursor-pointer
-                     focus:outline-none focus:ring-2 focus:ring-blue-400
-                     ${isSelected ? 'border-blue-500 bg-blue-50/60 shadow-xl' : 'border-gray-200 hover:border-blue-400 hover:shadow-xl'}`}
-        >
-          <div>
-            <h3 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">
-              {item.name}
-            </h3>
+              {/* Resumen del Pedido */}
+              <OrderLunchSummary
+                items={getSelectedItemsList()}
+                total={calculateTotal()}
+                onRemove={(itemId) => handleItemSelect(itemId, false)}
+              />
 
-            {item.description && (
-              <p className="text-lg text-gray-800 leading-snug font-medium">
-                {item.description}
-              </p>
-            )}
-          </div>
+              {/* Opciones Personalizadas - Solo mostrar opciones activas */}
+              {lunchOptionsUI.length > 0 && (
+                <OrderLunchOptionsSection
+                  options={lunchOptionsUI}
+                  companyName={companyConfig.name}
+                  onCustomResponse={handleCustomResponse}
+                />
+              )}
 
-          <div className="flex justify-end mt-6 min-h-9">
-            {isSelected && (
-              <span className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-                <CheckCircle className="h-8 w-8" />
-                Seleccionado
-              </span>
-            )}
-          </div>
-        </button>
-      )
-    })}
-  </div>
-</div>
+              {dinnerEnabled && dinnerMenuEnabled && (
+                <OrderTurnSelector
+                  selectedTurns={selectedTurns}
+                  onToggleLunch={() => setSelectedTurns(prev => ({ ...prev, lunch: !prev.lunch }))}
+                  onToggleDinner={() => setSelectedTurns(prev => ({ ...prev, dinner: !prev.dinner }))}
+                />
+              )}
 
-        {/* Resumen del Pedido */}
-        {getSelectedItemsList().length > 0 && (
-          <div className="card bg-linear-to-br from-green-50 to-emerald-50 backdrop-blur-sm shadow-xl border-2 border-green-300">
-            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <div className="bg-linear-to-r from-green-600 to-emerald-600 text-white p-2 sm:p-3 rounded-xl">
-                <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Resumen del Pedido</h2>
-                <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Revisa tu selección antes de confirmar</p>
-              </div>
-            </div>
+              {dinnerEnabled && dinnerMenuEnabled && selectedTurns.dinner && (
+                <div className="space-y-4">
+                  <OrderDinnerMenuSection
+                    items={dinnerMenuItemsUI}
+                    total={calculateTotalDinner()}
+                    onToggleItem={handleItemSelectDinner}
+                  />
 
-            <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-              {getSelectedItemsList().map((item) => (
-                <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-2 border-b border-gray-100">
-                  <div className="flex items-center justify-between sm:justify-start">
-                    {/* TEXTO MÁS GRANDE EN EL RESUMEN */}
-                    <span className="font-medium text-gray-900 text-lg sm:text-xl">{item.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleItemSelect(item.id, false)}
-                      className="ml-2 p-1 rounded-full hover:bg-red-100 text-red-600"
-                    >
-                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </button>
-                  </div>
-                  <span className="text-gray-600 text-base sm:text-lg">Seleccionado</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-gray-200 pt-3 sm:pt-4">
-              <div className="flex justify-between items-center text-lg sm:text-xl font-semibold">
-                <span>Total de items:</span>
-                <span>{calculateTotal()}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Opciones Personalizadas - Solo mostrar opciones activas */}
-        {visibleLunchOptions.length > 0 && (
-          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <div className="bg-linear-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
-                <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Opciones Adicionales</h2>
-                <p style={{ fontWeight: '900' }} className="text-xs sm:text-sm text-gray-900 mt-1">Personaliza tu pedido</p>
-                <p className="text-[11px] sm:text-xs text-gray-600 font-semibold">
-                  Solo mostramos las opciones activas para {companyConfig.name}.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {visibleLunchOptions.map((option) => (
-                <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50">
-                  <label
-                    className="block text-sm text-gray-900 mb-3"
-                    style={{ fontWeight: '900' }}
-                    htmlFor={option.type === 'text' ? `custom-option-${option.id}` : undefined}
-                  >
-                    {option.title}
-                    {option.required && <span className="text-red-600 ml-1">*</span>}
-                  </label>
-                  {isGenneia && option.title?.toLowerCase().includes('postre') && (
-                    <div className="mb-3 text-sm font-semibold text-amber-800 bg-amber-50 border border-amber-300 rounded-lg p-2">
-                      Solo elegí <b>Postre del día</b> lunes y miércoles (entrega martes y jueves). El resto de los días marcá <b>Fruta</b>. Los martes, jueves y viernes el postre queda deshabilitado.
-                    </div>
-                  )}
-
-                  {option.type === 'multiple_choice' && option.options && (
-                    <div className="space-y-2">
-                      {option.options.map((opt, index) => {
-                        const isSelected = customResponses[option.id] === opt
-                        const isPostreOption =
-                          isGenneia &&
-                          option.title?.toLowerCase().includes('postre') &&
-                          opt?.toLowerCase().includes('postre')
-                        const disablePostre = isPostreOption && !isGenneiaPostreDay
-                        return (
-                          <button
-                            key={index}
-                            type="button"
-                            disabled={disablePostre}
-                            aria-pressed={isSelected}
-                            onClick={() => {
-                              if (disablePostre) return
-                              handleCustomResponse(option.id, opt, 'multiple_choice')
-                            }}
-                            className={`w-full text-left p-3 border-2 rounded-lg transition-all
-                              focus:outline-none focus:ring-2 focus:ring-blue-400
-                              ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}
-                              ${disablePostre ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <span
-                                className={`text-sm ${disablePostre ? 'text-gray-400' : 'text-gray-900'}`}
-                                style={{ fontWeight: '900' }}
-                              >
-                                {opt}
-                                {disablePostre && ' (no disponible hoy)'}
-                              </span>
-                              {isSelected && (
-                                <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
-                              )}
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                  {option.type === 'checkbox' && option.options && (
-                    <div className="space-y-2">
-                      {option.options.map((opt, index) => {
-                        const isChecked = (customResponses[option.id] || []).includes(opt)
-                        return (
-                          <button
-                            key={index}
-                            type="button"
-                            aria-pressed={isChecked}
-                            onClick={() => handleCustomResponse(option.id, opt, 'checkbox')}
-                            className={`w-full text-left p-3 border-2 rounded-lg transition-all
-                              focus:outline-none focus:ring-2 focus:ring-blue-400
-                              ${isChecked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
-                              {isChecked && (
-                                <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
-                              )}
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                  {option.type === 'text' && (
-                    <textarea
-                      id={`custom-option-${option.id}`}
-                      name={`custom-option-${option.id}`}
-                      value={customResponses[option.id] || ''}
-                      onChange={(e) => handleCustomResponse(option.id, e.target.value, 'text')}
-                      rows={3}
-                      className="input-field"
-                      placeholder="Escribe tu respuesta aquí..."
-                      style={{ fontWeight: '600' }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {dinnerEnabled && dinnerMenuEnabled && (
-          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-200">
-            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <div className="bg-amber-500 text-white p-2 sm:p-3 rounded-xl">
-                <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Turnos del pedido</h2>
-                <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Selecciona qué turnos querés pedir hoy.</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <button
-                type="button"
-                aria-pressed={selectedTurns.lunch}
-                onClick={() => setSelectedTurns(prev => ({ ...prev, lunch: !prev.lunch }))}
-                className={`w-full text-left p-4 border-2 rounded-xl transition-all
-                  focus:outline-none focus:ring-2 focus:ring-blue-400
-                  ${selectedTurns.lunch ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm sm:text-base text-gray-900 font-semibold">Almuerzo</span>
-                  {selectedTurns.lunch && (
-                    <CheckCircle className="h-7 w-7 text-blue-600 shrink-0" />
-                  )}
-                </div>
-              </button>
-              <button
-                type="button"
-                aria-pressed={selectedTurns.dinner}
-                onClick={() => setSelectedTurns(prev => ({ ...prev, dinner: !prev.dinner }))}
-                className={`w-full text-left p-4 border-2 rounded-xl transition-all
-                  focus:outline-none focus:ring-2 focus:ring-blue-400
-                  ${selectedTurns.dinner ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm sm:text-base text-gray-900 font-semibold">Cena (solo whitelist)</span>
-                  {selectedTurns.dinner && (
-                    <CheckCircle className="h-7 w-7 text-blue-600 shrink-0" />
-                  )}
-                </div>
-              </button>
-              <p className="text-xs text-gray-600">Puedes pedir uno o ambos. Si marcas ambos, se abrirá el formulario de cena completo debajo.</p>
-            </div>
-          </div>
-        )}
-
-        {dinnerEnabled && dinnerMenuEnabled && selectedTurns.dinner && (
-          <div className="space-y-4">
-            <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-300">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="bg-amber-500 text-white p-2 sm:p-3 rounded-xl">
-                  <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
-                </div>
-                <div>
-                  <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Menú de cena</h2>
-                  <p className="text-sm sm:text-base text-gray-700 font-semibold mt-1">Selecciona tu plato para la cena (whitelist).</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {menuItems.map((item) => {
-                  const isSelected = selectedItemsDinner[item.id]
-                  const isDisabled = item.name?.toLowerCase().includes('menú principal') || item.name?.toLowerCase().includes('plato principal')
-                    ? Object.keys(selectedItemsDinner).some(id => selectedItemsDinner[id] && (menuItems.find(mi => mi.id === id)?.name || '').toLowerCase().includes('menú principal')) && !isSelected
-                    : false
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      disabled={isDisabled}
-                      aria-pressed={!!isSelected}
-                      onClick={() => {
-                        if (isDisabled) return
-                        handleItemSelectDinner(item.id, !isSelected)
-                      }}
-                      className={`w-full text-left p-4 border-2 rounded-xl transition-all
-                        focus:outline-none focus:ring-2 focus:ring-blue-400
-                        ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}
-                        ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <p className="text-base sm:text-lg font-semibold text-gray-900">{item.name}</p>
-                          {item.description && <p className="text-sm sm:text-base text-gray-700">{item.description}</p>}
+                  {visibleDinnerOptions.length > 0 && (
+                    <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-200">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                        <div className="bg-amber-500 text-white p-2 sm:p-3 rounded-xl">
+                          <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
-                        {isSelected && (
-                          <CheckCircle className="h-7 w-7 text-blue-600 shrink-0" />
-                        )}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Opciones adicionales (cena)</h2>
+                          <p className="text-sm sm:text-base text-gray-700 font-semibold">Mismo catálogo, responde para la cena.</p>
+                        </div>
                       </div>
-                    </button>
-                  )
-                })}
-              </div>
-              <div className="border-t border-gray-200 pt-3 sm:pt-4 mt-3">
-                <div className="flex justify-between items-center text-lg sm:text-xl font-semibold">
-                  <span>Total de items (cena):</span>
-                  <span>{calculateTotalDinner()}</span>
-                </div>
-              </div>
-            </div>
 
-            {visibleDinnerOptions.length > 0 && (
-              <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-200">
-                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                  <div className="bg-amber-500 text-white p-2 sm:p-3 rounded-xl">
-                    <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Opciones adicionales (cena)</h2>
-                    <p className="text-sm sm:text-base text-gray-700 font-semibold">Mismo catálogo, responde para la cena.</p>
-                  </div>
-                </div>
+                      <div className="space-y-6">
+                        {visibleDinnerOptions.map((option) => (
+                          <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50">
+                            <label
+                              className="block text-base sm:text-lg text-gray-900 mb-3 font-bold"
+                              htmlFor={option.type === 'text' ? `dinner-custom-option-${option.id}` : undefined}
+                            >
+                              {option.title}
+                              {option.required && <span className="text-red-600 ml-1">*</span>}
+                            </label>
 
-                <div className="space-y-6">
-                  {visibleDinnerOptions.map((option) => (
-                    <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50">
-                      <label
-                        className="block text-base sm:text-lg text-gray-900 mb-3 font-bold"
-                        htmlFor={option.type === 'text' ? `dinner-custom-option-${option.id}` : undefined}
-                      >
-                        {option.title}
-                        {option.required && <span className="text-red-600 ml-1">*</span>}
-                      </label>
-
-      {option.type === 'multiple_choice' && option.options && (
-        <div className="space-y-2">
-          {option.options.map((opt, index) => {
-            const isSelected = customResponsesDinner[option.id] === opt
-            return (
-              <button
-                key={index}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => {
-                  const value = opt
-                  if (isDinnerOverrideValue(value)) {
-                    clearDinnerMenuSelections()
-                  }
-                  setCustomResponsesDinner(prev => {
-                    if (isDinnerOverrideValue(value)) {
-                      const next = {}
-                      Object.entries(prev || {}).forEach(([k, v]) => {
-                        if (!isDinnerOverrideValue(v)) next[k] = v
-                      })
-                      next[option.id] = value
-                      return next
-                    }
-                    return { ...prev, [option.id]: prev[option.id] === value ? null : value }
-                  })
-                }}
-                className={`w-full text-left p-3 border-2 rounded-lg transition-all
-                  focus:outline-none focus:ring-2 focus:ring-blue-400
-                  ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
-                  {isSelected && (
-                    <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
-                  )}
-                </div>
-              </button>
-            )
-          })}
-                        </div>
-                      )}
+                            {option.type === 'multiple_choice' && option.options && (
+                              <div className="space-y-2">
+                                {option.options.map((opt, index) => {
+                                  const isSelected = customResponsesDinner[option.id] === opt
+                                  return (
+                                    <button
+                                      key={index}
+                                      type="button"
+                                      aria-pressed={isSelected}
+                                      onClick={() => {
+                                        const value = opt
+                                        if (isDinnerOverrideValue(value)) {
+                                          clearDinnerMenuSelections()
+                                        }
+                                        setCustomResponsesDinner(prev => {
+                                          if (isDinnerOverrideValue(value)) {
+                                            const next = {}
+                                            Object.entries(prev || {}).forEach(([k, v]) => {
+                                              if (!isDinnerOverrideValue(v)) next[k] = v
+                                            })
+                                            next[option.id] = value
+                                            return next
+                                          }
+                                          return { ...prev, [option.id]: prev[option.id] === value ? null : value }
+                                        })
+                                      }}
+                                      className={`w-full text-left p-3 border-2 rounded-lg transition-all
+                                        focus:outline-none focus:ring-2 focus:ring-blue-400
+                                        ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+                                    >
+                                      <div className="flex items-center justify-between gap-3">
+                                        <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
+                                        {isSelected && (
+                                          <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                                        )}
+                                      </div>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
 
                       {option.type === 'checkbox' && option.options && (
                         <div className="space-y-2">
@@ -1859,41 +1264,9 @@ const OrderForm = ({ user, loading }) => {
         )}
 
         {/* Información Adicional */}
-        <div className="card">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Información Adicional</h2>
+        <OrderCommentsSection comments={formData.comments} onCommentsChange={handleFormChange} />
 
-          <div>
-            <label htmlFor="additional-comments" className="block text-sm font-bold text-gray-700 mb-2">
-              Comentarios adicionales
-            </label>
-            <textarea
-              id="additional-comments"
-              name="comments"
-              value={formData.comments}
-              onChange={handleFormChange}
-              rows={4}
-              className="input-field"
-              placeholder="Instrucciones especiales, alergias, etc."
-            />
-          </div>
-          
-          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-800">
-              <strong>📅 Fecha de entrega:</strong> Todos los pedidos se entregan al día siguiente
-            </p>
-          </div>
-        </div>
-
-        {error && (
-          <div
-            className="bg-red-50 border-2 border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm sm:text-base flex items-start gap-2 shadow-md w-full"
-            role="alert"
-            aria-live="assertive"
-          >
-            <span className="mt-0.5 text-red-600">⚠️</span>
-            <span>{error}</span>
-          </div>
-        )}
+        <OrderErrorBanner error={error} />
 
         {/* Botón de confirmación - SIEMPRE visible al fondo, nunca fijo en mobile */}
         <div className="w-full bg-linear-to-t from-white via-white to-white/95 sm:bg-transparent p-4 sm:p-0 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] sm:shadow-none border-t-2 sm:border-t-0 border-gray-200 flex justify-center sm:mt-6 z-40"
@@ -1938,139 +1311,17 @@ const OrderForm = ({ user, loading }) => {
       </div>
 
       {confirmOpen && confirmData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border-2 border-blue-200 overflow-hidden relative">
-            <button
-              type="button"
-              onClick={() => {
-                setConfirmOpen(false)
-                setConfirmData(null)
-              }}
-              className="absolute top-3 right-3 p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 shadow-sm"
-              aria-label="Cerrar confirmación"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <div className="p-5 sm:p-6 border-b border-blue-100 bg-blue-50/70">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Confirmá tu pedido</h2>
-              <p className="text-sm sm:text-base text-gray-700">Revisá el detalle completo antes de enviar.</p>
-            </div>
-
-            <div className="p-5 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="border-2 border-gray-200 rounded-xl p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Datos del pedido</h3>
-                <div className="space-y-1 text-sm sm:text-base text-gray-800">
-                  <p><span className="font-semibold">Empresa:</span> {confirmData.company}</p>
-                  <p><span className="font-semibold">Nombre:</span> {confirmData.name}</p>
-                  <p><span className="font-semibold">Email:</span> {confirmData.email}</p>
-                  <p><span className="font-semibold">Teléfono:</span> {confirmData.phone || '-'}</p>
-                  <p><span className="font-semibold">Entrega:</span> {confirmData.deliveryDate}</p>
-                  <p><span className="font-semibold">Turnos:</span> {confirmData.turnos.map(t => (t === 'lunch' ? 'Almuerzo' : 'Cena')).join(' + ')}</p>
-                </div>
-              </div>
-
-              {confirmData.lunchSelected && (
-                <div className="border-2 border-gray-200 rounded-xl p-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Almuerzo</h3>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Menús</p>
-                      <div className="space-y-1">
-                        {confirmData.lunchItems.map(item => (
-                          <div key={item.id} className="text-sm sm:text-base">
-                            <p className="font-semibold text-gray-900">{item.name}</p>
-                            {item.description && <p className="text-gray-600">{item.description}</p>}
-                          </div>
-                        ))}
-                      </div>
-                      <p className="mt-2 text-sm text-gray-700">
-                        <span className="font-semibold">Total items:</span> {confirmData.totals.lunch}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Opciones</p>
-                      {confirmData.lunchOptions.length > 0 ? (
-                        <div className="space-y-1 text-sm sm:text-base">
-                          {confirmData.lunchOptions.map(opt => (
-                            <p key={opt.id}>
-                              <span className="font-semibold">{opt.title}:</span> {formatResponseValue(opt.response)}
-                            </p>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500">Sin opciones adicionales.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {confirmData.dinnerSelected && (
-                <div className="border-2 border-gray-200 rounded-xl p-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Cena</h3>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Menús</p>
-                      <div className="space-y-1">
-                        {confirmData.dinnerItems.map(item => (
-                          <div key={item.id} className="text-sm sm:text-base">
-                            <p className="font-semibold text-gray-900">{item.name}</p>
-                            {item.description && <p className="text-gray-600">{item.description}</p>}
-                          </div>
-                        ))}
-                      </div>
-                      <p className="mt-2 text-sm text-gray-700">
-                        <span className="font-semibold">Total items:</span> {confirmData.totals.dinner}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Opciones</p>
-                      {confirmData.dinnerOptions.length > 0 ? (
-                        <div className="space-y-1 text-sm sm:text-base">
-                          {confirmData.dinnerOptions.map(opt => (
-                            <p key={opt.id}>
-                              <span className="font-semibold">{opt.title}:</span> {formatResponseValue(opt.response)}
-                            </p>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500">Sin opciones adicionales.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="border-2 border-gray-200 rounded-xl p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Comentarios</h3>
-                <p className="text-sm sm:text-base text-gray-700">
-                  {confirmData.comments ? confirmData.comments : 'Sin comentarios adicionales.'}
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col sm:flex-row gap-3 justify-end bg-white">
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmOpen(false)
-                  setConfirmData(null)
-                }}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-all"
-              >
-                Volver y editar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSubmit}
-                disabled={submitting}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-lg transition-all disabled:opacity-60"
-              >
-                {submitting ? 'Enviando...' : 'Confirmar y enviar'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <OrderConfirmModal
+          open={confirmOpen}
+          confirmData={confirmData}
+          submitting={submitting}
+          onClose={() => {
+            setConfirmOpen(false)
+            setConfirmData(null)
+          }}
+          onConfirm={handleConfirmSubmit}
+          formatResponseValue={formatResponseValue}
+        />
       )}
     </RequireUser>
   )
