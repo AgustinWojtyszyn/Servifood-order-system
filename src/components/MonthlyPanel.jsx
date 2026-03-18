@@ -1,344 +1,36 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Package, TrendingUp, User, Printer, Download } from 'lucide-react'
 import ExcelJS from 'exceljs'
 import { supabase, db } from '../supabaseClient'
 import RequireUser from './RequireUser'
-import { es } from 'date-fns/locale'
-import clipboardImg from '../assets/clipboard.png'
-import choiceImg from '../assets/choice.png'
+import MonthlyExportActions from './monthly/MonthlyExportActions'
+import MonthlyFilters from './monthly/MonthlyFilters'
+import MonthlyHeader from './monthly/MonthlyHeader'
+import MonthlySummary from './monthly/MonthlySummary'
 import excelLogo from '../assets/logoexcel.png'
-
-// Configurar calendario en español
-registerLocale('es', es)
-setDefaultLocale('es')
-
-// Componente de calendario simple (puedes reemplazarlo por uno ya existente si hay en el proyecto)
-function DateRangePicker({ value, onChange }) {
-  // value: { start: string, end: string }
-  // Usar fechas locales puras para evitar desfase
-  const parseDate = (str) => {
-    if (!str) return null
-    // str: yyyy-MM-dd
-    const [year, month, day] = str.split('-').map(Number)
-    return new Date(year, month - 1, day)
-  }
-  const startDate = parseDate(value.start)
-  const endDate = parseDate(value.end)
-  return (
-    <div className="flex items-end gap-3 flex-nowrap">
-      <div className="flex flex-col min-w-[170px]">
-        <label className="text-xs font-semibold text-slate-600 mb-1">Desde</label>
-        <DatePicker
-          selected={startDate}
-          locale="es"
-          onChange={date => {
-            const iso = date ? date.toISOString().slice(0, 10) : ''
-            // Si la fecha de fin es menor, ajusta
-            if (endDate && date && date > endDate) {
-              onChange({ start: iso, end: iso })
-            } else {
-              onChange({ ...value, start: iso })
-            }
-          }}
-          dateFormat="dd/MM/yyyy"
-          className="w-36 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm bg-white"
-          placeholderText="Desde"
-          // Permitir cualquier fecha (pasada, presente o futura)
-          isClearable
-        />
-      </div>
-      <div className="flex flex-col min-w-[170px]">
-        <label className="text-xs font-semibold text-slate-600 mb-1">Hasta</label>
-        <DatePicker
-          selected={endDate}
-          locale="es"
-          onChange={date => {
-            const iso = date ? date.toISOString().slice(0, 10) : ''
-            // Si la fecha de inicio es mayor, ajusta
-            if (startDate && date && date < startDate) {
-              onChange({ start: iso, end: iso })
-            } else {
-              onChange({ ...value, end: iso })
-            }
-          }}
-          dateFormat="dd/MM/yyyy"
-          className="w-36 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm bg-white"
-          placeholderText="Hasta"
-          minDate={null}
-          maxDate={null}
-          isClearable
-        />
-      </div>
-      {startDate && endDate && startDate > endDate && (
-        <div className="text-red-600 text-xs mt-1">La fecha de inicio no puede ser mayor que la de fin.</div>
-      )}
-    </div>
-  )
-}
-
-const toDisplayString = (value) => {
-  if (value === null || value === undefined) return ''
-  if (typeof value === 'string') return value.trim()
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  if (typeof value === 'object') {
-    try {
-      return JSON.stringify(value)
-    } catch {
-      return String(value)
-    }
-  }
-  return String(value)
-}
-
-const normalizeLabel = (value = '') => {
-  const base = toDisplayString(value)
-  if (!base) return ''
-  return base
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ')
-}
-
-const classifySideItem = (label = '') => {
-  const normalized = normalizeLabel(label)
-  if (!normalized) return 'guarnicion'
-  const tokens = normalized.split(' ').filter(Boolean)
-  const matches = (keyword) => {
-    if (keyword.includes(' ')) return normalized.includes(keyword)
-    return tokens.includes(keyword)
-  }
-  const beverageKeywords = [
-    'agua',
-    'coca',
-    'coca cola',
-    'cola',
-    'sprite',
-    'fanta',
-    'soda',
-    'jugo',
-    'gaseosa',
-    'pepsi',
-    'seven',
-    '7up',
-    'seven up',
-    'limonada',
-    'te',
-    'mate',
-    'cafe'
-  ]
-  const dessertKeywords = [
-    'flan',
-    'budin',
-    'gelatina',
-    'mousse',
-    'helado',
-    'postre',
-    'torta',
-    'brownie',
-    'alfajor',
-    'fruta',
-    'frutas'
-  ]
-  if (beverageKeywords.some(matches)) return 'bebida'
-  if (dessertKeywords.some(matches)) return 'postre'
-  return 'guarnicion'
-}
-
-const incrementCount = (map, key, delta = 1) => {
-  map[key] = (map[key] || 0) + delta
-}
-
-const createSideBuckets = () => ({
-  tiposGuarniciones: {},
-  tiposBebidas: {},
-  tiposPostres: {},
-  totalGuarniciones: 0,
-  totalBebidas: 0,
-  totalPostres: 0
-})
-
-const addSideItem = (label, buckets) => {
-  if (!label) return
-  const kind = classifySideItem(label)
-  if (kind === 'bebida') {
-    buckets.totalBebidas += 1
-    incrementCount(buckets.tiposBebidas, label)
-    return
-  }
-  if (kind === 'postre') {
-    buckets.totalPostres += 1
-    incrementCount(buckets.tiposPostres, label)
-    return
-  }
-  buckets.totalGuarniciones += 1
-  incrementCount(buckets.tiposGuarniciones, label)
-}
-
-const isOptionName = (name = '') => /^OPC(ION|IÓN)\s*\d+/i.test(name.trim())
-
-const formatDateDMY = (value = '') => {
-  if (!value || typeof value !== 'string') return value
-  const [y, m, d] = value.split('-')
-  if (!y || !m || !d) return value
-  return `${d}/${m}/${y}`
-}
-
-const buildRangeDates = (start, end) => {
-  if (!start || !end) return []
-  const parse = (str) => {
-    const [y, m, d] = str.split('-').map(Number)
-    if (!y || !m || !d) return null
-    return new Date(y, m - 1, d)
-  }
-  const startDate = parse(start)
-  const endDate = parse(end)
-  if (!startDate || !endDate || startDate > endDate) return []
-  const dates = []
-  for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
-    const yyyy = dt.getFullYear()
-    const mm = String(dt.getMonth() + 1).padStart(2, '0')
-    const dd = String(dt.getDate()).padStart(2, '0')
-    dates.push(`${yyyy}-${mm}-${dd}`)
-  }
-  return dates
-}
-
-const indexOrdersByDay = (orders = [], timeZone = 'America/Argentina/San_Juan') => {
-  const byDay = {}
-  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
-  const bucketForOrder = (o) => {
-    if (o?.delivery_date) return o.delivery_date.slice(0, 10)
-    try {
-      return fmt.format(new Date(o.created_at))
-    } catch {
-      return null
-    }
-  }
-  orders.forEach(o => {
-    const day = bucketForOrder(o)
-    if (!day) return
-    if (!byDay[day]) byDay[day] = []
-    byDay[day].push(o)
-  })
-  return byDay
-}
-
-const buildDailyBreakdownFromOrdersByDay = (dates = [], byDay = {}) => {
-  const daily_breakdown = []
-  const range_totals = {
-    count: 0,
-    menus_principales: 0,
-    total_opciones: 0,
-    total_guarniciones: 0,
-    total_bebidas: 0,
-    total_postres: 0
-  }
-
-  dates.forEach(date => {
-    const dayOrders = byDay?.[date] || []
-    const sideBuckets = createSideBuckets()
-    const row = {
-      date,
-      count: 0,
-      menus_principales: 0,
-      opciones: { 'OPCIÓN 1': 0, 'OPCIÓN 2': 0, 'OPCIÓN 3': 0, 'OPCIÓN 4': 0, 'OPCIÓN 5': 0, 'OPCIÓN 6': 0 },
-      total_opciones: 0,
-      tipos_guarniciones: sideBuckets.tiposGuarniciones,
-      total_guarniciones: 0,
-      tipos_bebidas: sideBuckets.tiposBebidas,
-      total_bebidas: 0,
-      tipos_postres: sideBuckets.tiposPostres,
-      total_postres: 0
-    }
-
-    dayOrders.forEach(o => {
-      row.count += 1
-      let items = []
-      if (Array.isArray(o.items)) items = o.items
-      else if (typeof o.items === 'string') {
-        try {
-          items = JSON.parse(o.items)
-        } catch {
-          items = []
-        }
-      }
-      items.forEach(it => {
-        const qty = it?.quantity || 1
-        const name = (it?.name || '').trim()
-        if (!name) return
-        if (isOptionName(name)) {
-          const m = name.match(/\d+/)
-          const key = m ? `OPCIÓN ${m[0]}` : name.toUpperCase()
-          if (row.opciones[key] === undefined) row.opciones[key] = 0
-          row.opciones[key] += qty
-          row.total_opciones += qty
-        } else {
-          row.menus_principales += qty
-        }
-      })
-
-      let custom = []
-      if (Array.isArray(o.custom_responses)) custom = o.custom_responses
-      else if (typeof o.custom_responses === 'string') {
-        try {
-          custom = JSON.parse(o.custom_responses)
-        } catch {
-          custom = []
-        }
-      }
-      custom.forEach(cr => {
-        const resp = toDisplayString(cr?.response)
-        if (resp) addSideItem(resp, sideBuckets)
-        if (Array.isArray(cr?.options)) {
-          cr.options.forEach(opt => {
-            const value = toDisplayString(opt)
-            if (!value) return
-            addSideItem(value, sideBuckets)
-          })
-        }
-      })
-    })
-
-    row.total_guarniciones = sideBuckets.totalGuarniciones
-    row.total_bebidas = sideBuckets.totalBebidas
-    row.total_postres = sideBuckets.totalPostres
-
-    range_totals.count += row.count
-    range_totals.menus_principales += row.menus_principales
-    range_totals.total_opciones += row.total_opciones
-    range_totals.total_guarniciones += row.total_guarniciones
-    range_totals.total_bebidas += row.total_bebidas
-    range_totals.total_postres += row.total_postres
-
-    daily_breakdown.push(row)
-  })
-
-  return { daily_breakdown, range_totals }
-}
-
+import { COUNTABLE_STATUSES } from '../utils/monthly/monthlyOrderConstants'
+import { formatDateDMY, toDisplayString } from '../utils/monthly/monthlyOrderFormatters'
+import {
+  addSideItem,
+  buildDailyBreakdownFromOrdersByDay,
+  buildDailyRows,
+  buildRangeDates,
+  buildSummaryRows,
+  createSideBuckets,
+  indexOrdersByDay
+} from '../utils/monthly/monthlyOrderCalculations'
 
 const MonthlyPanel = ({ user, loading }) => {
-  // Estados que cuentan para métricas (incluir preparaciones listas)
-  const COUNTABLE_STATUSES = ['pending', 'preparing', 'ready', 'archived', 'cancelled']
   const [draftRange, setDraftRange] = useState({ start: '', end: '' })
-  const [dateRange, setDateRange] = useState({ start: '', end: '' }) // rango aplicado
+  const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [metricsLoading, setMetricsLoading] = useState(false)
   const [metrics, setMetrics] = useState(null)
   const [, setError] = useState(null)
-  const [empresaFilter, setEmpresaFilter] = useState('ALL')
-  const [empresaSearch, setEmpresaSearch] = useState('')
-  const [showEmpresaSummary, setShowEmpresaSummary] = useState(false)
+  const empresaFilter = 'ALL'
   const [dailyData, setDailyData] = useState(null)
   const [ordersByDay, setOrdersByDay] = useState({})
   const [rangeOrders, setRangeOrders] = useState([])
   const [selectedDate, setSelectedDate] = useState(null)
-  const [showDailyTable, setShowDailyTable] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
   const [, setDebugLogs] = useState([])
   const [debugEnabled, setDebugEnabled] = useState(true)
@@ -346,7 +38,6 @@ const MonthlyPanel = ({ user, loading }) => {
   const manualFetchRef = useRef(false)
   const navigate = useNavigate()
 
-  // Logger que no depende de console.* (minificador los elimina). Almacena en estado y window.
   const pushLog = (label, data = {}) => {
     const entry = { ts: new Date().toISOString(), label, data }
     setDebugLogs(prev => [entry, ...prev].slice(0, 80))
@@ -395,7 +86,6 @@ const MonthlyPanel = ({ user, loading }) => {
   }, [dailyData, ordersByDayForView, empresaFilter])
 
   useEffect(() => {
-    // Control de acceso: solo admin
     if (!user?.id) return
     if (user.role !== 'admin' && user.user_metadata?.role !== 'admin') {
       navigate('/dashboard')
@@ -413,7 +103,6 @@ const MonthlyPanel = ({ user, loading }) => {
     }
   }, [])
 
-  // Sync logs from window store into state so getDailyBreakdown logs are visible
   useEffect(() => {
     if (!debugEnabled) return
     const id = setInterval(() => {
@@ -422,7 +111,6 @@ const MonthlyPanel = ({ user, loading }) => {
       if (external.length === 0) return
       setDebugLogs(prev => {
         const merged = [...external, ...prev]
-        // dedupe by timestamp+label+json data
         const seen = new Set()
         const uniq = []
         for (const e of merged) {
@@ -438,12 +126,10 @@ const MonthlyPanel = ({ user, loading }) => {
   }, [debugEnabled])
 
   useEffect(() => {
-    // Solo buscar si el rango aplicado es válido
     if (manualFetchRef.current) return
     if (dateRange.start && dateRange.end && dateRange.start <= dateRange.end) {
       fetchMetrics(dateRange)
     }
-    // eslint-disable-next-line
   }, [dateRange])
 
   async function fetchMetrics(range) {
@@ -453,19 +139,15 @@ const MonthlyPanel = ({ user, loading }) => {
     const reqId = ++fetchId.current
     pushLog('fetchMetrics-init', { currentRange, reqId })
     setMetricsLoading(true)
-    // Mantener datos actuales para evitar parpadeos; solo limpiar selección puntual
     setSelectedDate(null)
     setError(null)
     try {
       pushLog('fetch-start', currentRange)
-      // Consulta principal: filtrar por delivery_date; si es null, por created_at
       const startUtc = `${currentRange.start}T00:00:00.000Z`
       const endUtc = `${currentRange.end}T23:59:59.999Z`
-      // Solo columnas existentes requeridas para métricas
       const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location'
       pushLog('query-params', { startUtc, endUtc, start: currentRange.start, end: currentRange.end })
 
-      // Dos consultas explícitas para evitar problemas de encoding con OR complejo
       const [deliveryOrders, createdOrders] = await Promise.all([
         fetchAllOrders(
           (from, to) => supabase
@@ -495,7 +177,6 @@ const MonthlyPanel = ({ user, loading }) => {
       if (Array.isArray(createdOrders)) orders = orders.concat(createdOrders)
       pushLog('orders-raw', { total: orders.length })
 
-      // Aplicar mismos criterios de estados que el desglose diario
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
       const statusCount = orders.reduce((acc, o) => {
         const s = o.status || 'unknown'
@@ -510,7 +191,6 @@ const MonthlyPanel = ({ user, loading }) => {
         sample: orders.slice(0, 3)
       })
 
-      // Agrupar por ubicación (location) usando todos los pedidos del rango
       const grouped = {}
       for (const order of orders) {
         const empresa = order.location || 'Sin ubicación'
@@ -518,7 +198,6 @@ const MonthlyPanel = ({ user, loading }) => {
         grouped[empresa].push(order)
       }
 
-      // Métricas por empresa
       const empresas = Object.keys(grouped).map(empresa => {
         const pedidos = grouped[empresa]
         let totalMenus = 0
@@ -528,7 +207,6 @@ const MonthlyPanel = ({ user, loading }) => {
         const sideBuckets = createSideBuckets()
 
         pedidos.forEach(p => {
-          // Procesar items (menús principales y opciones)
           let items = []
           if (Array.isArray(p.items)) {
             items = p.items
@@ -541,17 +219,14 @@ const MonthlyPanel = ({ user, loading }) => {
           }
           items.forEach(item => {
             totalMenus += item.quantity || 1
-            // Contar por nombre de menú
             const nombre = (item.name || '').trim()
             tiposMenus[nombre] = (tiposMenus[nombre] || 0) + (item.quantity || 1)
-            // Si el nombre es "OPCIÓN X", contarlo como opción
             if (/^OPC(ION|IÓN)\s*\d+/i.test(nombre)) {
               totalOpciones += item.quantity || 1
               tiposOpciones[nombre] = (tiposOpciones[nombre] || 0) + (item.quantity || 1)
             }
           })
 
-          // Procesar guarniciones desde custom_responses
           let customResponses = []
           if (Array.isArray(p.custom_responses)) {
             customResponses = p.custom_responses
@@ -563,10 +238,8 @@ const MonthlyPanel = ({ user, loading }) => {
             }
           }
           customResponses.forEach(resp => {
-            // Si hay respuesta de guarnición
             const baseResp = toDisplayString(resp.response)
             if (baseResp) addSideItem(baseResp, sideBuckets)
-            // Si hay opciones (array)
             if (Array.isArray(resp.options)) {
               resp.options.forEach(opt => {
                 const tipo = toDisplayString(opt)
@@ -594,7 +267,6 @@ const MonthlyPanel = ({ user, loading }) => {
         }
       })
 
-      // Para consistencia, usar el total del desglose diario
       const newMetrics = {
         totalPedidos: 0,
         empresas
@@ -608,7 +280,6 @@ const MonthlyPanel = ({ user, loading }) => {
       let breakdownCount = finalBreakdown?.range_totals?.count ?? 0
 
       try {
-        // Desglose diario del rango (fuente histórica real)
         const { data: breakdown, error: breakdownError } = await db.getDailyBreakdown({ start: currentRange.start, end: currentRange.end })
         if (breakdownError) throw breakdownError
         pushLog('breakdown', {
@@ -617,7 +288,6 @@ const MonthlyPanel = ({ user, loading }) => {
           sample: breakdown?.daily_breakdown?.slice?.(0, 3) || []
         })
         breakdownCount = breakdown?.range_totals?.count ?? 0
-        // Fallback: si el breakdown no coincide con las órdenes del rango, recalcular desde "orders"
         if (orders.length > 0 && breakdownCount !== orders.length) {
           finalBreakdown = buildDailyBreakdownFromOrdersByDay(rangeDates, byDay)
           pushLog('breakdown-fallback', {
@@ -632,17 +302,13 @@ const MonthlyPanel = ({ user, loading }) => {
       } catch (err) {
         pushLog('breakdown-error', { message: err?.message || 'unknown' })
       }
-      // Evitar condiciones de carrera: solo actualizar si es la petición vigente
       if (reqId === fetchId.current) {
         setDailyData(finalBreakdown)
-        setShowDailyTable(false) // requiere confirmación para desplegar
-        // Indexar órdenes por día para detalles sin refetch
         pushLog('orders-indexed', { days: Object.keys(byDay).length, sampleDay: Object.keys(byDay)[0] })
         setOrdersByDay(byDay)
         setRangeOrders(orders)
       }
 
-      // Actualizar totalPedidos desde breakdown para consistencia
       if (reqId === fetchId.current && finalBreakdown?.range_totals) {
         setMetrics(prev => prev ? { ...prev, totalPedidos: finalBreakdown.range_totals.count } : prev)
         pushLog('totals-updated', { totalPedidos: finalBreakdown.range_totals.count })
@@ -658,7 +324,6 @@ const MonthlyPanel = ({ user, loading }) => {
     }
   }
 
-  // Exportar a Excel
   const downloadWorkbook = async (workbook, fileName) => {
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -712,7 +377,6 @@ const MonthlyPanel = ({ user, loading }) => {
 
   const handleExportExcel = async () => {
     if (!metrics || !metrics.empresas) return
-    // Exportación robusta: separar menús principales y opciones, y mostrar cantidades claras
     const empresasForExport = empresaFilter === 'ALL'
       ? metrics.empresas
       : metrics.empresas.filter(e => e.empresa === empresaFilter)
@@ -729,7 +393,6 @@ const MonthlyPanel = ({ user, loading }) => {
     await downloadWorkbook(wb, fileName)
   }
 
-  // Exportar desglose diario del rango
   const handleExportDailyExcel = async () => {
     const dailyForExport = resolveDailyBreakdownForExport()
     if (!dailyForExport?.daily_breakdown) {
@@ -793,146 +456,6 @@ const MonthlyPanel = ({ user, loading }) => {
     await downloadWorkbook(wb, fileName)
   }
 
-  const buildSummaryRows = (metricsData, empresasOverride) => {
-    const rows = []
-    const empresas = empresasOverride || metricsData?.empresas || []
-    empresas.forEach(e => {
-      const tiposMenusPrincipales = Object.entries(e.tiposMenus)
-        .filter(([nombre]) => nombre && !/^OPC(ION|IÓN)\s*\d+/i.test(nombre) && nombre.trim() !== '')
-        .reduce((acc, [, v]) => acc + v, 0)
-
-      const opciones = {}
-      for (let i = 1; i <= 6; i++) {
-        const key = `OPCIÓN ${i}`
-        const cantidad = Object.entries(e.tiposMenus).reduce((acc, [nombre, v]) => {
-          if (new RegExp(`^OPC(ION|IÓN)\\s*${i}$`, 'i').test(nombre)) return acc + v
-          return acc
-        }, 0)
-        opciones[key] = cantidad
-      }
-
-      const tiposGuarniciones = Object.entries(e.tiposGuarniciones)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
-      const tiposBebidas = Object.entries(e.tiposBebidas || {})
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
-      const tiposPostres = Object.entries(e.tiposPostres || {})
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
-
-      rows.push({
-        Empresa: e.empresa,
-        'Pedidos': e.cantidadPedidos,
-        'Menús principales': tiposMenusPrincipales || 0,
-        'OPCIÓN 1': opciones['OPCIÓN 1'] || 0,
-        'OPCIÓN 2': opciones['OPCIÓN 2'] || 0,
-        'OPCIÓN 3': opciones['OPCIÓN 3'] || 0,
-        'OPCIÓN 4': opciones['OPCIÓN 4'] || 0,
-        'OPCIÓN 5': opciones['OPCIÓN 5'] || 0,
-        'OPCIÓN 6': opciones['OPCIÓN 6'] || 0,
-        'Guarniciones': tiposGuarniciones || '—',
-        'Bebidas': tiposBebidas || '—',
-        'Postres': tiposPostres || '—',
-        'Total menús principales': e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones),
-        'Total opciones': e.totalOpciones,
-        'Total menús (total)': e.totalMenusTotal ?? e.totalMenus,
-        'Total guarniciones': e.totalGuarniciones,
-        'Total bebidas': e.totalBebidas || 0,
-        'Total postres': e.totalPostres || 0
-      })
-    })
-    return rows
-  }
-
-  const buildDailyRows = (daily, byDay) => {
-    const rows = []
-    const rangeBuckets = createSideBuckets()
-
-    daily.daily_breakdown.forEach(d => {
-      const dayOrders = byDay?.[d.date] || []
-      const dayBuckets = createSideBuckets()
-
-      if (dayOrders.length) {
-        dayOrders.forEach(o => {
-          let custom = []
-          if (Array.isArray(o.custom_responses)) custom = o.custom_responses
-          else if (typeof o.custom_responses === 'string') {
-            try {
-              custom = JSON.parse(o.custom_responses)
-            } catch (err) {
-              void err
-            }
-          }
-          custom.forEach(cr => {
-            const resp = toDisplayString(cr?.response)
-            if (resp) addSideItem(resp, dayBuckets)
-            if (Array.isArray(cr?.options)) {
-              cr.options.forEach(opt => {
-                const value = toDisplayString(opt)
-                if (!value) return
-                addSideItem(value, dayBuckets)
-              })
-            }
-          })
-        })
-      }
-
-      rangeBuckets.totalGuarniciones += dayBuckets.totalGuarniciones
-      rangeBuckets.totalBebidas += dayBuckets.totalBebidas
-      rangeBuckets.totalPostres += dayBuckets.totalPostres
-
-      const guarnStr = Object.entries(dayBuckets.tiposGuarniciones)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
-      const bebidasStr = Object.entries(dayBuckets.tiposBebidas)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
-      const postresStr = Object.entries(dayBuckets.tiposPostres)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ')
-
-      rows.push({
-        Fecha: formatDateDMY(d.date),
-        Pedidos: d.count,
-        'Menús principales': d.menus_principales || 0,
-        'OPCIÓN 1': d.opciones?.['OPCIÓN 1'] || 0,
-        'OPCIÓN 2': d.opciones?.['OPCIÓN 2'] || 0,
-        'OPCIÓN 3': d.opciones?.['OPCIÓN 3'] || 0,
-        'OPCIÓN 4': d.opciones?.['OPCIÓN 4'] || 0,
-        'OPCIÓN 5': d.opciones?.['OPCIÓN 5'] || 0,
-        'OPCIÓN 6': d.opciones?.['OPCIÓN 6'] || 0,
-        'Total opciones': d.total_opciones || 0,
-        'Guarniciones (tipo: cantidad)': guarnStr || '—',
-        'Total guarniciones': dayBuckets.totalGuarniciones,
-        'Bebidas (tipo: cantidad)': bebidasStr || '—',
-        'Total bebidas': dayBuckets.totalBebidas,
-        'Postres (tipo: cantidad)': postresStr || '—',
-        'Total postres': dayBuckets.totalPostres
-      })
-    })
-
-    rows.push({
-      Fecha: 'Totales',
-      Pedidos: daily.range_totals.count,
-      'Menús principales': daily.range_totals.menus_principales,
-      'OPCIÓN 1': '',
-      'OPCIÓN 2': '',
-      'OPCIÓN 3': '',
-      'OPCIÓN 4': '',
-      'OPCIÓN 5': '',
-      'OPCIÓN 6': '',
-      'Total opciones': daily.range_totals.total_opciones,
-      'Guarniciones (tipo: cantidad)': '',
-      'Total guarniciones': rangeBuckets.totalGuarniciones,
-      'Bebidas (tipo: cantidad)': '',
-      'Total bebidas': rangeBuckets.totalBebidas,
-      'Postres (tipo: cantidad)': '',
-      'Total postres': rangeBuckets.totalPostres
-    })
-    return rows
-  }
-
   const handleClearRange = () => {
     setDraftRange({ start: '', end: '' })
     setDateRange({ start: '', end: '' })
@@ -941,24 +464,19 @@ const MonthlyPanel = ({ user, loading }) => {
     setOrdersByDay({})
     setRangeOrders([])
     setSelectedDate(null)
-    setShowDailyTable(false)
     setError(null)
   }
 
   const handleApplyRange = async () => {
     if (!isDraftValid) return
     const newRange = { ...draftRange }
-    // Marcar fetch manual para evitar doble disparo desde el effect
     manualFetchRef.current = true
-    // Feedback inmediato
     setMetricsLoading(true)
-    // Limpiar datos anteriores para evitar parpadeos de rangos previos
     setMetrics(null)
     setDailyData(null)
     setOrdersByDay({})
     setRangeOrders([])
     setSelectedDate(null)
-    setShowDailyTable(false)
     setError(null)
     setDateRange(newRange)
     pushLog('apply-range', { range: newRange })
@@ -973,12 +491,6 @@ const MonthlyPanel = ({ user, loading }) => {
   const empresasForView = empresaFilter === 'ALL'
     ? empresasAll
     : empresasAll.filter(e => e.empresa === empresaFilter)
-  const empresaSearchNormalized = empresaSearch.trim().toLowerCase()
-  const empresasForDropdown = [...empresasAll]
-    .filter(e => !empresaSearchNormalized
-      || (e.empresa || '').toLowerCase().includes(empresaSearchNormalized)
-      || e.empresa === empresaFilter)
-    .sort((a, b) => (a.empresa || '').localeCompare(b.empresa || ''))
   const totalsForView = empresasForView.reduce((acc, e) => {
     acc.pedidos += e.cantidadPedidos || 0
     acc.menusPrincipales += e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones)
@@ -1000,15 +512,15 @@ const MonthlyPanel = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-    <div className="monthly-page min-h-screen bg-[#f6f7f9] py-6">
-    <div
-      className="monthly-container w-full max-w-[1180px] mx-auto space-y-3 px-3 sm:px-4 md:px-6 pb-20 bg-white rounded-2xl shadow-sm border border-slate-200"
-      style={{
-        minHeight: '100vh',
-        WebkitOverflowScrolling: 'touch'
-      }}
-    >
-      <style>{`
+      <div className="monthly-page min-h-screen bg-[#f6f7f9] py-6">
+        <div
+          className="monthly-container w-full max-w-[1180px] mx-auto space-y-3 px-3 sm:px-4 md:px-6 pb-20 bg-white rounded-2xl shadow-sm border border-slate-200"
+          style={{
+            minHeight: '100vh',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
+          <style>{`
         @media print {
           @page { size: A4 portrait; margin: 10mm; }
           html, body { width: 100%; margin: 0; padding: 0; background: #fff !important; }
@@ -1039,581 +551,65 @@ const MonthlyPanel = ({ user, loading }) => {
           .print-only { display: none; }
         }
       `}</style>
-      {/* Título arriba de los tips */}
-      <div className="bg-linear-to-r from-blue-600 to-blue-800 rounded-2xl p-4 md:p-5 text-white shadow-xl mb-3">
-        <div className="flex flex-col gap-4">
-          <div className="text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-              <Calendar className="h-8 w-8 md:h-10 md:w-10" />
-              <h1 className="text-3xl md:text-4xl font-bold">Panel Mensual</h1>
-            </div>
-            <p className="text-blue-200 text-base md:text-lg">Resumen y métricas de pedidos mensuales</p>
-          </div>
-        </div>
-      </div>
-      {/* Modo de uso */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-2 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-slate-800">
-            <Calendar className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-bold">Modo de uso del Panel Mensual</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowInstructions(prev => !prev)}
-            className="px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 rounded-md bg-white hover:bg-blue-50 transition-colors"
-          >
-            {showInstructions ? 'Ocultar' : 'Ver instrucciones'}
-          </button>
-        </div>
-        {showInstructions && (
-          <div className="mt-2 rounded-lg bg-white p-3">
-            <ol className="list-decimal pl-5 text-slate-800 text-sm space-y-1.5">
-              <li>Selecciona el <b>rango de fechas</b> y presiona <b>“Aplicar rango”</b> para ver el resumen de pedidos por empresa.</li>
-              <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
-              <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
-              <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
-              <li>Haz clic en una <b>fila</b> para ver el detalle completo de ese día. Usa el botón “Ver detalle” para abrir/cerrar.</li>
-              <li>Explora los días desde el resumen, evitando scrolls internos.</li>
-            </ol>
-          </div>
-        )}
-      </div>
+          <MonthlyHeader
+            showInstructions={showInstructions}
+            onToggleInstructions={() => setShowInstructions(prev => !prev)}
+          />
 
-      {/* Selector de fechas */}
-      <div className="bg-white rounded-xl p-4 md:p-4 shadow-sm border border-slate-200 w-full mb-3">
-        <div className="flex items-end gap-3 overflow-x-auto">
-          <DateRangePicker value={draftRange} onChange={setDraftRange} />
-          <div className="flex items-center gap-2 ml-auto">
-            <button
-              type="button"
-              onClick={handleClearRange}
-              disabled={!dateRange.start && !dateRange.end && !draftRange.start && !draftRange.end}
-              className={`h-9 px-3 rounded-md font-semibold text-blue-700 border border-blue-200 shadow-sm transition-all duration-200 ${
-                dateRange.start || dateRange.end || draftRange.start || draftRange.end
-                  ? 'bg-white hover:bg-blue-50 hover:border-blue-400'
-                  : 'bg-gray-200 cursor-not-allowed text-gray-500 border-gray-200'
-              }`}
-            >
-              Limpiar rango
-            </button>
-            <button
-              onClick={handleApplyRange}
-              disabled={!isDraftValid}
-              className={`h-9 px-3 rounded-md font-semibold text-white shadow-sm transition-all duration-200 ${
-                isDraftValid
-                  ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-md'
-                  : 'bg-gray-400 cursor-not-allowed'
-              }`}
-            >
-              Aplicar rango
-            </button>
-          </div>
-        </div>
-      </div>
+          <MonthlyFilters
+            draftRange={draftRange}
+            onDraftRangeChange={setDraftRange}
+            dateRange={dateRange}
+            onClearRange={handleClearRange}
+            onApplyRange={handleApplyRange}
+            isDraftValid={isDraftValid}
+          />
 
-      {/* Exportar a Excel */}
-      {metrics && (
-        <div className="flex justify-end mb-2 flex-wrap gap-2">
-          <button
-            onClick={handleExportAllExcel}
-            disabled={!canExportDaily}
-            className={`flex items-center gap-2 text-white font-semibold h-9 px-4 rounded-lg shadow-sm transition-all duration-200 ${
-              canExportDaily
-                ? 'bg-slate-800 hover:bg-slate-900'
-                : 'bg-gray-400 cursor-not-allowed'
-            }`}
-          >
-            <img src={excelLogo} alt="" className="h-4 w-4" aria-hidden="true" />
-            Exportar panel (todo)
-          </button>
-          <button
-            onClick={handleExportExcel}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-9 px-4 rounded-lg shadow-md transition-all duration-200"
-          >
-            <Download className="h-4 w-4" />
-            Exportar Excel
-          </button>
-          {dailyDataForView?.daily_breakdown && (
-            <button
-              onClick={handleExportDailyExcel}
-              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white font-semibold h-9 px-4 rounded-lg shadow-sm transition-all duration-200"
-            >
-              <img src={excelLogo} alt="" className="h-4 w-4" aria-hidden="true" />
-              Exportar rango (diario)
-            </button>
-          )}
-          <button
-            onClick={handlePrintPdf}
-            className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white font-semibold h-9 px-4 rounded-lg shadow-sm transition-all duration-200"
-          >
-            <Printer className="h-4 w-4" />
-            Imprimir / PDF
-          </button>
-        </div>
-      )}
-      {/* Métricas y tabla */}
-      {metricsLoading && (
-        <div className="mt-4 mx-auto max-w-2xl">
-          <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
-            <div>
-              <p className="text-base sm:text-lg font-extrabold text-slate-800">Cargando métricas del rango...</p>
-              <p className="text-sm text-slate-600">Esto debería tardar solo un momento.</p>
-            </div>
-          </div>
-        </div>
-      )}
-      {!metrics && !metricsLoading && (
-        <div className="flex items-center justify-center text-center rounded-xl border border-slate-200 bg-white shadow-sm min-h-[260px]">
-          <div className="max-w-md px-4">
-            <p className="text-base font-semibold text-slate-800">Selecciona un rango de fechas</p>
-            <p className="text-sm text-slate-600 mt-1">
-              Aplica un rango para visualizar el resumen mensual y exportaciones.
-            </p>
-          </div>
-        </div>
-      )}
-      {/* Error suprimido visualmente para no bloquear la vista */}
-      {metrics && (
-        <div className="space-y-3">
-          {/* Desglose diario del rango */}
-          {dailyDataForView?.daily_breakdown && (
-            <div className="bg-white rounded-xl p-4 md:p-5 shadow-sm border border-slate-200 w-full print-no-break print-full-width">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                <div className="font-bold text-slate-800 text-lg">Desglose diario del rango</div>
-              </div>
-              <p className="text-sm text-slate-600 mb-3">
-                {dailyDataForView.daily_breakdown.length} días en el rango seleccionado.
-              </p>
-              <div className="space-y-2">
-                {dailyDataForView.daily_breakdown.map(d => {
-                  const dayOrders = ordersByDayForView[d.date] || []
-                  const empresasActivas = new Set(
-                    (dayOrders || []).map(o => o.location || 'Sin ubicación')
-                  ).size
-                  const isOpen = selectedDate === d.date
-                  const menusCount = d.menus_principales ?? 0
+          <MonthlyExportActions
+            metrics={metrics}
+            canExportDaily={canExportDaily}
+            dailyDataForView={dailyDataForView}
+            onExportAllExcel={handleExportAllExcel}
+            onExportExcel={handleExportExcel}
+            onExportDailyExcel={handleExportDailyExcel}
+            onPrintPdf={handlePrintPdf}
+            excelLogo={excelLogo}
+          />
 
-                  return (
-                    <div key={d.date} className="border border-slate-200 rounded-lg overflow-hidden">
-                      <div
-                        className={`flex items-center justify-between px-3 py-2 ${isOpen ? 'bg-slate-50' : 'bg-white'}`}
-                        onClick={() => setSelectedDate(isOpen ? null : d.date)}
-                      >
-                        <div className="grid w-full grid-cols-2 md:grid-cols-5 gap-2 text-sm items-center">
-                          <div className="font-semibold text-slate-800">{formatDateDMY(d.date)}</div>
-                          <div className="text-slate-600">Pedidos: <span className="font-semibold text-slate-800">{d.count}</span></div>
-                          <div className="text-slate-600">Empresas: <span className="font-semibold text-slate-800">{empresasActivas}</span></div>
-                          <div className="text-slate-600">Menús: <span className="font-semibold text-slate-800">{menusCount}</span></div>
-                          <div className="flex md:justify-end">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedDate(isOpen ? null : d.date)
-                              }}
-                              className="px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 rounded-md bg-white hover:bg-blue-50 transition-colors"
-                            >
-                              {isOpen ? 'Ocultar detalle' : 'Ver detalle'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      {isOpen && (
-                        <div className="bg-slate-50 border-t border-slate-200 p-3">
-                          <div>
-                            <DailyDetailPanel
-                              date={d.date}
-                              orders={ordersByDayForView[d.date] || []}
-                              dailyBreakdown={dailyDataForView.daily_breakdown.find(x => x.date === d.date)}
-                              onClose={() => setSelectedDate(null)}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+          {metricsLoading && (
+            <div className="mt-4 mx-auto max-w-2xl">
+              <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
+                <div>
+                  <p className="text-base sm:text-lg font-extrabold text-slate-800">Cargando métricas del rango...</p>
+                  <p className="text-sm text-slate-600">Esto debería tardar solo un momento.</p>
+                </div>
               </div>
             </div>
           )}
-
-          {/* Tarjetas de métricas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4 w-full print-no-break print-full-width">
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
-              <div className="text-center">
-                <img
-                  src={clipboardImg}
-                  alt="Total pedidos"
-                  className="h-8 w-8 mx-auto mb-2 object-contain"
-                />
-                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Pedidos</p>
-                <p className="text-2xl md:text-3xl font-bold text-blue-600">{totalsForView.pedidos}</p>
+          {!metrics && !metricsLoading && (
+            <div className="flex items-center justify-center text-center rounded-xl border border-slate-200 bg-white shadow-sm min-h-[260px]">
+              <div className="max-w-md px-4">
+                <p className="text-base font-semibold text-slate-800">Selecciona un rango de fechas</p>
+                <p className="text-sm text-slate-600 mt-1">
+                  Aplica un rango para visualizar el resumen mensual y exportaciones.
+                </p>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
-              <div className="text-center">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-6 w-6 md:h-8 md:w-8 text-green-600 mx-auto mb-2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  {/* plato con comida */}
-                  <circle cx="12" cy="12" r="8" />
-                  <path d="M5.5 12h13" />
-                  <path d="M8 9c1.5 1 3.5 1 5 0" />
-                  <path d="M9 14c.8-.6 2.2-.6 3 0" />
-                  <path d="M14.5 9.5c.7.4 1.2 1.1 1.2 1.9 0 .6-.2 1-.4 1.3" />
-                  {/* Tenedor a la izquierda */}
-                  <path d="M2.7 6v10" />
-                  <path d="M3.7 6v10" />
-                  <path d="M2 6.2h2.4" />
-                  <path d="M2 8h2.4" />
-                  {/* Cuchillo a la derecha */}
-                  <path d="M19.8 6v10" />
-                  <path d="M20.8 6v10" />
-                  <path d="M19.8 6c0-.6 1-.6 1 0" />
-                  <path d="M19.8 15.5c0 .8.8 1.5 1.5 1.5" />
-                </svg>
-                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Menús Principales</p>
-                <p className="text-2xl md:text-3xl font-bold text-green-600">{totalsForView.menusPrincipales}</p>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
-              <div className="text-center">
-                <img
-                  src={choiceImg}
-                  alt="Total opciones"
-                  className="h-8 w-8 mx-auto mb-2 object-contain"
-                />
-                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Opciones</p>
-                <p className="text-2xl md:text-3xl font-bold text-yellow-600">{totalsForView.opciones}</p>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
-              <div className="text-center">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-6 w-6 md:h-8 md:w-8 text-purple-600 mx-auto mb-2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M6 9l1.2 10.2c.1 1 1 1.8 2 1.8h5.6c1 0 1.9-.8 2-1.8L18 9" />
-                  <path d="M5 9h14" />
-                  <path d="M8 9L9 4.5" />
-                  <path d="M11 9l-.3-5" />
-                  <path d="M13 9l.3-5" />
-                  <path d="M16 9L15 4.5" />
-                  <path d="M9 14h6" />
-                </svg>
-                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Guarniciones</p>
-                <p className="text-2xl md:text-3xl font-bold text-purple-600">{totalsForView.guarniciones}</p>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
-              <div className="text-center">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-6 w-6 md:h-8 md:w-8 text-sky-600 mx-auto mb-2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M7 3h7a3 3 0 0 1 3 3v8a5 5 0 0 1-5 5H7z" />
-                  <path d="M7 3v16" />
-                  <path d="M7 10h10" />
-                </svg>
-                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Bebidas</p>
-                <p className="text-2xl md:text-3xl font-bold text-sky-600">{totalsForView.bebidas}</p>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
-              <div className="text-center">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-6 w-6 md:h-8 md:w-8 text-pink-600 mx-auto mb-2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M4 14h16" />
-                  <path d="M6 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
-                  <path d="M8 18h8" />
-                </svg>
-                <p className="text-xs md:text-sm text-slate-700 font-semibold">Total Postres</p>
-                <p className="text-2xl md:text-3xl font-bold text-pink-600">{totalsForView.postres}</p>
-              </div>
-            </div>
-          </div>
+          )}
+          {metrics && (
+            <MonthlySummary
+              totalsForView={totalsForView}
+              dailyDataForView={dailyDataForView}
+              ordersByDayForView={ordersByDayForView}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+            />
+          )}
         </div>
-      )}
-    </div>
-    </div>
+      </div>
     </RequireUser>
   )
 }
 
 export default MonthlyPanel
-
-// Panel de detalle diario
-const DailyDetailPanel = ({ date, orders = [], dailyBreakdown, onClose }) => {
-  if (!date) return null
-
-  const fmtTime = (ts) => {
-    try {
-      return new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-    } catch (err) {
-      void err
-      return '—'
-    }
-  }
-
-  const isOption = (name = '') => /^OPC(ION|IÓN)\s*\d+/i.test(name.trim())
-
-  let totals = { pedidos: orders.length, menus: 0, opciones: 0 }
-  const sideBuckets = createSideBuckets()
-  const byEmpresa = {}
-  const byMenu = {}
-  const byOpcion = {}
-
-  orders.forEach(order => {
-    const empresa = order.location || 'Sin ubicación'
-    if (!byEmpresa[empresa]) byEmpresa[empresa] = 0
-    byEmpresa[empresa] += 1
-
-    let items = []
-    if (Array.isArray(order.items)) items = order.items
-    else if (typeof order.items === 'string') {
-      try {
-        items = JSON.parse(order.items)
-      } catch (err) {
-        void err
-      }
-    }
-    items.forEach(it => {
-      const qty = it?.quantity || 1
-      const name = (it?.name || '').trim()
-      if (!name) return
-      if (isOption(name)) {
-        totals.opciones += qty
-        byOpcion[name] = (byOpcion[name] || 0) + qty
-      } else {
-        totals.menus += qty
-        byMenu[name] = (byMenu[name] || 0) + qty
-      }
-    })
-
-    let custom = []
-    if (Array.isArray(order.custom_responses)) custom = order.custom_responses
-    else if (typeof order.custom_responses === 'string') {
-      try {
-        custom = JSON.parse(order.custom_responses)
-      } catch (err) {
-        void err
-      }
-    }
-    custom.forEach(cr => {
-      const val = toDisplayString(cr?.response)
-      if (val) addSideItem(val, sideBuckets)
-      if (Array.isArray(cr?.options)) {
-        cr.options.forEach(opt => {
-          const o = toDisplayString(opt)
-          if (!o) return
-          addSideItem(o, sideBuckets)
-        })
-      }
-    })
-  })
-
-  const summary = {
-    date,
-    count: dailyBreakdown?.count ?? totals.pedidos,
-    menus_principales: dailyBreakdown?.menus_principales ?? totals.menus,
-    total_opciones: dailyBreakdown?.total_opciones ?? totals.opciones,
-    total_guarniciones: sideBuckets.totalGuarniciones,
-    total_bebidas: sideBuckets.totalBebidas,
-    total_postres: sideBuckets.totalPostres
-  }
-
-  return (
-    <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h4 className="text-lg font-bold text-slate-800">Detalle del {date}</h4>
-          <p className="text-sm text-slate-600">Pedidos: {summary.count ?? totals.pedidos}</p>
-        </div>
-        <div />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-        <Stat label="Total pedidos" value={summary.count ?? totals.pedidos} />
-        <Stat label="Total menús" value={summary.menus_principales ?? totals.menus} />
-        <Stat label="Total opciones" value={summary.total_opciones ?? totals.opciones} />
-        <Stat label="Total guarniciones" value={summary.total_guarniciones} />
-        <Stat label="Total bebidas" value={summary.total_bebidas} />
-        <Stat label="Total postres" value={summary.total_postres} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {[
-          { title: 'Empresas activas', data: byEmpresa, id: 'empresas' },
-          { title: 'Menús principales', data: byMenu, id: 'menus' },
-          { title: 'Opciones', data: byOpcion, id: 'opciones' },
-          { title: 'Guarniciones', data: sideBuckets.tiposGuarniciones, id: 'guarniciones' },
-          { title: 'Bebidas', data: sideBuckets.tiposBebidas, id: 'bebidas' },
-          { title: 'Postres', data: sideBuckets.tiposPostres, id: 'postres' }
-        ].map(section => (
-          <div key={section.id} className="rounded-lg border border-slate-200 bg-white p-2">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-slate-700">
-              {section.title}
-            </div>
-            <div className="mt-2">
-              <ExpandableChipList data={section.data} limit={5} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3">
-        <div className="text-xs font-bold uppercase tracking-wide text-slate-700 mb-2">
-          Pedidos del día
-        </div>
-        {orders.length === 0 ? (
-          <p className="text-sm text-slate-600">No hay pedidos en este día.</p>
-        ) : (
-          <DailyOrdersTable orders={orders} fmtTime={fmtTime} />
-        )}
-      </div>
-    </div>
-  )
-}
-
-const Stat = ({ label, value }) => (
-  <div className="bg-white rounded-md border border-slate-200 p-2 text-center shadow-sm">
-    <p className="text-[11px] font-semibold text-slate-600">{label}</p>
-    <p className="text-lg font-bold text-slate-800">{value ?? 0}</p>
-  </div>
-)
-
-const ExpandableChipList = ({ data, limit = 5 }) => {
-  const entries = Object.entries(data || {})
-  const [expanded, setExpanded] = useState(false)
-  if (!entries.length) return <p className="text-sm text-slate-600">Sin datos.</p>
-  const visible = expanded ? entries : entries.slice(0, limit)
-  const remaining = Math.max(entries.length - visible.length, 0)
-  return (
-    <div>
-      <div className="flex flex-wrap gap-1.5">
-        {visible.map(([k, v]) => (
-          <span key={k} className="px-2.5 py-0.5 text-[11px] font-semibold rounded-md bg-slate-300 text-slate-900 border border-slate-400">
-            {k} x{v}
-          </span>
-        ))}
-      </div>
-      {remaining > 0 && (
-        <button
-          type="button"
-          onClick={() => setExpanded(prev => !prev)}
-          className="mt-2 text-xs font-semibold text-blue-700 hover:text-blue-800"
-        >
-          {expanded ? 'Ver menos' : `Ver más (${remaining})`}
-        </button>
-      )}
-    </div>
-  )
-}
-
-const DailyOrdersTable = ({ orders, fmtTime }) => {
-  const [showAll, setShowAll] = useState(false)
-  const limit = 8
-  const visibleOrders = showAll ? orders : orders.slice(0, limit)
-  const remaining = Math.max(orders.length - visibleOrders.length, 0)
-
-  return (
-    <div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm bg-white border border-slate-200 rounded-lg shadow-sm">
-          <thead className="bg-slate-800 text-slate-100 sticky top-0 z-10">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Hora</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Empresa</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Turno</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Items</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleOrders.map((o, i) => (
-              <tr key={`${o.id}-${i}`} className="border-t border-slate-200 hover:bg-slate-100 odd:bg-white even:bg-slate-50">
-                <td className="px-3 py-1.5">{fmtTime(o.created_at)}</td>
-                <td className="px-3 py-1.5">{o.location || '—'}</td>
-                <td className="px-3 py-1.5">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${
-                    (o.service || 'lunch') === 'dinner'
-                      ? 'bg-amber-200 text-amber-900 border-amber-300'
-                      : 'bg-sky-200 text-sky-900 border-sky-300'
-                  }`}>
-                    {(o.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}
-                  </span>
-                </td>
-                <td className="px-3 py-1.5">
-                  {renderItems(o, isOptionName)}
-                </td>
-                <td className="px-3 py-1.5 capitalize">{o.status || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {remaining > 0 && (
-        <button
-          type="button"
-          onClick={() => setShowAll(prev => !prev)}
-          className="mt-2 text-xs font-semibold text-blue-700 hover:text-blue-800"
-        >
-          {showAll ? 'Ver menos pedidos' : `Ver más pedidos (${remaining})`}
-        </button>
-      )}
-    </div>
-  )
-}
-
-const renderItems = (order, isOptionFn) => {
-  let items = []
-  if (Array.isArray(order.items)) items = order.items
-  else if (typeof order.items === 'string') {
-    try {
-      items = JSON.parse(order.items)
-    } catch (err) {
-      void err
-    }
-  }
-  if (!items.length) return '—'
-  return items.map((it, idx) => {
-    const name = it?.name || 'Item'
-    const qty = it?.quantity || 1
-    const tag = isOptionFn(name) ? 'Opción' : 'Menú'
-    return (
-      <span key={idx} className="inline-block mr-2 mb-1 px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-[11px] font-semibold">
-        {tag}: {name} (x{qty})
-      </span>
-    )
-  })
-}
