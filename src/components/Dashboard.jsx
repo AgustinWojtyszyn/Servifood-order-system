@@ -362,7 +362,15 @@ const Dashboard = ({ user, loading }) => {
         if (error) {
           alert('Error al actualizar el pedido')
         } else {
-          fetchOrders() // Recargar pedidos
+          setOrders((prev) => {
+            if (!Array.isArray(prev)) return prev
+            const next = prev.map((order) =>
+              order?.id === orderId ? { ...order, status: 'archived', displayStatus: 'archived' } : order
+            )
+            calculateStats(next)
+            return next
+          })
+          setTimeout(() => fetchOrders(true), 1500)
         }
       } catch (err) {
         console.error('Error:', err)
@@ -386,7 +394,15 @@ const Dashboard = ({ user, loading }) => {
         if (error) {
           alert('Error al actualizar el pedido')
         } else {
-          fetchOrders() // Recargar pedidos
+          setOrders((prev) => {
+            if (!Array.isArray(prev)) return prev
+            const next = prev.map((order) =>
+              order?.id === orderId ? { ...order, status: newStatus, displayStatus: newStatus } : order
+            )
+            calculateStats(next)
+            return next
+          })
+          setTimeout(() => fetchOrders(true), 1500)
         }
       } catch (err) {
         console.error('Error:', err)
@@ -418,7 +434,15 @@ const Dashboard = ({ user, loading }) => {
           alert(`✓ ${pendingOrders.length} pedidos archivados`)
         }
 
-        fetchOrders() // Recargar pedidos
+        setOrders((prev) => {
+          if (!Array.isArray(prev)) return prev
+          const next = prev.map((order) =>
+            order?.status === 'pending' ? { ...order, status: 'archived', displayStatus: 'archived' } : order
+          )
+          calculateStats(next)
+          return next
+        })
+        setTimeout(() => fetchOrders(true), 1500)
       } catch (err) {
         console.error('Error:', err)
         alert('Error al actualizar los pedidos')

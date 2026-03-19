@@ -38,7 +38,7 @@ const DailyOrders = ({ user, loading }) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [exportCompany, setExportCompany] = useState('all')
-  const [selectedStatus, setSelectedStatus] = useState('all')
+  const [selectedStatus, setSelectedStatus] = useState('pending')
   const [selectedDish, setSelectedDish] = useState('all')
   const [selectedSide, setSelectedSide] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
@@ -176,6 +176,14 @@ const DailyOrders = ({ user, loading }) => {
       return
     }
     Sound.playSuccess()
+    setOrders((prev) => {
+      if (!Array.isArray(prev)) return prev
+      const next = prev.map((item) =>
+        item?.id === order.id ? { ...item, status: 'archived' } : item
+      )
+      setStats(calculateStats(next))
+      return next
+    })
     handleRefresh()
   }
 
@@ -190,6 +198,14 @@ const DailyOrders = ({ user, loading }) => {
             : `Pedidos archivados correctamente: ${affected}`
         )
         Sound.playSuccess()
+        setOrders((prev) => {
+          if (!Array.isArray(prev)) return prev
+          const next = prev.map((item) =>
+            item?.status === 'pending' ? { ...item, status: 'archived' } : item
+          )
+          setStats(calculateStats(next))
+          return next
+        })
         handleRefresh()
       } else {
         alert('Error al archivar pedidos: ' + error.message)
