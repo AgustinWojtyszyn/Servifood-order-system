@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { db } from '../supabaseClient'
-import { ShoppingCart, Plus, Minus, X, ChefHat, User, Settings, Clock, AlertTriangle, Save, CheckCircle } from 'lucide-react'
+import { Plus, Minus, X, Clock, AlertTriangle, Save, CheckCircle } from 'lucide-react'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
+import EditOrderCustomOptionsSection from './edit-order/EditOrderCustomOptionsSection'
+import EditOrderPersonalInfoSection from './edit-order/EditOrderPersonalInfoSection'
+import EditOrderSummarySection from './edit-order/EditOrderSummarySection'
+import EditOrderMenuSection from './edit-order/EditOrderMenuSection'
 
 const EDIT_WINDOW_MINUTES = 10
 
@@ -369,273 +373,29 @@ export default function EditOrderForm({ user, loading }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-          {/* Información Personal */}
-          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-2 sm:p-3 rounded-xl">
-                <User className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Información Personal</h2>
-            </div>
+          <EditOrderPersonalInfoSection
+            formData={formData}
+            locations={locations}
+            onChange={handleFormChange}
+          />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <label htmlFor="location" className="block text-sm font-bold text-gray-700 mb-2">
-                  Lugar de trabajo *
-                </label>
-                <select
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleFormChange}
-                  className="input-field"
-                  required
-                  autoComplete="organization"
-                >
-                  <option value="">Seleccionar lugar</option>
-                  {locations.map(location => (
-                    <option key={location} value={location}>{location}</option>
-                  ))}
-                </select>
-              </div>
+          <EditOrderMenuSection
+            items={menuItems}
+            selectedItems={selectedItems}
+            onToggleItem={handleItemSelect}
+          />
 
-              <div>
-                <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
-                  Nombre completo *
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleFormChange}
-                  className="input-field"
-                  required
-                  autoComplete="name"
-                />
-              </div>
+          <EditOrderSummarySection
+            items={getSelectedItemsList()}
+            total={calculateTotal()}
+            onRemove={(itemId) => handleItemSelect(itemId, false)}
+          />
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
-                  Correo electrónico *
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleFormChange}
-                  className="input-field"
-                  required
-                  autoComplete="email"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="block text-sm font-bold text-gray-700 mb-2">
-                  Teléfono
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleFormChange}
-                  className="input-field"
-                  autoComplete="tel"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Selección de Menú */}
-          <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-linear-to-r from-secondary-500 to-secondary-600 text-white p-3 rounded-xl">
-                <ChefHat className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Selecciona tu Menú</h2>
-                <p className="text-sm text-gray-600 font-semibold mt-1">
-                  Modifica tu selección de platos
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {menuItems.map((item) => {
-                const isSelected = selectedItems[item.id] === true
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleItemSelect(item.id, !isSelected)}
-                    aria-pressed={isSelected}
-                    className={`card text-left bg-white border-2 rounded-2xl p-5
-                               transition-all duration-300 flex flex-col justify-between min-h-[260px] cursor-pointer
-                               focus:outline-none focus:ring-2 focus:ring-blue-400
-                               ${isSelected ? 'border-blue-500 bg-blue-50/60 shadow-xl' : 'border-gray-200 hover:border-blue-400 hover:shadow-xl'}`}
-                  >
-                    <div>
-                      <h3 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">
-                        {item.name}
-                      </h3>
-
-                      {item.description && (
-                        <p className="text-lg text-gray-800 leading-snug font-medium">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex justify-end mt-6 min-h-9">
-                      {isSelected && (
-                        <span className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-                          <CheckCircle className="h-8 w-8" />
-                          Seleccionado
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Resumen del Pedido */}
-          {getSelectedItemsList().length > 0 && (
-            <div className="card bg-linear-to-br from-green-50 to-emerald-50 backdrop-blur-sm shadow-xl border-2 border-green-300">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="bg-linear-to-r from-green-600 to-emerald-600 text-white p-2 sm:p-3 rounded-xl">
-                  <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Resumen del Pedido</h2>
-                  <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1">Revisa tu selección antes de guardar</p>
-                </div>
-              </div>
-
-              <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                {getSelectedItemsList().map((item) => (
-                  <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-2 border-b border-gray-100">
-                    <div className="flex items-center justify-between sm:justify-start">
-                      <span className="font-medium text-gray-900 text-lg sm:text-xl">{item.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleItemSelect(item.id, false)}
-                        className="ml-2 p-1 rounded-full hover:bg-red-100 text-red-600"
-                      >
-                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </button>
-                    </div>
-                    <span className="text-gray-600 text-base sm:text-lg">Seleccionado</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-gray-200 pt-3 sm:pt-4">
-                <div className="flex justify-between items-center text-lg sm:text-xl font-semibold">
-                  <span>Total de items:</span>
-                  <span>{calculateTotal()}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Opciones Personalizadas - Solo mostrar opciones activas */}
-          {customOptions.filter(opt => opt.active).length > 0 && (
-            <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="bg-linear-to-r from-purple-600 to-purple-700 text-white p-2 sm:p-3 rounded-xl">
-                  <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
-                </div>
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Opciones Adicionales</h2>
-                  <p style={{ fontWeight: '900' }} className="text-xs sm:text-sm text-gray-900 mt-1">Personaliza tu pedido</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {customOptions.filter(opt => opt.active).map((option) => (
-                  <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50">
-                    <label
-                      className="block text-sm text-gray-900 mb-3"
-                      style={{ fontWeight: '900' }}
-                      htmlFor={option.type === 'text' ? `custom-option-${option.id}` : undefined}
-                    >
-                      {option.title}
-                      {option.required && <span className="text-red-600 ml-1">*</span>}
-                    </label>
-
-                  {option.type === 'multiple_choice' && option.options && (
-                    <div className="space-y-2">
-                      {option.options.map((opt, index) => {
-                        const isSelected = customResponses[option.id] === opt
-                        return (
-                          <button
-                            key={index}
-                            type="button"
-                            aria-pressed={isSelected}
-                            onClick={() => handleCustomResponse(option.id, opt, 'multiple_choice')}
-                            className={`w-full text-left p-3 border-2 rounded-lg transition-all
-                              focus:outline-none focus:ring-2 focus:ring-blue-400
-                              ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
-                              {isSelected && (
-                                <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
-                              )}
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                    {option.type === 'checkbox' && option.options && (
-                      <div className="space-y-2">
-                        {option.options.map((opt, index) => {
-                          const isChecked = (customResponses[option.id] || []).includes(opt)
-                          return (
-                            <button
-                              key={index}
-                              type="button"
-                              aria-pressed={isChecked}
-                              onClick={() => handleCustomResponse(option.id, opt, 'checkbox')}
-                              className={`w-full text-left p-3 border-2 rounded-lg transition-all
-                                focus:outline-none focus:ring-2 focus:ring-blue-400
-                                ${isChecked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-sm text-gray-900" style={{ fontWeight: '900' }}>{opt}</span>
-                                {isChecked && (
-                                  <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
-                                )}
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-
-                    {option.type === 'text' && (
-                      <textarea
-                        id={`custom-option-${option.id}`}
-                        name={`custom-option-${option.id}`}
-                        value={customResponses[option.id] || ''}
-                        onChange={(e) => handleCustomResponse(option.id, e.target.value, 'text')}
-                        rows={3}
-                        className="input-field"
-                        placeholder="Escribe tu respuesta aquí..."
-                        style={{ fontWeight: '600' }}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <EditOrderCustomOptionsSection
+            options={customOptions}
+            customResponses={customResponses}
+            onCustomResponse={handleCustomResponse}
+          />
 
           {/* Información Adicional */}
           <div className="card">
