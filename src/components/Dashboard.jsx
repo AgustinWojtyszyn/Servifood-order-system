@@ -442,6 +442,9 @@ const Dashboard = ({ user, loading }) => {
         getServiceLabel={getServiceLabel}
         getMainMenuLabel={getMainMenuLabel}
         getStatusLabel={getStatusLabel}
+        onEditOrder={handleEditOrder}
+        onDeleteOrder={handleDeleteOrder}
+        canEditOrder={(order) => isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)}
       />
 
       {/* Support Card - Para usuarios normales */}

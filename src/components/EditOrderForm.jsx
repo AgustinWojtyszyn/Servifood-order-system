@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { db } from '../supabaseClient'
+import { ordersService } from '../services/orders'
 import { Plus, Minus, X, Clock, AlertTriangle, Save, CheckCircle } from 'lucide-react'
 import { isOrderEditable } from '../utils'
 import RequireUser from './RequireUser'
@@ -9,6 +10,7 @@ import EditOrderCustomOptionsSection from './edit-order/EditOrderCustomOptionsSe
 import EditOrderPersonalInfoSection from './edit-order/EditOrderPersonalInfoSection'
 import EditOrderSummarySection from './edit-order/EditOrderSummarySection'
 import EditOrderMenuSection from './edit-order/EditOrderMenuSection'
+import { Sound } from '../utils/Sound'
 
 const EDIT_WINDOW_MINUTES = 10
 
@@ -49,6 +51,12 @@ export default function EditOrderForm({ user, loading }) {
     fetchCustomOptions()
     loadOrderData()
   }, [order, navigate])
+
+  useEffect(() => {
+    if (success) {
+      Sound.playSuccess()
+    }
+  }, [success])
 
   const loadOrderData = () => {
     if (!order) return
@@ -300,7 +308,7 @@ export default function EditOrderForm({ user, loading }) {
         custom_responses: customResponsesArray
       }
 
-      const { error } = await db.updateOrder(order.id, orderData)
+      const { error } = await ordersService.updateOrder(order.id, orderData)
 
       if (error) {
         setError('Error al actualizar el pedido: ' + error.message)

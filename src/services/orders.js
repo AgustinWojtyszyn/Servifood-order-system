@@ -117,13 +117,22 @@ class OrdersService {
       const cacheKey = `order_${orderId}`
 
       const queryFn = async () => {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('orders')
           .select('*, users!inner(*)')
           .eq('id', orderId)
           .single()
 
-        if (error) throw error
+        if (error) {
+          const fallback = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single()
+
+          if (fallback.error) throw fallback.error
+          data = fallback.data
+        }
 
         return data
       }
@@ -191,7 +200,12 @@ class OrdersService {
       }
 
       // Obtener usuario actual
-      const { user } = await import('./auth').then(m => m.default.getUser())
+      const authModule = await import('./auth')
+      const authService = authModule?.default
+      if (!authService?.getUser) {
+        throw new Error('Servicio de autenticación no disponible')
+      }
+      const { user } = await authService.getUser()
       if (!user) throw new Error('Usuario no autenticado')
 
       // Verificar si es admin
