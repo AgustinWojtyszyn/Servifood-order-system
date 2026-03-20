@@ -176,21 +176,20 @@ const DailyOrdersTable = ({ orders, fmtTime }) => {
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm bg-white border border-slate-200 rounded-lg shadow-sm">
+        <table className="min-w-full text-sm bg-white border border-slate-200 rounded-lg shadow-sm text-slate-900">
           <thead className="bg-slate-800 text-slate-100 sticky top-0 z-10">
             <tr>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Hora</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Empresa</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Turno</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Items</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Estado</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-slate-900">
             {visibleOrders.map((o, i) => (
-              <tr key={`${o.id}-${i}`} className="border-t border-slate-200 hover:bg-slate-100 odd:bg-white even:bg-slate-50">
-                <td className="px-3 py-1.5">{fmtTime(o.created_at)}</td>
-                <td className="px-3 py-1.5">{o.location || '—'}</td>
+              <tr key={`${o.id}-${i}`} className="border-t border-slate-200 hover:bg-slate-100 odd:bg-white even:bg-slate-50 text-slate-900">
+                <td className="px-3 py-1.5 text-slate-900">{fmtTime(o.created_at)}</td>
+                <td className="px-3 py-1.5 text-slate-900">{o.location || '—'}</td>
                 <td className="px-3 py-1.5">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${
                     (o.service || 'lunch') === 'dinner'
@@ -203,7 +202,6 @@ const DailyOrdersTable = ({ orders, fmtTime }) => {
                 <td className="px-3 py-1.5">
                   {renderItems(o, isOptionName)}
                 </td>
-                <td className="px-3 py-1.5 capitalize">{o.status || '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -238,7 +236,7 @@ const renderItems = (order, isOptionFn) => {
     const qty = it?.quantity || 1
     const tag = isOptionFn(name) ? 'Opción' : 'Menú'
     return (
-      <span key={idx} className="inline-block mr-2 mb-1 px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-[11px] font-semibold">
+      <span key={idx} className="inline-block mr-2 mb-1 px-2 py-0.5 rounded bg-slate-200 text-slate-900 text-[11px] font-semibold">
         {tag}: {name} (x{qty})
       </span>
     )
