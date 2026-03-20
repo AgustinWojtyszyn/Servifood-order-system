@@ -26,7 +26,9 @@ const MonthlyPanel = ({ user, loading }) => {
   const [metricsLoading, setMetricsLoading] = useState(false)
   const [metrics, setMetrics] = useState(null)
   const [, setError] = useState(null)
-  const empresaFilter = 'ALL'
+  const ALL_EMPRESAS = '__ALL__'
+  const [draftEmpresas, setDraftEmpresas] = useState([ALL_EMPRESAS])
+  const [empresaFilter, setEmpresaFilter] = useState([ALL_EMPRESAS])
   const [dailyData, setDailyData] = useState(null)
   const [ordersByDay, setOrdersByDay] = useState({})
   const [rangeOrders, setRangeOrders] = useState([])
@@ -67,23 +69,26 @@ const MonthlyPanel = ({ user, loading }) => {
     return all
   }
 
+  const isEmpresaAll = empresaFilter.includes(ALL_EMPRESAS)
+  const empresaFilterSet = useMemo(() => new Set(empresaFilter), [empresaFilter])
+
   const ordersByDayForView = useMemo(() => {
-    if (empresaFilter === 'ALL') return ordersByDay || {}
+    if (isEmpresaAll) return ordersByDay || {}
     const filtered = {}
     Object.entries(ordersByDay || {}).forEach(([date, dayOrders]) => {
-      const match = (dayOrders || []).filter(order => (order.location || 'Sin ubicación') === empresaFilter)
+      const match = (dayOrders || []).filter(order => empresaFilterSet.has(order.location || 'Sin ubicación'))
       if (match.length) filtered[date] = match
     })
     return filtered
-  }, [ordersByDay, empresaFilter])
+  }, [ordersByDay, isEmpresaAll, empresaFilterSet])
 
   const dailyDataForView = useMemo(() => {
     if (!dailyData?.daily_breakdown) return dailyData
-    if (empresaFilter === 'ALL') return dailyData
+    if (isEmpresaAll) return dailyData
     const dates = dailyData.daily_breakdown.map(d => d.date)
     const recalculated = buildDailyBreakdownFromOrdersByDay(dates, ordersByDayForView)
     return { ...dailyData, ...recalculated }
-  }, [dailyData, ordersByDayForView, empresaFilter])
+  }, [dailyData, ordersByDayForView, isEmpresaAll])
 
   useEffect(() => {
     if (!user?.id) return
@@ -341,8 +346,10 @@ const MonthlyPanel = ({ user, loading }) => {
   )
 
   const getExportEmpresaLabel = () => {
-    if (empresaFilter === 'ALL') return 'Todas las empresas'
-    return empresaFilter || 'Sin empresa'
+    if (isEmpresaAll) return 'Todas las empresas'
+    if (!empresaFilter.length) return 'Todas las empresas'
+    if (empresaFilter.length === 1) return empresaFilter[0]
+    return empresaFilter.join(', ')
   }
 
   const getExportRangeLabel = () => {
@@ -377,9 +384,9 @@ const MonthlyPanel = ({ user, loading }) => {
 
   const handleExportExcel = async () => {
     if (!metrics || !metrics.empresas) return
-    const empresasForExport = empresaFilter === 'ALL'
+    const empresasForExport = isEmpresaAll
       ? metrics.empresas
-      : metrics.empresas.filter(e => e.empresa === empresaFilter)
+      : metrics.empresas.filter(e => empresaFilterSet.has(e.empresa))
     const dataRows = buildSummaryRows(metrics, empresasForExport)
     const rows = addExportMetadataToRows(dataRows, 'Empresa', 'Pedidos')
     const wb = new ExcelJS.Workbook()
@@ -415,9 +422,9 @@ const MonthlyPanel = ({ user, loading }) => {
   const handleExportAllExcel = async () => {
     if (!metrics || !metrics.empresas) return
     const wb = new ExcelJS.Workbook()
-    const empresasForExport = empresaFilter === 'ALL'
+    const empresasForExport = isEmpresaAll
       ? metrics.empresas
-      : metrics.empresas.filter(e => e.empresa === empresaFilter)
+      : metrics.empresas.filter(e => empresaFilterSet.has(e.empresa))
     const summaryDataRows = buildSummaryRows(metrics, empresasForExport)
     const summaryRows = addExportMetadataToRows(summaryDataRows, 'Empresa', 'Pedidos')
     const wsSummary = wb.addWorksheet('Resumen')
@@ -467,6 +474,43 @@ const MonthlyPanel = ({ user, loading }) => {
     setError(null)
   }
 
+  const normalizeEmpresas = (list) => {
+    const unique = Array.from(new Set((list || []).filter(Boolean)))
+    if (unique.length === 0) return [ALL_EMPRESAS]
+    if (unique.includes(ALL_EMPRESAS)) return [ALL_EMPRESAS]
+    return unique
+  }
+
+  const handleToggleDraftEmpresa = (empresa) => {
+    setDraftEmpresas(prev => {
+      const exists = prev.includes(empresa)
+      let next = exists ? prev.filter(e => e !== empresa) : [...prev, empresa]
+      if (empresa === ALL_EMPRESAS) {
+        next = [ALL_EMPRESAS]
+      } else {
+        next = next.filter(e => e !== ALL_EMPRESAS)
+      }
+      return normalizeEmpresas(next)
+    })
+  }
+
+  const handleApplyEmpresas = () => {
+    setEmpresaFilter(normalizeEmpresas(draftEmpresas))
+  }
+
+  const handleClearEmpresas = () => {
+    setDraftEmpresas([ALL_EMPRESAS])
+    setEmpresaFilter([ALL_EMPRESAS])
+  }
+
+  const empresasAll = metrics?.empresas || []
+  const empresasOptions = useMemo(() => {
+    const names = empresasAll.map(e => e.empresa || 'Sin ubicación')
+    const unique = Array.from(new Set(names))
+    return unique.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+  }, [empresasAll])
+  const isEmpresasDirty = JSON.stringify(normalizeEmpresas(draftEmpresas)) !== JSON.stringify(normalizeEmpresas(empresaFilter))
+
   const handleApplyRange = async () => {
     if (!isDraftValid) return
     const newRange = { ...draftRange }
@@ -487,10 +531,9 @@ const MonthlyPanel = ({ user, loading }) => {
     }
   }
 
-  const empresasAll = metrics?.empresas || []
-  const empresasForView = empresaFilter === 'ALL'
+  const empresasForView = isEmpresaAll
     ? empresasAll
-    : empresasAll.filter(e => e.empresa === empresaFilter)
+    : empresasAll.filter(e => empresaFilterSet.has(e.empresa))
   const totalsForView = empresasForView.reduce((acc, e) => {
     acc.pedidos += e.cantidadPedidos || 0
     acc.menusPrincipales += e.totalMenusPrincipales ?? (e.totalMenus - e.totalOpciones)
@@ -563,6 +606,13 @@ const MonthlyPanel = ({ user, loading }) => {
             onClearRange={handleClearRange}
             onApplyRange={handleApplyRange}
             isDraftValid={isDraftValid}
+            empresas={empresasOptions}
+            allValue={ALL_EMPRESAS}
+            draftEmpresas={draftEmpresas}
+            onToggleDraftEmpresa={handleToggleDraftEmpresa}
+            onApplyEmpresas={handleApplyEmpresas}
+            onClearEmpresas={handleClearEmpresas}
+            isEmpresasDirty={isEmpresasDirty}
           />
 
           <MonthlyExportActions

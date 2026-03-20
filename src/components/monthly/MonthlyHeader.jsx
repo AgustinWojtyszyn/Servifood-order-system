@@ -32,6 +32,7 @@ const MonthlyHeader = ({ showInstructions, onToggleInstructions }) => {
           <div className="mt-2 rounded-lg bg-white p-3">
             <ol className="list-decimal pl-5 text-slate-800 text-sm space-y-1.5">
               <li>Selecciona el <b>rango de fechas</b> y presiona <b>“Aplicar rango”</b> para ver el resumen de pedidos por empresa.</li>
+              <li>Selecciona una o más <b>empresas</b> y presiona <b>“Aplicar empresas”</b> para filtrar el panel y la exportación.</li>
               <li>La fecha seleccionada corresponde siempre al <b>día de entrega</b> (por ejemplo, si quieres saber los pedidos del martes, selecciona martes).</li>
               <li>Exporta el resumen a Excel con el botón <b>Exportar Excel</b>.</li>
               <li>Los <b>menús principales</b> y las <b>opciones</b> aparecen separados y con cantidades claras.</li>
