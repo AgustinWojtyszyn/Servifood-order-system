@@ -11,13 +11,6 @@ const MonthlySummary = ({
 }) => {
   return (
     <div className="space-y-3">
-      <MonthlyOrdersTable
-        dailyDataForView={dailyDataForView}
-        ordersByDayForView={ordersByDayForView}
-        selectedDate={selectedDate}
-        onSelectDate={onSelectDate}
-      />
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4 w-full print-no-break print-full-width">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 w-full">
           <div className="text-center">
@@ -136,6 +129,13 @@ const MonthlySummary = ({
           </div>
         </div>
       </div>
+
+      <MonthlyOrdersTable
+        dailyDataForView={dailyDataForView}
+        ordersByDayForView={ordersByDayForView}
+        selectedDate={selectedDate}
+        onSelectDate={onSelectDate}
+      />
     </div>
   )
 }
