@@ -293,6 +293,12 @@ const MonthlyPanel = ({ user, loading }) => {
         setDailyData(finalBreakdown)
         pushLog('orders-indexed', { days: Object.keys(byDay).length, sampleDay: Object.keys(byDay)[0] })
         setOrdersByDay(byDay)
+        if (typeof window !== 'undefined') {
+          window.__monthlyOrdersByDay = byDay
+          window.__monthlyOrderIdsByDay = Object.fromEntries(
+            Object.entries(byDay || {}).map(([day, list]) => [day, (list || []).map(o => o.id)])
+          )
+        }
         setRangeOrders(orders)
       }
 
