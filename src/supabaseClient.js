@@ -453,7 +453,7 @@ export const db = {
   },
 
   // Desglose diario por rango usando datos históricos reales
-  // - Filtra por delivery_date si existe (día de entrega del negocio)
+  // - Filtra por delivery_date (día de entrega del negocio)
   // - Aplica mismos criterios de estado para consistencia
   // - Incluye días sin pedidos con valor 0 para continuidad
   getDailyBreakdown: async ({ start, end, timeZone = 'America/Argentina/San_Juan' }) => {
@@ -472,9 +472,6 @@ export const db = {
       }
     }
 
-    // Preferir filtrar por delivery_date; si es null, usar created_at
-    const startUtc = new Date(`${start}T00:00:00.000Z`).toISOString()
-    const endUtc = new Date(`${end}T23:59:59.999Z`).toISOString()
     const selectOrders = async (cols) => {
       const pageSize = 1000
       let from = 0
@@ -484,12 +481,8 @@ export const db = {
         const res = await supabase
           .from('orders')
           .select(cols)
-          .or(
-            [
-              `and(delivery_date.gte.${start},delivery_date.lte.${end})`,
-              `and(delivery_date.is.null,created_at.gte.${startUtc},created_at.lte.${endUtc})`
-            ].join(',')
-          )
+          .gte('delivery_date', start)
+          .lte('delivery_date', end)
           .order('id', { ascending: true })
           .range(from, from + pageSize - 1)
 
@@ -521,14 +514,6 @@ export const db = {
       error = fallbackResult.error
     }
 
-    // Si aún falla por delivery_date inexistente, reintentar sin delivery_date
-    if (error && (error.code === '42703' || /delivery_date/i.test(error.message || ''))) {
-      const fallbackNoDelivery = 'id, status, created_at, total_items, items'
-      const fallbackNoDeliveryResult = await selectOrders(fallbackNoDelivery)
-      orders = fallbackNoDeliveryResult.data
-      error = fallbackNoDeliveryResult.error
-    }
-
     if (error) return { error }
 
     // Helper para iterar fechas del rango inclusive
@@ -546,17 +531,10 @@ export const db = {
       days.push(`${yyyy}-${mm}-${dd}`)
     }
 
-    // Agrupar por fecha de negocio preferentemente delivery_date, si existe; si no, por created_at convertido a zona local
-    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+    // Agrupar por fecha de negocio (delivery_date)
     const bucketForOrder = (o) => {
       if (o.delivery_date) return o.delivery_date.slice(0, 10)
-      // Fallback a created_at -> fecha local del negocio
-      try {
-        const d = new Date(o.created_at)
-        return fmt.format(d)
-      } catch {
-        return null
-      }
+      return null
     }
 
     const byDay = new Map()

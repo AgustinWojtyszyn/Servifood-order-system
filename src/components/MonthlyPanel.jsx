@@ -148,38 +148,21 @@ const MonthlyPanel = ({ user, loading }) => {
     setError(null)
     try {
       pushLog('fetch-start', currentRange)
-      const startUtc = `${currentRange.start}T00:00:00.000Z`
-      const endUtc = `${currentRange.end}T23:59:59.999Z`
       const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location'
-      pushLog('query-params', { startUtc, endUtc, start: currentRange.start, end: currentRange.end })
+      pushLog('query-params', { start: currentRange.start, end: currentRange.end })
 
-      const [deliveryOrders, createdOrders] = await Promise.all([
-        fetchAllOrders(
-          (from, to) => supabase
-            .from('orders')
-            .select(columns)
-            .gte('delivery_date', currentRange.start)
-            .lte('delivery_date', currentRange.end)
-            .order('id', { ascending: true })
-            .range(from, to),
-          'delivery'
-        ),
-        fetchAllOrders(
-          (from, to) => supabase
-            .from('orders')
-            .select(columns)
-            .is('delivery_date', null)
-            .gte('created_at', startUtc)
-            .lte('created_at', endUtc)
-            .order('id', { ascending: true })
-            .range(from, to),
-          'created'
-        )
-      ])
+      const deliveryOrders = await fetchAllOrders(
+        (from, to) => supabase
+          .from('orders')
+          .select(columns)
+          .gte('delivery_date', currentRange.start)
+          .lte('delivery_date', currentRange.end)
+          .order('id', { ascending: true })
+          .range(from, to),
+        'delivery'
+      )
 
-      let orders = []
-      if (Array.isArray(deliveryOrders)) orders = orders.concat(deliveryOrders)
-      if (Array.isArray(createdOrders)) orders = orders.concat(createdOrders)
+      let orders = Array.isArray(deliveryOrders) ? deliveryOrders : []
       pushLog('orders-raw', { total: orders.length })
 
       orders = Array.isArray(orders) ? orders.filter(o => COUNTABLE_STATUSES.includes(o.status)) : []
@@ -190,7 +173,6 @@ const MonthlyPanel = ({ user, loading }) => {
       }, {})
       pushLog('orders-filtered', {
         delivery: deliveryOrders?.length || 0,
-        created: createdOrders?.length || 0,
         afterFilter: orders.length,
         statusCount,
         sample: orders.slice(0, 3)

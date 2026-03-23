@@ -99,14 +99,9 @@ export const buildRangeDates = (start, end) => {
 
 export const indexOrdersByDay = (orders = [], timeZone = 'America/Argentina/San_Juan') => {
   const byDay = {}
-  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
   const bucketForOrder = (o) => {
     if (o?.delivery_date) return o.delivery_date.slice(0, 10)
-    try {
-      return fmt.format(new Date(o.created_at))
-    } catch {
-      return null
-    }
+    return null
   }
   orders.forEach(o => {
     const day = bucketForOrder(o)
