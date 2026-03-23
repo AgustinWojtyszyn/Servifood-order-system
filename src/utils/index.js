@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify'
+import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
 
 // Utilidades de validación y sanitización
 export const sanitizeInput = (input) => {
@@ -201,7 +202,7 @@ export const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-export const isOrderEditable = (createdAt, minutesLimit = 10) => {
+export const isOrderEditable = (createdAt, minutesLimit = EDIT_WINDOW_MINUTES) => {
   const now = new Date()
   const created = new Date(createdAt)
   const diffInMinutes = (now - created) / (1000 * 60)

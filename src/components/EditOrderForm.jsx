@@ -4,6 +4,7 @@ import { db } from '../supabaseClient'
 import { ordersService } from '../services/orders'
 import { Plus, Minus, X, Clock, AlertTriangle, Save, CheckCircle } from 'lucide-react'
 import { isOrderEditable } from '../utils'
+import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
 import EditOrderCustomOptionsSection from './edit-order/EditOrderCustomOptionsSection'
@@ -12,7 +13,6 @@ import EditOrderSummarySection from './edit-order/EditOrderSummarySection'
 import EditOrderMenuSection from './edit-order/EditOrderMenuSection'
 import { Sound } from '../utils/Sound'
 
-const EDIT_WINDOW_MINUTES = 10
 
 export default function EditOrderForm({ user, loading }) {
   const [menuItems, setMenuItems] = useState([])

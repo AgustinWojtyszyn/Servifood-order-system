@@ -4,6 +4,7 @@ import { db } from '../supabaseClient'
 import { ShoppingCart, Clock, CheckCircle, Package, Eye, RefreshCw, Edit, Trash2, Archive } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import { isOrderEditable } from '../utils'
+import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
 import RequireUser from './RequireUser'
 import { useOverlayLock } from '../contexts/OverlayLockContext'
 import OrderHistorySection from './dashboard/OrderHistorySection'
@@ -27,7 +28,6 @@ import {
   getMainMenuLabel
 } from '../utils/dashboard/dashboardHelpers.jsx'
 
-const EDIT_WINDOW_MINUTES = 15
 const ORDER_START_HOUR = 9
 const ORDER_CUTOFF_HOUR = 22
 const ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'
