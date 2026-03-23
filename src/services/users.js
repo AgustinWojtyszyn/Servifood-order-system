@@ -157,7 +157,7 @@ class UsersService {
     }
   }
 
-  // Eliminar usuario (solo superadmin)
+  // Eliminar usuario
   async deleteUser(userId) {
     try {
       if (!userId) {
@@ -261,7 +261,6 @@ class UsersService {
           total: data.length,
           users: data.filter(u => u.role === USER_ROLES.USER).length,
           admins: data.filter(u => u.role === USER_ROLES.ADMIN).length,
-          superAdmins: data.filter(u => u.role === USER_ROLES.SUPER_ADMIN).length,
           recentRegistrations: data.filter(u => {
             const weekAgo = new Date()
             weekAgo.setDate(weekAgo.getDate() - 7)
@@ -287,23 +286,9 @@ class UsersService {
 
       if (!data) return false
 
-      return [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN].includes(data.role)
+      return data.role === USER_ROLES.ADMIN
     } catch (error) {
       console.error('Error verificando rol de admin:', error)
-      return false
-    }
-  }
-
-  // Verificar si usuario es superadmin
-  async isUserSuperAdmin(userId) {
-    try {
-      const { data } = await this.getUserById(userId)
-
-      if (!data) return false
-
-      return data.role === USER_ROLES.SUPER_ADMIN
-    } catch (error) {
-      console.error('Error verificando rol de superadmin:', error)
       return false
     }
   }

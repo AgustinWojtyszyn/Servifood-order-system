@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { authService } from '../services/auth'
-import { usersService } from '../services/users'
 import { safeLocalStorage } from '../utils'
 
 export const useAuth = () => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   const logRoleDebug = (...args) => {
     if (import.meta.env.DEV) {
@@ -55,7 +53,6 @@ export const useAuth = () => {
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
         setIsAdmin(false)
-        setIsSuperAdmin(false)
         setLoading(false)
       }
     })
@@ -70,8 +67,7 @@ export const useAuth = () => {
       }
       // Usar directamente los datos del usuario de Supabase sin consultar tabla users
       const roleFromMetadata = authUser?.user_metadata?.role || authUser?.app_metadata?.role || authUser?.role
-      const isAdminRole = roleFromMetadata === 'admin' || roleFromMetadata === 'superadmin'
-      const isSuperAdminRole = roleFromMetadata === 'superadmin'
+      const isAdminRole = roleFromMetadata === 'admin'
 
       logRoleDebug('raw user metadata', {
         id: authUser?.id,
@@ -83,17 +79,14 @@ export const useAuth = () => {
 
       setUser((prev) => prev || { ...authUser, role: roleFromMetadata })
       setIsAdmin(isAdminRole)
-      setIsSuperAdmin(isSuperAdminRole)
 
       logRoleDebug('computed flags', {
-        isAdmin: isAdminRole,
-        isSuperAdmin: isSuperAdminRole
+        isAdmin: isAdminRole
       })
     } catch (error) {
       console.error('Error loading user data:', error)
       setUser((prev) => prev || authUser)
       setIsAdmin(false)
-      setIsSuperAdmin(false)
     } finally {
       if (import.meta.env.DEV) {
         console.log('[Auth] loadUserData done')
@@ -212,16 +205,15 @@ export const useAuth = () => {
 
   useEffect(() => {
     if (import.meta.env.DEV) {
-      console.log('[Auth] state', { user, loading, isAdmin, isSuperAdmin })
+      console.log('[Auth] state', { user, loading, isAdmin })
     }
-  }, [user, loading, isAdmin, isSuperAdmin])
+  }, [user, loading, isAdmin])
 
   return {
     // Estado
     user,
     loading,
     isAdmin,
-    isSuperAdmin,
     isAuthenticated: !!user,
 
     // Acciones

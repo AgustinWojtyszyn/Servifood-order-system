@@ -1,8 +1,7 @@
 // Tipos y interfaces para la aplicación
 export const USER_ROLES = {
   USER: 'user',
-  ADMIN: 'admin',
-  SUPER_ADMIN: 'superadmin'
+  ADMIN: 'admin'
 }
 
 export const ORDER_STATUS = {

@@ -97,12 +97,12 @@ const Layout = ({ children, user, loading }) => {
             roleValue,
             userMetaRole: user?.user_metadata?.role,
             flags: {
-              isAdmin: roleValue === 'admin' || roleValue === 'superadmin' || currentUser?.is_superadmin
+              isAdmin: roleValue === 'admin'
             }
           })
         }
 
-        setIsAdmin(roleValue === 'admin' || roleValue === 'superadmin' || currentUser?.is_superadmin)
+        setIsAdmin(roleValue === 'admin')
       } else if (error && import.meta.env.DEV) {
         console.warn('[Layout][role-debug] error fetching users', error)
       }
@@ -110,7 +110,7 @@ const Layout = ({ children, user, loading }) => {
       console.error('Error checking user role:', err)
       // Fallback a user_metadata si falla la consulta
       const roleValue = user?.user_metadata?.role
-      setIsAdmin(roleValue === 'admin' || roleValue === 'superadmin')
+      setIsAdmin(roleValue === 'admin')
     }
   }
 

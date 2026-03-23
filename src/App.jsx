@@ -17,7 +17,6 @@ const ForgotPassword = lazy(() => import('./components/ForgotPassword'))
 const ResetPassword = lazy(() => import('./components/ResetPassword'))
 const AuthCallback = lazy(() => import('./pages/AuthCallback'))
 const Dashboard = lazy(() => import('./components/Dashboard'))
-const SuperAdminPanel = lazy(() => import('./components/SuperAdminPanel'))
 const DailyOrders = lazy(() => import('./components/DailyOrders'))
 const OrderCompanySelector = lazy(() => import('./components/OrderCompanySelector'))
 const OrderForm = lazy(() => import('./components/OrderForm'))
@@ -211,9 +210,6 @@ function App() {
             } />
             <Route path="/admin" element={
               !loading && (user ? <Layout user={user} loading={loading}><AdminPanel loading={loading} /></Layout> : <Navigate to="/login" />)
-            } />
-            <Route path="/superadmin" element={
-              !loading && (user ? <Layout user={user} loading={loading}><SuperAdminPanel user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/daily-orders" element={
               !loading && (user ? <Layout user={user} loading={loading}><DailyOrders user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
