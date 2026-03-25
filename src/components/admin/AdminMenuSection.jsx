@@ -116,6 +116,15 @@ const AdminMenuSection = ({
     }
   }
 
+  const formatMonthFull = (date) => {
+    try {
+      const raw = new Intl.DateTimeFormat('es-AR', { month: 'long' }).format(date)
+      return raw.charAt(0).toUpperCase() + raw.slice(1)
+    } catch (err) {
+      return ''
+    }
+  }
+
   return (
     <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
       <div className="flex flex-col gap-4 mb-5 sm:mb-7">
@@ -146,7 +155,7 @@ const AdminMenuSection = ({
                 {loadedCount} con menú cargado
               </span>
               <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20">
-                Entregas {formatMonthLabel(startOfWeek)}
+                {formatMonthFull(startOfWeek)}
               </span>
             </div>
           </div>
