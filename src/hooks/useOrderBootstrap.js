@@ -30,7 +30,10 @@ const useOrderBootstrap = ({
 
   const fetchMenuItems = async () => {
     try {
-      const { data, error } = await db.getMenuItems()
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const menuDate = tomorrow.toISOString().split('T')[0]
+      const { data, error } = await db.getMenuItemsByDate(menuDate)
 
       if (error) {
         console.error('Error fetching menu:', error)

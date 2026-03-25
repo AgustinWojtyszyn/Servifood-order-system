@@ -637,33 +637,34 @@ export const db = {
     return { data: { daily_breakdown, range_totals, start, end, statuses: COUNTABLE_STATUSES, timeZone }, error: null }
   },
 
-  // Menú
-  getMenuItems: async () => {
-    // Usar cache para menú (cambia poco)
-    const cacheKey = 'menu-items'
+  // Menú (por día)
+  getMenuItemsByDate: async (menuDate) => {
+    const cacheKey = `menu-items:${menuDate}`
     const cached = cache.get(cacheKey)
     if (cached) return { data: cached, error: null }
-    
+
     const { data, error } = await supabase
       .from('menu_items')
-      .select('id, name, description, created_at') // Solo campos necesarios
+      .select('id, name, description, created_at, menu_date')
+      .eq('menu_date', menuDate)
       .order('created_at', { ascending: false })
-    
+
     if (!error && data) {
-      cache.set(cacheKey, data, 300000) // Cache por 5 minutos (menú cambia poco)
+      cache.set(cacheKey, data, 300000)
     }
-    
+
     return { data, error }
   },
 
-  updateMenuItems: async (menuItems, requestId = null) => {
+  updateMenuItemsByDate: async (menuDate, menuItems, requestId = null) => {
     try {
       cache.clear() // Limpiar cache al actualizar menú
       
-      // Obtener items existentes
+      // Obtener items existentes (solo del día)
       const { data: existingItems, error: fetchError } = await supabase
         .from('menu_items')
         .select('id')
+        .eq('menu_date', menuDate)
       
       if (fetchError) {
         console.error('Error fetching existing items:', fetchError)
@@ -676,11 +677,12 @@ export const db = {
       const idsToKeep = menuItems.filter(item => item.id).map(item => item.id)
       const itemsToDelete = existingIds.filter(id => !idsToKeep.includes(id))
 
-      // Eliminar items que ya no están en la lista
+      // Eliminar items que ya no están en la lista (solo del día)
       if (itemsToDelete.length > 0) {
         const { error: deleteError } = await supabase
           .from('menu_items')
           .delete()
+          .eq('menu_date', menuDate)
           .in('id', itemsToDelete)
         
         if (deleteError) {
@@ -698,6 +700,7 @@ export const db = {
             description: item.description
           })
           .eq('id', item.id)
+          .eq('menu_date', menuDate)
         
         if (updateError) {
           console.error('Error updating item:', updateError)
@@ -711,7 +714,8 @@ export const db = {
           .from('menu_items')
           .insert(itemsToInsert.map(item => ({
             name: item.name,
-            description: item.description
+            description: item.description,
+            menu_date: menuDate
           })))
         
         if (insertError) {
@@ -720,10 +724,11 @@ export const db = {
         }
       }
 
-      // Obtener todos los items actualizados
+      // Obtener todos los items actualizados (solo del día)
       const { data, error } = await supabase
         .from('menu_items')
-        .select('id, name, description, created_at')
+        .select('id, name, description, created_at, menu_date')
+        .eq('menu_date', menuDate)
         .order('created_at', { ascending: true })
       
       if (!error) {
@@ -735,10 +740,11 @@ export const db = {
         }
         await logAudit({
           action: 'menu_updated',
-          details: `Menú diario actualizado (agregados: ${summary.inserted}, editados: ${summary.updated}, eliminados: ${summary.deleted}, total vigente: ${summary.total})`,
+          details: `Menú diario actualizado (${menuDate}) (agregados: ${summary.inserted}, editados: ${summary.updated}, eliminados: ${summary.deleted}, total vigente: ${summary.total})`,
           target_name: 'Todos los usuarios',
           metadata: {
             summary,
+            menu_date: menuDate,
             items: (menuItems || []).map(({ id, name }) => ({ id, name }))
           },
           request_id: requestId

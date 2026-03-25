@@ -46,12 +46,19 @@ const AdminPanel = () => {
   }
   const [activeTab, setActiveTab] = useState('users')
   const [users, setUsers] = useState([])
-  const [menuItems, setMenuItems] = useState([])
   const [customOptions, setCustomOptions] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
-  const [editingMenu, setEditingMenu] = useState(false)
-  const [savingMenu, setSavingMenu] = useState(false)
-  const [newMenuItems, setNewMenuItems] = useState([])
+  const tomorrowISO = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.toISOString().split('T')[0]
+  })()
+  const [selectedDates, setSelectedDates] = useState([tomorrowISO])
+  const [menuItemsByDate, setMenuItemsByDate] = useState({})
+  const [draftMenuItemsByDate, setDraftMenuItemsByDate] = useState({})
+  const [editingMenuByDate, setEditingMenuByDate] = useState({})
+  const [savingMenuByDate, setSavingMenuByDate] = useState({})
+  const [loadingMenuByDate, setLoadingMenuByDate] = useState({})
   const [editingOptions, setEditingOptions] = useState(false)
   const [newOption, setNewOption] = useState(null)
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
@@ -59,9 +66,8 @@ const AdminPanel = () => {
     const stored = localStorage.getItem('dinner_menu_enabled')
     return stored === null ? true : stored === 'true'
   })
-  const todayISO = new Date().toISOString().split('T')[0]
   const [dessertOption, setDessertOption] = useState(null)
-  const [dessertOverrideDate, setDessertOverrideDate] = useState(todayISO)
+  const [dessertOverrideDate, setDessertOverrideDate] = useState(tomorrowISO)
   const [dessertOverrideEnabled, setDessertOverrideEnabled] = useState(false)
   const [loadingDessertOverride, setLoadingDessertOverride] = useState(false)
   const [showDessertConfirm, setShowDessertConfirm] = useState(false)
@@ -96,6 +102,16 @@ const AdminPanel = () => {
     fetchDessertOverride(dessertOption.id, dessertOverrideDate)
   }, [dessertOption, dessertOverrideDate])
 
+  useEffect(() => {
+    if (!user?.id || !isAdmin) return
+    if (!Array.isArray(selectedDates) || selectedDates.length === 0) return
+    selectedDates.forEach(date => {
+      if (!menuItemsByDate.hasOwnProperty(date) && !loadingMenuByDate[date]) {
+        fetchMenuForDate(date)
+      }
+    })
+  }, [selectedDates, isAdmin, user, menuItemsByDate, loadingMenuByDate])
+
   const fetchDessertOverride = async (optionId, date) => {
     try {
       setLoadingDessertOverride(true)
@@ -110,6 +126,107 @@ const AdminPanel = () => {
     } finally {
       setLoadingDessertOverride(false)
     }
+  }
+
+  const buildDefaultMenuItems = () => sortMenuItems([
+    { name: 'Plato Principal 1', description: 'Delicioso plato principal' },
+    { name: 'Plato Principal 2', description: 'Otro plato delicioso' },
+    { name: 'Ensalada César', description: 'Fresca ensalada' }
+  ])
+
+  const normalizeMenuItems = (items = []) =>
+    sortMenuItems(items.map(item => ({
+      id: item.id,
+      name: item.name,
+      description: item.description || ''
+    })))
+
+  const setMenuItemsForDate = (menuDate, items) => {
+    setMenuItemsByDate(prev => ({ ...prev, [menuDate]: items }))
+  }
+
+  const setDraftItemsForDate = (menuDate, items) => {
+    setDraftMenuItemsByDate(prev => ({ ...prev, [menuDate]: items }))
+  }
+
+  const setEditingForDate = (menuDate, value) => {
+    setEditingMenuByDate(prev => ({ ...prev, [menuDate]: value }))
+  }
+
+  const setSavingForDate = (menuDate, value) => {
+    setSavingMenuByDate(prev => ({ ...prev, [menuDate]: value }))
+  }
+
+  const setLoadingForDate = (menuDate, value) => {
+    setLoadingMenuByDate(prev => ({ ...prev, [menuDate]: value }))
+  }
+
+  const fetchMenuForDate = async (menuDate) => {
+    setLoadingForDate(menuDate, true)
+    try {
+      const { data, error } = await db.getMenuItemsByDate(menuDate)
+      if (error) {
+        console.error('Error fetching menu:', error)
+        setMenuItemsForDate(menuDate, [])
+        if (!editingMenuByDate[menuDate]) {
+          setDraftItemsForDate(menuDate, buildDefaultMenuItems())
+        }
+        return
+      }
+
+      const sorted = sortMenuItems(data || [])
+      setMenuItemsForDate(menuDate, sorted)
+
+      const shouldUpdateDraft = !editingMenuByDate[menuDate] || !draftMenuItemsByDate[menuDate]
+      if (shouldUpdateDraft) {
+        if (sorted.length > 0) {
+          setDraftItemsForDate(menuDate, normalizeMenuItems(sorted))
+        } else {
+          setDraftItemsForDate(menuDate, buildDefaultMenuItems())
+        }
+      }
+    } catch (err) {
+      console.error('Error:', err)
+    } finally {
+      setLoadingForDate(menuDate, false)
+    }
+  }
+
+  const addSelectedDate = (menuDate) => {
+    if (!menuDate) return
+    setSelectedDates(prev => {
+      const next = prev.includes(menuDate) ? prev : [...prev, menuDate]
+      return next.sort()
+    })
+  }
+
+  const removeSelectedDate = (menuDate) => {
+    setSelectedDates(prev => prev.filter(date => date !== menuDate))
+    setEditingMenuByDate(prev => {
+      const next = { ...prev }
+      delete next[menuDate]
+      return next
+    })
+    setSavingMenuByDate(prev => {
+      const next = { ...prev }
+      delete next[menuDate]
+      return next
+    })
+    setLoadingMenuByDate(prev => {
+      const next = { ...prev }
+      delete next[menuDate]
+      return next
+    })
+    setMenuItemsByDate(prev => {
+      const next = { ...prev }
+      delete next[menuDate]
+      return next
+    })
+    setDraftMenuItemsByDate(prev => {
+      const next = { ...prev }
+      delete next[menuDate]
+      return next
+    })
   }
 
   const handleToggleDessertOverride = async ({ skipConfirm = false } = {}) => {
@@ -148,10 +265,9 @@ const AdminPanel = () => {
   const fetchData = async () => {
     setDataLoading(true)
     try {
-      const [peopleResult, accountsResult, menuResult, optionsResult] = await Promise.all([
+      const [peopleResult, accountsResult, optionsResult] = await Promise.all([
         db.getAdminPeopleUnified(),
         db.getUsers(),
-        db.getMenuItems(),
         db.getCustomOptions()
       ])
 
@@ -291,32 +407,6 @@ const AdminPanel = () => {
         }
 
         setUsers(dedupedPeople)
-      }
-
-      if (menuResult.error) {
-        console.error('Error fetching menu:', menuResult.error)
-        // Set default menu items
-        setNewMenuItems(sortMenuItems([
-          { name: 'Plato Principal 1', description: 'Delicioso plato principal' },
-          { name: 'Plato Principal 2', description: 'Otro plato delicioso' },
-          { name: 'Ensalada César', description: 'Fresca ensalada' }
-        ]))
-      } else {
-        setMenuItems(sortMenuItems(menuResult.data || []))
-        if (menuResult.data && menuResult.data.length > 0) {
-          setNewMenuItems(sortMenuItems(menuResult.data.map(item => ({
-            id: item.id,
-            name: item.name,
-            description: item.description || ''
-          }))))
-        } else {
-          // Menú por defecto si no hay items
-          setNewMenuItems(sortMenuItems([
-            { name: 'Plato Principal 1', description: 'Delicioso plato principal' },
-            { name: 'Plato Principal 2', description: 'Otro plato delicioso' },
-            { name: 'Ensalada César', description: 'Fresca ensalada' }
-          ]))
-        }
       }
 
       if (optionsResult.error) {
@@ -499,57 +589,92 @@ const AdminPanel = () => {
     }
   }
 
-  const handleMenuUpdate = async () => {
-    if (savingMenu) return
+  const normalizeForComparison = (items = []) =>
+    items.map(item => ({
+      name: (item.name || '').trim(),
+      description: (item.description || '').trim()
+    }))
+
+  const isSameMenu = (a, b) =>
+    JSON.stringify(normalizeForComparison(a)) === JSON.stringify(normalizeForComparison(b))
+
+  const getPreviousDateISO = (dateISO) => {
+    const d = new Date(`${dateISO}T00:00:00`)
+    d.setDate(d.getDate() - 1)
+    return d.toISOString().split('T')[0]
+  }
+
+  const handleMenuUpdate = async (menuDate) => {
+    if (savingMenuByDate[menuDate]) return
 
     try {
-      // Filter out empty items
-      const validItems = newMenuItems.filter(item => item.name.trim() !== '')
+      const draftItems = draftMenuItemsByDate[menuDate] || []
+      const validItems = draftItems.filter(item => item.name.trim() !== '')
 
       if (validItems.length === 0) {
         alert('Debe haber al menos un plato en el menú')
         return
       }
 
-      setSavingMenu(true)
+      const prevDate = getPreviousDateISO(menuDate)
+      let prevItems = menuItemsByDate[prevDate]
+      if (!prevItems) {
+        const { data: prevData, error: prevError } = await db.getMenuItemsByDate(prevDate)
+        if (prevError) {
+          console.error('Error fetching previous menu:', prevError)
+        } else {
+          prevItems = sortMenuItems(prevData || [])
+          setMenuItemsForDate(prevDate, prevItems)
+        }
+      }
+
+      if ((prevItems || []).length > 0 && isSameMenu(validItems, prevItems)) {
+        const confirmed = window.confirm('Estás repitiendo el menú del día anterior. ¿Querés continuar?')
+        if (!confirmed) return
+      }
+
+      setSavingForDate(menuDate, true)
       const requestId = crypto.randomUUID?.() || Math.random().toString(36).slice(2)
-      console.debug('[menu][save] request_id', requestId, 'items', validItems.length)
-      const { error } = await db.updateMenuItems(validItems, requestId)
+      console.debug('[menu][save] request_id', requestId, 'items', validItems.length, 'menu_date', menuDate)
+      const { error } = await db.updateMenuItemsByDate(menuDate, validItems, requestId)
 
       if (error) {
         console.error('Error updating menu:', error)
         alert('Error al actualizar el menú')
       } else {
-        setEditingMenu(false)
+        setEditingForDate(menuDate, false)
         Sound.playSuccess()
         alert('Menú actualizado exitosamente')
-        fetchData() // Refresh data
+        await fetchMenuForDate(menuDate)
       }
     } catch (err) {
       console.error('Error:', err)
       alert('Error al actualizar el menú')
     } finally {
-      setSavingMenu(false)
+      setSavingForDate(menuDate, false)
     }
   }
 
-  const handleMenuItemChange = (index, field, value) => {
-    const updatedItems = [...newMenuItems]
+  const handleMenuItemChange = (menuDate, index, field, value) => {
+    const current = draftMenuItemsByDate[menuDate] || []
+    const updatedItems = [...current]
     updatedItems[index] = { ...updatedItems[index], [field]: value }
-    setNewMenuItems(updatedItems)
+    setDraftItemsForDate(menuDate, updatedItems)
   }
 
-  const addMenuItem = () => {
-    setNewMenuItems([...newMenuItems, { name: '', description: '' }])
+  const addMenuItem = (menuDate) => {
+    const current = draftMenuItemsByDate[menuDate] || []
+    setDraftItemsForDate(menuDate, [...current, { name: '', description: '' }])
   }
 
-  const removeMenuItem = (index) => {
-    if (newMenuItems.length <= 1) {
+  const removeMenuItem = (menuDate, index) => {
+    const current = draftMenuItemsByDate[menuDate] || []
+    if (current.length <= 1) {
       alert('Debe haber al menos un plato en el menú')
       return
     }
-    const updatedItems = newMenuItems.filter((_, i) => i !== index)
-    setNewMenuItems(updatedItems)
+    const updatedItems = current.filter((_, i) => i !== index)
+    setDraftItemsForDate(menuDate, updatedItems)
   }
 
   // Funciones para opciones personalizadas
@@ -805,17 +930,21 @@ const AdminPanel = () => {
       {/* Menu Tab */}
       {activeTab === 'menu' && (
         <AdminMenuSection
-          editingMenu={editingMenu}
-          savingMenu={savingMenu}
-          menuItems={menuItems}
-          newMenuItems={newMenuItems}
+          selectedDates={selectedDates}
+          menuItemsByDate={menuItemsByDate}
+          draftMenuItemsByDate={draftMenuItemsByDate}
+          editingMenuByDate={editingMenuByDate}
+          savingMenuByDate={savingMenuByDate}
+          loadingMenuByDate={loadingMenuByDate}
           dinnerMenuEnabled={dinnerMenuEnabled}
           onToggleDinnerMenu={toggleDinnerMenu}
-          onEditMenu={() => setEditingMenu(true)}
+          onAddDate={addSelectedDate}
+          onRemoveDate={removeSelectedDate}
+          onEditMenu={(menuDate) => setEditingForDate(menuDate, true)}
           onSaveMenu={handleMenuUpdate}
-          onCancelMenu={() => {
-            setEditingMenu(false)
-            fetchData()
+          onCancelMenu={(menuDate) => {
+            setEditingForDate(menuDate, false)
+            fetchMenuForDate(menuDate)
           }}
           onMenuItemChange={handleMenuItemChange}
           onAddMenuItem={addMenuItem}

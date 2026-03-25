@@ -100,7 +100,13 @@ export default function EditOrderForm({ user, loading }) {
 
   const fetchMenuItems = async () => {
     try {
-      const { data, error } = await db.getMenuItems()
+      const fallbackDate = (() => {
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        return tomorrow.toISOString().split('T')[0]
+      })()
+      const menuDate = order?.delivery_date || fallbackDate
+      const { data, error } = await db.getMenuItemsByDate(menuDate)
 
       if (error) {
         console.error('Error fetching menu:', error)
@@ -123,7 +129,12 @@ export default function EditOrderForm({ user, loading }) {
 
   const fetchCustomOptions = async () => {
     try {
-      const deliveryDate = order?.delivery_date || order?.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
+      const fallbackDate = (() => {
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        return tomorrow.toISOString().split('T')[0]
+      })()
+      const deliveryDate = order?.delivery_date || fallbackDate
       const service = order?.service || 'lunch'
       const filterByMealScope = (options = [], meal) =>
         (options || []).filter(opt => {
