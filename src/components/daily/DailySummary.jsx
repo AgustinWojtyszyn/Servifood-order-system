@@ -175,7 +175,7 @@ const DailySummary = ({
         })}
       </div>
 
-      {selectedLocation === 'all' && stats.total > 0 && (
+      {selectedLocation === 'all' && stats.pending > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50 print-hide">
           <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-6 py-4">
             <div className="flex items-center gap-3">
