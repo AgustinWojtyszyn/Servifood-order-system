@@ -579,6 +579,7 @@ const OrderForm = ({ user, loading }) => {
     getSelectedItemsList,
     getSelectedItemsListDinner,
     getDinnerOverrideChoice,
+    dinnerSpecialTitle: dinnerMenuSpecial?.title,
     validateDinnerExclusivity,
     calculateTotal,
     calculateTotalDinner,

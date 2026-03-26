@@ -17,6 +17,7 @@ const validateOrderSubmission = ({
   getSelectedItemsList,
   getSelectedItemsListDinner,
   getDinnerOverrideChoice,
+  dinnerSpecialTitle,
   validateDinnerExclusivity,
   calculateTotal,
   calculateTotalDinner,
@@ -89,7 +90,13 @@ const validateOrderSubmission = ({
 
   let customResponsesDinnerArray = []
   if (dinnerSelected) {
-    if (!dinnerOverrideChoice) {
+    if (dinnerOverrideChoice) {
+      customResponsesDinnerArray = [{
+        id: 'dinner-special',
+        title: dinnerSpecialTitle || 'Opción de cena',
+        response: dinnerOverrideChoice
+      }]
+    } else {
       const missingRequiredOptionsDinner = (visibleDinnerOptions || [])
         .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id])
         .map(opt => opt.title)
