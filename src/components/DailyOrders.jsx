@@ -77,11 +77,6 @@ const DailyOrders = ({ user, loading }) => {
     shareDailyOrdersWhatsApp(sortedOrders)
   }
 
-  const activeLocationsCount = useMemo(
-    () => Object.values(stats.byLocation || {}).filter(count => Number(count) > 0).length,
-    [stats.byLocation]
-  )
-
   const operationalSummary = useMemo(
     () => buildOperationalSummary(sortedOrders),
     [sortedOrders]
@@ -98,6 +93,11 @@ const DailyOrders = ({ user, loading }) => {
   const statsForFilters = useMemo(
     () => calculateStats(statusFilteredOrders),
     [statusFilteredOrders]
+  )
+
+  const activeLocationsCount = useMemo(
+    () => Object.values(statsForFilters.byLocation || {}).filter(count => Number(count) > 0).length,
+    [statsForFilters.byLocation]
   )
 
   const locationCards = useMemo(
@@ -147,7 +147,7 @@ const DailyOrders = ({ user, loading }) => {
         />
 
         <DailyHeader
-          stats={stats}
+          stats={statsForFilters}
           activeLocationsCount={activeLocationsCount}
           tomorrowLabel={tomorrowLabel}
           exportCompany={exportCompany}
