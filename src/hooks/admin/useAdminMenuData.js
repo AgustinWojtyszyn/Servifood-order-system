@@ -3,7 +3,21 @@ import { db } from '../../supabaseClient'
 import { sortMenuItems } from '../../utils/admin/adminCalculations'
 
 const useAdminMenuData = ({ editingMenuByDate, draftMenuItemsByDate, setDraftItemsForDate, initialSelectedDates = [] }) => {
-  const [selectedDates, setSelectedDates] = useState(initialSelectedDates)
+  const [selectedDates, setSelectedDates] = useState(() => {
+    if (typeof window === 'undefined') return initialSelectedDates
+    try {
+      const stored = localStorage.getItem('admin_menu_selected_dates')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed
+        }
+      }
+    } catch (err) {
+      console.error('Error reading menu selected dates', err)
+    }
+    return initialSelectedDates
+  })
   const [menuItemsByDate, setMenuItemsByDate] = useState({})
   const [loadingMenuByDate, setLoadingMenuByDate] = useState({})
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
@@ -64,16 +78,31 @@ const useAdminMenuData = ({ editingMenuByDate, draftMenuItemsByDate, setDraftIte
     }
   }
 
+  const persistSelectedDates = (dates) => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem('admin_menu_selected_dates', JSON.stringify(dates))
+    } catch (err) {
+      console.error('Error saving menu selected dates', err)
+    }
+  }
+
   const addSelectedDate = (menuDate) => {
     if (!menuDate) return
     setSelectedDates(prev => {
       const next = prev.includes(menuDate) ? prev : [...prev, menuDate]
-      return next.sort()
+      const sorted = next.sort()
+      persistSelectedDates(sorted)
+      return sorted
     })
   }
 
   const removeSelectedDate = (menuDate) => {
-    setSelectedDates(prev => prev.filter(date => date !== menuDate))
+    setSelectedDates(prev => {
+      const next = prev.filter(date => date !== menuDate)
+      persistSelectedDates(next)
+      return next
+    })
   }
 
   const clearMenuDate = (menuDate) => {
