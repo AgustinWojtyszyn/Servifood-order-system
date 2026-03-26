@@ -159,6 +159,15 @@ const AdminDinnerOptionSection = ({
                 <p className="text-xs uppercase tracking-[0.18em] text-primary-600 font-bold">Entrega</p>
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900">{dateISO}</h3>
               </div>
+              <button
+                onClick={() => onSaveDate(dateISO)}
+                disabled={Boolean(savingMap[dateISO])}
+                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold flex items-center gap-2 shadow-md disabled:opacity-60"
+                type="button"
+              >
+                <Save className="h-4 w-4" />
+                {savingMap[dateISO] ? 'Guardando...' : 'Guardar día'}
+              </button>
             </div>
 
             <div className="space-y-4">
@@ -230,17 +239,6 @@ const AdminDinnerOptionSection = ({
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <button
-                  onClick={() => onSaveDate(dateISO)}
-                  disabled={Boolean(savingMap[dateISO])}
-                  className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold flex items-center justify-center gap-2 shadow-md disabled:opacity-60"
-                  type="button"
-                >
-                  <Save className="h-5 w-5" />
-                  {savingMap[dateISO] ? 'Guardando...' : 'Guardar día'}
-                </button>
-              </div>
             </div>
           </div>
         )
