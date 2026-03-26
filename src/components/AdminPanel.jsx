@@ -107,9 +107,9 @@ const AdminPanel = () => {
   }, [isAdmin, user])
 
   useEffect(() => {
-    setDinnerSelectedDates([])
-    setDinnerMenusByDate({})
-  }, [dinnerWeekBaseDate])
+    if (activeTab !== 'dinner-option') return
+    loadDinnerMenusForWeek()
+  }, [dinnerWeekBaseDate, activeTab])
 
   useEffect(() => {
     if (!user?.id || !isAdmin) return
@@ -484,6 +484,35 @@ const AdminPanel = () => {
       d.setDate(start.getDate() + index)
       return d
     })
+  }
+
+  const loadDinnerMenusForWeek = async () => {
+    try {
+      const week = getWeekDates(dinnerWeekBaseDate)
+      const startISO = toISODate(week[0])
+      const endISO = toISODate(week[week.length - 1])
+      const { data, error } = await db.getDinnerMenusByDateRange({ start: startISO, end: endISO })
+      if (error) {
+        console.error('Error loading dinner menus range', error)
+        return
+      }
+      const rows = Array.isArray(data) ? data : []
+      const byDate = {}
+      rows.forEach(row => {
+        if (!row?.delivery_date) return
+        if (!byDate[row.delivery_date]) {
+          byDate[row.delivery_date] = {
+            ...row,
+            options: Array.isArray(row.options) && row.options.length > 0 ? row.options : ['']
+          }
+        }
+      })
+      const dates = Object.keys(byDate).sort()
+      setDinnerMenusByDate(byDate)
+      setDinnerSelectedDates(dates)
+    } catch (err) {
+      console.error('Error loading dinner menus for week', err)
+    }
   }
 
   const loadDinnerMenuForDate = async (dateISO, company = null) => {

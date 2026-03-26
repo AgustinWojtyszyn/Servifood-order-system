@@ -891,5 +891,15 @@ export const db = {
       .upsert(payload, { onConflict: 'delivery_date,company' })
       .select()
     return { data, error }
+  },
+
+  getDinnerMenusByDateRange: async ({ start, end }) => {
+    const { data, error } = await supabase
+      .from('dinner_menu_by_date')
+      .select('*')
+      .gte('delivery_date', start)
+      .lte('delivery_date', end)
+      .order('delivery_date', { ascending: true })
+    return { data, error }
   }
 }
