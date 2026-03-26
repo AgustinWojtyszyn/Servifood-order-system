@@ -10,6 +10,8 @@ import Login from './components/Login'
 import LandingPage from './components/LandingPage'
 import { useScreenMetrics } from './hooks/useScreenMetrics'
 import AdminPanel from './components/AdminPanel'
+import NoticeHost from './components/NoticeHost'
+import ConfirmHost from './components/ConfirmHost'
 
 // Lazy loading de componentes (carga diferida)
 const Register = lazy(() => import('./components/Register'))
@@ -174,6 +176,8 @@ function App() {
     ) : (
       <Router>
         <ScreenMetricsListener />
+        <NoticeHost />
+        <ConfirmHost />
         <div
           className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
         >

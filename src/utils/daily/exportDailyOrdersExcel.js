@@ -13,6 +13,7 @@ import {
   getTomorrowDate,
   normalizeDishName
 } from './dailyOrderFormatters'
+import { notifyError, notifyInfo, notifySuccess } from '../notice'
 
 export async function exportDailyOrdersExcel({
   sortedOrders,
@@ -24,7 +25,7 @@ export async function exportDailyOrdersExcel({
   const ordersToExport = filterOrdersByCompany(sortedOrders, exportCompany)
 
   if (ordersToExport.length === 0) {
-    alert('No hay pedidos para exportar')
+    notifyInfo('No hay pedidos para exportar')
     return
   }
 
@@ -141,9 +142,9 @@ export async function exportDailyOrdersExcel({
 
     await downloadWorkbook(wb, fileName)
 
-    alert(`✓ ${ordersToExport.length} pedidos exportados correctamente a ${fileName}`)
+    notifySuccess(`✓ ${ordersToExport.length} pedidos exportados correctamente a ${fileName}`)
   } catch (error) {
     console.error('Error al exportar:', error)
-    alert('Error al exportar el archivo. Por favor, inténtalo de nuevo.')
+    notifyError('Error al exportar el archivo. Por favor, inténtalo de nuevo.')
   }
 }

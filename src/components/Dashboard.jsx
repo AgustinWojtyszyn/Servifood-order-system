@@ -15,6 +15,8 @@ import WeeklyOrdersSection from './dashboard/WeeklyOrdersSection'
 import DashboardHeader from './dashboard/DashboardHeader'
 import StatsCards from './dashboard/StatsCards'
 import ToastBanner from './dashboard/ToastBanner'
+import { notifyError, notifyInfo, notifySuccess, notifyWarning } from '../utils/notice'
+import { confirmAction } from '../utils/confirm'
 import {
   ensureArray,
   getCustomSideFromResponses,
@@ -245,11 +247,16 @@ const Dashboard = ({ user, loading }) => {
   }
 
   const handleMarkAsArchived = async (orderId) => {
-    if (confirm('¿Archivar este pedido?')) {
+    const confirmed = await confirmAction({
+      title: 'Archivar pedido',
+      message: 'Este pedido pasará a estado archivado y no se podrá modificar.',
+      confirmText: 'Archivar'
+    })
+    if (confirmed) {
       try {
         const { error } = await db.updateOrderStatus(orderId, 'archived')
         if (error) {
-          alert('Error al actualizar el pedido')
+          notifyError('Error al actualizar el pedido')
         } else {
           setOrders((prev) => {
             if (!Array.isArray(prev)) return prev
@@ -263,7 +270,7 @@ const Dashboard = ({ user, loading }) => {
         }
       } catch (err) {
         console.error('Error:', err)
-        alert('Error al actualizar el pedido')
+        notifyError('Error al actualizar el pedido')
       }
     }
   }
@@ -277,11 +284,16 @@ const Dashboard = ({ user, loading }) => {
       'cancelled': 'Cancelado'
     }
     
-    if (confirm(`¿Cambiar estado a "${statusNames[newStatus]}"?`)) {
+    const confirmed = await confirmAction({
+      title: 'Cambiar estado del pedido',
+      message: `¿Querés cambiar el estado a "${statusNames[newStatus]}"?`,
+      confirmText: 'Cambiar estado'
+    })
+    if (confirmed) {
       try {
         const { error } = await db.updateOrderStatus(orderId, newStatus)
         if (error) {
-          alert('Error al actualizar el pedido')
+          notifyError('Error al actualizar el pedido')
         } else {
           setOrders((prev) => {
             if (!Array.isArray(prev)) return prev
@@ -295,7 +307,7 @@ const Dashboard = ({ user, loading }) => {
         }
       } catch (err) {
         console.error('Error:', err)
-        alert('Error al actualizar el pedido')
+        notifyError('Error al actualizar el pedido')
       }
     }
   }
@@ -304,11 +316,16 @@ const Dashboard = ({ user, loading }) => {
     const pendingOrders = orders.filter(order => order.status === 'pending')
 
     if (pendingOrders.length === 0) {
-      alert('No hay pedidos pendientes para archivar')
+      notifyInfo('No hay pedidos pendientes para archivar')
       return
     }
 
-    if (confirm(`¿Archivar todos los ${pendingOrders.length} pedidos pendientes?`)) {
+    const confirmed = await confirmAction({
+      title: 'Archivar pedidos pendientes',
+      message: `Se archivarán ${pendingOrders.length} pedidos pendientes.`,
+      confirmText: 'Archivar todos'
+    })
+    if (confirmed) {
       try {
         const promises = pendingOrders.map(order =>
           db.updateOrderStatus(order.id, 'archived')
@@ -318,9 +335,9 @@ const Dashboard = ({ user, loading }) => {
         const errors = results.filter(r => r.error)
 
         if (errors.length > 0) {
-          alert(`Se actualizaron ${pendingOrders.length - errors.length} pedidos. ${errors.length} fallaron.`)
+          notifyWarning(`Se actualizaron ${pendingOrders.length - errors.length} pedidos. ${errors.length} fallaron.`)
         } else {
-          alert(`✓ ${pendingOrders.length} pedidos archivados`)
+          notifySuccess(`✓ ${pendingOrders.length} pedidos archivados`)
         }
 
         setOrders((prev) => {
@@ -334,14 +351,14 @@ const Dashboard = ({ user, loading }) => {
         setTimeout(() => fetchOrders(true), 1500)
       } catch (err) {
         console.error('Error:', err)
-        alert('Error al actualizar los pedidos')
+        notifyError('Error al actualizar los pedidos')
       }
     }
   }
 
   const handleEditOrder = (order) => {
     if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
-      alert(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+      notifyInfo(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
       return
     }
     // Navigate to edit order page with order data

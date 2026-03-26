@@ -13,6 +13,8 @@ import AdminOptionsSection from './admin/AdminOptionsSection'
 import AdminCleanupSection from './admin/AdminCleanupSection'
 import { sortMenuItems } from '../utils/admin/adminCalculations'
 import { addDaysToISO, getTomorrowISOInTimeZone } from '../utils/dateUtils'
+import { notifyError, notifyInfo, notifySuccess, notifyWarning } from '../utils/notice'
+import { confirmAction } from '../utils/confirm'
 
 const AdminPanel = () => {
   // Archivar todos los pedidos pendientes
@@ -23,24 +25,29 @@ const AdminPanel = () => {
       'Los pedidos archivados NO se eliminan, pero ya no aparecerán como pendientes ni podrán ser modificados.\n' +
       'Esta acción es útil para limpiar la lista de pendientes y mantener el historial.\n\n' +
       '¿Deseas archivar todos los pedidos pendientes ahora?';
-    if (!window.confirm(msg)) return;
+    const confirmed = await confirmAction({
+      title: 'Archivar pedidos pendientes',
+      message: msg,
+      confirmText: 'Archivar pedidos'
+    })
+    if (!confirmed) return
     setArchivingPending(true)
     try {
       const { data, error } = await db.archiveAllPendingOrders()
       if (error) {
-        alert('❌ Ocurrió un error al archivar los pedidos pendientes. Intenta nuevamente.\n\n' + error.message)
+        notifyError(`Ocurrió un error al archivar los pedidos pendientes. ${error.message}`)
       } else {
         const affected = Array.isArray(data) ? data.length : 0
-        alert(
-          affected === 0
-            ? 'No hay pedidos pendientes para archivar.'
-            : `✅ Pedidos archivados correctamente: ${affected}\n\nPuedes consultar el historial en la sección de pedidos archivados.`
-        )
+        if (affected === 0) {
+          notifyInfo('No hay pedidos pendientes para archivar.')
+        } else {
+          notifySuccess(`Pedidos archivados correctamente: ${affected}. Podés consultar el historial en pedidos archivados.`)
+        }
         Sound.playSuccess()
         fetchData()
       }
     } catch (err) {
-      alert('❌ Error inesperado al archivar pedidos pendientes. Intenta nuevamente.')
+      notifyError('Error inesperado al archivar pedidos pendientes. Intenta nuevamente.')
     } finally {
       setArchivingPending(false)
     }
@@ -245,14 +252,14 @@ const AdminPanel = () => {
       })
       if (error) {
         console.error('Error toggling dessert override', error)
-        alert('No se pudo actualizar el postre para esa fecha')
+        notifyError('No se pudo actualizar el postre para esa fecha')
       } else {
         setDessertOverrideEnabled(newValue)
-        alert(newValue ? '✅ Postre habilitado para la fecha seleccionada' : 'Postre deshabilitado para esa fecha')
+        notifySuccess(newValue ? 'Postre habilitado para la fecha seleccionada' : 'Postre deshabilitado para esa fecha')
       }
     } catch (err) {
       console.error('Error toggling dessert override', err)
-      alert('No se pudo actualizar el postre para esa fecha')
+      notifyError('No se pudo actualizar el postre para esa fecha')
     } finally {
       setLoadingDessertOverride(false)
       setShowDessertConfirm(false)
@@ -437,25 +444,14 @@ const AdminPanel = () => {
   }
 
   const handleDeleteArchivedOrders = async () => {
-    const confirmed = window.confirm(
-      `⚠️ ADVERTENCIA: Estás a punto de eliminar ${archivedOrdersCount} pedidos archivados.\n\n` +
-      '✓ Esta acción liberará espacio en la base de datos\n' +
-      '✗ Los pedidos archivados serán eliminados permanentemente\n' +
-      '✗ Esta acción NO se puede deshacer\n\n' +
-      '¿Estás seguro de continuar?'
-    )
-
+    const confirmed = await confirmAction({
+      title: 'Eliminar pedidos archivados',
+      message:
+        'Esta acción liberará espacio en la base de datos, pero elimina permanentemente los pedidos archivados.',
+      highlight: `Se eliminarán ${archivedOrdersCount} pedidos archivados.`,
+      confirmText: 'Eliminar definitivamente'
+    })
     if (!confirmed) return
-
-    // Segunda confirmación de seguridad
-    const doubleCheck = window.confirm(
-      '🔒 CONFIRMACIÓN FINAL\n\n' +
-      'Esta es tu última oportunidad de cancelar.\n' +
-      `Se eliminarán ${archivedOrdersCount} pedidos archivados.\n\n` +
-      '¿Confirmas que deseas proceder?'
-    )
-
-    if (!doubleCheck) return
 
     setDeletingOrders(true)
     
@@ -464,16 +460,19 @@ const AdminPanel = () => {
       
       if (error) {
         console.error('Error deleting archived orders:', error)
-        alert('❌ Error al eliminar los pedidos: ' + error.message)
+        notifyError(`Error al eliminar los pedidos: ${error.message}`)
       } else {
-        alert(`✅ Se eliminaron ${archivedOrdersCount} pedidos archivados exitosamente.\n\n` +
-              'Se ha liberado espacio en la base de datos.')
+        notifySuccess(
+          archivedOrdersCount > 0
+            ? `Se eliminaron ${archivedOrdersCount} pedidos archivados. Se liberó espacio en la base de datos.`
+            : 'No había pedidos archivados para eliminar.'
+        )
         setArchivedOrdersCount(0)
         fetchData() // Refrescar datos
       }
     } catch (err) {
       console.error('Error:', err)
-      alert('❌ Error al eliminar los pedidos')
+      notifyError('Error al eliminar los pedidos')
     } finally {
       setDeletingOrders(false)
     }
@@ -535,14 +534,14 @@ const AdminPanel = () => {
       console.log('[SUPABASE UPDATE RESULT]', { data, error })
       if (error) {
         console.error('[SUPABASE ERROR] updateUserRole:', error)
-        alert('Error al actualizar el rol: ' + error.message)
+        notifyError(`Error al actualizar el rol: ${error.message}`)
         return
       }
       if (!data || (Array.isArray(data) && data.length === 0)) {
-        alert('No se pudo actualizar el rol. Verifica las políticas de seguridad o el valor enviado.')
+        notifyWarning('No se pudo actualizar el rol. Verifica las políticas de seguridad o el valor enviado.')
         return
       }
-      alert('Rol actualizado correctamente')
+      notifySuccess('Rol actualizado correctamente')
       // Actualizar el usuario en la lista local
       if (data && Array.isArray(users)) {
         setUsers(users.map(u => u.primary_user_id === userId ? { ...u, role: roleValue } : u))
@@ -553,19 +552,18 @@ const AdminPanel = () => {
         await refreshSession()
       }
     } catch (err) {
-      alert('Error al actualizar el rol')
+      notifyError('Error al actualizar el rol')
     }
   }
 
   const handleDeleteUser = async (userId, userName) => {
-    const confirmed = window.confirm(
-      `¿Estás seguro de que deseas eliminar al usuario "${userName}"?\n\n` +
-      'Esta acción eliminará:\n' +
-      '- El usuario de la base de datos\n' +
-      '- Todos los pedidos asociados\n\n' +
-      'Esta acción NO se puede deshacer.'
-    )
-
+    const confirmed = await confirmAction({
+      title: 'Eliminar usuario',
+      message:
+        `Se eliminarán todos los pedidos asociados al usuario "${userName}".`,
+      highlight: 'Esta acción NO se puede deshacer.',
+      confirmText: 'Eliminar usuario'
+    })
     if (!confirmed) return
 
     try {
@@ -573,16 +571,16 @@ const AdminPanel = () => {
       
       if (error) {
         console.error('Error deleting user:', error)
-        alert('Error al eliminar el usuario: ' + error.message)
+        notifyError(`Error al eliminar el usuario: ${error.message}`)
       } else {
         // Update local state
         setUsers(users.filter(person => person.primary_user_id !== userId))
-        alert('Usuario eliminado exitosamente')
+        notifySuccess('Usuario eliminado exitosamente')
         await fetchData()
       }
     } catch (err) {
       console.error('Error:', err)
-      alert('Error al eliminar el usuario')
+      notifyError('Error al eliminar el usuario')
     }
   }
 
@@ -605,7 +603,7 @@ const AdminPanel = () => {
       const validItems = draftItems.filter(item => item.name.trim() !== '')
 
       if (validItems.length === 0) {
-        alert('Debe haber al menos un plato en el menú')
+        notifyInfo('Debe haber al menos un plato en el menú')
         return
       }
 
@@ -622,7 +620,11 @@ const AdminPanel = () => {
       }
 
       if ((prevItems || []).length > 0 && isSameMenu(validItems, prevItems)) {
-        const confirmed = window.confirm('Estás repitiendo el menú del día anterior. ¿Querés continuar?')
+        const confirmed = await confirmAction({
+          title: 'Repetir menú',
+          message: 'Estás repitiendo el menú del día anterior. ¿Querés continuar?',
+          confirmText: 'Sí, repetir'
+        })
         if (!confirmed) return
       }
 
@@ -633,16 +635,16 @@ const AdminPanel = () => {
 
       if (error) {
         console.error('Error updating menu:', error)
-        alert('Error al actualizar el menú')
+        notifyError('Error al actualizar el menú')
       } else {
         setEditingForDate(menuDate, false)
         Sound.playSuccess()
-        alert('Menú actualizado exitosamente')
+        notifySuccess('Menú actualizado exitosamente')
         await fetchMenuForDate(menuDate)
       }
     } catch (err) {
       console.error('Error:', err)
-      alert('Error al actualizar el menú')
+      notifyError('Error al actualizar el menú')
     } finally {
       setSavingForDate(menuDate, false)
     }
@@ -663,7 +665,7 @@ const AdminPanel = () => {
   const removeMenuItem = (menuDate, index) => {
     const current = draftMenuItemsByDate[menuDate] || []
     if (current.length <= 1) {
-      alert('Debe haber al menos un plato en el menú')
+      notifyInfo('Debe haber al menos un plato en el menú')
       return
     }
     const updatedItems = current.filter((_, i) => i !== index)
@@ -706,13 +708,13 @@ const AdminPanel = () => {
 
   const handleSaveOption = async () => {
     if (!newOption.title.trim()) {
-      alert('El título es requerido')
+      notifyInfo('El título es requerido')
       return
     }
 
     if ((newOption.type === 'multiple_choice' || newOption.type === 'checkbox') && 
         newOption.options.filter(opt => opt.trim()).length === 0) {
-      alert('Debes agregar al menos una opción')
+      notifyInfo('Debes agregar al menos una opción')
       return
     }
 
@@ -739,7 +741,7 @@ const AdminPanel = () => {
       }
 
       if (optionData.only_holidays && optionData.exclude_holidays) {
-        alert('No podés marcar "Solo feriados" y "Excluir feriados" al mismo tiempo.')
+        notifyWarning('No podés marcar "Solo feriados" y "Excluir feriados" al mismo tiempo.')
         return
       }
 
@@ -749,33 +751,38 @@ const AdminPanel = () => {
       
       if (error) {
         console.error('❌ Error al guardar opción:', error)
-        alert('Error al guardar la opción: ' + error.message)
+        notifyError(`Error al guardar la opción: ${error.message}`)
       } else {
         setNewOption(null)
         setEditingOptions(false)
         await fetchData()
-        alert('Opción guardada exitosamente.')
+        notifySuccess('Opción guardada exitosamente.')
       }
     } catch (err) {
       console.error('❌ Error:', err)
-      alert('Error al guardar la opción')
+      notifyError('Error al guardar la opción')
     }
   }
 
   const handleDeleteOption = async (optionId) => {
-    if (!confirm('¿Estás seguro de eliminar esta opción?')) return
+    const confirmed = await confirmAction({
+      title: 'Eliminar opción',
+      message: '¿Estás seguro de eliminar esta opción?',
+      confirmText: 'Eliminar'
+    })
+    if (!confirmed) return
 
     try {
       const { error } = await db.deleteCustomOption(optionId)
       if (error) {
-        alert('Error al eliminar la opción')
+        notifyError('Error al eliminar la opción')
       } else {
         fetchData()
-        alert('Opción eliminada exitosamente')
+        notifySuccess('Opción eliminada exitosamente')
       }
     } catch (err) {
       console.error('Error:', err)
-      alert('Error al eliminar la opción')
+      notifyError('Error al eliminar la opción')
     }
   }
 
@@ -783,13 +790,13 @@ const AdminPanel = () => {
     try {
       const { error } = await db.updateCustomOption(optionId, { active: !currentState })
       if (error) {
-        alert('Error al actualizar la opción')
+        notifyError('Error al actualizar la opción')
       } else {
         fetchData()
       }
     } catch (err) {
       console.error('Error:', err)
-      alert('Error al actualizar la opción')
+      notifyError('Error al actualizar la opción')
     }
   }
 
@@ -807,7 +814,7 @@ const AdminPanel = () => {
       fetchData()
     } catch (err) {
       console.error('Error:', err)
-      alert('Error al reordenar')
+      notifyError('Error al reordenar')
     }
   }
 

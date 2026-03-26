@@ -19,6 +19,7 @@ import OrderDinnerOptionsSection from './order-form/OrderDinnerOptionsSection'
 import OrderSuccessScreen from './order-form/OrderSuccessScreen'
 import OrderHoursBanner from './order-form/OrderHoursBanner'
 import { formatResponseValue } from '../utils/order/orderFormatters'
+import { notifyInfo } from '../utils/notice'
 import {
   buildSelectedItemsList,
   countSelectedItems
@@ -317,7 +318,7 @@ const OrderForm = ({ user, loading }) => {
           .some(m => selectedItems[m.id])
 
         if (mainMenuSelected && !selectedItems[itemId]) {
-          alert('Solo puedes seleccionar 1 menú por persona.')
+          notifyInfo('Solo puedes seleccionar 1 menú por persona.')
           return
         }
         setSelectedItems(prev => ({
@@ -342,7 +343,7 @@ const OrderForm = ({ user, loading }) => {
     if (isSelected) {
       // Si ya hay algo elegido (menú u otra opción), bloquear
       if (anySelected && !selectedItemsDinner[itemId]) {
-        alert('Solo puedes seleccionar 1 menú por persona en cena.')
+        notifyInfo('Solo puedes seleccionar 1 menú por persona en cena.')
         return
       }
       // Limpiar overrides de cena si elige un plato

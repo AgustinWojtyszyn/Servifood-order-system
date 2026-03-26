@@ -10,6 +10,7 @@ import MonthlySummary from './monthly/MonthlySummary'
 import excelLogo from '../assets/logoexcel.png'
 import { COUNTABLE_STATUSES } from '../utils/monthly/monthlyOrderConstants'
 import { formatDateDMY, toDisplayString } from '../utils/monthly/monthlyOrderFormatters'
+import { notifyInfo } from '../utils/notice'
 import {
   addSideItem,
   buildDailyBreakdownFromOrdersByDay,
@@ -391,7 +392,7 @@ const MonthlyPanel = ({ user, loading }) => {
   const handleExportDailyExcel = async () => {
     const dailyForExport = resolveDailyBreakdownForExport()
     if (!dailyForExport?.daily_breakdown) {
-      alert('No hay datos de desglose diario para exportar en el rango seleccionado.')
+      notifyInfo('No hay datos de desglose diario para exportar en el rango seleccionado.')
       return
     }
     const dataRows = buildDailyRows(dailyForExport, ordersByDayForView)

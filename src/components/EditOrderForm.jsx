@@ -5,6 +5,7 @@ import { ordersService } from '../services/orders'
 import { Plus, Minus, X, Clock, AlertTriangle, Save, CheckCircle } from 'lucide-react'
 import { isOrderEditable } from '../utils'
 import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
+import { notifyInfo } from '../utils/notice'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
 import EditOrderCustomOptionsSection from './edit-order/EditOrderCustomOptionsSection'
@@ -43,7 +44,7 @@ export default function EditOrderForm({ user, loading }) {
     }
 
     if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
-      alert(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos de haberlo creado.`)
+      notifyInfo(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos de haberlo creado.`)
       navigate('/dashboard')
       return
     }
@@ -165,7 +166,7 @@ export default function EditOrderForm({ user, loading }) {
           .some(m => selectedItems[m.id])
 
         if (mainMenuSelected && !selectedItems[itemId]) {
-          alert('Solo puedes seleccionar 1 menú por persona.')
+          notifyInfo('Solo puedes seleccionar 1 menú por persona.')
           return
         }
 

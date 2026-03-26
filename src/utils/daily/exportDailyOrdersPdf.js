@@ -6,10 +6,11 @@ import {
   getStatusText,
   getTomorrowDate
 } from './dailyOrderFormatters'
+import { notifyError, notifyInfo } from '../notice'
 
 export function exportDailyOrdersPdf(sortedOrders) {
   if (!sortedOrders.length) {
-    alert('No hay pedidos para exportar.')
+    notifyInfo('No hay pedidos para exportar.')
     return
   }
 
@@ -130,7 +131,7 @@ export function exportDailyOrdersPdf(sortedOrders) {
 
   const w = window.open('', '_blank')
   if (!w) {
-    alert('No se pudo abrir la vista de impresión. Permite popups e inténtalo de nuevo.')
+    notifyError('No se pudo abrir la vista de impresión. Permite popups e inténtalo de nuevo.')
     return
   }
   w.document.open()

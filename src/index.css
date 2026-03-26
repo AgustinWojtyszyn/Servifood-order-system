@@ -141,6 +141,37 @@
   }
 }
 
+@keyframes notice-pop {
+  0% {
+    transform: translateY(18px) scale(0.98);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes notice-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.notice-pop {
+  animation: notice-pop 220ms ease-out;
+}
+
+.notice-fade {
+  animation: notice-fade 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice-pop,
+  .notice-fade {
+    animation: none;
+  }
+}
+
 /* ===========================
    COMPONENTS
    =========================== */

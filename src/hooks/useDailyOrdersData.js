@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { db } from '../supabaseClient'
 import { Sound } from '../utils/Sound'
 import { calculateStats } from '../utils/daily/dailyOrderCalculations'
+import { notifyError, notifyInfo, notifySuccess } from '../utils/notice'
+import { confirmAction } from '../utils/confirm'
 
 export const useDailyOrdersData = (user) => {
   const [orders, setOrders] = useState([])
@@ -129,12 +131,16 @@ export const useDailyOrdersData = (user) => {
 
   const handleArchiveOrder = useCallback(async (order) => {
     if (!order?.id || order.status === 'archived') return
-    const confirmArchive = window.confirm(`¿Archivar el pedido de ${order.user_name || 'cliente'}?`)
+    const confirmArchive = await confirmAction({
+      title: 'Archivar pedido',
+      message: `¿Archivar el pedido de ${order.user_name || 'cliente'}?`,
+      confirmText: 'Archivar'
+    })
     if (!confirmArchive) return
 
     const { error } = await db.updateOrderStatus(order.id, 'archived')
     if (error) {
-      alert('Error al archivar el pedido: ' + error.message)
+      notifyError(`Error al archivar el pedido: ${error.message}`)
       return
     }
     Sound.playSuccess()
@@ -150,15 +156,20 @@ export const useDailyOrdersData = (user) => {
   }, [handleRefresh])
 
   const handleArchiveAllPending = useCallback(async () => {
-    if (window.confirm('¿Archivar TODOS los pedidos pendientes? Esta acción no se puede deshacer.')) {
+    const confirmed = await confirmAction({
+      title: 'Archivar todos los pedidos pendientes',
+      message: 'Esta acción no se puede deshacer.',
+      confirmText: 'Archivar todos'
+    })
+    if (confirmed) {
       const { data, error } = await db.archiveAllPendingOrders()
       if (!error) {
         const affected = Array.isArray(data) ? data.length : 0
-        alert(
-          affected === 0
-            ? 'No hay pedidos pendientes para archivar.'
-            : `Pedidos archivados correctamente: ${affected}`
-        )
+        if (affected === 0) {
+          notifyInfo('No hay pedidos pendientes para archivar.')
+        } else {
+          notifySuccess(`Pedidos archivados correctamente: ${affected}`)
+        }
         Sound.playSuccess()
         setOrders((prev) => {
           if (!Array.isArray(prev)) return prev
@@ -170,7 +181,7 @@ export const useDailyOrdersData = (user) => {
         })
         handleRefresh()
       } else {
-        alert('Error al archivar pedidos: ' + error.message)
+        notifyError(`Error al archivar pedidos: ${error.message}`)
       }
     }
   }, [handleRefresh])

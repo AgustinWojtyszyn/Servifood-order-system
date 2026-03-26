@@ -1,9 +1,10 @@
 import { getCustomSideFromResponses } from './dailyOrderCalculations'
 import { normalizeDishName } from './dailyOrderFormatters'
+import { notifyError, notifyInfo } from '../notice'
 
 export function shareDailyOrdersWhatsApp(sortedOrders) {
   if (sortedOrders.length === 0) {
-    alert('No hay pedidos para compartir')
+    notifyInfo('No hay pedidos para compartir')
     return
   }
 
@@ -51,6 +52,6 @@ export function shareDailyOrdersWhatsApp(sortedOrders) {
     window.open(whatsappUrl, '_blank')
   } catch (error) {
     console.error('Error al compartir:', error)
-    alert('Error al compartir por WhatsApp')
+    notifyError('Error al compartir por WhatsApp')
   }
 }
