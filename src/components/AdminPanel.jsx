@@ -193,6 +193,12 @@ const AdminPanel = () => {
     clearMenuDate(menuDate)
   }
 
+  const handleSaveAllMenus = async () => {
+    for (const menuDate of selectedDates) {
+      await handleMenuUpdate(menuDate)
+    }
+  }
+
   const mergedLoading = optionsLoading || usersLoading
 
   const togglePersonDetails = (personId) => {
@@ -337,6 +343,7 @@ const AdminPanel = () => {
           onToggleDinnerMenu={toggleDinnerMenu}
           onAddDate={addSelectedDate}
           onRemoveDate={handleRemoveSelectedDate}
+          onSaveAllMenus={handleSaveAllMenus}
           onEditMenu={(menuDate) => setEditingForDate(menuDate, true)}
           onSaveMenu={handleMenuUpdate}
           onCancelMenu={(menuDate) => {

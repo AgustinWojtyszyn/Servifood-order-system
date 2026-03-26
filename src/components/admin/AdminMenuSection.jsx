@@ -12,6 +12,7 @@ const AdminMenuSection = ({
   onToggleDinnerMenu,
   onAddDate,
   onRemoveDate,
+  onSaveAllMenus,
   onEditMenu,
   onSaveMenu,
   onCancelMenu,
@@ -63,6 +64,7 @@ const AdminMenuSection = ({
 
   const selectedCount = orderedDates.length
   const loadedCount = orderedDates.filter(date => (menuItemsByDate?.[date] || []).length > 0).length
+  const isSavingAny = orderedDates.some(date => Boolean(savingMenuByDate?.[date]))
 
   const formatDateLabel = (dateISO) => {
     try {
@@ -217,19 +219,35 @@ const AdminMenuSection = ({
         </div>
 
         {orderedDates.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {orderedDates.map(date => (
-              <div key={date} className="flex items-center gap-2 bg-gray-100 text-gray-900 px-3 py-1.5 rounded-full text-xs font-semibold">
-                <span>{date}</span>
-                <button
-                  onClick={() => onRemoveDate(date)}
-                  className="p-1 rounded-full hover:bg-gray-200"
-                  title="Quitar día"
-                >
-                  <Minus className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              {orderedDates.map(date => (
+                <div key={date} className="flex items-center gap-2 bg-gray-100 text-gray-900 px-3 py-1.5 rounded-full text-xs font-semibold">
+                  <span>{date}</span>
+                  <button
+                    onClick={() => onRemoveDate(date)}
+                    className="p-1 rounded-full hover:bg-gray-200"
+                    title="Quitar día"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <button
+                onPointerDown={() => {
+                  if (!isSavingAny && orderedDates.length > 0) onPrimeSuccess()
+                }}
+                onClick={onSaveAllMenus}
+                disabled={orderedDates.length === 0 || isSavingAny}
+                className="btn-primary text-black flex items-center justify-center text-sm sm:text-base px-4 py-2.5"
+                type="button"
+              >
+                <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Guardar todos
+              </button>
+            </div>
           </div>
         )}
       </div>
