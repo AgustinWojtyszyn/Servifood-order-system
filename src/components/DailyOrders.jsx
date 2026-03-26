@@ -14,6 +14,7 @@ import { useDailyOrdersFilters } from '../hooks/useDailyOrdersFilters'
 import {
   buildLocationCards,
   buildOperationalSummary,
+  calculateStats,
   buildPrintStats,
   filterOrdersByCompany
 } from '../utils/daily/dailyOrderCalculations'
@@ -86,6 +87,19 @@ const DailyOrders = ({ user, loading }) => {
     [sortedOrders]
   )
 
+  const statusFilteredOrders = useMemo(() => {
+    if (selectedStatus === 'all') return allOrders
+    if (selectedStatus === 'archived') {
+      return allOrders.filter(order => order?.status === 'archived')
+    }
+    return allOrders.filter(order => order?.status !== 'archived')
+  }, [allOrders, selectedStatus])
+
+  const statsForFilters = useMemo(
+    () => calculateStats(statusFilteredOrders),
+    [statusFilteredOrders]
+  )
+
   const locationCards = useMemo(
     () => buildLocationCards(allOrders),
     [allOrders]
@@ -151,7 +165,7 @@ const DailyOrders = ({ user, loading }) => {
         />
 
         <DailyFilters
-          stats={stats}
+          stats={statsForFilters}
           locations={locations}
           selectedLocation={selectedLocation}
           onLocationChange={setSelectedLocation}
