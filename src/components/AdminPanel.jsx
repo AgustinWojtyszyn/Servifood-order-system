@@ -194,9 +194,17 @@ const AdminPanel = () => {
   }
 
   const handleSaveAllMenus = async () => {
+    if (!selectedDates.length) return
+    const confirmed = await confirmAction({
+      title: 'Guardar todos los menús',
+      message: `Se guardarán ${selectedDates.length} día${selectedDates.length === 1 ? '' : 's'} seleccionados.`,
+      confirmText: 'Guardar todos'
+    })
+    if (!confirmed) return
     for (const menuDate of selectedDates) {
-      await handleMenuUpdate(menuDate)
+      await handleMenuUpdate(menuDate, { silent: true })
     }
+    notifySuccess('Menús guardados correctamente')
   }
 
   const mergedLoading = optionsLoading || usersLoading
