@@ -275,7 +275,7 @@ const AdminMenuSection = ({
                         }}
                         onClick={() => onSaveMenu(menuDate)}
                         disabled={savingMenu}
-                        className="btn-primary flex items-center justify-center text-sm sm:text-base px-4 py-2.5"
+                        className="btn-primary text-black flex items-center justify-center text-sm sm:text-base px-4 py-2.5"
                       >
                         <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                         Guardar

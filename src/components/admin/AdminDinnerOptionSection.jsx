@@ -162,7 +162,7 @@ const AdminDinnerOptionSection = ({
               <button
                 onClick={() => onSaveDate(dateISO)}
                 disabled={Boolean(savingMap[dateISO])}
-                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold flex items-center gap-2 shadow-md disabled:opacity-60"
+                className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-black text-sm font-bold flex items-center gap-2 shadow-md disabled:opacity-60"
                 type="button"
               >
                 <Save className="h-4 w-4" />

@@ -218,7 +218,7 @@ const AdminForm = ({
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <button
             onClick={onSave}
-            className="btn-primary flex-1 flex items-center justify-center py-3"
+            className="btn-primary text-black flex-1 flex items-center justify-center py-3"
           >
             <Save className="h-5 w-5 mr-2" />
             Guardar Opción
