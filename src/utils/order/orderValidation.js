@@ -59,7 +59,7 @@ const validateOrderSubmission = ({
   const dinnerOverrideChoice = getDinnerOverrideChoice()
 
   if (dinnerSelected && selectedItemsListDinner.length === 0 && !dinnerOverrideChoice) {
-    return { error: 'Selecciona al menos un plato para cena o marca la opción MP/veggie.' }
+    return { error: 'Selecciona al menos un plato para cena o una opción de cena.' }
   }
 
   let customResponsesArray = []
@@ -89,26 +89,28 @@ const validateOrderSubmission = ({
 
   let customResponsesDinnerArray = []
   if (dinnerSelected) {
-    const missingRequiredOptionsDinner = (visibleDinnerOptions || [])
-      .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id])
-      .map(opt => opt.title)
-    if (missingRequiredOptionsDinner.length > 0) {
-      return { error: `Para cena completa: ${missingRequiredOptionsDinner.join(', ')}` }
-    }
+    if (!dinnerOverrideChoice) {
+      const missingRequiredOptionsDinner = (visibleDinnerOptions || [])
+        .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id])
+        .map(opt => opt.title)
+      if (missingRequiredOptionsDinner.length > 0) {
+        return { error: `Para cena completa: ${missingRequiredOptionsDinner.join(', ')}` }
+      }
 
-    customResponsesDinnerArray = (visibleDinnerOptions || [])
-      .filter(opt => {
-        const response = customResponsesDinner[opt.id]
-        if (!response) return false
-        if (Array.isArray(response) && response.length === 0) return false
-        if (typeof response === 'string' && response.trim() === '') return false
-        return true
-      })
-      .map(opt => ({
-        id: opt.id,
-        title: opt.title,
-        response: customResponsesDinner[opt.id]
-      }))
+      customResponsesDinnerArray = (visibleDinnerOptions || [])
+        .filter(opt => {
+          const response = customResponsesDinner[opt.id]
+          if (!response) return false
+          if (Array.isArray(response) && response.length === 0) return false
+          if (typeof response === 'string' && response.trim() === '') return false
+          return true
+        })
+        .map(opt => ({
+          id: opt.id,
+          title: opt.title,
+          response: customResponsesDinner[opt.id]
+        }))
+    }
   }
 
   const deliveryDate = getTomorrowISOInTimeZone()

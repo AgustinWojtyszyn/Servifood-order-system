@@ -40,6 +40,8 @@ const OrderForm = ({ user, loading }) => {
   const [customOptionsDinner, setCustomOptionsDinner] = useState([])
   const [customResponses, setCustomResponses] = useState({})
   const [customResponsesDinner, setCustomResponsesDinner] = useState({})
+  const [dinnerMenuSpecial, setDinnerMenuSpecial] = useState(null)
+  const [dinnerSpecialChoice, setDinnerSpecialChoice] = useState(null)
   const [selectedItems, setSelectedItems] = useState({})
   const [selectedItemsDinner, setSelectedItemsDinner] = useState({})
   const [formData, setFormData] = useState({
@@ -194,6 +196,7 @@ const OrderForm = ({ user, loading }) => {
     setMenuItems,
     setCustomOptionsLunch,
     setCustomOptionsDinner,
+    setDinnerMenuSpecial,
     setPendingLunch,
     setPendingDinner,
     setHasOrderToday,
@@ -210,6 +213,12 @@ const OrderForm = ({ user, loading }) => {
       navigate('/order', { replace: true })
     }
   }, [companySlugParam, navigate, rawCompanySlug])
+
+  useEffect(() => {
+    if (!dinnerMenuSpecial) {
+      setDinnerSpecialChoice(null)
+    }
+  }, [dinnerMenuSpecial])
 
   useEffect(() => {
     const defaultLocation = locations[0] || ''
@@ -341,6 +350,10 @@ const OrderForm = ({ user, loading }) => {
     const anySelected = Object.values(selectedItemsDinner).some(Boolean)
 
     if (isSelected) {
+      if (dinnerSpecialChoice) {
+        notifyInfo('Si elegís la opción de cena, no podés seleccionar otro menú u opción.')
+        return
+      }
       // Si ya hay algo elegido (menú u otra opción), bloquear
       if (anySelected && !selectedItemsDinner[itemId]) {
         notifyInfo('Solo puedes seleccionar 1 menú por persona en cena.')
@@ -348,6 +361,7 @@ const OrderForm = ({ user, loading }) => {
       }
       // Limpiar overrides de cena si elige un plato
       clearDinnerOverrideResponses()
+      setDinnerSpecialChoice(null)
       setSelectedItemsDinner(prev => ({ ...prev, [itemId]: true }))
     } else {
       setSelectedItemsDinner(prev => ({ ...prev, [itemId]: false }))
@@ -396,6 +410,14 @@ const OrderForm = ({ user, loading }) => {
     }))
   }
 
+  const setCustomResponsesDinnerSafe = (updater) => {
+    if (dinnerSpecialChoice) {
+      notifyInfo('Si elegís la opción de cena, no podés seleccionar otras opciones.')
+      return
+    }
+    setCustomResponsesDinner(prev => (typeof updater === 'function' ? updater(prev) : updater))
+  }
+
   const getSelectedItemsList = () => buildSelectedItemsList(menuItems, selectedItems)
 
   const calculateTotal = () => countSelectedItems(getSelectedItemsList())
@@ -416,7 +438,19 @@ const OrderForm = ({ user, loading }) => {
     setSelectedItemsDinner({})
   }
 
+  const handleDinnerSpecialSelect = (value) => {
+    if (!value) return
+    if (dinnerSpecialChoice === value) {
+      setDinnerSpecialChoice(null)
+      return
+    }
+    setDinnerSpecialChoice(value)
+    setSelectedItemsDinner({})
+    setCustomResponsesDinner({})
+  }
+
   const getDinnerOverrideChoice = () => {
+    if (dinnerSpecialChoice) return dinnerSpecialChoice
     // 1) Detectar por respuestas (valor)
     const responses = customResponsesDinner || {}
     for (const value of Object.values(responses)) {
@@ -453,7 +487,7 @@ const OrderForm = ({ user, loading }) => {
     const itemsCount = countSelectedItems(getSelectedItemsListDinner())
     const override = getDinnerOverrideChoice()
     if (itemsCount > 0 && override) {
-      return 'Para cena elegí menú o la opción adicional (MP/veggie), no ambas.'
+      return 'Para cena elegí menú o la opción de cena, no ambas.'
     }
     if (itemsCount > 1) {
       return 'Solo un menú por persona en cena.'
@@ -479,9 +513,18 @@ const OrderForm = ({ user, loading }) => {
       const selectedDinnerMap = mapOrderItemsToSelection(suggestion.items || [], menuItems)
       setSelectedItems({})
       setSelectedItemsDinner(hasDinnerOverride ? {} : selectedDinnerMap)
+      if (hasDinnerOverride) {
+        const overrideValue = Object.values(responsesMap || {}).find((value) => isDinnerOverrideValue(value))
+        setDinnerSpecialChoice(typeof overrideValue === 'string' ? overrideValue : null)
+        setCustomResponsesDinner({})
+      } else {
+        setDinnerSpecialChoice(null)
+      }
       setSelectedTurns({ lunch: false, dinner: true })
       setMode('dinner')
-      setCustomResponsesDinner(responsesMap)
+      if (!hasDinnerOverride) {
+        setCustomResponsesDinner(responsesMap)
+      }
       setCustomResponses({})
       if (!hasDinnerOverride) {
         clearDinnerOverrideResponses()
@@ -492,6 +535,7 @@ const OrderForm = ({ user, loading }) => {
       setSelectedItemsDinner({})
       setCustomResponses(responsesMap)
       setCustomResponsesDinner({})
+      setDinnerSpecialChoice(null)
     }
 
     setFormData(prev => ({
@@ -628,9 +672,12 @@ const OrderForm = ({ user, loading }) => {
                 <OrderDinnerOptionsSection
                   options={visibleDinnerOptions}
                   customResponsesDinner={customResponsesDinner}
-                  setCustomResponsesDinner={setCustomResponsesDinner}
+                  setCustomResponsesDinner={setCustomResponsesDinnerSafe}
                   isDinnerOverrideValue={isDinnerOverrideValue}
                   clearDinnerMenuSelections={clearDinnerMenuSelections}
+                  dinnerSpecial={dinnerMenuSpecial}
+                  dinnerSpecialChoice={dinnerSpecialChoice}
+                  onDinnerSpecialSelect={handleDinnerSpecialSelect}
                 />
               </div>
             )}

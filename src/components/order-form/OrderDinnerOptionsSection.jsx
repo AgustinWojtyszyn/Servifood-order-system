@@ -5,9 +5,13 @@ const OrderDinnerOptionsSection = ({
   customResponsesDinner,
   setCustomResponsesDinner,
   isDinnerOverrideValue,
-  clearDinnerMenuSelections
+  clearDinnerMenuSelections,
+  dinnerSpecial,
+  dinnerSpecialChoice,
+  onDinnerSpecialSelect
 }) => {
-  if (!options || options.length === 0) return null
+  const hasDinnerSpecial = dinnerSpecial && Array.isArray(dinnerSpecial.options) && dinnerSpecial.options.length > 0
+  if ((!options || options.length === 0) && !hasDinnerSpecial) return null
 
   return (
     <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-200">
@@ -22,8 +26,46 @@ const OrderDinnerOptionsSection = ({
       </div>
 
       <div className="space-y-6">
-        {options.map((option) => (
-          <div key={option.id} className="border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50">
+        {hasDinnerSpecial && (
+          <div className="border-2 border-amber-300 rounded-xl p-4 bg-linear-to-br from-amber-50 to-white">
+            <p className="text-base sm:text-lg font-bold text-amber-900 mb-3">
+              {dinnerSpecial.title || 'Opción de cena'}
+            </p>
+            <div className="space-y-2">
+              {dinnerSpecial.options.map((opt, index) => {
+                const isSelected = dinnerSpecialChoice === opt
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => onDinnerSpecialSelect(opt)}
+                    className={`w-full text-left p-3 border-2 rounded-lg transition-all
+                      focus:outline-none focus:ring-2 focus:ring-amber-400
+                      ${isSelected ? 'border-amber-500 bg-amber-100' : 'border-amber-200 hover:border-amber-300 hover:bg-amber-50'}`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
+                      {isSelected && (
+                        <CheckCircle className="h-6 w-6 text-amber-600 shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            {dinnerSpecialChoice && (
+              <p className="mt-3 text-sm text-amber-900/80 font-semibold">
+                Si elegís esta opción, no podés seleccionar otro menú u opción.
+              </p>
+            )}
+          </div>
+        )}
+
+        {options.map((option) => {
+          const isBlocked = Boolean(dinnerSpecialChoice)
+          return (
+          <div key={option.id} className={`border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50 ${isBlocked ? 'opacity-60 pointer-events-none' : ''}`}>
             <label
               className="block text-base sm:text-lg text-gray-900 mb-3 font-bold"
               htmlFor={option.type === 'text' ? `dinner-custom-option-${option.id}` : undefined}
@@ -122,7 +164,7 @@ const OrderDinnerOptionsSection = ({
               />
             )}
           </div>
-        ))}
+        )})}
       </div>
     </div>
   )

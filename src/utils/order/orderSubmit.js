@@ -27,7 +27,7 @@ const submitOrders = async ({
       if (itemsForService.length > 0 && hasOverride) {
         return {
           ok: false,
-          errorMessage: 'Para cena elegí menú o la opción adicional (MP/veggie), no ambas.',
+          errorMessage: 'Para cena elegí menú o la opción de cena, no ambas.',
           forceLunchOnly: false
         }
       }

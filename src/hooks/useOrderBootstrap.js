@@ -18,6 +18,7 @@ const useOrderBootstrap = ({
   setMenuItems,
   setCustomOptionsLunch,
   setCustomOptionsDinner,
+  setDinnerMenuSpecial,
   setPendingLunch,
   setPendingDinner,
   setHasOrderToday,
@@ -76,6 +77,32 @@ const useOrderBootstrap = ({
       setCustomOptionsDinner(filterByMealScope(dinnerData, 'dinner'))
     } catch (err) {
       console.error('Error fetching custom options:', err)
+    }
+  }
+
+  const fetchDinnerMenuSpecial = async () => {
+    try {
+      const deliveryDate = getTomorrowISOInTimeZone()
+      const { data, error } = await db.getDinnerMenuByDate({
+        date: deliveryDate,
+        company: companyOptionsSlug
+      })
+      if (error) {
+        console.error('Error fetching dinner menu special:', error)
+        setDinnerMenuSpecial(null)
+        return
+      }
+      if (data && data.active) {
+        setDinnerMenuSpecial({
+          title: data.title,
+          options: Array.isArray(data.options) ? data.options : []
+        })
+      } else {
+        setDinnerMenuSpecial(null)
+      }
+    } catch (err) {
+      console.error('Error fetching dinner menu special:', err)
+      setDinnerMenuSpecial(null)
     }
   }
 
@@ -169,6 +196,7 @@ const useOrderBootstrap = ({
     setBootstrapping(true)
     fetchMenuItems()
     fetchCustomOptions()
+    fetchDinnerMenuSpecial()
     checkTodayOrder()
     fetchUserFeatures()
     // Pre-fill user data

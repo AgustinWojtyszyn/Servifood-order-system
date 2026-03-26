@@ -857,5 +857,39 @@ export const db = {
       .upsert(payload, { onConflict: 'option_id,date' })
       .select()
     return { data, error }
+  },
+
+  // Menú de cena por fecha (opción exclusiva)
+  getDinnerMenuByDate: async ({ date, company }) => {
+    const baseQuery = supabase
+      .from('dinner_menu_by_date')
+      .select('*')
+      .eq('delivery_date', date)
+      .limit(1)
+      .maybeSingle()
+
+    if (company) {
+      const { data, error } = await baseQuery.eq('company', company)
+      if (!error && data) return { data, error: null }
+    }
+
+    const { data, error } = await baseQuery.is('company', null)
+    return { data, error }
+  },
+
+  upsertDinnerMenuByDate: async ({ deliveryDate, company, title, options, active = true }) => {
+    const payload = {
+      delivery_date: deliveryDate,
+      company: company || null,
+      title,
+      options,
+      active,
+      updated_at: new Date().toISOString()
+    }
+    const { data, error } = await supabase
+      .from('dinner_menu_by_date')
+      .upsert(payload, { onConflict: 'delivery_date,company' })
+      .select()
+    return { data, error }
   }
 }

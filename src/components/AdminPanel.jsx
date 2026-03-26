@@ -10,11 +10,13 @@ import AdminTabs from './admin/AdminTabs'
 import AdminUsersSection from './admin/AdminUsersSection'
 import AdminMenuSection from './admin/AdminMenuSection'
 import AdminOptionsSection from './admin/AdminOptionsSection'
+import AdminDinnerOptionSection from './admin/AdminDinnerOptionSection'
 import AdminCleanupSection from './admin/AdminCleanupSection'
 import { sortMenuItems } from '../utils/admin/adminCalculations'
 import { addDaysToISO, getTomorrowISOInTimeZone } from '../utils/dateUtils'
 import { notifyError, notifyInfo, notifySuccess, notifyWarning } from '../utils/notice'
 import { confirmAction } from '../utils/confirm'
+import { matchesOverrideKeyword } from '../utils/order/orderBusinessRules'
 
 const AdminPanel = () => {
   // Archivar todos los pedidos pendientes
@@ -65,6 +67,16 @@ const AdminPanel = () => {
   const [loadingMenuByDate, setLoadingMenuByDate] = useState({})
   const [editingOptions, setEditingOptions] = useState(false)
   const [newOption, setNewOption] = useState(null)
+  const [dinnerWeekBaseDate, setDinnerWeekBaseDate] = useState(() => {
+    const now = new Date()
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    base.setDate(base.getDate() + 1)
+    return base
+  })
+  const [dinnerSelectedDates, setDinnerSelectedDates] = useState([])
+  const [dinnerMenusByDate, setDinnerMenusByDate] = useState({})
+  const [dinnerDateLoading, setDinnerDateLoading] = useState({})
+  const [dinnerDateSaving, setDinnerDateSaving] = useState({})
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
     if (typeof window === 'undefined') return false
     const stored = localStorage.getItem('dinner_menu_enabled')
@@ -93,6 +105,11 @@ const AdminPanel = () => {
     fetchData()
     fetchArchivedOrdersCount()
   }, [isAdmin, user])
+
+  useEffect(() => {
+    setDinnerSelectedDates([])
+    setDinnerMenusByDate({})
+  }, [dinnerWeekBaseDate])
 
   useEffect(() => {
     if (!user?.id || !isAdmin) return
@@ -429,6 +446,167 @@ const AdminPanel = () => {
       console.error('Error:', err)
     } finally {
       setDataLoading(false)
+    }
+  }
+
+  const isDinnerOption = (option) => {
+    if (!option) return false
+    const title = (option.title || '').toString()
+    if (matchesOverrideKeyword(title)) return true
+    const opts = Array.isArray(option.options) ? option.options : []
+    return opts.some((opt) => matchesOverrideKeyword(opt))
+  }
+
+  const optionsWithoutDinner = useMemo(
+    () => customOptions.filter(opt => !isDinnerOption(opt)),
+    [customOptions]
+  )
+
+  const normalizeDate = (value) => {
+    if (!value) return null
+    if (value instanceof Date) return new Date(value.getFullYear(), value.getMonth(), value.getDate())
+    const parsed = new Date(`${value}T00:00:00`)
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
+  }
+
+  const toISODate = (date) => {
+    if (!(date instanceof Date)) return ''
+    const yyyy = date.getFullYear()
+    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const dd = String(date.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  const getWeekDates = (baseDate) => {
+    const start = normalizeDate(baseDate) || normalizeDate(new Date())
+    return Array.from({ length: 7 }, (_, index) => {
+      const d = new Date(start)
+      d.setDate(start.getDate() + index)
+      return d
+    })
+  }
+
+  const loadDinnerMenuForDate = async (dateISO, company = null) => {
+    setDinnerDateLoading(prev => ({ ...prev, [dateISO]: true }))
+    try {
+      const { data, error } = await db.getDinnerMenuByDate({ date: dateISO, company })
+      if (error) {
+        console.error('Error fetching dinner menu:', error)
+      }
+      const base = data || {
+        delivery_date: dateISO,
+        company: company || null,
+        title: 'Menú de cena',
+        options: ['']
+      }
+      setDinnerMenusByDate(prev => ({
+        ...prev,
+        [dateISO]: {
+          ...base,
+          options: Array.isArray(base.options) && base.options.length > 0 ? base.options : ['']
+        }
+      }))
+    } catch (err) {
+      console.error('Error fetching dinner menu', err)
+    } finally {
+      setDinnerDateLoading(prev => ({ ...prev, [dateISO]: false }))
+    }
+  }
+
+  const toggleDinnerDate = async (dateISO) => {
+    const isSelected = dinnerSelectedDates.includes(dateISO)
+    setDinnerSelectedDates(prev => {
+      if (isSelected) return prev.filter(d => d !== dateISO)
+      return [...prev, dateISO].sort()
+    })
+    if (isSelected) {
+      setDinnerMenusByDate(prev => {
+        const next = { ...prev }
+        delete next[dateISO]
+        return next
+      })
+      return
+    }
+    setDinnerMenusByDate(prev => ({
+      ...prev,
+      [dateISO]: prev[dateISO] || { delivery_date: dateISO, title: 'Menú de cena', options: [''], company: '' }
+    }))
+    await loadDinnerMenuForDate(dateISO)
+  }
+
+  const updateDinnerMenuField = async (dateISO, field, value) => {
+    setDinnerMenusByDate(prev => ({
+      ...prev,
+      [dateISO]: {
+        ...(prev[dateISO] || { delivery_date: dateISO, options: [''] }),
+        [field]: value
+      }
+    }))
+    if (field === 'company') {
+      await loadDinnerMenuForDate(dateISO, value || null)
+    }
+  }
+
+  const updateDinnerMenuOption = (dateISO, index, value) => {
+    setDinnerMenusByDate(prev => ({
+      ...prev,
+      [dateISO]: {
+        ...(prev[dateISO] || { delivery_date: dateISO, options: [''] }),
+        options: (prev[dateISO]?.options || []).map((opt, i) => i === index ? value : opt)
+      }
+    }))
+  }
+
+  const addDinnerMenuOption = (dateISO) => {
+    setDinnerMenusByDate(prev => ({
+      ...prev,
+      [dateISO]: {
+        ...(prev[dateISO] || { delivery_date: dateISO, options: [''] }),
+        options: [...(prev[dateISO]?.options || []), '']
+      }
+    }))
+  }
+
+  const removeDinnerMenuOption = (dateISO, index) => {
+    setDinnerMenusByDate(prev => ({
+      ...prev,
+      [dateISO]: {
+        ...(prev[dateISO] || { delivery_date: dateISO, options: [''] }),
+        options: (prev[dateISO]?.options || []).filter((_, i) => i !== index)
+      }
+    }))
+  }
+
+  const saveDinnerMenuDate = async (dateISO) => {
+    const draft = dinnerMenusByDate[dateISO]
+    if (!draft?.title?.trim()) {
+      notifyInfo('El título es requerido')
+      return
+    }
+    const filteredOptions = (draft.options || []).map(o => o.trim()).filter(Boolean)
+    if (filteredOptions.length === 0) {
+      notifyInfo('Debes agregar al menos una opción')
+      return
+    }
+    setDinnerDateSaving(prev => ({ ...prev, [dateISO]: true }))
+    try {
+      const { error } = await db.upsertDinnerMenuByDate({
+        deliveryDate: dateISO,
+        company: draft.company || null,
+        title: draft.title.trim(),
+        options: filteredOptions,
+        active: true
+      })
+      if (error) {
+        notifyError('Error al guardar el menú de cena')
+        return
+      }
+      notifySuccess('Menú de cena guardado')
+    } catch (err) {
+      console.error('Error saving dinner menu', err)
+      notifyError('Error al guardar el menú de cena')
+    } finally {
+      setDinnerDateSaving(prev => ({ ...prev, [dateISO]: false }))
     }
   }
 
@@ -953,12 +1131,30 @@ const AdminPanel = () => {
         />
       )}
 
+      {/* Dinner Option Tab */}
+      {activeTab === 'dinner-option' && (
+        <AdminDinnerOptionSection
+          weekBaseDate={dinnerWeekBaseDate}
+          onWeekBaseDateChange={setDinnerWeekBaseDate}
+          selectedDates={dinnerSelectedDates}
+          onToggleDate={toggleDinnerDate}
+          dateLoadingMap={dinnerDateLoading}
+          dinnerMenusByDate={dinnerMenusByDate}
+          onFieldChange={updateDinnerMenuField}
+          onOptionChoiceChange={updateDinnerMenuOption}
+          onAddOptionChoice={addDinnerMenuOption}
+          onRemoveOptionChoice={removeDinnerMenuOption}
+          onSaveDate={saveDinnerMenuDate}
+          savingMap={dinnerDateSaving}
+        />
+      )}
+
       {/* Custom Options Tab */}
       {activeTab === 'options' && (
         <AdminOptionsSection
           editingOptions={editingOptions}
           newOption={newOption}
-          customOptions={customOptions}
+          customOptions={optionsWithoutDinner}
           dessertOption={dessertOption}
           dessertOverrideEnabled={dessertOverrideEnabled}
           dessertOverrideDate={dessertOverrideDate}
