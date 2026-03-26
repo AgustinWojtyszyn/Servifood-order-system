@@ -4,6 +4,7 @@ import { sortMenuItems } from '../utils/order/orderMenuHelpers'
 import { DINNER_FALLBACK_WHITELIST } from '../constants/dinnerWhitelist'
 import { buildSuggestionSummary, buildOptionsSummary } from '../utils/order/orderFormatters'
 import { hasMainMenuSelected } from '../utils/order/orderSelectionHelpers'
+import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
 
 const useOrderBootstrap = ({
   user,
@@ -30,9 +31,7 @@ const useOrderBootstrap = ({
 
   const fetchMenuItems = async () => {
     try {
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const menuDate = tomorrow.toISOString().split('T')[0]
+      const menuDate = getTomorrowISOInTimeZone()
       const { data, error } = await db.getMenuItemsByDate(menuDate)
 
       if (error) {
@@ -56,9 +55,7 @@ const useOrderBootstrap = ({
 
   const fetchCustomOptions = async () => {
     try {
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const deliveryDate = tomorrow.toISOString().split('T')[0]
+      const deliveryDate = getTomorrowISOInTimeZone()
 
       const filterByMealScope = (options = [], meal) =>
         (options || []).filter(opt => {

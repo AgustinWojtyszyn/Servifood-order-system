@@ -12,6 +12,7 @@ import EditOrderPersonalInfoSection from './edit-order/EditOrderPersonalInfoSect
 import EditOrderSummarySection from './edit-order/EditOrderSummarySection'
 import EditOrderMenuSection from './edit-order/EditOrderMenuSection'
 import { Sound } from '../utils/Sound'
+import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
 
 
 export default function EditOrderForm({ user, loading }) {
@@ -100,11 +101,7 @@ export default function EditOrderForm({ user, loading }) {
 
   const fetchMenuItems = async () => {
     try {
-      const fallbackDate = (() => {
-        const tomorrow = new Date()
-        tomorrow.setDate(tomorrow.getDate() + 1)
-        return tomorrow.toISOString().split('T')[0]
-      })()
+      const fallbackDate = getTomorrowISOInTimeZone()
       const menuDate = order?.delivery_date || fallbackDate
       const { data, error } = await db.getMenuItemsByDate(menuDate)
 
@@ -129,11 +126,7 @@ export default function EditOrderForm({ user, loading }) {
 
   const fetchCustomOptions = async () => {
     try {
-      const fallbackDate = (() => {
-        const tomorrow = new Date()
-        tomorrow.setDate(tomorrow.getDate() + 1)
-        return tomorrow.toISOString().split('T')[0]
-      })()
+      const fallbackDate = getTomorrowISOInTimeZone()
       const deliveryDate = order?.delivery_date || fallbackDate
       const service = order?.service || 'lunch'
       const filterByMealScope = (options = [], meal) =>

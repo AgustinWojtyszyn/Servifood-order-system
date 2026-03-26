@@ -12,6 +12,7 @@ import AdminMenuSection from './admin/AdminMenuSection'
 import AdminOptionsSection from './admin/AdminOptionsSection'
 import AdminCleanupSection from './admin/AdminCleanupSection'
 import { sortMenuItems } from '../utils/admin/adminCalculations'
+import { addDaysToISO, getTomorrowISOInTimeZone } from '../utils/dateUtils'
 
 const AdminPanel = () => {
   // Archivar todos los pedidos pendientes
@@ -48,11 +49,7 @@ const AdminPanel = () => {
   const [users, setUsers] = useState([])
   const [customOptions, setCustomOptions] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
-  const tomorrowISO = (() => {
-    const d = new Date()
-    d.setDate(d.getDate() + 1)
-    return d.toISOString().split('T')[0]
-  })()
+  const tomorrowISO = getTomorrowISOInTimeZone()
   const [selectedDates, setSelectedDates] = useState([tomorrowISO])
   const [menuItemsByDate, setMenuItemsByDate] = useState({})
   const [draftMenuItemsByDate, setDraftMenuItemsByDate] = useState({})
@@ -598,11 +595,7 @@ const AdminPanel = () => {
   const isSameMenu = (a, b) =>
     JSON.stringify(normalizeForComparison(a)) === JSON.stringify(normalizeForComparison(b))
 
-  const getPreviousDateISO = (dateISO) => {
-    const d = new Date(`${dateISO}T00:00:00`)
-    d.setDate(d.getDate() - 1)
-    return d.toISOString().split('T')[0]
-  }
+  const getPreviousDateISO = (dateISO) => addDaysToISO(dateISO, -1)
 
   const handleMenuUpdate = async (menuDate) => {
     if (savingMenuByDate[menuDate]) return

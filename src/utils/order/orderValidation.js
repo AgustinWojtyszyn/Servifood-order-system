@@ -1,3 +1,5 @@
+import { getTomorrowISOInTimeZone } from '../dateUtils'
+
 const validateOrderSubmission = ({
   user,
   formData,
@@ -109,9 +111,7 @@ const validateOrderSubmission = ({
       }))
   }
 
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const deliveryDate = tomorrow.toISOString().split('T')[0]
+  const deliveryDate = getTomorrowISOInTimeZone()
 
   const turnosSeleccionados = Object.entries(selectedTurns)
     .filter(([, val]) => val)
