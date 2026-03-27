@@ -12,6 +12,7 @@ import AdminMenuSection from './admin/AdminMenuSection'
 import AdminOptionsSection from './admin/AdminOptionsSection'
 import AdminDinnerOptionSection from './admin/AdminDinnerOptionSection'
 import AdminCleanupSection from './admin/AdminCleanupSection'
+import AdminCafeteriaSection from './admin/AdminCafeteriaSection'
 import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
 import { notifyError, notifySuccess, notifyWarning } from '../utils/notice'
 import { confirmAction } from '../utils/confirm'
@@ -160,6 +161,11 @@ const AdminPanel = () => {
   })
 
   const [expandedPeople, setExpandedPeople] = useState({})
+  const allowedCafeteriaExportIds = [
+    'ae177d76-9f35-44ac-a662-1b1e4146dbe4',
+    '0732486b-6b27-4bf6-bf25-42d84b47662b'
+  ]
+  const canExportCafeteria = allowedCafeteriaExportIds.includes(user?.id)
   
   // Estados para búsqueda y filtrado de usuarios
   const {
@@ -176,6 +182,12 @@ const AdminPanel = () => {
     if (!user?.id || !isAdmin) return
     refreshUsers()
   }, [isAdmin, user, refreshUsers])
+
+  useEffect(() => {
+    if (activeTab === 'cafeteria' && !canExportCafeteria) {
+      setActiveTab('users')
+    }
+  }, [activeTab, canExportCafeteria])
 
   useEffect(() => {
     if (!user?.id || !isAdmin) return
@@ -314,7 +326,7 @@ const AdminPanel = () => {
       <AdminHeader />
 
       {/* Tabs - Scroll horizontal completo en mobile */}
-      <AdminTabs activeTab={activeTab} onChange={setActiveTab} />
+      <AdminTabs activeTab={activeTab} onChange={setActiveTab} showCafeteria={canExportCafeteria} />
 
       {/* Users Tab */}
       {activeTab === 'users' && (
@@ -362,6 +374,12 @@ const AdminPanel = () => {
           onAddMenuItem={addMenuItem}
           onRemoveMenuItem={removeMenuItem}
           onPrimeSuccess={() => Sound.primeSuccess()}
+        />
+      )}
+
+      {activeTab === 'cafeteria' && canExportCafeteria && (
+        <AdminCafeteriaSection
+          adminName={user?.user_metadata?.full_name || user?.email || ''}
         />
       )}
 

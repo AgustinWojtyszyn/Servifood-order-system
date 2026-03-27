@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
+import cafeteriaLogo from '../assets/food-delivery (1).png'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
@@ -84,6 +85,15 @@ const Layout = ({ children, user, loading }) => {
       setIsAdmin(false)
       return
     }
+    const adminAllowlist = [
+      'ae177d76-9f35-44ac-a662-1b1e4146dbe4',
+      '0732486b-6b27-4bf6-bf25-42d84b47662b'
+    ]
+    const roleFromMetadata = user?.user_metadata?.role || user?.app_metadata?.role || user?.role
+    if (roleFromMetadata === 'admin' || adminAllowlist.includes(user?.id)) {
+      setIsAdmin(true)
+      return
+    }
     try {
       const { data, error } = await db.getUsers()
       if (!error && data) {
@@ -102,7 +112,7 @@ const Layout = ({ children, user, loading }) => {
           })
         }
 
-        setIsAdmin(roleValue === 'admin')
+        setIsAdmin(roleValue === 'admin' || adminAllowlist.includes(user?.id))
       } else if (error && import.meta.env.DEV) {
         console.warn('[Layout][role-debug] error fetching users', error)
       }
@@ -110,7 +120,7 @@ const Layout = ({ children, user, loading }) => {
       console.error('Error checking user role:', err)
       // Fallback a user_metadata si falla la consulta
       const roleValue = user?.user_metadata?.role
-      setIsAdmin(roleValue === 'admin')
+      setIsAdmin(roleValue === 'admin' || adminAllowlist.includes(user?.id))
     }
   }
 
@@ -132,10 +142,11 @@ const Layout = ({ children, user, loading }) => {
 
   const menuItems = [
     { name: 'Panel Principal', path: '/dashboard', icon: User },
-    { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart },
+    { name: 'Nuevo Pedido', path: '/order', icon: ShoppingCart }
   ]
 
   if (isAdmin) {
+    menuItems.push({ name: 'Cafeteria', path: '/cafeteria', logoSrc: cafeteriaLogo })
     menuItems.push({ 
       name: 'Pedidos Diarios', 
       path: '/daily-orders', 
@@ -232,7 +243,15 @@ const Layout = ({ children, user, loading }) => {
                       }}
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <Icon className="h-6 w-6 mr-3 shrink-0" />
+                      {item.logoSrc ? (
+                        <img
+                          src={item.logoSrc}
+                          alt={`${item.name} logo`}
+                          className="h-6 w-6 mr-3 shrink-0 object-contain"
+                        />
+                      ) : (
+                        <Icon className="h-6 w-6 mr-3 shrink-0" />
+                      )}
                       <span className="flex-1">{item.name}</span>
                     </NavLink>
                   </li>

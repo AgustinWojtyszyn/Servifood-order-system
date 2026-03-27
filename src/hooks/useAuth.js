@@ -66,8 +66,13 @@ export const useAuth = () => {
         console.log('[Auth] loadUserData start', authUser?.id)
       }
       // Usar directamente los datos del usuario de Supabase sin consultar tabla users
+      const adminAllowlist = [
+        'ae177d76-9f35-44ac-a662-1b1e4146dbe4',
+        '0732486b-6b27-4bf6-bf25-42d84b47662b'
+      ]
       const roleFromMetadata = authUser?.user_metadata?.role || authUser?.app_metadata?.role || authUser?.role
-      const isAdminRole = roleFromMetadata === 'admin'
+      const normalizedRole = roleFromMetadata || (adminAllowlist.includes(authUser?.id) ? 'admin' : null)
+      const isAdminRole = normalizedRole === 'admin'
 
       logRoleDebug('raw user metadata', {
         id: authUser?.id,
@@ -77,7 +82,7 @@ export const useAuth = () => {
         user_metadata: authUser?.user_metadata
       })
 
-      setUser((prev) => prev || { ...authUser, role: roleFromMetadata })
+      setUser((prev) => prev || { ...authUser, role: normalizedRole })
       setIsAdmin(isAdminRole)
 
       logRoleDebug('computed flags', {

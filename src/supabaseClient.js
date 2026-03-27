@@ -291,6 +291,66 @@ export const db = {
     return { data: normalizedData, error }
   },
 
+  // Cafeteria orders (admin only via RLS)
+  getCafeteriaOrders: async () => {
+    const { data, error } = await supabase
+      .from('cafeteria_orders')
+      .select('id, user_id, items, total_items, status, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes')
+      .order('created_at', { ascending: false })
+    return { data, error }
+  },
+
+  getCafeteriaOrderById: async (orderId) => {
+    const { data, error } = await supabase
+      .from('cafeteria_orders')
+      .select('id, user_id, items, total_items, status, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes')
+      .eq('id', orderId)
+      .single()
+    return { data, error }
+  },
+
+  createCafeteriaOrder: async ({ userId, items, totalItems, companySlug, companyName, adminName, adminEmail, notes }) => {
+    const { data, error } = await supabase
+      .from('cafeteria_orders')
+      .insert([{
+        user_id: userId,
+        items,
+        total_items: totalItems,
+        company_slug: companySlug || null,
+        company_name: companyName || null,
+        admin_name: adminName || null,
+        admin_email: adminEmail || null,
+        notes: notes || null
+      }])
+      .select()
+      .single()
+    return { data, error }
+  },
+
+  updateCafeteriaOrder: async (orderId, { items, totalItems, companySlug, companyName, notes }) => {
+    const { data, error } = await supabase
+      .from('cafeteria_orders')
+      .update({
+        items,
+        total_items: totalItems,
+        company_slug: companySlug || null,
+        company_name: companyName || null,
+        notes: notes || null
+      })
+      .eq('id', orderId)
+      .select()
+      .single()
+    return { data, error }
+  },
+
+  deleteCafeteriaOrder: async (orderId) => {
+    const { error } = await supabase
+      .from('cafeteria_orders')
+      .delete()
+      .eq('id', orderId)
+    return { error }
+  },
+
   deleteUser: async (userId) => {
     // Primero eliminar todos los pedidos del usuario
     const { error: ordersError } = await supabase

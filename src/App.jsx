@@ -3,6 +3,7 @@ import { useAuthContext } from './contexts/AuthContext'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import SplashScreen from './components/SplashScreen'
 import './App.css'
+import { withAdmin } from './contexts/AuthContext'
 
 // Importaciones inmediatas (críticas para la carga inicial)
 import Layout from './components/Layout'
@@ -27,6 +28,11 @@ const Profile = lazy(() => import('./components/Profile'))
 const MonthlyPanel = lazy(() => import('./components/MonthlyPanel'))
 const AuditLogs = lazy(() => import('./components/AuditLogs'))
 const OrderDetails = lazy(() => import('./components/OrderDetails'))
+const CafeteriaHome = lazy(() => import('./components/cafeteria/CafeteriaHome'))
+const CafeteriaConfirm = lazy(() => import('./components/cafeteria/CafeteriaConfirm'))
+
+const AdminCafeteriaHome = withAdmin(CafeteriaHome)
+const AdminCafeteriaConfirm = withAdmin(CafeteriaConfirm)
 
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
@@ -205,6 +211,12 @@ function App() {
             } />
             <Route path="/order/:companySlug" element={
               !loading && (user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/cafeteria" element={
+              !loading && (user ? <Layout user={user} loading={loading}><AdminCafeteriaHome user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/cafeteria/confirm" element={
+              !loading && (user ? <Layout user={user} loading={loading}><AdminCafeteriaConfirm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/edit-order" element={
               !loading && (user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
