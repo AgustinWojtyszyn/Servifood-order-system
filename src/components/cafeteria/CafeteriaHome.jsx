@@ -15,7 +15,6 @@ const CafeteriaHome = ({ user, loading }) => {
   const [error, setError] = useState('')
   const [companySlug, setCompanySlug] = useState('')
   const [notes, setNotes] = useState('')
-  const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyError, setHistoryError] = useState('')
   const navigate = useNavigate()
@@ -83,7 +82,7 @@ const CafeteriaHome = ({ user, loading }) => {
         setError('No se pudo guardar el pedido en el historial. Reintenta.')
         return
       }
-      navigate('/cafeteria/confirm', { state: { orderId: data.id, order: payload } })
+      navigate('/cafeteria/confirm', { state: { orderId: data.id, order: payload, mode: 'created' } })
     } catch (err) {
       setError('No se pudo guardar el pedido en el historial. Reintenta.')
     }
@@ -112,7 +111,22 @@ const CafeteriaHome = ({ user, loading }) => {
         if (fetchError) {
           setHistoryError('No se pudo cargar el historial.')
         } else {
-          setHistory(Array.isArray(data) ? data : [])
+          const scoped = (Array.isArray(data) ? data : []).filter((order) => {
+            if (order?.user_id && user?.id) return order.user_id === user.id
+            if (order?.admin_email && user?.email) return order.admin_email === user.email
+            return true
+          })
+          const sorted = scoped.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const todayOrder = sorted.find((order) => {
+            const created = new Date(order.created_at)
+            created.setHours(0, 0, 0, 0)
+            return created.getTime() === today.getTime()
+          })
+          if (todayOrder) {
+            navigate('/cafeteria/confirm', { state: { orderId: todayOrder.id, mode: 'manage' } })
+          }
         }
       } catch (err) {
         setHistoryError('No se pudo cargar el historial.')
@@ -121,7 +135,7 @@ const CafeteriaHome = ({ user, loading }) => {
       }
     }
     loadHistory()
-  }, [user?.id])
+  }, [user?.id, user?.email, navigate])
 
   return (
     <RequireUser user={user} loading={loading}>
@@ -256,57 +270,16 @@ const CafeteriaHome = ({ user, loading }) => {
           </div>
         )}
 
-        <section className="bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl p-6 sm:p-8">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Historial</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-gray-900">Pedidos de cafeteria</h3>
-            </div>
-          </div>
-
-          {historyLoading && (
-            <p className="mt-4 text-gray-600 font-semibold">Cargando historial...</p>
-          )}
-          {historyError && (
-            <p className="mt-4 text-red-600 font-semibold">{historyError}</p>
-          )}
-          {!historyLoading && !historyError && history.length === 0 && (
-            <p className="mt-4 text-gray-600 font-semibold">Aun no hay pedidos registrados.</p>
-          )}
-
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {history.map((order) => (
-              <div key={order.id} className="border-2 border-gray-200 rounded-2xl p-4 bg-white">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Pedido</p>
-                    <p className="text-base font-black text-gray-900">#{order.id.slice(0, 8)}</p>
-                  </div>
-                  <span className="text-sm font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
-                    {order.total_items || 0} unidades
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-gray-700 font-semibold">
-                  Empresa: {order.company_name || order.company_slug || 'Sin empresa'}
-                </p>
-                <p className="text-sm text-gray-600 font-semibold">
-                  Admin: {order.admin_name || order.admin_email || 'Sin nombre'}
-                </p>
-                <p className="mt-2 text-sm text-gray-600 font-semibold">
-                  {new Date(order.created_at).toLocaleString('es-AR')}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/cafeteria/confirm', { state: { orderId: order.id } })}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#0b1f3a] text-white font-bold text-sm px-4 py-2"
-                >
-                  Ver / Editar
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
+        {historyLoading && (
+          <section className="bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl p-6 sm:p-8">
+            <p className="text-gray-600 font-semibold">Cargando historial...</p>
+          </section>
+        )}
+        {historyError && (
+          <section className="bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl p-6 sm:p-8">
+            <p className="text-red-600 font-semibold">{historyError}</p>
+          </section>
+        )}
 
         <section ref={detailsRef} className="bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl p-6 sm:p-8">
           <div className="flex items-center justify-between flex-wrap gap-4">
