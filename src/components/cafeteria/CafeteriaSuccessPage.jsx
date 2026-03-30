@@ -10,6 +10,7 @@ const CafeteriaSuccessPage = ({ user, loading }) => {
   const location = useLocation()
   const order = location.state?.order || loadCafeteriaOrder() || null
   const redirectSeconds = 5
+  const redirectTo = location.state?.redirectTo || '/cafeteria'
 
   const summary = useMemo(() => {
     const items = Array.isArray(order?.items) ? order.items : []
@@ -21,10 +22,10 @@ const CafeteriaSuccessPage = ({ user, loading }) => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      navigate('/dashboard', { replace: true })
+      navigate(redirectTo, { replace: true })
     }, redirectSeconds * 1000)
     return () => clearTimeout(timeoutId)
-  }, [navigate])
+  }, [navigate, redirectTo])
 
   return (
     <RequireUser user={user} loading={loading}>
@@ -57,7 +58,7 @@ const CafeteriaSuccessPage = ({ user, loading }) => {
 
           <button
             type="button"
-            onClick={() => navigate('/dashboard', { replace: true })}
+            onClick={() => navigate(redirectTo, { replace: true })}
             className="mt-6 inline-flex items-center justify-center rounded-full bg-[#0b1f3a] text-white font-bold text-base px-6 py-3 shadow-md"
           >
             Ir al dashboard
