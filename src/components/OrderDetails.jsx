@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
+import { supabase, db } from '../supabaseClient'
 import { COMPANY_LIST } from '../constants/companyConfig'
 import RequireUser from './RequireUser'
+import { isOrderEditable } from '../utils'
+import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
+import { confirmAction } from '../utils/confirm'
+import { notifyError, notifyInfo, notifySuccess } from '../utils/notice'
 import {
   ArrowLeft,
   Building2,
   Calendar,
   ChefHat,
   Clock,
+  Edit,
   Mail,
   MapPin,
   MessageCircle,
@@ -17,6 +22,7 @@ import {
   Phone,
   RefreshCw,
   Sun,
+  Trash2,
   User
 } from 'lucide-react'
 
@@ -70,6 +76,7 @@ const OrderDetails = ({ user, loading }) => {
   const [order, setOrder] = useState(null)
   const [localLoading, setLocalLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
   const companyByLocation = useMemo(() => {
     const map = new Map()
@@ -128,6 +135,9 @@ const OrderDetails = ({ user, loading }) => {
   const statusInfo = statusMeta[status] || { label: status, className: 'bg-blue-100 text-blue-800 border-blue-200' }
 
   const company = companyByLocation.get(String(order?.location || '').toLowerCase())
+  const canEditOrder = order?.created_at
+    ? isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)
+    : false
 
   const handleRepeatOrder = () => {
     if (!order) return
@@ -143,6 +153,43 @@ const OrderDetails = ({ user, loading }) => {
 
     const target = company?.slug ? `/order/${company.slug}` : '/order'
     navigate(target, { state: { repeatPayload: payload } })
+  }
+
+  const handleEditOrder = () => {
+    if (!order) return
+    if (!canEditOrder) {
+      notifyInfo(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+      return
+    }
+    navigate('/edit-order', { state: { order } })
+  }
+
+  const handleDeleteOrder = async () => {
+    if (!order || deleteSubmitting) return
+    if (!canEditOrder) {
+      notifyInfo(`Solo puedes eliminar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+      return
+    }
+    const confirmed = await confirmAction({
+      title: 'Eliminar pedido',
+      message: 'Esta acción elimina el pedido por completo.',
+      confirmText: 'Eliminar'
+    })
+    if (!confirmed) return
+    setDeleteSubmitting(true)
+    try {
+      const { error: deleteError } = await db.deleteOrder(order.id)
+      if (deleteError) {
+        notifyError('Error al eliminar el pedido: ' + deleteError.message)
+        return
+      }
+      notifySuccess('Pedido eliminado.')
+      navigate('/dashboard', { replace: true })
+    } catch (err) {
+      notifyError('Error al eliminar el pedido')
+    } finally {
+      setDeleteSubmitting(false)
+    }
   }
 
   return (
@@ -202,6 +249,32 @@ const OrderDetails = ({ user, loading }) => {
                     <Package className="h-4 w-4" />
                     {order.total_items || items.length || 0} item(s)
                   </span>
+                  <button
+                    type="button"
+                    onClick={handleEditOrder}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold shadow-md transition-colors ${
+                      canEditOrder
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        : 'bg-emerald-100 text-emerald-400 cursor-not-allowed'
+                    }`}
+                    disabled={!canEditOrder}
+                  >
+                    <Edit className="h-4 w-4" />
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteOrder}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold shadow-md transition-colors ${
+                      canEditOrder && !deleteSubmitting
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-red-100 text-red-300 cursor-not-allowed'
+                    }`}
+                    disabled={!canEditOrder || deleteSubmitting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deleteSubmitting ? 'Eliminando...' : 'Eliminar'}
+                  </button>
                   <button
                     type="button"
                     onClick={handleRepeatOrder}
