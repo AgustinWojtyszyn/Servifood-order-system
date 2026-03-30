@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle, Coffee, ArrowRight, X } from 'lucide-react'
 import RequireUser from '../RequireUser'
@@ -15,8 +15,6 @@ const CafeteriaHome = ({ user, loading }) => {
   const [error, setError] = useState('')
   const [companySlug, setCompanySlug] = useState('')
   const [notes, setNotes] = useState('')
-  const [historyLoading, setHistoryLoading] = useState(false)
-  const [historyError, setHistoryError] = useState('')
   const navigate = useNavigate()
   const detailsRef = useRef(null)
 
@@ -82,7 +80,7 @@ const CafeteriaHome = ({ user, loading }) => {
         setError('No se pudo guardar el pedido en el historial. Reintenta.')
         return
       }
-      navigate('/cafeteria/confirm', { state: { orderId: data.id, order: payload, mode: 'created' } })
+      navigate('/cafeteria/order', { replace: true, state: { orderId: data.id, order: payload, created: true } })
     } catch (err) {
       setError('No se pudo guardar el pedido en el historial. Reintenta.')
     }
@@ -100,42 +98,6 @@ const CafeteriaHome = ({ user, loading }) => {
   const totalSelected = useMemo(() => {
     return Object.values(quantities).reduce((acc, qty) => acc + Number(qty || 0), 0)
   }, [quantities])
-
-  useEffect(() => {
-    if (!user?.id) return
-    const loadHistory = async () => {
-      setHistoryLoading(true)
-      setHistoryError('')
-      try {
-        const { data, error: fetchError } = await db.getCafeteriaOrders()
-        if (fetchError) {
-          setHistoryError('No se pudo cargar el historial.')
-        } else {
-          const scoped = (Array.isArray(data) ? data : []).filter((order) => {
-            if (order?.user_id && user?.id) return order.user_id === user.id
-            if (order?.admin_email && user?.email) return order.admin_email === user.email
-            return true
-          })
-          const sorted = scoped.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-          const today = new Date()
-          today.setHours(0, 0, 0, 0)
-          const todayOrder = sorted.find((order) => {
-            const created = new Date(order.created_at)
-            created.setHours(0, 0, 0, 0)
-            return created.getTime() === today.getTime()
-          })
-          if (todayOrder) {
-            navigate('/cafeteria/confirm', { state: { orderId: todayOrder.id, mode: 'manage' } })
-          }
-        }
-      } catch (err) {
-        setHistoryError('No se pudo cargar el historial.')
-      } finally {
-        setHistoryLoading(false)
-      }
-    }
-    loadHistory()
-  }, [user?.id, user?.email, navigate])
 
   return (
     <RequireUser user={user} loading={loading}>
@@ -268,17 +230,6 @@ const CafeteriaHome = ({ user, loading }) => {
               </div>
             </div>
           </div>
-        )}
-
-        {historyLoading && (
-          <section className="bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl p-6 sm:p-8">
-            <p className="text-gray-600 font-semibold">Cargando historial...</p>
-          </section>
-        )}
-        {historyError && (
-          <section className="bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl p-6 sm:p-8">
-            <p className="text-red-600 font-semibold">{historyError}</p>
-          </section>
         )}
 
         <section ref={detailsRef} className="bg-white/95 border-2 border-white/30 rounded-3xl shadow-2xl p-6 sm:p-8">
