@@ -319,9 +319,6 @@ export default function EditOrderForm({ user, loading }) {
         setError('Error al actualizar el pedido: ' + error.message)
       } else {
         setSuccess(true)
-        setTimeout(() => {
-          navigate('/dashboard')
-        }, 2000)
       }
     } catch (err) {
       setError('Error al actualizar el pedido')
@@ -353,7 +350,22 @@ export default function EditOrderForm({ user, loading }) {
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido actualizado exitosamente!</h2>
               <p className="text-base sm:text-lg text-green-700">Los cambios han sido guardados.</p>
-              <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className="inline-flex items-center justify-center rounded-full bg-[#0b1f3a] text-white font-bold text-sm px-5 py-2.5 shadow-md"
+                >
+                  Volver al dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="inline-flex items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm px-5 py-2.5 shadow-md"
+                >
+                  Seguir revisando
+                </button>
+              </div>
             </div>
           </div>
         </div>
