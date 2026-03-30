@@ -28,12 +28,12 @@ const Profile = lazy(() => import('./components/Profile'))
 const MonthlyPanel = lazy(() => import('./components/MonthlyPanel'))
 const AuditLogs = lazy(() => import('./components/AuditLogs'))
 const OrderDetails = lazy(() => import('./components/OrderDetails'))
-const CafeteriaEntryPage = lazy(() => import('./components/cafeteria/CafeteriaEntryPage'))
+const CafeteriaDashboardPage = lazy(() => import('./components/cafeteria/CafeteriaDashboardPage'))
 const CafeteriaNewOrderPage = lazy(() => import('./components/cafeteria/CafeteriaNewOrderPage'))
 const CafeteriaCurrentOrderPage = lazy(() => import('./components/cafeteria/CafeteriaCurrentOrderPage'))
 const CafeteriaSuccessPage = lazy(() => import('./components/cafeteria/CafeteriaSuccessPage'))
 
-const AdminCafeteriaEntryPage = withAdmin(CafeteriaEntryPage)
+const AdminCafeteriaDashboardPage = withAdmin(CafeteriaDashboardPage)
 const AdminCafeteriaNewOrderPage = withAdmin(CafeteriaNewOrderPage)
 const AdminCafeteriaCurrentOrderPage = withAdmin(CafeteriaCurrentOrderPage)
 const AdminCafeteriaSuccessPage = withAdmin(CafeteriaSuccessPage)
@@ -217,7 +217,7 @@ function App() {
               !loading && (user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/cafeteria" element={
-              !loading && (user ? <Layout user={user} loading={loading}><AdminCafeteriaEntryPage user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              !loading && (user ? <Layout user={user} loading={loading}><AdminCafeteriaDashboardPage user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/cafeteria/new" element={
               !loading && (user ? <Layout user={user} loading={loading}><AdminCafeteriaNewOrderPage user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
