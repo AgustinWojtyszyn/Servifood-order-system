@@ -16,6 +16,8 @@ const submitOrders = async ({
   calculateTotal,
   calculateTotalDinner
 }) => {
+  const createdOrderIds = []
+
   for (const service of turnosSeleccionados) {
     const isDinner = service === 'dinner'
     const overrideChoice = isDinner ? dinnerOverrideChoice : null
@@ -72,7 +74,7 @@ const submitOrders = async ({
 
     orderData.idempotency_key = idempotencyKey
 
-    const { error } = await ordersService.createOrder(orderData)
+    const { data, error } = await ordersService.createOrder(orderData)
 
     if (error) {
       const msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
@@ -96,9 +98,24 @@ const submitOrders = async ({
         forceLunchOnly: false
       }
     }
+
+    const createdId = (() => {
+      if (!data) return null
+      if (Array.isArray(data)) {
+        const first = data[0]
+        return first?.id || first?.order_id || null
+      }
+      if (typeof data === 'object') {
+        return data.id || data.order_id || data?.order?.id || null
+      }
+      return null
+    })()
+    if (createdId) {
+      createdOrderIds.push(createdId)
+    }
   }
 
-  return { ok: true }
+  return { ok: true, createdOrderIds }
 }
 
 export { submitOrders }

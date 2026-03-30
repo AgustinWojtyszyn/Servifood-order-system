@@ -11,7 +11,7 @@ const OrderSuccessScreen = () => (
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">¡Pedido creado exitosamente!</h2>
         <p className="text-base sm:text-lg text-green-700">Tu pedido ha sido registrado y será procesado pronto.</p>
-        <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al panel principal...</p>
+        <p className="text-xs sm:text-sm text-green-600 mt-2">Redirigiendo al dashboard...</p>
       </div>
     </div>
   </div>

@@ -125,8 +125,12 @@ const useOrderSubmit = ({
       }
 
       setSuccess(true)
+      const createdIds = submitResult?.createdOrderIds || []
+      const latestCreatedId = createdIds.length ? createdIds[createdIds.length - 1] : null
       setTimeout(() => {
-        navigate('/')
+        navigate('/dashboard', {
+          state: latestCreatedId ? { highlightOrderId: latestCreatedId } : null
+        })
       }, 2000)
     } catch (err) {
       setError('Error al crear el pedido: ' + (err?.message || JSON.stringify(err)))
