@@ -80,7 +80,7 @@ const CafeteriaHome = ({ user, loading }) => {
         setError('No se pudo guardar el pedido en el historial. Reintenta.')
         return
       }
-      navigate('/cafeteria/order', { replace: true, state: { orderId: data.id, order: payload, created: true } })
+      navigate('/cafeteria/confirm', { replace: true, state: { orderId: data.id, order: payload, justCreated: true } })
     } catch (err) {
       setError('No se pudo guardar el pedido en el historial. Reintenta.')
     }

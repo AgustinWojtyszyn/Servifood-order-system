@@ -31,10 +31,12 @@ const OrderDetails = lazy(() => import('./components/OrderDetails'))
 const CafeteriaEntryPage = lazy(() => import('./components/cafeteria/CafeteriaEntryPage'))
 const CafeteriaNewOrderPage = lazy(() => import('./components/cafeteria/CafeteriaNewOrderPage'))
 const CafeteriaCurrentOrderPage = lazy(() => import('./components/cafeteria/CafeteriaCurrentOrderPage'))
+const CafeteriaSuccessPage = lazy(() => import('./components/cafeteria/CafeteriaSuccessPage'))
 
 const AdminCafeteriaEntryPage = withAdmin(CafeteriaEntryPage)
 const AdminCafeteriaNewOrderPage = withAdmin(CafeteriaNewOrderPage)
 const AdminCafeteriaCurrentOrderPage = withAdmin(CafeteriaCurrentOrderPage)
+const AdminCafeteriaSuccessPage = withAdmin(CafeteriaSuccessPage)
 
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
@@ -223,7 +225,9 @@ function App() {
             <Route path="/cafeteria/order" element={
               !loading && (user ? <Layout user={user} loading={loading}><AdminCafeteriaCurrentOrderPage user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
-            <Route path="/cafeteria/confirm" element={<Navigate to="/cafeteria/order" replace />} />
+            <Route path="/cafeteria/confirm" element={
+              !loading && (user ? <Layout user={user} loading={loading}><AdminCafeteriaSuccessPage user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
             <Route path="/edit-order" element={
               !loading && (user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
