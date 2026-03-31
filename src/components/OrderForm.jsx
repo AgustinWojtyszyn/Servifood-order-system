@@ -32,6 +32,7 @@ import {
   isDinnerOverrideValue,
   isOutsideWindow
 } from '../utils/order/orderBusinessRules'
+import { canChooseCustomSide } from '../utils/order/orderCustomSideRules'
 import { useOrderBootstrap } from '../hooks/useOrderBootstrap'
 
 const OrderForm = ({ user, loading }) => {
@@ -112,9 +113,24 @@ const OrderForm = ({ user, loading }) => {
     [activeOptions]
   )
 
+  const customSideOptionIds = useMemo(
+    () => visibleLunchOptions
+      .filter(opt => (opt?.title || '').toLowerCase().includes('guarn'))
+      .map(opt => opt.id),
+    [visibleLunchOptions]
+  )
+
+  const canChooseCustomSideForSelection = useMemo(() => {
+    const selectedList = buildSelectedItemsList(menuItems, selectedItems)
+    if (!selectedList.length) return false
+    return selectedList.every(item => canChooseCustomSide(item?.name, item?.id, item?.description))
+  }, [menuItems, selectedItems])
+
   const lunchOptionsUI = useMemo(() => {
     return visibleLunchOptions.map(option => {
       const isPostreGroup = isGenneia && option.title?.toLowerCase().includes('postre')
+      const isCustomSideOption = (option.title || '').toLowerCase().includes('guarn')
+      const customSideBlocked = isCustomSideOption && !canChooseCustomSideForSelection
       const helperPostreContent = isPostreGroup ? (
         <>
           Solo elegí <b>Postre del día</b> lunes y miércoles (entrega martes y jueves). El resto de los días marcá <b>Fruta</b>. Los martes, jueves y viernes el postre queda deshabilitado.
@@ -124,13 +140,13 @@ const OrderForm = ({ user, loading }) => {
         const isSelected = customResponses[option.id] === opt
         const isChecked = (customResponses[option.id] || []).includes(opt)
         const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
-        const isDisabled = isPostreOption && !isGenneiaPostreDay
+        const isDisabled = (isPostreOption && !isGenneiaPostreDay) || customSideBlocked
         return {
           value: opt,
           isSelected,
           isChecked,
           isDisabled,
-          showUnavailableLabel: isDisabled
+          showUnavailableLabel: isPostreOption && !isGenneiaPostreDay
         }
       })
         return {
@@ -140,10 +156,11 @@ const OrderForm = ({ user, loading }) => {
           type: option.type,
           helperPostreContent,
           choices,
-          textValue: option.type === 'text' ? (customResponses[option.id] || '') : ''
+          textValue: option.type === 'text' ? (customResponses[option.id] || '') : '',
+          isDisabled: customSideBlocked
         }
       })
-  }, [visibleLunchOptions, customResponses, isGenneia, isGenneiaPostreDay])
+  }, [visibleLunchOptions, customResponses, isGenneia, isGenneiaPostreDay, canChooseCustomSideForSelection])
 
   const dinnerMenuItemsUI = useMemo(() => {
     return menuItems.map(item => {
@@ -306,6 +323,22 @@ const OrderForm = ({ user, loading }) => {
     })
   }, [isGenneia, isGenneiaPostreDay, allCustomOptions])
 
+  useEffect(() => {
+    if (canChooseCustomSideForSelection) return
+    if (!customSideOptionIds.length) return
+    setCustomResponses(prev => {
+      let changed = false
+      const next = { ...prev }
+      customSideOptionIds.forEach((id) => {
+        if (next[id]) {
+          delete next[id]
+          changed = true
+        }
+      })
+      return changed ? next : prev
+    })
+  }, [canChooseCustomSideForSelection, customSideOptionIds])
+
   // bootstrap moved to useOrderBootstrap
 
   const handleItemSelect = (itemId, isSelected) => {
@@ -376,6 +409,13 @@ const OrderForm = ({ user, loading }) => {
   }
 
   const handleCustomResponse = (optionId, value, type) => {
+    const option = visibleLunchOptions.find(opt => opt?.id === optionId)
+    const isCustomSideOption = (option?.title || '').toLowerCase().includes('guarn')
+    if (isCustomSideOption && !canChooseCustomSideForSelection) {
+      notifyInfo('La guarnición distinta no está disponible para esta opción.')
+      return
+    }
+
     if (type === 'checkbox') {
       // Para checkboxes, mantener un array de valores seleccionados
       setCustomResponses(prev => {

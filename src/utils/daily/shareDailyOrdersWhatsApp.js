@@ -11,40 +11,51 @@ export function shareDailyOrdersWhatsApp(sortedOrders) {
   try {
     let message = `📋 *PEDIDOS SERVIFOOD*\n`
     message += `${'='.repeat(40)}\n\n`
-    const ubicaciones = {}
+    const empresas = {}
     sortedOrders.forEach(order => {
-      const ubicacion = order.location || 'Sin ubicación'
-      if (!ubicaciones[ubicacion]) {
-        ubicaciones[ubicacion] = { menues: {}, guarniciones: {} }
+      const empresa = order.company_name || order.company || order.company_slug || order.target_company || order.location || 'Sin empresa'
+      if (!empresas[empresa]) {
+        empresas[empresa] = { opciones: {} }
       }
+      const guarnicion = getCustomSideFromResponses(order.custom_responses || [])
       if (order.items && Array.isArray(order.items)) {
         order.items.forEach(item => {
           const nombre = normalizeDishName(item.name)
-          ubicaciones[ubicacion].menues[nombre] = (ubicaciones[ubicacion].menues[nombre] || 0) + (item.quantity || 1)
+          const cantidad = item.quantity || 1
+          if (!empresas[empresa].opciones[nombre]) {
+            empresas[empresa].opciones[nombre] = { total: 0, guarniciones: {} }
+          }
+          empresas[empresa].opciones[nombre].total += cantidad
+          if (guarnicion) {
+            empresas[empresa].opciones[nombre].guarniciones[guarnicion] =
+              (empresas[empresa].opciones[nombre].guarniciones[guarnicion] || 0) + cantidad
+          }
         })
       }
-      const guarnicion = getCustomSideFromResponses(order.custom_responses || [])
-      if (guarnicion) {
-        ubicaciones[ubicacion].guarniciones[guarnicion] = (ubicaciones[ubicacion].guarniciones[guarnicion] || 0) + 1
-      }
     })
-    Object.entries(ubicaciones).forEach(([ubicacion, datos]) => {
-      message += `*${ubicacion}*\n`
-      const sortedMenus = Object.entries(datos.menues).sort((a, b) => {
-        const extractNumber = (name) => {
-          const match = name.match(/(\d+)/)
-          return match ? parseInt(match[1], 10) : Infinity
-        }
-        return extractNumber(a[0]) - extractNumber(b[0])
+    Object.entries(empresas)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([empresa, datos]) => {
+        message += `*${empresa}*\n\n`
+        const sortedOptions = Object.entries(datos.opciones).sort((a, b) => {
+          const extractNumber = (name) => {
+            const match = name.match(/(\d+)/)
+            return match ? parseInt(match[1], 10) : Infinity
+          }
+          return extractNumber(a[0]) - extractNumber(b[0])
+        })
+        sortedOptions.forEach(([opcion, resumen]) => {
+          message += `${opcion}: ${resumen.total}\n`
+          const sides = Object.entries(resumen.guarniciones)
+          if (sides.length > 0) {
+            sides.forEach(([guarnicion, cantidad]) => {
+              message += `- ${cantidad} ${guarnicion}\n`
+            })
+          }
+          message += `\n`
+        })
+        message += `\n`
       })
-      sortedMenus.forEach(([menu, cantidad]) => {
-        message += `  • ${menu}: ${cantidad}\n`
-      })
-      Object.entries(datos.guarniciones).forEach(([guarnicion, cantidad]) => {
-        message += `  • Guarnición: ${guarnicion} (${cantidad})\n`
-      })
-      message += `\n`
-    })
     message += `${'='.repeat(40)}\n`
     message += `\n✅ *Resumen listo para enviar por WhatsApp*\n`
     const encodedMessage = encodeURIComponent(message)

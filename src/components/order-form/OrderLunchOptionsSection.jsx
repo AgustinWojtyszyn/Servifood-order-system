@@ -99,6 +99,7 @@ const OrderLunchOptionsSection = ({ options, companyName, onCustomResponse }) =>
                 value={option.textValue}
                 onChange={(e) => onCustomResponse(option.id, e.target.value, 'text')}
                 rows={3}
+                disabled={option.isDisabled}
                 className="input-field"
                 placeholder="Escribe tu respuesta aquí..."
                 style={{ fontWeight: '600' }}

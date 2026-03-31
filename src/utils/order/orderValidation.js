@@ -1,4 +1,5 @@
 import { getTomorrowISOInTimeZone } from '../dateUtils'
+import { canChooseCustomSide } from './orderCustomSideRules'
 
 const validateOrderSubmission = ({
   user,
@@ -65,8 +66,33 @@ const validateOrderSubmission = ({
 
   let customResponsesArray = []
   if (lunchSelected) {
+    const canChooseCustomSideForSelection = selectedItemsList.length > 0
+      ? selectedItemsList.every(item => canChooseCustomSide(item?.name, item?.id, item?.description))
+      : false
+
+    const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
+    const hasValidResponse = (response) => {
+      if (!response) return false
+      if (Array.isArray(response) && response.length === 0) return false
+      if (typeof response === 'string' && response.trim() === '') return false
+      return true
+    }
+
+    if (!canChooseCustomSideForSelection) {
+      const blockedCustomSide = (visibleLunchOptions || []).some(opt => {
+        if (!isCustomSideOption(opt)) return false
+        return hasValidResponse(customResponses[opt.id])
+      })
+      if (blockedCustomSide) {
+        return { error: 'La guarnición distinta no está disponible para esta opción.' }
+      }
+    }
+
     const missingRequiredOptions = (visibleLunchOptions || [])
-      .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id])
+      .filter(opt => {
+        if (isCustomSideOption(opt) && !canChooseCustomSideForSelection) return false
+        return (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id]
+      })
       .map(opt => opt.title)
 
     if (missingRequiredOptions.length > 0) {
