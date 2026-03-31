@@ -13,9 +13,9 @@ const ArchivedOrdersSection = ({
   if (!isAdmin || archivedOrders.length === 0) return null
 
   return (
-    <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold text-gray-900 drop-shadow">Pedidos Archivados</h2>
+        <h2 className="text-3xl font-bold text-gray-900">Pedidos Archivados</h2>
         <span className="text-sm text-gray-600 font-semibold">
           {archivedOrders.length} archivado(s)
         </span>
@@ -23,7 +23,7 @@ const ArchivedOrdersSection = ({
 
       <div className="space-y-4">
         {archivedOrders.slice(0, 10).map((order) => (
-          <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-3 sm:p-4 border-2 border-green-200 bg-green-50 rounded-xl transition-all">
+          <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-3 py-3 sm:px-4 rounded-xl border border-emerald-200 bg-emerald-50">
             <div className="flex flex-col sm:flex-row sm:items-center flex-1 min-w-0 gap-2 sm:gap-4">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-full bg-green-100 shrink-0">

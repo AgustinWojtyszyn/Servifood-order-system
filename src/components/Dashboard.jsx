@@ -34,6 +34,24 @@ const ORDER_START_HOUR = 9
 const ORDER_CUTOFF_HOUR = 22
 const ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'
 
+const formatHeaderStatus = (status = 'pending') => {
+  if (status === 'archived') return 'Confirmado'
+  if (status === 'cancelled') return 'Cancelado'
+  return 'Pendiente'
+}
+
+const buildItemsSummary = (items) => {
+  const list = ensureArray(items)
+  if (list.length === 0) return 'Sin items'
+  const displayItems = list.slice(0, 4).map((item) => {
+    const name = item?.name || 'Item'
+    const qty = item?.quantity || 1
+    return `${name} x${qty}`
+  })
+  const remaining = list.length - displayItems.length
+  return remaining > 0 ? `${displayItems.join(', ')}, +${remaining} más` : displayItems.join(', ')
+}
+
 
 const Dashboard = ({ user, loading }) => {
   const [orders, setOrders] = useState([])
@@ -438,6 +456,16 @@ const Dashboard = ({ user, loading }) => {
         parseDeliveryDate(a.delivery_date)
     )
 
+  const sortedOrders = (Array.isArray(orders) ? [...orders] : []).sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  )
+  const pendingOrder = sortedOrders.find(
+    (order) => (order.displayStatus || order.status) === 'pending'
+  )
+  const headerOrder = pendingOrder || sortedOrders[0] || null
+  const headerStatus = headerOrder ? formatHeaderStatus(headerOrder.displayStatus || headerOrder.status) : 'Sin pedido'
+  const headerSummary = headerOrder ? buildItemsSummary(headerOrder.items) : 'Sin pedido activo'
+
   return (
     <RequireUser user={user} loading={loading}>
       <div className="p-6 space-y-6 pb-8">
@@ -449,6 +477,12 @@ const Dashboard = ({ user, loading }) => {
         countdownTone={countdownTone}
         refreshing={refreshing}
         onRefresh={handleRefresh}
+        headerOrder={headerOrder}
+        headerStatus={headerStatus}
+        headerSummary={headerSummary}
+        canEditOrder={(order) => isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)}
+        onEditOrder={handleEditOrder}
+        onDeleteOrder={handleDeleteOrder}
       />
 
       <StatsCards stats={stats} />

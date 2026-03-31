@@ -16,9 +16,9 @@ const OrderHistorySection = ({
   if (pastOrders.length === 0) return null
 
   return (
-    <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 drop-shadow">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
           Historial de pedidos (días anteriores)
         </h2>
         <span className="text-sm text-gray-600 font-semibold">
@@ -34,7 +34,7 @@ const OrderHistorySection = ({
           return (
             <div
               key={order.id}
-              className="flex flex-col gap-2 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-white/95"
+              className="flex flex-col gap-2 rounded-xl border border-slate-200 px-3 py-3 sm:px-4"
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex-1 min-w-0">

@@ -219,7 +219,7 @@ const OrderDetails = ({ user, loading }) => {
         )}
 
         {!localLoading && error && (
-          <div className="card bg-red-50 border-2 border-red-200 text-red-800">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 sm:px-5 text-red-800">
             <div className="space-y-2">
               <p className="text-lg font-bold">No se pudo cargar el pedido</p>
               <p className="text-sm font-semibold">{error}</p>
@@ -229,12 +229,13 @@ const OrderDetails = ({ user, loading }) => {
 
         {!localLoading && !error && order && (
           <>
-            <div className="card bg-white/95 backdrop-blur-sm shadow-2xl border-2 border-white/20">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
+              <div className="flex flex-col gap-3">
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-black text-gray-900">Resumen del pedido</h2>
-                  <p className="text-base sm:text-lg md:text-xl text-gray-900 font-bold">
-                    Empresa: {company?.name || 'No definida'}
+                  <p className="text-sm text-gray-600 font-semibold">Empresa</p>
+                  <p className="text-base sm:text-lg text-gray-900 font-bold">
+                    {company?.name || 'No definida'}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -249,13 +250,34 @@ const OrderDetails = ({ user, loading }) => {
                     <Package className="h-4 w-4" />
                     {order.total_items || items.length || 0} item(s)
                   </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-600 font-semibold">Fecha del pedido</p>
+                    <p className="text-gray-900 font-bold">{formatDateTime(order.created_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 font-semibold">Estado</p>
+                    <p className="text-gray-900 font-bold">{statusInfo.label}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Edición del pedido</h3>
+                  <p className="text-sm text-gray-600 font-semibold">Edita o elimina dentro del tiempo permitido.</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={handleEditOrder}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold shadow-md transition-colors ${
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-colors ${
                       canEditOrder
-                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                        : 'bg-emerald-100 text-emerald-400 cursor-not-allowed'
+                        ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+                        : 'bg-emerald-50 text-emerald-300 border-emerald-100 cursor-not-allowed'
                     }`}
                     disabled={!canEditOrder}
                   >
@@ -265,10 +287,10 @@ const OrderDetails = ({ user, loading }) => {
                   <button
                     type="button"
                     onClick={handleDeleteOrder}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold shadow-md transition-colors ${
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-colors ${
                       canEditOrder && !deleteSubmitting
-                        ? 'bg-red-600 text-white hover:bg-red-700'
-                        : 'bg-red-100 text-red-300 cursor-not-allowed'
+                        ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
+                        : 'bg-red-50 text-red-300 border-red-100 cursor-not-allowed'
                     }`}
                     disabled={!canEditOrder || deleteSubmitting}
                   >
@@ -278,7 +300,7 @@ const OrderDetails = ({ user, loading }) => {
                   <button
                     type="button"
                     onClick={handleRepeatOrder}
-                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
                   >
                     <RefreshCw className="h-4 w-4" />
                     Repetir pedido
@@ -288,7 +310,7 @@ const OrderDetails = ({ user, loading }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20 space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5 space-y-4">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-primary-600" />
                   <h3 className="text-xl font-black text-gray-900">Destino y fechas</h3>
@@ -318,7 +340,7 @@ const OrderDetails = ({ user, loading }) => {
                 </div>
               </div>
 
-              <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20 space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5 space-y-4">
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5 text-primary-600" />
                   <h3 className="text-xl font-black text-gray-900">Datos del cliente</h3>
@@ -349,7 +371,7 @@ const OrderDetails = ({ user, loading }) => {
               </div>
             </div>
 
-            <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20 space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5 space-y-4">
               <div className="flex items-center gap-2">
                 <ChefHat className="h-5 w-5 text-primary-600" />
                 <h3 className="text-xl font-black text-gray-900">Platos del pedido</h3>
@@ -359,19 +381,19 @@ const OrderDetails = ({ user, loading }) => {
                     <p className="text-sm text-gray-600">No hay platos registrados.</p>
                 )}
                 {items.map((item, index) => (
-                  <div key={`${item.id || index}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3">
-                    <div className="text-base font-bold text-gray-900">
+                  <div key={`${item.id || index}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <div className="text-sm sm:text-base font-semibold text-gray-900">
                       {item.name || 'Plato sin nombre'}
                     </div>
-                    <div className="text-xs font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                      Cantidad: {item.quantity || 1}
+                    <div className="text-xs font-semibold text-gray-600 bg-slate-100 px-2.5 py-1 rounded-full">
+                      x{item.quantity || 1}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20 space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5 space-y-4">
               <div className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5 text-primary-600" />
                 <h3 className="text-xl font-black text-gray-900">Extras y notas</h3>
@@ -391,9 +413,9 @@ const OrderDetails = ({ user, loading }) => {
                             ? rawValue
                             : JSON.stringify(rawValue)
                         return (
-                          <div key={`${resp?.id || index}`} className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3">
-                          <p className="text-sm font-bold text-gray-900">{resp?.title || 'Opcion'}</p>
-                          <p className="text-sm text-gray-700 mt-1">{value || '-'}</p>
+                          <div key={`${resp?.id || index}`} className="rounded-lg border border-purple-200 bg-purple-50 px-3 py-2">
+                            <p className="text-sm font-bold text-gray-900">{resp?.title || 'Opcion'}</p>
+                            <p className="text-sm text-gray-700 mt-1">{value || '-'}</p>
                           </div>
                         )
                       })}
@@ -402,7 +424,7 @@ const OrderDetails = ({ user, loading }) => {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-600 mb-2">Notas del pedido</p>
-                  <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-gray-800">
+                  <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-gray-800">
                     {order.comments && order.comments.trim().length > 0 ? order.comments : 'Sin notas adicionales.'}
                   </div>
                 </div>

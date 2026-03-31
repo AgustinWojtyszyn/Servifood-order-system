@@ -12,9 +12,9 @@ const WeeklyOrdersSection = ({
   canEditOrder
 }) => {
   return (
-    <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 drop-shadow">Tus pedidos de esta semana</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Tus pedidos de esta semana</h2>
       </div>
 
       {weeklyOrders.length === 0 ? (
@@ -32,7 +32,7 @@ const WeeklyOrdersSection = ({
             return (
               <div
                 key={order.id}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-white/95"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-slate-200 px-3 py-3 sm:px-4"
               >
                 <p className="text-sm sm:text-base text-gray-900 font-semibold wrap-break-word">
                   {formatWeeklyDate(order.delivery_date)} · {getServiceLabel(order.service)} · {getMainMenuLabel(order)}
