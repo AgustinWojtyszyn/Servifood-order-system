@@ -4,6 +4,24 @@ const isGenneiaPostreOption = (isGenneia, option = {}) => {
   return isGenneia && (option.title || '').toLowerCase().includes('postre')
 }
 
+const normalizeText = (val = '') => {
+  return (val || '').toString().trim().toLowerCase()
+}
+
+const isBeverageOption = (option = {}) => {
+  const title = normalizeText(option.title || '')
+  return title.includes('bebida')
+}
+
+const isDessertOption = (option = {}) => {
+  const title = normalizeText(option.title || '')
+  return title.includes('postre')
+}
+
+const isBeverageOrDessertOption = (option = {}) => {
+  return isBeverageOption(option) || isDessertOption(option)
+}
+
 const matchesOverrideKeyword = (val = '') => {
   const t = (val || '').toString().toLowerCase()
   return (
@@ -51,6 +69,9 @@ const isOutsideWindow = () => {
 
 export {
   isGenneiaPostreOption,
+  isBeverageOption,
+  isDessertOption,
+  isBeverageOrDessertOption,
   matchesOverrideKeyword,
   isDinnerOverrideValue,
   hasDinnerOverrideInResponses,

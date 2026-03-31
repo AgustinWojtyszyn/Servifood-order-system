@@ -28,6 +28,7 @@ import { useOrderSubmit } from '../hooks/useOrderSubmit'
 import { buildResponsesMap, mapOrderItemsToSelection } from '../utils/order/orderSelectionHelpers'
 import {
   isGenneiaPostreOption,
+  isBeverageOrDessertOption,
   matchesOverrideKeyword,
   isDinnerOverrideValue,
   isOutsideWindow
@@ -324,6 +325,47 @@ const OrderForm = ({ user, loading }) => {
   }, [isGenneia, isGenneiaPostreDay, allCustomOptions])
 
   useEffect(() => {
+    if (!isGenneia) return
+    if (!visibleDinnerOptions.length) return
+    setCustomResponsesDinner((prev) => {
+      let changed = false
+      const updated = { ...prev }
+
+      visibleDinnerOptions.forEach((option) => {
+        if (!isGenneiaPostreOptionLocal(option)) return
+
+        const current = prev[option.id]
+        const frutaOption = option.options?.find((opt) => opt?.toLowerCase().includes('fruta'))
+        const shouldForceFruta = !isGenneiaPostreDay && frutaOption
+
+        if (Array.isArray(current)) {
+          const cleaned = current.filter((val) => !val?.toLowerCase().includes('postre'))
+          if (cleaned.length !== current.length) {
+            updated[option.id] = cleaned.length ? cleaned : (shouldForceFruta ? [frutaOption] : [])
+            changed = true
+          } else if (!current.length && shouldForceFruta) {
+            updated[option.id] = [frutaOption]
+            changed = true
+          }
+          return
+        }
+
+        const isPostreSelected =
+          typeof current === 'string' && current.toLowerCase().includes('postre')
+        if (shouldForceFruta && (!current || isPostreSelected)) {
+          updated[option.id] = frutaOption
+          changed = true
+        } else if (!isGenneiaPostreDay && isPostreSelected && !frutaOption) {
+          updated[option.id] = null
+          changed = true
+        }
+      })
+
+      return changed ? updated : prev
+    })
+  }, [isGenneia, isGenneiaPostreDay, visibleDinnerOptions, isGenneiaPostreOptionLocal])
+
+  useEffect(() => {
     if (canChooseCustomSideForSelection) return
     if (!customSideOptionIds.length) return
     setCustomResponses(prev => {
@@ -450,8 +492,8 @@ const OrderForm = ({ user, loading }) => {
     }))
   }
 
-  const setCustomResponsesDinnerSafe = (updater) => {
-    if (dinnerSpecialChoice) {
+  const setCustomResponsesDinnerSafe = (updater, optionMeta) => {
+    if (dinnerSpecialChoice && !isBeverageOrDessertOption(optionMeta)) {
       notifyInfo('Si elegís la opción de cena, no podés seleccionar otras opciones.')
       return
     }
@@ -714,6 +756,8 @@ const OrderForm = ({ user, loading }) => {
                   options={visibleDinnerOptions}
                   customResponsesDinner={customResponsesDinner}
                   setCustomResponsesDinner={setCustomResponsesDinnerSafe}
+                  isGenneia={isGenneia}
+                  isGenneiaPostreDay={isGenneiaPostreDay}
                   isDinnerOverrideValue={isDinnerOverrideValue}
                   clearDinnerMenuSelections={clearDinnerMenuSelections}
                   dinnerSpecial={dinnerMenuSpecial}

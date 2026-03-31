@@ -4,6 +4,8 @@ const OrderDinnerOptionsSection = ({
   options,
   customResponsesDinner,
   setCustomResponsesDinner,
+  isGenneia,
+  isGenneiaPostreDay,
   isDinnerOverrideValue,
   clearDinnerMenuSelections,
   dinnerSpecial,
@@ -56,14 +58,15 @@ const OrderDinnerOptionsSection = ({
             </div>
             {dinnerSpecialChoice && (
               <p className="mt-3 text-sm text-amber-900/80 font-semibold">
-                Si elegís esta opción, no podés seleccionar otro menú u opción.
+                Si elegís esta opción, no podés seleccionar otro menú u opción de cena (salvo bebida o postre).
               </p>
             )}
           </div>
         )}
 
         {options.map((option) => {
-          const isBlocked = Boolean(dinnerSpecialChoice)
+          const isPostreGroup = isGenneia && (option?.title || '').toLowerCase().includes('postre')
+          const isBlocked = Boolean(dinnerSpecialChoice) && !(option?.title || '').toLowerCase().includes('bebida') && !(option?.title || '').toLowerCase().includes('postre')
           return (
           <div key={option.id} className={`border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50 ${isBlocked ? 'opacity-60 pointer-events-none' : ''}`}>
             <label
@@ -73,15 +76,23 @@ const OrderDinnerOptionsSection = ({
               {option.title}
               {option.required && <span className="text-red-600 ml-1">*</span>}
             </label>
+            {isPostreGroup && (
+              <p className="text-xs sm:text-sm text-gray-600 font-semibold mb-3">
+                Solo elegí <b>Postre del día</b> lunes y miércoles (entrega martes y jueves). El resto de los días marcá <b>Fruta</b>.
+              </p>
+            )}
 
             {option.type === 'multiple_choice' && option.options && (
               <div className="space-y-2">
                 {option.options.map((opt, index) => {
                   const isSelected = customResponsesDinner[option.id] === opt
+                  const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
+                  const isDisabled = isPostreOption && !isGenneiaPostreDay
                   return (
                     <button
                       key={index}
                       type="button"
+                      disabled={isDisabled}
                       aria-pressed={isSelected}
                       onClick={() => {
                         const value = opt
@@ -98,16 +109,20 @@ const OrderDinnerOptionsSection = ({
                             return next
                           }
                           return { ...prev, [option.id]: prev[option.id] === value ? null : value }
-                        })
+                        }, option)
                       }}
                       className={`w-full text-left p-3 border-2 rounded-lg transition-all
                         focus:outline-none focus:ring-2 focus:ring-blue-400
-                        ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+                        ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}
+                        ${isDisabled ? 'opacity-60 pointer-events-none' : ''}`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
-                        {isSelected && (
+                        {isSelected && !isDisabled && (
                           <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                        )}
+                        {isDisabled && (
+                          <span className="text-xs text-gray-500 font-semibold">No disponible hoy</span>
                         )}
                       </div>
                     </button>
@@ -121,10 +136,13 @@ const OrderDinnerOptionsSection = ({
                 {option.options.map((opt, index) => {
                   const list = customResponsesDinner[option.id] || []
                   const isChecked = list.includes(opt)
+                  const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
+                  const isDisabled = isPostreOption && !isGenneiaPostreDay
                   return (
                     <button
                       key={index}
                       type="button"
+                      disabled={isDisabled}
                       aria-pressed={isChecked}
                       onClick={() => {
                         setCustomResponsesDinner(prev => {
@@ -135,16 +153,20 @@ const OrderDinnerOptionsSection = ({
                               ? current.filter(v => v !== opt)
                               : [...current, opt]
                           }
-                        })
+                        }, option)
                       }}
                       className={`w-full text-left p-3 border-2 rounded-lg transition-all
                         focus:outline-none focus:ring-2 focus:ring-blue-400
-                        ${isChecked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+                        ${isChecked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}
+                        ${isDisabled ? 'opacity-60 pointer-events-none' : ''}`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
-                        {isChecked && (
+                        {isChecked && !isDisabled && (
                           <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
+                        )}
+                        {isDisabled && (
+                          <span className="text-xs text-gray-500 font-semibold">No disponible hoy</span>
                         )}
                       </div>
                     </button>
@@ -157,7 +179,7 @@ const OrderDinnerOptionsSection = ({
               <textarea
                 id={`dinner-custom-option-${option.id}`}
                 value={customResponsesDinner[option.id] || ''}
-                onChange={(e) => setCustomResponsesDinner(prev => ({ ...prev, [option.id]: e.target.value }))}
+                onChange={(e) => setCustomResponsesDinner(prev => ({ ...prev, [option.id]: e.target.value }), option)}
                 className="input-field"
                 placeholder="Escribe tu respuesta para la cena..."
                 style={{ fontWeight: '600' }}
