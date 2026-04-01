@@ -20,9 +20,10 @@ const OrderTurnSelector = ({
           type="button"
           aria-pressed={selectedTurns.lunch}
           onClick={onToggleLunch}
+          onMouseUp={(e) => e.currentTarget.blur()}
           className={`w-full text-left p-4 border-2 rounded-xl transition-all
-            focus:outline-none focus:ring-2 focus:ring-blue-400
-            ${selectedTurns.lunch ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+            focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2
+            ${selectedTurns.lunch ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white md:hover:border-gray-300 md:hover:bg-gray-50'}`}
         >
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm sm:text-base text-gray-900 font-semibold">Almuerzo</span>
@@ -35,9 +36,10 @@ const OrderTurnSelector = ({
           type="button"
           aria-pressed={selectedTurns.dinner}
           onClick={onToggleDinner}
+          onMouseUp={(e) => e.currentTarget.blur()}
           className={`w-full text-left p-4 border-2 rounded-xl transition-all
-            focus:outline-none focus:ring-2 focus:ring-blue-400
-            ${selectedTurns.dinner ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
+            focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2
+            ${selectedTurns.dinner ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white md:hover:border-gray-300 md:hover:bg-gray-50'}`}
         >
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm sm:text-base text-gray-900 font-semibold">Cena (solo whitelist)</span>
