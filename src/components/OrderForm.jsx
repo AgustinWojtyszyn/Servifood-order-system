@@ -191,6 +191,21 @@ const OrderForm = ({ user, loading }) => {
     return customOptionsDinner.filter(opt => opt.active)
   }, [customOptionsDinner, dinnerEnabled])
 
+  const dinnerCustomSideOptionIds = useMemo(
+    () => visibleDinnerOptions
+      .filter(opt => (opt?.title || '').toLowerCase().includes('guarn'))
+      .map(opt => opt.id),
+    [visibleDinnerOptions]
+  )
+
+  const canChooseCustomSideForDinner = useMemo(() => {
+    if (!isGenneia) return true
+    if (!selectedTurns.dinner) return true
+    const selectedList = buildSelectedItemsList(menuItems, selectedItemsDinner)
+    if (!selectedList.length) return false
+    return selectedList.every(item => canChooseCustomSide(item?.name, item?.id, item?.description))
+  }, [isGenneia, selectedTurns.dinner, menuItems, selectedItemsDinner])
+
   // Unificado (evitar duplicados por id)
   const allCustomOptions = useMemo(() => {
     const seen = new Set()
@@ -381,6 +396,22 @@ const OrderForm = ({ user, loading }) => {
     })
   }, [canChooseCustomSideForSelection, customSideOptionIds])
 
+  useEffect(() => {
+    if (canChooseCustomSideForDinner) return
+    if (!dinnerCustomSideOptionIds.length) return
+    setCustomResponsesDinner(prev => {
+      let changed = false
+      const next = { ...prev }
+      dinnerCustomSideOptionIds.forEach((id) => {
+        if (next[id]) {
+          delete next[id]
+          changed = true
+        }
+      })
+      return changed ? next : prev
+    })
+  }, [canChooseCustomSideForDinner, dinnerCustomSideOptionIds])
+
   // bootstrap moved to useOrderBootstrap
 
   const handleItemSelect = (itemId, isSelected) => {
@@ -495,6 +526,11 @@ const OrderForm = ({ user, loading }) => {
   const setCustomResponsesDinnerSafe = (updater, optionMeta) => {
     if (dinnerSpecialChoice && !isBeverageOrDessertOption(optionMeta)) {
       notifyInfo('Si elegís la opción de cena, no podés seleccionar otras opciones.')
+      return
+    }
+    const isCustomSideOption = (optionMeta?.title || '').toLowerCase().includes('guarn')
+    if (isCustomSideOption && !canChooseCustomSideForDinner) {
+      notifyInfo('La guarnición distinta no está disponible para esta opción.')
       return
     }
     setCustomResponsesDinner(prev => (typeof updater === 'function' ? updater(prev) : updater))
@@ -758,6 +794,7 @@ const OrderForm = ({ user, loading }) => {
                   setCustomResponsesDinner={setCustomResponsesDinnerSafe}
                   isGenneia={isGenneia}
                   isGenneiaPostreDay={isGenneiaPostreDay}
+                  customSideBlocked={!canChooseCustomSideForDinner}
                   isDinnerOverrideValue={isDinnerOverrideValue}
                   clearDinnerMenuSelections={clearDinnerMenuSelections}
                   dinnerSpecial={dinnerMenuSpecial}

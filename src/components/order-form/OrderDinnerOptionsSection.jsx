@@ -6,6 +6,7 @@ const OrderDinnerOptionsSection = ({
   setCustomResponsesDinner,
   isGenneia,
   isGenneiaPostreDay,
+  customSideBlocked,
   isDinnerOverrideValue,
   clearDinnerMenuSelections,
   dinnerSpecial,
@@ -66,7 +67,13 @@ const OrderDinnerOptionsSection = ({
 
         {options.map((option) => {
           const isPostreGroup = isGenneia && (option?.title || '').toLowerCase().includes('postre')
-          const isBlocked = Boolean(dinnerSpecialChoice) && !(option?.title || '').toLowerCase().includes('bebida') && !(option?.title || '').toLowerCase().includes('postre')
+          const isCustomSideOption = (option?.title || '').toLowerCase().includes('guarn')
+          const isBlockedByDinnerSpecial =
+            Boolean(dinnerSpecialChoice) &&
+            !(option?.title || '').toLowerCase().includes('bebida') &&
+            !(option?.title || '').toLowerCase().includes('postre')
+          const isBlockedByCustomSide = Boolean(customSideBlocked) && isCustomSideOption
+          const isBlocked = isBlockedByDinnerSpecial || isBlockedByCustomSide
           return (
           <div key={option.id} className={`border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-amber-50 ${isBlocked ? 'opacity-60 pointer-events-none' : ''}`}>
             <label
@@ -81,13 +88,18 @@ const OrderDinnerOptionsSection = ({
                 Solo elegí <b>Postre del día</b> lunes y miércoles (entrega martes y jueves). El resto de los días marcá <b>Fruta</b>.
               </p>
             )}
+            {isBlockedByCustomSide && (
+              <p className="text-xs sm:text-sm text-gray-600 font-semibold mb-3">
+                Guarnición distinta no disponible para menú principal.
+              </p>
+            )}
 
             {option.type === 'multiple_choice' && option.options && (
               <div className="space-y-2">
                 {option.options.map((opt, index) => {
                   const isSelected = customResponsesDinner[option.id] === opt
                   const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
-                  const isDisabled = isPostreOption && !isGenneiaPostreDay
+                  const isDisabled = (isPostreOption && !isGenneiaPostreDay) || isBlocked
                   return (
                     <button
                       key={index}
@@ -137,7 +149,7 @@ const OrderDinnerOptionsSection = ({
                   const list = customResponsesDinner[option.id] || []
                   const isChecked = list.includes(opt)
                   const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
-                  const isDisabled = isPostreOption && !isGenneiaPostreDay
+                  const isDisabled = (isPostreOption && !isGenneiaPostreDay) || isBlocked
                   return (
                     <button
                       key={index}
@@ -183,6 +195,7 @@ const OrderDinnerOptionsSection = ({
                 className="input-field"
                 placeholder="Escribe tu respuesta para la cena..."
                 style={{ fontWeight: '600' }}
+                disabled={isBlocked}
               />
             )}
           </div>

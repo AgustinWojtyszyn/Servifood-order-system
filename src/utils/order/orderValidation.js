@@ -123,8 +123,33 @@ const validateOrderSubmission = ({
         response: dinnerOverrideChoice
       }]
     } else {
+      const isGenneia = (companyConfig?.slug || '').toLowerCase() === 'genneia'
+      const canChooseCustomSideForDinner = selectedItemsListDinner.length > 0
+        ? selectedItemsListDinner.every(item => canChooseCustomSide(item?.name, item?.id, item?.description))
+        : false
+      const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
+      const hasValidResponse = (response) => {
+        if (!response) return false
+        if (Array.isArray(response) && response.length === 0) return false
+        if (typeof response === 'string' && response.trim() === '') return false
+        return true
+      }
+
+      if (isGenneia && !canChooseCustomSideForDinner) {
+        const blockedCustomSide = (visibleDinnerOptions || []).some(opt => {
+          if (!isCustomSideOption(opt)) return false
+          return hasValidResponse(customResponsesDinner[opt.id])
+        })
+        if (blockedCustomSide) {
+          return { error: 'La guarnición distinta no está disponible para esta opción.' }
+        }
+      }
+
       const missingRequiredOptionsDinner = (visibleDinnerOptions || [])
-        .filter(opt => (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id])
+        .filter(opt => {
+          if (isGenneia && isCustomSideOption(opt) && !canChooseCustomSideForDinner) return false
+          return (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id]
+        })
         .map(opt => opt.title)
       if (missingRequiredOptionsDinner.length > 0) {
         return { error: `Para cena completa: ${missingRequiredOptionsDinner.join(', ')}` }
@@ -132,6 +157,7 @@ const validateOrderSubmission = ({
 
       customResponsesDinnerArray = (visibleDinnerOptions || [])
         .filter(opt => {
+          if (isGenneia && isCustomSideOption(opt) && !canChooseCustomSideForDinner) return false
           const response = customResponsesDinner[opt.id]
           if (!response) return false
           if (Array.isArray(response) && response.length === 0) return false
