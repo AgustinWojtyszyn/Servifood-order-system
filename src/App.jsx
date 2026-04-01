@@ -32,11 +32,13 @@ const CafeteriaDashboardPage = lazy(() => import('./components/cafeteria/Cafeter
 const CafeteriaNewOrderPage = lazy(() => import('./components/cafeteria/CafeteriaNewOrderPage'))
 const CafeteriaCurrentOrderPage = lazy(() => import('./components/cafeteria/CafeteriaCurrentOrderPage'))
 const CafeteriaSuccessPage = lazy(() => import('./components/cafeteria/CafeteriaSuccessPage'))
+const TendenciasPage = lazy(() => import('./pages/TendenciasPage'))
 
 const AdminCafeteriaDashboardPage = withAdmin(CafeteriaDashboardPage)
 const AdminCafeteriaNewOrderPage = withAdmin(CafeteriaNewOrderPage)
 const AdminCafeteriaCurrentOrderPage = withAdmin(CafeteriaCurrentOrderPage)
 const AdminCafeteriaSuccessPage = withAdmin(CafeteriaSuccessPage)
+const AdminTendenciasPage = withAdmin(TendenciasPage)
 
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
@@ -248,6 +250,9 @@ function App() {
             } />
             <Route path="/auditoria" element={
               !loading && (user ? <Layout user={user} loading={loading}><AuditLogs user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/tendencias" element={
+              !loading && (user ? <Layout user={user} loading={loading}><AdminTendenciasPage /></Layout> : <Navigate to="/login" />)
             } />
             {/* Redirección global para rutas inexistentes */}
             <Route

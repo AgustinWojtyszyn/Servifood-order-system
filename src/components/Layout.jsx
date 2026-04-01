@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from '../supabaseClient'
-import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList } from 'lucide-react'
+import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList, BarChart3 } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import cafeteriaLogo from '../assets/food-delivery (1).png'
 import Tutorial from './Tutorial'
@@ -153,6 +153,7 @@ const Layout = ({ children, user, loading }) => {
       icon: Calendar,
       highlighted: true  // Marcar como destacado
     })
+    menuItems.push({ name: 'Tendencias', path: '/tendencias', icon: BarChart3 })
     menuItems.push({ name: 'Panel Mensual', path: '/monthly-panel', icon: Calendar })
     menuItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings })
     menuItems.push({ name: 'Auditoría', path: '/auditoria', icon: ClipboardList })
