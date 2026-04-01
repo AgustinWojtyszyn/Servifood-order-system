@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { authService } from '../services/auth'
+import { usersService } from '../services/users'
 import { safeLocalStorage } from '../utils'
 
 export const useAuth = () => {
@@ -71,18 +72,35 @@ export const useAuth = () => {
         '0732486b-6b27-4bf6-bf25-42d84b47662b'
       ]
       const roleFromMetadata = authUser?.user_metadata?.role || authUser?.app_metadata?.role || authUser?.role
-      const normalizedRole = roleFromMetadata || (adminAllowlist.includes(authUser?.id) ? 'admin' : null)
-      const isAdminRole = normalizedRole === 'admin'
+      const isAllowlistedAdmin = adminAllowlist.includes(authUser?.id)
+      let roleFromDb = null
+
+      if (roleFromMetadata !== 'admin' && authUser?.id) {
+        try {
+          const { data } = await usersService.getUserById(authUser.id)
+          roleFromDb = data?.role || null
+        } catch (err) {
+          if (import.meta.env.DEV) {
+            console.warn('[Auth][role-debug] error fetching role from db', err)
+          }
+        }
+      }
+
+      const normalizedRole = roleFromMetadata === 'admin'
+        ? 'admin'
+        : (roleFromDb || roleFromMetadata || (isAllowlistedAdmin ? 'admin' : null))
+      const isAdminRole = normalizedRole === 'admin' || isAllowlistedAdmin
 
       logRoleDebug('raw user metadata', {
         id: authUser?.id,
         email: authUser?.email,
         roleFromMetadata,
+        roleFromDb,
         app_metadata: authUser?.app_metadata,
         user_metadata: authUser?.user_metadata
       })
 
-      setUser((prev) => prev || { ...authUser, role: normalizedRole })
+      setUser((prev) => (prev ? { ...prev, ...authUser, role: normalizedRole } : { ...authUser, role: normalizedRole }))
       setIsAdmin(isAdminRole)
 
       logRoleDebug('computed flags', {

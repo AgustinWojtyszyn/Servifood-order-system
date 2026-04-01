@@ -1,6 +1,24 @@
 import { supabase, supabaseService, sanitizeQuery, instrumentRpc } from './supabase'
+import { usersService } from './users'
 import { handleError } from '../utils'
 import { ORDER_STATUS } from '../types'
+
+const resolveIsAdminForUser = async (user) => {
+  if (!user?.id) return false
+  const roleFromMetadata = user?.user_metadata?.role || user?.app_metadata?.role || user?.role
+  if (roleFromMetadata === 'admin') return true
+  const adminAllowlist = [
+    'ae177d76-9f35-44ac-a662-1b1e4146dbe4',
+    '0732486b-6b27-4bf6-bf25-42d84b47662b'
+  ]
+  if (adminAllowlist.includes(user.id)) return true
+  try {
+    const { data } = await usersService.getUserById(user.id)
+    return data?.role === 'admin'
+  } catch (error) {
+    return false
+  }
+}
 
 class OrdersService {
   // Crear pedido con validación
@@ -209,7 +227,7 @@ class OrdersService {
       if (!user) throw new Error('Usuario no autenticado')
 
       // Verificar si es admin
-      const isAdmin = user.role === 'admin'
+      const isAdmin = await resolveIsAdminForUser(user)
 
       // Validar tiempo para usuarios normales
       if (!isAdmin) {
@@ -267,7 +285,7 @@ class OrdersService {
       if (!user) throw new Error('Usuario no autenticado')
 
       // Verificar si es admin
-      const isAdmin = user.role === 'admin'
+      const isAdmin = await resolveIsAdminForUser(user)
 
       // Validar tiempo para usuarios normales
       if (!isAdmin) {
