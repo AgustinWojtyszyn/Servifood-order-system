@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
+import ExcelJS from 'exceljs'
 import { COMPANY_LIST } from '../constants/companyConfig'
+import excelLogo from '../assets/logoexcel.png'
 import { useTrendsData } from '../hooks/analytics/useTrendsData'
 import TrendsFilters from '../components/analytics/TrendsFilters'
 import TrendsSummaryCards from '../components/analytics/TrendsSummaryCards'
 import TrendsCharts from '../components/analytics/TrendsCharts'
-import TopRankings from '../components/analytics/TopRankings'
 
 const getDefaultRange = () => {
   const now = new Date()
@@ -16,6 +17,10 @@ const getDefaultRange = () => {
 }
 
 const TendenciasPage = () => {
+  const [chartType, setChartType] = useState(() => {
+    if (typeof window === 'undefined') return 'bar'
+    return window.localStorage.getItem('trends_chart_type') || 'bar'
+  })
   const companyOptions = useMemo(() => (
     COMPANY_LIST.map((company) => ({
       label: company.name,
@@ -25,7 +30,8 @@ const TendenciasPage = () => {
 
   const [filtersDraft, setFiltersDraft] = useState({
     company: 'all',
-    range: getDefaultRange()
+    range: getDefaultRange(),
+    analysisType: 'all'
   })
   const [filtersApplied, setFiltersApplied] = useState(filtersDraft)
 
@@ -34,6 +40,8 @@ const TendenciasPage = () => {
     error,
     totalOrders,
     menuRanking,
+    optionRanking,
+    mainMenuRanking,
     sidesRanking,
     beveragesRanking,
     topMenu,
@@ -59,11 +67,77 @@ const TendenciasPage = () => {
   const handleClear = () => {
     const cleared = {
       company: 'all',
-      range: { start: '', end: '' }
+      range: { start: '', end: '' },
+      analysisType: 'all'
     }
     setFiltersDraft(cleared)
     setFiltersApplied(cleared)
   }
+
+  const handleChartTypeChange = (value) => {
+    setChartType(value)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('trends_chart_type', value)
+    }
+  }
+
+  const handleExport = async () => {
+    const wb = new ExcelJS.Workbook()
+    const summary = wb.addWorksheet('Resumen')
+    summary.columns = [
+      { header: 'Métrica', key: 'metric', width: 30 },
+      { header: 'Valor', key: 'value', width: 50 }
+    ]
+    summary.addRows([
+      { metric: 'Empresa', value: companyLabel },
+      { metric: 'Rango', value: filtersApplied.range.start || filtersApplied.range.end ? `${filtersApplied.range.start || 'inicio'} a ${filtersApplied.range.end || 'fin'}` : 'Sin rango' },
+      { metric: 'Pedidos analizados', value: totalOrders },
+      { metric: 'Plato más pedido', value: topMenu },
+      { metric: 'Bife más pedido', value: topBife },
+      { metric: 'Guarnición top', value: topSide },
+      { metric: 'Bebida top', value: topBeverage }
+    ])
+
+    const addRankingSheet = (title, items) => {
+      const ws = wb.addWorksheet(title)
+      ws.columns = [
+        { header: 'Posición', key: 'pos', width: 10 },
+        { header: 'Nombre', key: 'label', width: 50 },
+        { header: 'Cantidad', key: 'count', width: 14 },
+        { header: 'Porcentaje', key: 'percent', width: 14 }
+      ]
+      items.forEach((item, index) => {
+        ws.addRow({
+          pos: index + 1,
+          label: item.label,
+          count: item.count,
+          percent: `${item.percent.toFixed(1)}%`
+        })
+      })
+    }
+
+    const type = filtersApplied.analysisType
+    if (type === 'all' || type === 'menus') addRankingSheet('Menus', mainMenuRanking.items)
+    if (type === 'all' || type === 'options') addRankingSheet('Opciones', optionRanking.items)
+    if (type === 'all' || type === 'sides') addRankingSheet('Guarniciones', sidesRanking.items)
+    if (type === 'all' || type === 'beverages') addRankingSheet('Bebidas', beveragesRanking.items)
+
+    const buffer = await wb.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const fileName = `tendencias-${filtersApplied.range.start || 'inicio'}-a-${filtersApplied.range.end || 'fin'}.xlsx`
+    a.href = url
+    a.download = fileName
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1200)
+  }
+
+  const analysisType = filtersApplied.analysisType
+  const showMenus = analysisType === 'all' || analysisType === 'menus'
+  const showOptions = analysisType === 'all' || analysisType === 'options'
+  const showSides = analysisType === 'all' || analysisType === 'sides'
+  const showBeverages = analysisType === 'all' || analysisType === 'beverages'
 
   return (
     <div className="monthly-page min-h-screen bg-[#f6f7f9] py-6">
@@ -88,11 +162,18 @@ const TendenciasPage = () => {
           dateTo={filtersDraft.range.end}
           onDateFromChange={(value) => setFiltersDraft(prev => ({ ...prev, range: { ...prev.range, start: value } }))}
           onDateToChange={(value) => setFiltersDraft(prev => ({ ...prev, range: { ...prev.range, end: value } }))}
+          analysisType={filtersDraft.analysisType}
+          onAnalysisTypeChange={(value) => setFiltersDraft(prev => ({ ...prev, analysisType: value }))}
+          chartType={chartType}
+          onChartTypeChange={handleChartTypeChange}
           onApply={handleApply}
           onClear={handleClear}
+          onExport={handleExport}
           isDirty={isDirty}
           isLoading={loading}
           isRangeValid={isRangeValid}
+          excelLogo={excelLogo}
+          exportCount={loading ? 0 : totalOrders}
         />
 
         <TrendsSummaryCards
@@ -110,18 +191,35 @@ const TendenciasPage = () => {
           </div>
         )}
 
-        <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <section className="grid gap-6">
           <TrendsCharts
-            menuRanking={menuRanking.items.slice(0, 8)}
-            sidesRanking={sidesRanking.items.slice(0, 8)}
-            beveragesRanking={beveragesRanking.items.slice(0, 8)}
-          />
-          <TopRankings
-            menuRanking={menuRanking.items.slice(0, 6)}
-            sidesRanking={sidesRanking.items.slice(0, 6)}
-            beveragesRanking={beveragesRanking.items.slice(0, 6)}
+            menuRanking={showMenus ? menuRanking.items.slice(0, 8) : []}
+            sidesRanking={showSides ? sidesRanking.items.slice(0, 8) : []}
+            beveragesRanking={showBeverages ? beveragesRanking.items.slice(0, 8) : []}
+            showMenus={showMenus}
+            showSides={showSides}
+            showBeverages={showBeverages}
+            menuTitle="Menús + Opciones más pedidos"
+            menuSubtitle="Comparativo entre menú principal y opciones"
+            chartType={chartType}
           />
         </section>
+
+        {analysisType === 'options' && (
+          <div className="grid gap-6">
+            <TrendsCharts
+              menuRanking={optionRanking.items.slice(0, 8)}
+              sidesRanking={[]}
+              beveragesRanking={[]}
+              showMenus
+              showSides={false}
+              showBeverages={false}
+              menuTitle="Opciones más pedidas"
+              menuSubtitle="Ranking de opciones 1 a 6"
+              chartType={chartType}
+            />
+          </div>
+        )}
 
         {!loading && totalOrders === 0 && (
           <div className="border border-slate-200 bg-slate-50 rounded-xl p-5 text-sm text-slate-600 font-semibold">

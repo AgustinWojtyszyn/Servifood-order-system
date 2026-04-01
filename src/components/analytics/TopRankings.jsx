@@ -22,15 +22,24 @@ const RankingList = ({ title, items }) => (
   </div>
 )
 
-const TopRankings = ({ menuRanking, sidesRanking, beveragesRanking }) => {
+const TopRankings = ({
+  menuRanking,
+  sidesRanking,
+  beveragesRanking,
+  showMenus = true,
+  showSides = true,
+  showBeverages = true,
+  menuTitle = 'Top platos',
+  sidesTitle = 'Top guarniciones',
+  beveragesTitle = 'Top bebidas'
+}) => {
   return (
     <div className="grid gap-6">
-      <RankingList title="Top platos" items={menuRanking} />
-      <RankingList title="Top guarniciones" items={sidesRanking} />
-      <RankingList title="Top bebidas" items={beveragesRanking} />
+      {showMenus && <RankingList title={menuTitle} items={menuRanking} />}
+      {showSides && <RankingList title={sidesTitle} items={sidesRanking} />}
+      {showBeverages && <RankingList title={beveragesTitle} items={beveragesRanking} />}
     </div>
   )
 }
 
 export default TopRankings
-

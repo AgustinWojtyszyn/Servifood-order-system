@@ -1,22 +1,27 @@
+import DonutChartPro, { shouldUseDonut } from './DonutChartPro'
 const formatPercent = (value) => `${value.toFixed(1)}%`
 
 const BarRow = ({ label, count, percent, max, accent }) => {
   const width = max ? `${(count / max) * 100}%` : '0%'
   return (
-    <div className="space-y-2">
+    <div className="group space-y-2">
       <div className="flex items-center justify-between text-sm text-slate-700">
-        <span className="font-semibold text-slate-800">{label}</span>
+        <span className="font-semibold text-slate-800 truncate">{label}</span>
         <span className="text-slate-500">{count} · {formatPercent(percent)}</span>
       </div>
-      <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full bg-linear-to-r ${accent}`} style={{ width }} />
+      <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full bg-linear-to-r ${accent} transition-all duration-700 ease-out group-hover:brightness-110`}
+          style={{ width }}
+        />
       </div>
     </div>
   )
 }
 
-const ChartCard = ({ title, subtitle, items, accent }) => {
+const ChartCard = ({ title, subtitle, items, accent, chartType, centerMode }) => {
   const max = items.reduce((acc, item) => Math.max(acc, item.count || 0), 0)
+  const useDonut = chartType === 'donut' && shouldUseDonut(items)
   return (
     <div className="card bg-white/95 backdrop-blur-sm shadow-md border border-slate-200 rounded-2xl p-4 sm:p-6">
       <div className="flex items-center justify-between gap-3">
@@ -26,11 +31,14 @@ const ChartCard = ({ title, subtitle, items, accent }) => {
         </div>
         <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Ranking</span>
       </div>
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 space-y-4">
         {items.length === 0 && (
           <div className="text-sm text-slate-500">No hay datos para este filtro.</div>
         )}
-        {items.map((item, index) => (
+        {items.length > 0 && useDonut && (
+          <DonutChartPro items={items} centerMode={centerMode} />
+        )}
+        {items.length > 0 && !useDonut && items.map((item, index) => (
           <BarRow
             key={`${item.label}-${index}`}
             label={item.label}
@@ -40,35 +48,65 @@ const ChartCard = ({ title, subtitle, items, accent }) => {
             accent={accent}
           />
         ))}
+        {items.length > 0 && chartType === 'donut' && !useDonut && (
+          <div className="text-xs text-slate-500">
+            Gráfico circular no aporta claridad con este volumen de datos. Se muestran barras.
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-const TrendsCharts = ({ menuRanking, sidesRanking, beveragesRanking }) => {
+const TrendsCharts = ({
+  menuRanking,
+  sidesRanking,
+  beveragesRanking,
+  showMenus = true,
+  showSides = true,
+  showBeverages = true,
+  menuTitle = 'Platos más pedidos',
+  menuSubtitle = 'Menú principal y opciones 1 a 6',
+  sidesTitle = 'Guarniciones más pedidas',
+  sidesSubtitle = 'Cantidad y porcentaje sobre el total',
+  beveragesTitle = 'Bebidas más pedidas',
+  beveragesSubtitle = 'Respuestas con bebidas detectadas',
+  chartType = 'bar'
+}) => {
   return (
     <div className="grid gap-6">
-      <ChartCard
-        title="Platos más pedidos"
-        subtitle="Menú principal y opciones 1 a 6"
-        items={menuRanking}
-        accent="from-blue-500 to-blue-400"
-      />
-      <ChartCard
-        title="Guarniciones más pedidas"
-        subtitle="Cantidad y porcentaje sobre el total"
-        items={sidesRanking}
-        accent="from-emerald-500 to-emerald-400"
-      />
-      <ChartCard
-        title="Bebidas más pedidas"
-        subtitle="Respuestas con bebidas detectadas"
-        items={beveragesRanking}
-        accent="from-amber-500 to-amber-400"
-      />
+      {showMenus && (
+        <ChartCard
+          title={menuTitle}
+          subtitle={menuSubtitle}
+          items={menuRanking}
+          accent="from-blue-500 to-blue-400"
+          chartType={chartType}
+          centerMode="top"
+        />
+      )}
+      {showSides && (
+        <ChartCard
+          title={sidesTitle}
+          subtitle={sidesSubtitle}
+          items={sidesRanking}
+          accent="from-emerald-500 to-emerald-400"
+          chartType={chartType}
+          centerMode="total"
+        />
+      )}
+      {showBeverages && (
+        <ChartCard
+          title={beveragesTitle}
+          subtitle={beveragesSubtitle}
+          items={beveragesRanking}
+          accent="from-amber-500 to-amber-400"
+          chartType={chartType}
+          centerMode="percent"
+        />
+      )}
     </div>
   )
 }
 
 export default TrendsCharts
-

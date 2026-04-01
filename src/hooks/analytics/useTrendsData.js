@@ -63,11 +63,23 @@ export const useTrendsData = ({ company, dateRange }) => {
   const topSide = sidesRanking.items[0]?.label || '—'
   const topBeverage = beveragesRanking.items[0]?.label || '—'
 
+  const optionRanking = useMemo(() => {
+    const optionItems = menuRanking.items.filter(item => /^Opción\s+\d+/i.test(item.label))
+    return { items: optionItems }
+  }, [menuRanking.items])
+
+  const mainMenuRanking = useMemo(() => {
+    const mainItems = menuRanking.items.filter(item => !/^Opción\s+\d+/i.test(item.label))
+    return { items: mainItems }
+  }, [menuRanking.items])
+
   return {
     loading,
     error,
     totalOrders: filteredOrders.length,
     menuRanking,
+    optionRanking,
+    mainMenuRanking,
     bifeRanking,
     sidesRanking,
     beveragesRanking,
