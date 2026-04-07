@@ -40,6 +40,7 @@ const useAdminDinnerMenuData = ({ active = false } = {}) => {
     return base
   })
   const [dinnerSelectedDates, setDinnerSelectedDates] = useState([])
+  const [dinnerLoadedDates, setDinnerLoadedDates] = useState([])
   const [dinnerMenusByDate, setDinnerMenusByDate] = useState({})
   const [dinnerDateLoading, setDinnerDateLoading] = useState({})
 
@@ -66,7 +67,7 @@ const useAdminDinnerMenuData = ({ active = false } = {}) => {
       })
       const dates = Object.keys(byDate).sort()
       setDinnerMenusByDate(byDate)
-      setDinnerSelectedDates(dates)
+      setDinnerLoadedDates(dates)
     } catch (err) {
       console.error('Error loading dinner menus for week', err)
     }
@@ -111,19 +112,23 @@ const useAdminDinnerMenuData = ({ active = false } = {}) => {
       return [...prev, dateISO].sort()
     })
     if (isSelected) {
-      setDinnerMenusByDate(prev => {
-        const next = { ...prev }
-        delete next[dateISO]
-        return next
-      })
+      if (!dinnerLoadedDates.includes(dateISO)) {
+        setDinnerMenusByDate(prev => {
+          const next = { ...prev }
+          delete next[dateISO]
+          return next
+        })
+      }
       return
     }
     setDinnerMenusByDate(prev => ({
       ...prev,
       [dateISO]: prev[dateISO] || createDefaultDinnerMenu(dateISO)
     }))
-    await loadDinnerMenuForDate(dateISO)
-  }, [dinnerSelectedDates, loadDinnerMenuForDate])
+    if (!dinnerLoadedDates.includes(dateISO)) {
+      await loadDinnerMenuForDate(dateISO)
+    }
+  }, [dinnerSelectedDates, dinnerLoadedDates, loadDinnerMenuForDate])
 
   const updateDinnerMenuField = useCallback(async (dateISO, field, value) => {
     setDinnerMenusByDate(prev => ({
@@ -172,6 +177,7 @@ const useAdminDinnerMenuData = ({ active = false } = {}) => {
     dinnerWeekBaseDate,
     setDinnerWeekBaseDate,
     dinnerSelectedDates,
+    dinnerLoadedDates,
     dinnerMenusByDate,
     dinnerDateLoading,
     loadDinnerMenusForWeek,

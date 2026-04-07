@@ -134,6 +134,7 @@ const AdminPanel = () => {
     dinnerWeekBaseDate,
     setDinnerWeekBaseDate,
     dinnerSelectedDates,
+    dinnerLoadedDates,
     dinnerMenusByDate,
     dinnerDateLoading,
     toggleDinnerDate,
@@ -407,7 +408,9 @@ const AdminPanel = () => {
         <AdminDinnerOptionSection
           weekBaseDate={dinnerWeekBaseDate}
           onWeekBaseDateChange={setDinnerWeekBaseDate}
+          visibleDates={Array.from(new Set([...(dinnerLoadedDates || []), ...(dinnerSelectedDates || [])])).sort()}
           selectedDates={dinnerSelectedDates}
+          loadedDates={dinnerLoadedDates}
           onToggleDate={toggleDinnerDate}
           dateLoadingMap={dinnerDateLoading}
           dinnerMenusByDate={dinnerMenusByDate}

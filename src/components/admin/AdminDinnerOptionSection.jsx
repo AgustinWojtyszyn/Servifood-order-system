@@ -4,7 +4,9 @@ import { COMPANY_LIST } from '../../constants/companyConfig'
 const AdminDinnerOptionSection = ({
   weekBaseDate,
   onWeekBaseDateChange,
-  selectedDates,
+  visibleDates = [],
+  selectedDates = [],
+  loadedDates = [],
   onToggleDate,
   dateLoadingMap = {},
   dinnerMenusByDate = {},
@@ -15,7 +17,9 @@ const AdminDinnerOptionSection = ({
   onSaveDate,
   savingMap = {}
 }) => {
-  const orderedDates = Array.isArray(selectedDates) ? [...selectedDates].sort() : []
+  const orderedDates = Array.isArray(visibleDates) ? [...visibleDates].sort() : []
+  const selectedSet = new Set(selectedDates || [])
+  const loadedSet = new Set(loadedDates || [])
 
   const normalizeDate = (value) => {
     if (!value) return null
@@ -88,23 +92,34 @@ const AdminDinnerOptionSection = ({
           </p>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 text-[11px] text-gray-400">
-          <Calendar className="h-3.5 w-3.5" />
-          <label htmlFor="dinner-week-picker" className="sr-only">Cambiar inicio de entregas</label>
-          <span className="uppercase tracking-wide">Inicio</span>
-          <input
-            id="dinner-week-picker"
-            type="date"
-            value={toISODate(normalizeDate(weekBaseDate))}
-            onChange={(e) => onWeekBaseDateChange(normalizeDate(e.target.value))}
-            className="input-field text-[11px] bg-gray-50 text-gray-600 border border-gray-200/60 w-32 sm:w-36"
-          />
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px] text-gray-400">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5" />
+            <label htmlFor="dinner-week-picker" className="sr-only">Cambiar inicio de entregas</label>
+            <span className="uppercase tracking-wide">Inicio</span>
+            <input
+              id="dinner-week-picker"
+              type="date"
+              value={toISODate(normalizeDate(weekBaseDate))}
+              onChange={(e) => onWeekBaseDateChange(normalizeDate(e.target.value))}
+              className="input-field text-[11px] bg-gray-50 text-gray-600 border border-gray-200/60 w-32 sm:w-36"
+            />
+          </div>
+          {selectedDates.length === 0 ? (
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+              Mostrando menús cargados automáticamente
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+              Modo edición activa
+            </span>
+          )}
         </div>
 
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {weekDays.map((date) => {
             const dateISO = toISODate(date)
-            const isSelected = orderedDates.includes(dateISO)
+            const isSelected = selectedSet.has(dateISO)
             const isBusy = Boolean(dateLoadingMap[dateISO])
             const baseStyles = 'rounded-2xl border-2 px-4 py-4 text-left transition-all relative overflow-hidden'
             const selectedStyles = isSelected
@@ -121,7 +136,7 @@ const AdminDinnerOptionSection = ({
                   <span className={`text-xs font-bold ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
                     {formatDayLabel(date)}
                   </span>
-                  {isSelected && (
+                  {loadedSet.has(dateISO) && (
                     <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
                       CENA
                     </span>
