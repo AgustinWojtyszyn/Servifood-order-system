@@ -698,6 +698,27 @@ export const db = {
   },
 
   // Menú (por día)
+  getMenuDatesByRange: async ({ start, end }) => {
+    if (!start || !end) return { data: [], error: null }
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('menu_date')
+      .gte('menu_date', start)
+      .lte('menu_date', end)
+      .order('menu_date', { ascending: true })
+    if (error) return { data: [], error }
+    const unique = []
+    const seen = new Set()
+    ;(data || []).forEach(row => {
+      const value = row?.menu_date
+      if (value && !seen.has(value)) {
+        seen.add(value)
+        unique.push({ menu_date: value })
+      }
+    })
+    return { data: unique, error: null }
+  },
+
   getMenuItemsByDate: async (menuDate) => {
     const cacheKey = `menu-items:${menuDate}`
     const cached = cache.get(cacheKey)

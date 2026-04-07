@@ -1,8 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Edit3, Plus, Save, Trash2, X, Calendar, Minus, CheckCircle } from 'lucide-react'
 
 const AdminMenuSection = ({
-  selectedDates,
+  visibleDates = [],
+  selectedDates = [],
+  loadedDates = [],
+  manualSelectedDatesCount = 0,
+  weekBaseDate,
+  onWeekBaseDateChange,
   menuItemsByDate,
   draftMenuItemsByDate,
   editingMenuByDate,
@@ -10,8 +15,7 @@ const AdminMenuSection = ({
   loadingMenuByDate,
   dinnerMenuEnabled,
   onToggleDinnerMenu,
-  onAddDate,
-  onRemoveDate,
+  onToggleDate,
   onSaveAllMenus,
   onEditMenu,
   onSaveMenu,
@@ -21,17 +25,12 @@ const AdminMenuSection = ({
   onRemoveMenuItem,
   onPrimeSuccess
 }) => {
-  const [weekBaseDate, setWeekBaseDate] = useState(() => {
-    const now = new Date()
-    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    base.setDate(base.getDate() + 1)
-    return base
-  })
-
   const orderedDates = useMemo(() => {
-    const list = Array.isArray(selectedDates) ? [...selectedDates] : []
+    const list = Array.isArray(visibleDates) ? [...visibleDates] : []
     return list.sort()
-  }, [selectedDates])
+  }, [visibleDates])
+  const selectedSet = useMemo(() => new Set(selectedDates || []), [selectedDates])
+  const loadedSet = useMemo(() => new Set(loadedDates || []), [loadedDates])
 
   const normalizeDate = (value) => {
     if (!value) return null
@@ -76,15 +75,6 @@ const AdminMenuSection = ({
       }).format(new Date(`${dateISO}T00:00:00`))
     } catch (err) {
       return dateISO
-    }
-  }
-
-  const handleToggleDate = (dateISO) => {
-    if (!dateISO) return
-    if (orderedDates.includes(dateISO)) {
-      onRemoveDate(dateISO)
-    } else {
-      onAddDate(dateISO)
     }
   }
 
@@ -162,7 +152,8 @@ const AdminMenuSection = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-gray-400">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px] text-gray-400">
+          <div className="flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5" />
             <label htmlFor="week-picker" className="sr-only">Cambiar inicio de entregas</label>
             <span className="uppercase tracking-wide">Inicio</span>
@@ -170,17 +161,27 @@ const AdminMenuSection = ({
               id="week-picker"
               type="date"
               value={toISODate(weekBaseDate)}
-              onChange={(e) => setWeekBaseDate(normalizeDate(e.target.value))}
+              onChange={(e) => onWeekBaseDateChange?.(normalizeDate(e.target.value))}
               className="input-field text-[11px] bg-gray-50 text-gray-600 border border-gray-200/60 w-32 sm:w-36"
             />
           </div>
+          {manualSelectedDatesCount === 0 ? (
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+              Mostrando menús cargados automáticamente
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+              Modo edición activa
+            </span>
+          )}
+        </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {weekDays.map((date) => {
             const dateISO = toISODate(date)
-            const isSelected = orderedDates.includes(dateISO)
-            const hasMenu = (menuItemsByDate?.[dateISO] || []).length > 0
+            const isSelected = selectedSet.has(dateISO)
+            const hasMenu = loadedSet.has(dateISO)
             const baseStyles = 'rounded-2xl border-2 px-4 py-4 text-left transition-all relative overflow-hidden'
             const selectedStyles = isSelected
               ? 'border-primary-700 bg-primary-100 text-gray-900 shadow-lg shadow-primary-900/10 ring-1 ring-primary-500/30'
@@ -188,7 +189,7 @@ const AdminMenuSection = ({
             return (
               <button
                 key={dateISO}
-                onClick={() => handleToggleDate(dateISO)}
+                onClick={() => onToggleDate?.(dateISO)}
                 className={`${baseStyles} ${selectedStyles}`}
                 type="button"
               >
@@ -225,7 +226,7 @@ const AdminMenuSection = ({
                 <div key={date} className="flex items-center gap-2 bg-gray-100 text-gray-900 px-3 py-1.5 rounded-full text-xs font-semibold">
                   <span>{date}</span>
                   <button
-                    onClick={() => onRemoveDate(date)}
+                    onClick={() => onToggleDate?.(date)}
                     className="p-1 rounded-full hover:bg-gray-200"
                     title="Quitar día"
                   >
@@ -237,10 +238,10 @@ const AdminMenuSection = ({
             <div className="flex justify-end">
               <button
                 onPointerDown={() => {
-                  if (!isSavingAny && orderedDates.length > 0) onPrimeSuccess()
+                  if (!isSavingAny && manualSelectedDatesCount > 0) onPrimeSuccess()
                 }}
                 onClick={onSaveAllMenus}
-                disabled={orderedDates.length === 0 || isSavingAny}
+                disabled={manualSelectedDatesCount === 0 || isSavingAny}
                 className="btn-primary text-black flex items-center justify-center text-sm sm:text-base px-4 py-2.5"
                 type="button"
               >

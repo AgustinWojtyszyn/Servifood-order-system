@@ -1,25 +1,82 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { db } from '../../supabaseClient'
 import { sortMenuItems } from '../../utils/admin/adminCalculations'
+import { addDaysToISO, getTodayISOInTimeZone } from '../../utils/dateUtils'
 
-const useAdminMenuData = ({ editingMenuByDate, draftMenuItemsByDate, setDraftItemsForDate, initialSelectedDates = [] }) => {
-  const [selectedDates, setSelectedDates] = useState(() => {
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+const normalizeISODate = (value) => {
+  if (!value || typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!ISO_DATE_RE.test(trimmed)) return null
+  const parsed = new Date(`${trimmed}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return null
+  return trimmed
+}
+
+const isWithinRetention = (dateISO) => {
+  const todayISO = getTodayISOInTimeZone()
+  const minISO = addDaysToISO(todayISO, -1)
+  return dateISO >= minISO
+}
+
+const getWeekDates = (baseDate) => {
+  const start = baseDate instanceof Date ? baseDate : new Date()
+  return Array.from({ length: 7 }, (_, index) => {
+    const d = new Date(start)
+    d.setDate(start.getDate() + index)
+    return d
+  })
+}
+
+const toISODate = (date) => {
+  if (!(date instanceof Date)) return ''
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+const useAdminMenuData = ({
+  editingMenuByDate,
+  draftMenuItemsByDate,
+  setDraftItemsForDate,
+  initialSelectedDates = [],
+  userId,
+  weekBaseDate
+}) => {
+  const storageKey = userId ? `admin_menu_selected_dates:${userId}` : 'admin_menu_selected_dates'
+
+  const readStoredSelectedDates = () => {
     if (typeof window === 'undefined') return initialSelectedDates
     try {
-      const stored = localStorage.getItem('admin_menu_selected_dates')
+      const stored = localStorage.getItem(storageKey)
       if (stored) {
         const parsed = JSON.parse(stored)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed
+          const sanitized = parsed
+            .map(normalizeISODate)
+            .filter(Boolean)
+            .filter(isWithinRetention)
+            .sort()
+          if (sanitized.length > 0) return sanitized
         }
       }
     } catch (err) {
       console.error('Error reading menu selected dates', err)
     }
-    return initialSelectedDates
-  })
+    const normalizedInitial = (initialSelectedDates || [])
+      .map(normalizeISODate)
+      .filter(Boolean)
+      .filter(isWithinRetention)
+      .sort()
+    return normalizedInitial
+  }
+
+  const [selectedDates, setSelectedDates] = useState(() => readStoredSelectedDates())
   const [menuItemsByDate, setMenuItemsByDate] = useState({})
   const [loadingMenuByDate, setLoadingMenuByDate] = useState({})
+  const [loadedDates, setLoadedDates] = useState([])
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
     if (typeof window === 'undefined') return false
     const stored = localStorage.getItem('dinner_menu_enabled')
@@ -81,16 +138,28 @@ const useAdminMenuData = ({ editingMenuByDate, draftMenuItemsByDate, setDraftIte
   const persistSelectedDates = (dates) => {
     if (typeof window === 'undefined') return
     try {
-      localStorage.setItem('admin_menu_selected_dates', JSON.stringify(dates))
+      localStorage.setItem(storageKey, JSON.stringify(dates))
     } catch (err) {
       console.error('Error saving menu selected dates', err)
     }
   }
 
+  const setSelectedDatesSafe = (dates) => {
+    const normalized = (dates || [])
+      .map(normalizeISODate)
+      .filter(Boolean)
+      .filter(isWithinRetention)
+      .sort()
+    setSelectedDates(normalized)
+    persistSelectedDates(normalized)
+  }
+
   const addSelectedDate = (menuDate) => {
     if (!menuDate) return
     setSelectedDates(prev => {
-      const next = prev.includes(menuDate) ? prev : [...prev, menuDate]
+      const normalized = normalizeISODate(menuDate)
+      if (!normalized) return prev
+      const next = prev.includes(normalized) ? prev : [...prev, normalized]
       const sorted = next.sort()
       persistSelectedDates(sorted)
       return sorted
@@ -99,7 +168,9 @@ const useAdminMenuData = ({ editingMenuByDate, draftMenuItemsByDate, setDraftIte
 
   const removeSelectedDate = (menuDate) => {
     setSelectedDates(prev => {
-      const next = prev.filter(date => date !== menuDate)
+      const normalized = normalizeISODate(menuDate)
+      if (!normalized) return prev
+      const next = prev.filter(date => date !== normalized)
       persistSelectedDates(next)
       return next
     })
@@ -125,8 +196,48 @@ const useAdminMenuData = ({ editingMenuByDate, draftMenuItemsByDate, setDraftIte
     }
   }
 
+  const weekRange = useMemo(() => {
+    const base = weekBaseDate instanceof Date ? weekBaseDate : new Date()
+    const days = getWeekDates(base)
+    const startISO = toISODate(days[0])
+    const endISO = toISODate(days[days.length - 1])
+    return { startISO, endISO }
+  }, [weekBaseDate])
+
+  useEffect(() => {
+    const loadDatesWithMenu = async () => {
+      if (!weekRange.startISO || !weekRange.endISO) return
+      try {
+        const { data, error } = await db.getMenuDatesByRange({
+          start: weekRange.startISO,
+          end: weekRange.endISO
+        })
+        if (error) {
+          console.error('Error fetching menu dates:', error)
+          return
+        }
+        const dates = (Array.isArray(data) ? data : [])
+          .map(row => normalizeISODate(row?.menu_date))
+          .filter(Boolean)
+          .filter(isWithinRetention)
+          .sort()
+        setLoadedDates(dates)
+      } catch (err) {
+        console.error('Error loading menu dates range', err)
+      }
+    }
+    loadDatesWithMenu()
+  }, [weekRange.startISO, weekRange.endISO])
+
+  useEffect(() => {
+    const next = readStoredSelectedDates()
+    setSelectedDates(next)
+  }, [storageKey])
+
   return {
     selectedDates,
+    setSelectedDatesSafe,
+    loadedDates,
     menuItemsByDate,
     loadingMenuByDate,
     dinnerMenuEnabled,

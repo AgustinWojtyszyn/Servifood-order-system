@@ -34,6 +34,10 @@ const AdminPanel = () => {
   const { users, usersLoading, refreshUsers } = useAdminUsersData()
   const tomorrowISO = getTomorrowISOInTimeZone()
   const initialSelectedDates = [tomorrowISO]
+  const [menuWeekBaseDate, setMenuWeekBaseDate] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  })
   const {
     draftMenuItemsByDate,
     editingMenuByDate,
@@ -46,6 +50,8 @@ const AdminPanel = () => {
 
   const {
     selectedDates,
+    setSelectedDatesSafe,
+    loadedDates,
     menuItemsByDate,
     loadingMenuByDate,
     dinnerMenuEnabled,
@@ -59,7 +65,9 @@ const AdminPanel = () => {
     editingMenuByDate,
     draftMenuItemsByDate,
     setDraftItemsForDate,
-    initialSelectedDates
+    initialSelectedDates,
+    userId: user?.id || null,
+    weekBaseDate: menuWeekBaseDate
   })
 
   const {
@@ -191,18 +199,25 @@ const AdminPanel = () => {
 
   useEffect(() => {
     if (!user?.id || !isAdmin) return
-    if (!Array.isArray(selectedDates) || selectedDates.length === 0) return
-    selectedDates.forEach(date => {
+    const visibleDates = Array.from(new Set([...(loadedDates || []), ...(selectedDates || [])])).sort()
+    if (!Array.isArray(visibleDates) || visibleDates.length === 0) return
+    visibleDates.forEach(date => {
       if (!menuItemsByDate.hasOwnProperty(date) && !loadingMenuByDate[date]) {
         fetchMenuForDate(date)
       }
     })
-  }, [selectedDates, isAdmin, user, menuItemsByDate, loadingMenuByDate])
+  }, [selectedDates, loadedDates, isAdmin, user, menuItemsByDate, loadingMenuByDate])
 
-  const handleRemoveSelectedDate = (menuDate) => {
-    removeSelectedDate(menuDate)
-    clearEditorForDate(menuDate)
-    clearMenuDate(menuDate)
+  const handleToggleMenuDate = (menuDate) => {
+    if (!menuDate) return
+    const isSelected = selectedDates.includes(menuDate)
+    if (isSelected) {
+      removeSelectedDate(menuDate)
+      clearEditorForDate(menuDate)
+      clearMenuDate(menuDate)
+    } else {
+      addSelectedDate(menuDate)
+    }
   }
 
   const handleSaveAllMenus = async () => {
@@ -353,7 +368,12 @@ const AdminPanel = () => {
       {/* Menu Tab */}
       {activeTab === 'menu' && (
         <AdminMenuSection
+          visibleDates={Array.from(new Set([...(loadedDates || []), ...(selectedDates || [])])).sort()}
           selectedDates={selectedDates}
+          manualSelectedDatesCount={selectedDates.length}
+          loadedDates={loadedDates}
+          weekBaseDate={menuWeekBaseDate}
+          onWeekBaseDateChange={setMenuWeekBaseDate}
           menuItemsByDate={menuItemsByDate}
           draftMenuItemsByDate={draftMenuItemsByDate}
           editingMenuByDate={editingMenuByDate}
@@ -361,8 +381,7 @@ const AdminPanel = () => {
           loadingMenuByDate={loadingMenuByDate}
           dinnerMenuEnabled={dinnerMenuEnabled}
           onToggleDinnerMenu={toggleDinnerMenu}
-          onAddDate={addSelectedDate}
-          onRemoveDate={handleRemoveSelectedDate}
+          onToggleDate={handleToggleMenuDate}
           onSaveAllMenus={handleSaveAllMenus}
           onEditMenu={(menuDate) => setEditingForDate(menuDate, true)}
           onSaveMenu={handleMenuUpdate}
