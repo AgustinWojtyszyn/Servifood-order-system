@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { getMenuDisplay } from '../../utils/order/menuDisplay'
 
 const OrderConfirmModal = ({
   open,
@@ -46,12 +47,14 @@ const OrderConfirmModal = ({
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-1">Menús</p>
                   <div className="space-y-1">
-                    {confirmData.lunchItems.map(item => (
+                    {confirmData.lunchItems.map((item, index) => {
+                      const { label, dish } = getMenuDisplay(item, Number.isFinite(item?.slotIndex) ? item.slotIndex : index)
+                      return (
                       <div key={item.id} className="text-sm sm:text-base">
-                        <p className="font-semibold text-gray-900">{item.name}</p>
-                        {item.description && <p className="text-gray-600">{item.description}</p>}
+                        <p className="font-semibold text-gray-900">{label}</p>
+                        {dish && <p className="text-gray-600">{dish}</p>}
                       </div>
-                    ))}
+                    )})}
                   </div>
                   <p className="mt-2 text-sm text-gray-700">
                     <span className="font-semibold">Total items:</span> {confirmData.totals.lunch}
@@ -82,12 +85,21 @@ const OrderConfirmModal = ({
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-1">Menús</p>
                   <div className="space-y-1">
-                    {confirmData.dinnerItems.map(item => (
+                    {confirmData.dinnerItems.map((item, index) => {
+                      if (item?.isDinnerOverride) {
+                        return (
+                          <div key={item.id} className="text-sm sm:text-base">
+                            <p className="font-semibold text-gray-900">{item.name}</p>
+                          </div>
+                        )
+                      }
+                      const { label, dish } = getMenuDisplay(item, Number.isFinite(item?.slotIndex) ? item.slotIndex : index)
+                      return (
                       <div key={item.id} className="text-sm sm:text-base">
-                        <p className="font-semibold text-gray-900">{item.name}</p>
-                        {item.description && <p className="text-gray-600">{item.description}</p>}
+                        <p className="font-semibold text-gray-900">{label}</p>
+                        {dish && <p className="text-gray-600">{dish}</p>}
                       </div>
-                    ))}
+                    )})}
                   </div>
                   <p className="mt-2 text-sm text-gray-700">
                     <span className="font-semibold">Total items:</span> {confirmData.totals.dinner}

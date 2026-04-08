@@ -34,6 +34,7 @@ import {
   isOutsideWindow
 } from '../utils/order/orderBusinessRules'
 import { canChooseCustomSide } from '../utils/order/orderCustomSideRules'
+import { getMenuDish } from '../utils/order/menuDisplay'
 import { useOrderBootstrap } from '../hooks/useOrderBootstrap'
 
 const OrderForm = ({ user, loading }) => {
@@ -124,7 +125,7 @@ const OrderForm = ({ user, loading }) => {
   const canChooseCustomSideForSelection = useMemo(() => {
     const selectedList = buildSelectedItemsList(menuItems, selectedItems)
     if (!selectedList.length) return false
-    return selectedList.every(item => canChooseCustomSide(item?.name, item?.id, item?.description))
+    return selectedList.every(item => canChooseCustomSide(item))
   }, [menuItems, selectedItems])
 
   const lunchOptionsUI = useMemo(() => {
@@ -164,15 +165,16 @@ const OrderForm = ({ user, loading }) => {
   }, [visibleLunchOptions, customResponses, isGenneia, isGenneiaPostreDay, canChooseCustomSideForSelection])
 
   const dinnerMenuItemsUI = useMemo(() => {
-    return menuItems.map(item => {
+    return menuItems.map((item, index) => {
       const isSelected = !!selectedItemsDinner[item.id]
-      const isMain =
-        item.name?.toLowerCase().includes('menú principal') ||
-        item.name?.toLowerCase().includes('plato principal')
+      const slotIndex = Number.isFinite(item?.slotIndex) ? item.slotIndex : index
+      const isMain = slotIndex === 0
       const hasMainSelected = Object.keys(selectedItemsDinner).some(id => {
         if (!selectedItemsDinner[id]) return false
-        const name = (menuItems.find(mi => mi.id === id)?.name || '').toLowerCase()
-        return name.includes('menú principal')
+        const found = menuItems.find(mi => mi.id === id)
+        const foundIndex = menuItems.indexOf(found)
+        const foundSlot = Number.isFinite(found?.slotIndex) ? found.slotIndex : foundIndex
+        return foundSlot === 0
       })
       const isDisabled = isMain ? hasMainSelected && !isSelected : false
       return {
@@ -203,7 +205,7 @@ const OrderForm = ({ user, loading }) => {
     if (!selectedTurns.dinner) return true
     const selectedList = buildSelectedItemsList(menuItems, selectedItemsDinner)
     if (!selectedList.length) return false
-    return selectedList.every(item => canChooseCustomSide(item?.name, item?.id, item?.description))
+    return selectedList.every(item => canChooseCustomSide(item))
   }, [isGenneia, selectedTurns.dinner, menuItems, selectedItemsDinner])
 
   // Unificado (evitar duplicados por id)
@@ -416,7 +418,8 @@ const OrderForm = ({ user, loading }) => {
 
   const handleItemSelect = (itemId, isSelected) => {
     const item = menuItems.find(m => m.id === itemId)
-    const isEnsalada = item?.name?.toLowerCase().includes('ensalada')
+    const dish = getMenuDish(item)
+    const isEnsalada = dish.toLowerCase().includes('ensalada')
 
     if (isSelected) {
       // Si está seleccionando
@@ -429,7 +432,7 @@ const OrderForm = ({ user, loading }) => {
       } else {
         // Para menús principales, verificar si ya hay uno seleccionado
         const mainMenuSelected = menuItems
-          .filter(m => !m.name?.toLowerCase().includes('ensalada'))
+          .filter(m => !getMenuDish(m).toLowerCase().includes('ensalada'))
           .some(m => selectedItems[m.id])
 
         if (mainMenuSelected && !selectedItems[itemId]) {
@@ -748,10 +751,7 @@ const OrderForm = ({ user, loading }) => {
 
             {/* Selección de Menú */}
             <OrderLunchMenuSection
-              items={[
-                ...menuItems.filter(item => item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))),
-                ...menuItems.filter(item => !(item.name && (item.name.toLowerCase().includes('menú principal') || item.name.toLowerCase().includes('plato principal'))))
-              ]}
+              items={menuItems}
               selectedItems={selectedItems}
               onToggleItem={handleItemSelect}
             />

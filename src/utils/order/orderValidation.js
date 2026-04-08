@@ -67,7 +67,7 @@ const validateOrderSubmission = ({
   let customResponsesArray = []
   if (lunchSelected) {
     const canChooseCustomSideForSelection = selectedItemsList.length > 0
-      ? selectedItemsList.every(item => canChooseCustomSide(item?.name, item?.id, item?.description))
+      ? selectedItemsList.every(item => canChooseCustomSide(item))
       : false
 
     const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
@@ -125,7 +125,7 @@ const validateOrderSubmission = ({
     } else {
       const isGenneia = (companyConfig?.slug || '').toLowerCase() === 'genneia'
       const canChooseCustomSideForDinner = selectedItemsListDinner.length > 0
-        ? selectedItemsListDinner.every(item => canChooseCustomSide(item?.name, item?.id, item?.description))
+        ? selectedItemsListDinner.every(item => canChooseCustomSide(item))
         : false
       const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
       const hasValidResponse = (response) => {
@@ -191,7 +191,7 @@ const validateOrderSubmission = ({
   }
 
   const dinnerItemsForSummary = (dinnerSelected && selectedItemsListDinner.length === 0 && dinnerOverrideChoice)
-    ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1 }]
+    ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1, isDinnerOverride: true }]
     : selectedItemsListDinner
 
   const confirmationData = {

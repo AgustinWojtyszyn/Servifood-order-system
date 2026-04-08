@@ -1,7 +1,4 @@
-const isMainMenuItem = (item) => {
-  const name = (item?.name || '').toLowerCase()
-  return name.includes('menú principal') || name.includes('menu principal') || name.includes('plato principal')
-}
+const isMainMenuItem = (item) => Number.isFinite(item?.slotIndex) ? item.slotIndex === 0 : item?.isMainMenu === true
 
 const buildSelectedItemsList = (menuItems = [], selectedMap = {}) => {
   const selected = (menuItems || []).filter(item => selectedMap?.[item.id] === true)

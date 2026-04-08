@@ -371,18 +371,18 @@ const AdminMenuSection = ({
                           </button>
                         </div>
                         <div className="space-y-3">
-                          <label htmlFor={nameId} className="sr-only">Nombre del plato</label>
+                          <label htmlFor={nameId} className="text-sm font-semibold text-gray-700">Título del menú</label>
                           <input
                             id={nameId}
                             name={nameId}
                             type="text"
-                            placeholder="Nombre del plato"
+                            placeholder="Ej: Menú principal u Opción 1"
                             value={item.name}
                             onChange={(e) => onMenuItemChange(menuDate, index, 'name', e.target.value)}
                             className="input-field font-semibold text-base bg-white text-gray-900 w-full"
                             required
                           />
-                          <label htmlFor={descId} className="sr-only">Descripción del plato</label>
+                          <label htmlFor={descId} className="text-sm font-semibold text-gray-700">Descripción del plato</label>
                           <input
                             id={descId}
                             name={descId}

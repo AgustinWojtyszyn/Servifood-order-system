@@ -1,4 +1,5 @@
 import { ShoppingCart, X } from 'lucide-react'
+import { getMenuDisplay } from '../../utils/order/menuDisplay'
 
 const OrderLunchSummary = ({ items, total, onRemove }) => {
   if (!items || items.length === 0) return null
@@ -16,11 +17,16 @@ const OrderLunchSummary = ({ items, total, onRemove }) => {
       </div>
 
       <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-        {items.map((item) => (
+        {items.map((item, index) => {
+          const { label, dish } = getMenuDisplay(item, Number.isFinite(item?.slotIndex) ? item.slotIndex : index)
+          return (
           <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-2 border-b border-gray-100">
             <div className="flex items-center justify-between sm:justify-start">
               {/* TEXTO MÁS GRANDE EN EL RESUMEN */}
-              <span className="font-medium text-gray-900 text-lg sm:text-xl">{item.name}</span>
+              <div>
+                <span className="font-medium text-gray-900 text-lg sm:text-xl">{label}</span>
+                {dish && <p className="text-sm text-gray-600">{dish}</p>}
+              </div>
               <button
                 type="button"
                 onClick={() => onRemove(item.id)}
@@ -31,7 +37,7 @@ const OrderLunchSummary = ({ items, total, onRemove }) => {
             </div>
             <span className="text-gray-600 text-base sm:text-lg">Seleccionado</span>
           </div>
-        ))}
+        )})}
       </div>
 
       <div className="border-t border-gray-200 pt-3 sm:pt-4">

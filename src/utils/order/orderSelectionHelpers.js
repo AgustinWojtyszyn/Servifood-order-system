@@ -1,26 +1,22 @@
 export const hasMainMenuSelected = (items = []) => {
   const list = Array.isArray(items) ? items : []
-  return list.some(item => {
-    const name = (item?.name || '').toString().toLowerCase()
-    return (
-      name.includes('menú principal') ||
-      name.includes('menu principal') ||
-      name.includes('plato principal')
-    )
-  })
+  return list.some(item => (Number.isFinite(item?.slotIndex) ? item.slotIndex === 0 : item?.isMainMenu === true))
 }
 
 export const mapOrderItemsToSelection = (items = [], menuItems = []) => {
   const selectedMap = {}
   items.forEach(it => {
+    if (Number.isFinite(it?.slotIndex)) {
+      const bySlot = menuItems.find(m => m?.slotIndex === it.slotIndex)
+      if (bySlot) {
+        selectedMap[bySlot.id] = true
+        return
+      }
+    }
     const byId = menuItems.find(m => m.id === it.id)
     if (byId) {
       selectedMap[byId.id] = true
       return
-    }
-    const byName = menuItems.find(m => m.name?.toLowerCase() === (it.name || '').toLowerCase())
-    if (byName) {
-      selectedMap[byName.id] = true
     }
   })
   return selectedMap

@@ -84,9 +84,7 @@ const useAdminMenuData = ({
   })
 
   const buildDefaultMenuItems = () => sortMenuItems([
-    { name: 'Plato Principal 1', description: 'Delicioso plato principal' },
-    { name: 'Plato Principal 2', description: 'Otro plato delicioso' },
-    { name: 'Ensalada César', description: 'Fresca ensalada' }
+    { name: 'Menú principal', description: '' }
   ])
 
   const normalizeMenuItems = (items = []) =>

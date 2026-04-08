@@ -1,4 +1,5 @@
 import { CheckCircle, ShoppingCart } from 'lucide-react'
+import { getMenuDisplay } from '../../utils/order/menuDisplay'
 
 const OrderDinnerMenuSection = ({ items, total, onToggleItem }) => (
   <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-amber-300">
@@ -12,7 +13,9 @@ const OrderDinnerMenuSection = ({ items, total, onToggleItem }) => (
       </div>
     </div>
     <div className="space-y-3">
-      {items.map((item) => (
+      {items.map((item, index) => {
+        const { label, dish } = getMenuDisplay(item, Number.isFinite(item?.slotIndex) ? item.slotIndex : index)
+        return (
         <button
           key={item.id}
           type="button"
@@ -29,15 +32,15 @@ const OrderDinnerMenuSection = ({ items, total, onToggleItem }) => (
         >
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <p className="text-base sm:text-lg font-semibold text-gray-900">{item.name}</p>
-              {item.description && <p className="text-sm sm:text-base text-gray-700">{item.description}</p>}
+              <p className="text-base sm:text-lg font-semibold text-gray-900">{label}</p>
+              {dish && <p className="text-sm sm:text-base text-gray-700">{dish}</p>}
             </div>
             {item.isSelected && (
               <CheckCircle className="h-7 w-7 text-blue-600 shrink-0" />
             )}
           </div>
         </button>
-      ))}
+      )})}
     </div>
     <div className="border-t border-gray-200 pt-3 sm:pt-4 mt-3">
       <div className="flex justify-between items-center text-lg sm:text-xl font-semibold">

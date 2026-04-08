@@ -1,4 +1,5 @@
 import { CheckCircle, ChefHat } from 'lucide-react'
+import { getMenuDisplay } from '../../utils/order/menuDisplay'
 
 const EditOrderMenuSection = ({
   items,
@@ -20,8 +21,9 @@ const EditOrderMenuSection = ({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {items.map((item) => {
+        {items.map((item, index) => {
           const isSelected = selectedItems[item.id] === true
+          const { label, dish } = getMenuDisplay(item, Number.isFinite(item?.slotIndex) ? item.slotIndex : index)
           return (
             <button
               key={item.id}
@@ -35,12 +37,12 @@ const EditOrderMenuSection = ({
             >
               <div>
                 <h3 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">
-                  {item.name}
+                  {label}
                 </h3>
 
-                {item.description && (
+                {dish && (
                   <p className="text-lg text-gray-800 leading-snug font-medium">
-                    {item.description}
+                    {dish}
                   </p>
                 )}
               </div>

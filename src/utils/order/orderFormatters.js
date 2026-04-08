@@ -1,17 +1,13 @@
+import { getMenuDisplay } from './menuDisplay'
+
 export const buildOrderItemLabel = (item = {}) => {
-  const baseName = (item?.name || '').trim()
-  if (!baseName) return 'Item'
-  const description = (item?.description || '').trim()
-  if (!description) return baseName
-
-  const normalized = baseName.toLowerCase()
-  const isGenericMenu =
-    normalized.includes('menú principal') ||
-    normalized.includes('menu principal') ||
-    normalized.includes('plato principal') ||
-    /^opci[oó]n\s*\d+$/i.test(baseName)
-
-  return isGenericMenu ? `${baseName} - ${description}` : baseName
+  if (item?.isDinnerOverride) {
+    return (item?.name || '').toString().trim() || 'Cena'
+  }
+  const { label, dish } = getMenuDisplay(item, item?.slotIndex ?? 0)
+  if (!label && !dish) return 'Item'
+  if (!dish) return label
+  return `${label} - ${dish}`
 }
 
 export const formatResponseValue = (value) => {

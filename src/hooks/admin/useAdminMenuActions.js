@@ -92,7 +92,10 @@ const useAdminMenuActions = ({
 
   const addMenuItem = (menuDate) => {
     const current = draftMenuItemsByDate[menuDate] || []
-    setDraftItemsForDate(menuDate, [...current, { name: '', description: '' }])
+    const nextIndex = current.length
+    const optionsCount = Math.max(current.length - 1, 0)
+    const nextName = nextIndex === 0 ? 'Menú principal' : `Opción ${optionsCount + 1}`
+    setDraftItemsForDate(menuDate, [...current, { name: nextName, description: '' }])
   }
 
   const removeMenuItem = (menuDate, index) => {

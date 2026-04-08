@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { db } from '../supabaseClient'
 import { sortMenuItems } from '../utils/order/orderMenuHelpers'
+import { withMenuSlotIndex } from '../utils/order/menuDisplay'
 import { DINNER_FALLBACK_WHITELIST } from '../constants/dinnerWhitelist'
 import { buildSuggestionSummary, buildOptionsSummary } from '../utils/order/orderFormatters'
 import { hasMainMenuSelected } from '../utils/order/orderSelectionHelpers'
@@ -38,16 +39,16 @@ const useOrderBootstrap = ({
       if (error) {
         console.error('Error fetching menu:', error)
         // Set default menu items if none exist
-        setMenuItems(sortMenuItems([
+        setMenuItems(withMenuSlotIndex(sortMenuItems([
           { id: 1, name: 'Plato Principal 1', description: 'Delicioso plato principal' },
           { id: 2, name: 'Plato Principal 2', description: 'Otro plato delicioso' },
           { id: 3, name: 'Plato Principal 3', description: 'Plato especial del día' },
           { id: 4, name: 'Plato Principal 4', description: 'Plato vegetariano' },
           { id: 5, name: 'Plato Principal 5', description: 'Plato de la casa' },
           { id: 6, name: 'Plato Principal 6', description: 'Plato recomendado' }
-        ]))
+        ])))
       } else {
-        setMenuItems(sortMenuItems(data || []))
+        setMenuItems(withMenuSlotIndex(sortMenuItems(data || [])))
       }
     } catch (err) {
       console.error('Error:', err)

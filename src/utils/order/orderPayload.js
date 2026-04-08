@@ -15,7 +15,7 @@ const buildOrderPayload = ({
   const isDinner = service === 'dinner'
 
   const itemsToSend = (isDinner && dinnerOverrideChoice && itemsForService.length === 0)
-    ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1 }]
+    ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1, isDinnerOverride: true }]
     : itemsForService
 
   const normalizedItemsToSend = itemsToSend.map(item => ({
@@ -42,7 +42,8 @@ const buildOrderPayload = ({
     items: normalizedItemsToSend.map(item => ({
       id: item.id,
       name: item.name,
-      quantity: 1
+      quantity: 1,
+      slotIndex: Number.isFinite(item?.slotIndex) ? item.slotIndex : undefined
     })),
     comments: formData.comments,
     delivery_date: deliveryDate,
