@@ -1,12 +1,12 @@
 const SummaryCard = ({ label, value, accent, sublabel }) => (
   <div className="card bg-white/95 backdrop-blur-sm shadow-md border border-slate-200 rounded-2xl p-4 sm:p-5">
     <div className="flex items-center justify-between gap-2">
-      <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">{label}</p>
+      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500 font-semibold">{label}</p>
       <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${accent}`}>
         {sublabel}
       </span>
     </div>
-    <p className="mt-3 text-2xl sm:text-3xl font-extrabold text-slate-900">
+    <p className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 leading-tight break-words" title={value}>
       {value}
     </p>
   </div>

@@ -81,6 +81,31 @@ const TendenciasPage = () => {
     }
   }
 
+  const menuColors = useMemo(() => {
+    const colorMap = {
+      'menú principal': '#2563eb',
+      'menu principal': '#2563eb',
+      'plato principal': '#2563eb',
+      'opción 1': '#22c55e',
+      'opcion 1': '#22c55e',
+      'opción 2': '#f59e0b',
+      'opcion 2': '#f59e0b',
+      'opción 3': '#8b5cf6',
+      'opcion 3': '#8b5cf6',
+      'opción 4': '#ef4444',
+      'opcion 4': '#ef4444',
+      'opción 5': '#0ea5e9',
+      'opcion 5': '#0ea5e9',
+      'opción 6': '#14b8a6',
+      'opcion 6': '#14b8a6'
+    }
+    return (menuRanking.items || []).map((item) => {
+      const key = (item?.label || '').toLowerCase()
+      const matched = Object.keys(colorMap).find((k) => key.includes(k))
+      return matched ? colorMap[matched] : '#94a3b8'
+    })
+  }, [menuRanking.items])
+
   const handleExport = async () => {
     const wb = new ExcelJS.Workbook()
     const summary = wb.addWorksheet('Resumen')
@@ -139,6 +164,38 @@ const TendenciasPage = () => {
   const showSides = analysisType === 'all' || analysisType === 'sides'
   const showBeverages = analysisType === 'all' || analysisType === 'beverages'
 
+  const insights = useMemo(() => {
+    if (loading) return []
+    const items = []
+    const topMain = mainMenuRanking.items[0]
+    if (topMain?.label) {
+      const label = topMain.label
+      const pct = Number.isFinite(topMain.percent) ? topMain.percent.toFixed(1) : null
+      const normalized = label.toLowerCase()
+      if (normalized.includes('menú principal') || normalized.includes('menu principal') || normalized.includes('plato principal')) {
+        if (pct) items.push(`El plato principal lidera con ${pct}% de los pedidos`)
+      } else if (pct) {
+        items.push(`${label} lidera con ${pct}% de los pedidos`)
+      }
+    }
+    const topBeverageItem = beveragesRanking.items[0]
+    if (topBeverageItem?.label && Number.isFinite(topBeverageItem.percent)) {
+      items.push(`${topBeverageItem.label} representa el ${topBeverageItem.percent.toFixed(1)}% de las bebidas`)
+    }
+    const topSideItem = sidesRanking.items[0]
+    if (topSideItem?.label) {
+      items.push(`${topSideItem.label} es la guarnición más elegida`)
+    }
+    return items.slice(0, 4)
+  }, [loading, mainMenuRanking.items, beveragesRanking.items, sidesRanking.items])
+
+  const buildRankingRows = (items, limit = 5) => (items || [])
+    .slice(0, limit)
+    .map((item, idx) => ({
+      ...item,
+      rank: idx + 1
+    }))
+
   return (
     <div className="monthly-page min-h-screen bg-[#f6f7f9] py-6">
       <div className="monthly-container w-full max-w-[1180px] mx-auto space-y-4 px-3 sm:px-4 md:px-6 pb-20 bg-white rounded-2xl shadow-sm border border-slate-200">
@@ -176,6 +233,24 @@ const TendenciasPage = () => {
           exportCount={loading ? 0 : totalOrders}
         />
 
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+              <span className="text-2xl mr-2">📊</span>
+              Insight del período
+            </h2>
+            <span className="text-xs font-semibold text-slate-500">{companyLabel}</span>
+          </div>
+          <ul className="mt-3 space-y-2 text-base sm:text-lg text-slate-700 font-semibold">
+            {insights.length === 0 && (
+              <li>No hay suficientes datos para generar insights en este rango.</li>
+            )}
+            {insights.map((insight, idx) => (
+              <li key={`${insight}-${idx}`}>• {insight}</li>
+            ))}
+          </ul>
+        </div>
+
         <TrendsSummaryCards
           totalOrders={loading ? '—' : totalOrders}
           companyLabel={companyLabel}
@@ -194,16 +269,96 @@ const TendenciasPage = () => {
         <section className="grid gap-6">
           <TrendsCharts
             menuRanking={showMenus ? menuRanking.items.slice(0, 8) : []}
-            sidesRanking={showSides ? sidesRanking.items.slice(0, 8) : []}
-            beveragesRanking={showBeverages ? beveragesRanking.items.slice(0, 8) : []}
+            sidesRanking={[]}
+            beveragesRanking={[]}
             showMenus={showMenus}
-            showSides={showSides}
-            showBeverages={showBeverages}
+            showSides={false}
+            showBeverages={false}
             menuTitle="Menús + Opciones más pedidos"
             menuSubtitle="Comparativo entre menú principal y opciones"
             chartType={chartType}
+            menuColors={menuColors}
+            menuDonutSize={280}
+            menuDonutStroke={32}
           />
         </section>
+
+        {(showSides || showBeverages) && (
+          <section className="grid gap-6 md:grid-cols-2">
+            {showSides && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900">Guarniciones más pedidas</h3>
+                  <span className="text-xs font-semibold text-slate-500">Top 5</span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {buildRankingRows(sidesRanking.items, 5).map((item) => (
+                    <div key={item.label} className="space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-sm">
+                            {item.rank}
+                          </span>
+                          <span className="font-semibold text-slate-900 truncate">{item.label}</span>
+                        </div>
+                        <span className="text-sm font-semibold text-slate-700">
+                          {item.count} · {(Number.isFinite(item.percent) ? item.percent.toFixed(1) : '0.0')}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-2 w-full bg-emerald-50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-emerald-500"
+                            style={{ width: `${Math.min((item.percent || 0), 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {sidesRanking.items.length === 0 && (
+                    <p className="text-sm text-slate-500">Sin datos para guarniciones.</p>
+                  )}
+                </div>
+              </div>
+            )}
+            {showBeverages && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900">Bebidas más pedidas</h3>
+                  <span className="text-xs font-semibold text-slate-500">Top 5</span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {buildRankingRows(beveragesRanking.items, 5).map((item) => (
+                    <div key={item.label} className="space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="h-8 w-8 rounded-full bg-amber-100 text-amber-700 font-bold flex items-center justify-center text-sm">
+                            {item.rank}
+                          </span>
+                          <span className="font-semibold text-slate-900 truncate">{item.label}</span>
+                        </div>
+                        <span className="text-sm font-semibold text-slate-700">
+                          {item.count} · {(Number.isFinite(item.percent) ? item.percent.toFixed(1) : '0.0')}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-2 w-full bg-amber-50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-amber-500"
+                            style={{ width: `${Math.min((item.percent || 0), 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {beveragesRanking.items.length === 0 && (
+                    <p className="text-sm text-slate-500">Sin datos para bebidas.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {analysisType === 'options' && (
           <div className="grid gap-6">
@@ -216,7 +371,7 @@ const TendenciasPage = () => {
               showBeverages={false}
               menuTitle="Opciones más pedidas"
               menuSubtitle="Ranking de opciones 1 a 6"
-              chartType={chartType}
+              chartType={chartType === 'donut' ? 'bar' : chartType}
             />
           </div>
         )}

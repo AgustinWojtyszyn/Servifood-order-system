@@ -19,24 +19,40 @@ const BarRow = ({ label, count, percent, max, accent }) => {
   )
 }
 
-const ChartCard = ({ title, subtitle, items, accent, chartType, centerMode }) => {
+const ChartCard = ({
+  title,
+  subtitle,
+  items,
+  accent,
+  chartType,
+  centerMode,
+  donutSize = 220,
+  donutStroke = 26,
+  colors
+}) => {
   const max = items.reduce((acc, item) => Math.max(acc, item.count || 0), 0)
   const useDonut = chartType === 'donut' && shouldUseDonut(items)
   return (
-    <div className="card bg-white/95 backdrop-blur-sm shadow-md border border-slate-200 rounded-2xl p-4 sm:p-6">
+    <div className="card bg-white/95 backdrop-blur-sm shadow-md border border-slate-200 rounded-2xl p-5 sm:p-7">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900">{title}</h3>
-          {subtitle && <p className="text-xs sm:text-sm text-slate-500 mt-1">{subtitle}</p>}
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-900">{title}</h3>
+          {subtitle && <p className="text-sm sm:text-base text-slate-500 mt-1">{subtitle}</p>}
         </div>
         <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Ranking</span>
       </div>
-      <div className="mt-4 space-y-4">
+      <div className="mt-4 space-y-3">
         {items.length === 0 && (
           <div className="text-sm text-slate-500">No hay datos para este filtro.</div>
         )}
         {items.length > 0 && useDonut && (
-          <DonutChartPro items={items} centerMode={centerMode} />
+          <DonutChartPro
+            items={items}
+            centerMode={centerMode}
+            size={donutSize}
+            strokeWidth={donutStroke}
+            colors={colors}
+          />
         )}
         {items.length > 0 && !useDonut && items.map((item, index) => (
           <BarRow
@@ -71,7 +87,10 @@ const TrendsCharts = ({
   sidesSubtitle = 'Cantidad y porcentaje sobre el total',
   beveragesTitle = 'Bebidas más pedidas',
   beveragesSubtitle = 'Respuestas con bebidas detectadas',
-  chartType = 'bar'
+  chartType = 'bar',
+  menuColors,
+  menuDonutSize,
+  menuDonutStroke
 }) => {
   return (
     <div className="grid gap-6">
@@ -83,6 +102,9 @@ const TrendsCharts = ({
           accent="from-blue-500 to-blue-400"
           chartType={chartType}
           centerMode="top"
+          colors={menuColors}
+          donutSize={menuDonutSize}
+          donutStroke={menuDonutStroke}
         />
       )}
       {showSides && (

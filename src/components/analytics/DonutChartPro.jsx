@@ -94,7 +94,7 @@ const DonutChartPro = ({
   const centerSub = centerLabel || (centerMode === 'top' ? 'Top' : 'Total')
 
   return (
-    <div className="relative flex flex-col items-center gap-4">
+    <div className="relative flex flex-col items-center gap-2">
       <div
         className="relative"
         onMouseLeave={() => {

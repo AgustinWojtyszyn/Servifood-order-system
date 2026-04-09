@@ -22,19 +22,19 @@ const TrendsFilters = ({
   exportCount
 }) => {
   return (
-    <div className="bg-white rounded-xl p-4 md:p-5 shadow-sm border border-slate-200 w-full">
+    <div className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-slate-200 w-full">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-slate-800">
             <Filter className="h-4 w-4 text-blue-600" />
             <span className="text-sm font-bold">Filtros</span>
           </div>
-          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+          <div className="inline-flex rounded-full border border-slate-200 bg-slate-100 p-1 shadow-sm">
             <button
               type="button"
               onClick={() => onChartTypeChange('bar')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                chartType === 'bar' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-blue-700'
+              className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
+                chartType === 'bar' ? 'bg-blue-700 text-white shadow-md ring-1 ring-blue-300/40' : 'text-slate-600 hover:text-blue-700'
               }`}
             >
               Gráfico de barras
@@ -42,8 +42,8 @@ const TrendsFilters = ({
             <button
               type="button"
               onClick={() => onChartTypeChange('donut')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                chartType === 'donut' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-blue-700'
+              className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
+                chartType === 'donut' ? 'bg-blue-700 text-white shadow-md ring-1 ring-blue-300/40' : 'text-slate-600 hover:text-blue-700'
               }`}
             >
               Gráfico circular
