@@ -511,7 +511,9 @@ const Dashboard = ({ user, loading }) => {
         onDeleteOrder={handleDeleteOrder}
       />
 
-      <StatsCards stats={stats} />
+      <div className="mt-8">
+        <StatsCards stats={stats} />
+      </div>
 
       {headerOrder && (
         <div

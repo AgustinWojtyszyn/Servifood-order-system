@@ -18,11 +18,9 @@ const WeeklyOrdersSection = ({
       </div>
 
       {weeklyOrders.length === 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-1">
           <p className="text-gray-600 font-semibold">Sin pedidos esta semana.</p>
-          <Link to="/order" className="btn-primary inline-flex items-center justify-center w-full sm:w-auto bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-6 text-base rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-            Hacer pedido
-          </Link>
+          <p className="text-sm text-gray-500 font-semibold">Cuando hagas un pedido, aparecerá acá.</p>
         </div>
       ) : (
         <div className="space-y-3">

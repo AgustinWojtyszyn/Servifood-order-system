@@ -136,7 +136,7 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
               <button
                 type="button"
                 onClick={() => navigate('/cafeteria/new')}
-                className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-base sm:text-lg px-7 py-3"
+                className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white font-black text-base sm:text-lg px-7 py-3"
               >
                 Hacer pedido
               </button>
