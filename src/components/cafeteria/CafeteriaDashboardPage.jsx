@@ -45,7 +45,7 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
 
   return (
     <RequireUser user={user} loading={loading}>
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="w-[90%] mx-auto space-y-8">
         <header className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 border-2 border-white/40 text-white font-semibold shadow-lg">
             <Coffee className="h-5 w-5" />
@@ -56,7 +56,7 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
           </h1>
         </header>
 
-        <section className="rounded-2xl border border-slate-200 bg-white px-5 py-5 sm:px-6">
+        <section className="bg-white/95 px-6 py-10 sm:px-8 sm:py-12 w-full">
           {pendingLoading && (
             <p className="text-sm font-semibold text-gray-600">Cargando pedido...</p>
           )}
@@ -119,38 +119,24 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
           )}
 
           {!pendingLoading && !error && !pendingOrder && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-4">
-                <div>
+            <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Pedido actual</p>
-                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">No tenés pedidos activos</h2>
-                <p className="text-base sm:text-lg text-gray-800 font-semibold mt-2">¿Querés crear uno ahora?</p>
-                </div>
-                <svg
-                  width="200"
-                  height="40"
-                  viewBox="0 0 200 40"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="shrink-0"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M6 20 H160"
-                    stroke="#000000"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                  />
-                  <polygon
-                    points="160,8 194,20 160,32"
-                    fill="#000000"
-                  />
-                </svg>
+                <h2 className="text-4xl sm:text-5xl font-black text-gray-900">
+                  No tenés pedidos activos
+                </h2>
+                <p className="text-base sm:text-lg text-gray-700 font-semibold">
+                  Elegí un plan de desayuno y pedí en segundos
+                </p>
+                <p className="text-sm sm:text-base text-gray-600 font-semibold">
+                  Elegís un plan → indicás cantidad → confirmás
+                </p>
               </div>
+
               <button
                 type="button"
                 onClick={() => navigate('/cafeteria/new')}
-                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white font-bold text-sm px-5 py-2.5"
+                className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-base sm:text-lg px-7 py-3"
               >
                 Hacer pedido
               </button>
