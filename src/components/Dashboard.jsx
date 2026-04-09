@@ -465,6 +465,32 @@ const Dashboard = ({ user, loading }) => {
   const headerOrder = pendingOrder || sortedOrders[0] || null
   const headerStatus = headerOrder ? formatHeaderStatus(headerOrder.displayStatus || headerOrder.status) : 'Sin pedido'
   const headerSummary = headerOrder ? buildItemsSummary(headerOrder.items) : 'Sin pedido activo'
+  const deliveryText = (() => {
+    if (!headerOrder?.delivery_date) return 'Fecha de entrega sin definir'
+    const timeZone = 'America/Argentina/Buenos_Aires'
+    const now = new Date()
+    const nowLocal = new Date(now.toLocaleString('en-US', { timeZone }))
+    const today = new Date(nowLocal)
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const deliveryDate = new Date(headerOrder.delivery_date)
+    deliveryDate.setHours(0, 0, 0, 0)
+
+    if (deliveryDate.getTime() === today.getTime()) {
+      return nowLocal.getHours() < 12 ? 'Se entrega mañana' : 'Se entrega hoy'
+    }
+    if (deliveryDate.getTime() === tomorrow.getTime()) {
+      return 'Se entrega mañana'
+    }
+    return new Date(headerOrder.delivery_date).toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  })()
+  const isDeliveringTomorrow = deliveryText === 'Se entrega mañana'
 
   return (
     <RequireUser user={user} loading={loading}>
@@ -488,20 +514,27 @@ const Dashboard = ({ user, loading }) => {
       <StatsCards stats={stats} />
 
       {headerOrder && (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5">
+        <div
+          className={`rounded-2xl border bg-white px-4 py-4 sm:px-5 ${
+            isDeliveringTomorrow
+              ? 'border-amber-200 bg-amber-50/70 shadow-lg shadow-amber-200/50 px-5 py-5 sm:px-6 sm:py-6'
+              : 'border-slate-200'
+          }`}
+        >
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Pedido registrado correctamente</h3>
               <p className="text-sm text-gray-700 font-semibold mt-1">
                 Ya registramos tu pedido. Lo vas a recibir en la fecha indicada.
               </p>
-              <p className="text-sm text-gray-600 font-semibold mt-1">
-                Entrega: {headerOrder?.delivery_date ? new Date(headerOrder.delivery_date).toLocaleDateString('es-ES', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }) : 'Fecha de entrega sin definir'}
+              <p
+                className={`mt-1 ${
+                  isDeliveringTomorrow
+                    ? 'inline-flex items-center rounded-lg bg-amber-100 text-amber-900 px-4 py-2 text-base sm:text-lg font-black'
+                    : 'text-sm text-gray-600 font-semibold'
+                }`}
+              >
+                {isDeliveringTomorrow ? 'Se entrega mañana' : `Entrega: ${deliveryText}`}
               </p>
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
