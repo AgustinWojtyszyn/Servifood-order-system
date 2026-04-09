@@ -120,9 +120,32 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
 
           {!pendingLoading && !error && !pendingOrder && (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
+              <div className="flex items-center gap-4">
+                <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Pedido actual</p>
-                <h2 className="text-2xl sm:text-3xl font-black text-gray-900">Sin pedido activo</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">No tenés pedidos activos</h2>
+                <p className="text-base sm:text-lg text-gray-800 font-semibold mt-2">¿Querés crear uno ahora?</p>
+                </div>
+                <svg
+                  width="200"
+                  height="40"
+                  viewBox="0 0 200 40"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="shrink-0"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M6 20 H160"
+                    stroke="#000000"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                  />
+                  <polygon
+                    points="160,8 194,20 160,32"
+                    fill="#000000"
+                  />
+                </svg>
               </div>
               <button
                 type="button"
