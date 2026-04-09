@@ -1,17 +1,38 @@
 const normalizeText = (value = '') => (value || '').toString().trim()
+const normalizeSlotTitle = (value = '') => normalizeText(value).toLowerCase()
 
 const getMenuLabelByIndex = (index = 0) => (index === 0 ? 'Menú principal' : `Opción ${index}`)
 
-const getMenuDish = (item = {}) => {
+const getSlotIndexFromTitle = (title = '') => {
+  const normalized = normalizeSlotTitle(title)
+  if (!normalized) return null
+  if (
+    normalized.includes('menú principal') ||
+    normalized.includes('menu principal') ||
+    normalized.includes('plato principal')
+  ) {
+    return 0
+  }
+  const optionMatch = normalized.match(/opci[oó]n\s*0?([1-6])\b/)
+  if (optionMatch) return Number(optionMatch[1])
+  return null
+}
+
+const getMenuDish = (item = {}, labelUsesTitle = false) => {
   const description = normalizeText(item.description)
   if (description) return description
+  if (labelUsesTitle) return ''
   return normalizeText(item.name)
 }
 
 const getMenuDisplay = (item = {}, index = 0) => {
-  const slotIndex = Number.isFinite(item?.slotIndex) ? item.slotIndex : index
-  const label = getMenuLabelByIndex(slotIndex)
-  const dish = getMenuDish(item)
+  const title = normalizeText(item?.name)
+  const inferredSlot = getSlotIndexFromTitle(title)
+  const slotIndex = Number.isFinite(item?.slotIndex)
+    ? item.slotIndex
+    : (Number.isFinite(inferredSlot) ? inferredSlot : index)
+  const label = title || getMenuLabelByIndex(slotIndex)
+  const dish = getMenuDish(item, Boolean(title))
   return {
     label,
     dish,
@@ -23,7 +44,9 @@ const getMenuDisplay = (item = {}, index = 0) => {
 const withMenuSlotIndex = (items = []) => {
   return (items || []).map((item, index) => ({
     ...item,
-    slotIndex: Number.isFinite(item?.slotIndex) ? item.slotIndex : index
+    slotIndex: Number.isFinite(item?.slotIndex)
+      ? item.slotIndex
+      : (Number.isFinite(getSlotIndexFromTitle(item?.name)) ? getSlotIndexFromTitle(item?.name) : index)
   }))
 }
 
@@ -33,6 +56,7 @@ export {
   getMenuLabelByIndex,
   getMenuDish,
   getMenuDisplay,
+  getSlotIndexFromTitle,
   withMenuSlotIndex,
   isMainMenuSlot
 }
