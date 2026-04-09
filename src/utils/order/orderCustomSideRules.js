@@ -5,9 +5,9 @@ const getSlotIndex = (item = {}) =>
 
 const isMainMenuOption = (item = {}) => getSlotIndex(item) === 0
 
-const isOptionFive = (item = {}) => getSlotIndex(item) === 4
+const isOptionFive = (item = {}) => getSlotIndex(item) === 5
 
-const isOptionSix = (item = {}) => getSlotIndex(item) === 5
+const isOptionSix = (item = {}) => getSlotIndex(item) === 6
 
 const isCeliacOption = (text = '') => {
   const normalized = normalizeText(text)
