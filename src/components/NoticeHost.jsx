@@ -74,7 +74,7 @@ const NoticeHost = () => {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-8 notice-fade"
+      className="fixed inset-0 z-120 flex items-end sm:items-center justify-center p-0 sm:p-8 notice-fade"
       role="dialog"
       aria-modal="true"
       aria-live="polite"
@@ -83,7 +83,7 @@ const NoticeHost = () => {
       <div
         className={`notice-pop relative w-full h-[92vh] sm:h-auto sm:max-w-3xl overflow-hidden rounded-none sm:rounded-3xl border ${variant.border} bg-white shadow-[0_30px_80px_rgba(0,0,0,0.32)] ring-4 ${variant.ring}`}
       >
-        <div className={`absolute inset-0 bg-gradient-to-br ${variant.glow}`} />
+        <div className={`absolute inset-0 bg-linear-to-br ${variant.glow}`} />
         <div className="relative h-full p-6 sm:p-10 flex flex-col">
           <div className="flex flex-col sm:flex-row sm:items-start gap-6">
             <div className={`mt-0.5 rounded-2xl p-3 ${variant.badge}`}>
