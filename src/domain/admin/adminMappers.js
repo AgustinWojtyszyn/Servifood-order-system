@@ -44,6 +44,54 @@ const mapAdminPeople = (people = [], accounts = []) => {
       }
     }
 
+    const needsFallback = (person.members_count || 0) > 1 || !!person.is_grouped
+    if (needsFallback && accountsList.length === 0) {
+      // Fallback: reconstruir con user_ids/emails aunque no existan en users
+      const fallbackAccounts = []
+      const fallbackSeen = new Set()
+
+      // Priorizar emails si existen
+      for (const email of emails) {
+        const key = normalizeEmail(email)
+        if (!key || fallbackSeen.has(key)) continue
+        fallbackSeen.add(key)
+        fallbackAccounts.push({
+          id: null,
+          email,
+          full_name: person.display_name || null,
+          role: 'user',
+          created_at: person.first_created || person.last_created || null
+        })
+      }
+
+      // Solo agregar user_ids si no hay emails válidos
+      if (fallbackAccounts.length === 0) {
+        for (const id of userIds) {
+          if (!id || fallbackSeen.has(id)) continue
+          fallbackSeen.add(id)
+          fallbackAccounts.push({
+            id,
+            email: null,
+            full_name: person.display_name || null,
+            role: 'user',
+            created_at: person.first_created || person.last_created || null
+          })
+        }
+      }
+
+      if (fallbackAccounts.length === 0 && (person.display_name || emails[0])) {
+        fallbackAccounts.push({
+          id: null,
+          email: emails[0] || null,
+          full_name: person.display_name || null,
+          role: 'user',
+          created_at: person.first_created || person.last_created || null
+        })
+      }
+
+      return fallbackAccounts
+    }
+
     return accountsList
   }
 

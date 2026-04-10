@@ -197,8 +197,8 @@ const AdminRow = ({
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
           {formatShortDate(user.created_at)}
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-          <div className="flex items-center gap-2">
+        <td className="px-6 py-4 text-sm font-medium align-top">
+          <div className="flex flex-wrap items-center gap-2">
             <label htmlFor={`table-role-${user.person_id || user.id}`} className="sr-only">Cambiar rol para {user.full_name || user.email || 'usuario'}</label>
             <select
               id={`table-role-${user.person_id || user.id}`}
@@ -206,7 +206,7 @@ const AdminRow = ({
               value={user.role || 'user'}
               onChange={(e) => onRoleChange(user.primary_user_id, e.target.value)}
               disabled={user.is_grouped || !user.primary_user_id || isBusy}
-              className="text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"
+              className="text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px] shrink-0"
             >
               {ROLE_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>
@@ -226,7 +226,7 @@ const AdminRow = ({
               <button
                 type="button"
                 onClick={() => onTogglePerson(personKey)}
-                className="px-3 py-2 rounded-lg border-2 border-blue-600 bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="px-3 py-2 rounded-lg border-2 border-blue-600 bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2 shrink-0"
               >
                 {isExpanded ? (
                   <>
