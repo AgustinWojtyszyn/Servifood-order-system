@@ -7,11 +7,6 @@ const resolveIsAdminForUser = async (user) => {
   if (!user?.id) return false
   const roleFromMetadata = user?.user_metadata?.role || user?.app_metadata?.role || user?.role
   if (roleFromMetadata === 'admin') return true
-  const adminAllowlist = [
-    'ae177d76-9f35-44ac-a662-1b1e4146dbe4',
-    '0732486b-6b27-4bf6-bf25-42d84b47662b'
-  ]
-  if (adminAllowlist.includes(user.id)) return true
   try {
     const { data } = await usersService.getUserById(user.id)
     return data?.role === 'admin'

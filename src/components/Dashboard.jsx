@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
+import { usersService } from '../services/users'
 import { ShoppingCart, Clock, CheckCircle, Package, Eye, RefreshCw, Edit, Trash2, Archive } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import { isOrderEditable } from '../utils'
@@ -157,10 +158,9 @@ const Dashboard = ({ user, loading }) => {
   const checkIfAdmin = async () => {
     if (!user?.id) return
     try {
-      const { data, error } = await db.getUsers()
+      const { data, error } = await usersService.getUserById(user.id)
       if (!error && data) {
-        const currentUser = data.find(u => u.id === user.id)
-        setIsAdmin(currentUser?.role === 'admin')
+        setIsAdmin(data?.role === 'admin')
       }
     } catch (err) {
       console.error('Error checking admin status:', err)

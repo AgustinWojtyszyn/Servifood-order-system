@@ -2,6 +2,39 @@ import { supabase, supabaseService, sanitizeQuery } from './supabase'
 import { handleError } from '../utils'
 import { USER_ROLES } from '../types'
 
+const logAudit = async ({
+  action,
+  details = '',
+  target_id = null,
+  target_email = null,
+  target_name = null,
+  metadata = null,
+  request_id = null
+}) => {
+  try {
+    const { data: authUser } = await supabase.auth.getUser()
+    const actor = authUser?.user
+    const payload = {
+      action,
+      details,
+      actor_id: actor?.id || null,
+      actor_email: actor?.email || null,
+      actor_name: actor?.user_metadata?.full_name || actor?.email || 'Administrador',
+      target_id,
+      target_email,
+      target_name,
+      metadata,
+      created_at: new Date().toISOString(),
+      request_id: request_id || null
+    }
+    await supabase.from('audit_logs').upsert([payload], { onConflict: 'request_id,action' })
+  } catch (err) {
+    if (import.meta.env.DEV) {
+      console.warn('[audit][logAudit] no se pudo registrar auditoría:', err?.message || err)
+    }
+  }
+}
+
 class UsersService {
   // Obtener usuarios con cache
   async getUsers(options = {}) {
@@ -115,6 +148,15 @@ class UsersService {
       supabaseService.invalidateCache('users')
       supabaseService.invalidateCache(`user_${userId}`)
 
+      await logAudit({
+        action: 'role_changed',
+        details: `Rol actualizado a "${role}"`,
+        target_id: userId,
+        target_email: data?.email || null,
+        target_name: data?.full_name || null,
+        metadata: { role }
+      })
+
       return { data, error: null }
     } catch (error) {
       return { data: null, error: handleError(error, 'updateUserRole') }
@@ -204,6 +246,12 @@ class UsersService {
       supabaseService.invalidateCache('users')
       supabaseService.invalidateCache(`user_${userId}`)
       supabaseService.invalidateCache('orders') // Por si había pedidos
+
+      await logAudit({
+        action: 'user_deleted',
+        details: 'Usuario eliminado por administrador',
+        target_id: userId
+      })
 
       return { data, error: null }
     } catch (error) {

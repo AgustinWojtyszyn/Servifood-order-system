@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { auth, db } from '../supabaseClient'
+import { auth } from '../supabaseClient'
+import { usersService } from '../services/users'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList, BarChart3 } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import cafeteriaLogo from '../assets/food-delivery (1).png'
@@ -85,25 +86,18 @@ const Layout = ({ children, user, loading }) => {
       setIsAdmin(false)
       return
     }
-    const adminAllowlist = [
-      'ae177d76-9f35-44ac-a662-1b1e4146dbe4',
-      '0732486b-6b27-4bf6-bf25-42d84b47662b'
-    ]
     const roleFromMetadata = user?.user_metadata?.role || user?.app_metadata?.role || user?.role
-    if (roleFromMetadata === 'admin' || adminAllowlist.includes(user?.id)) {
+    if (roleFromMetadata === 'admin') {
       setIsAdmin(true)
       return
     }
     try {
-      const { data, error } = await db.getUsers()
+      const { data, error } = await usersService.getUserById(user?.id)
       if (!error && data) {
-        const currentUser = data.find(u => u.id === user?.id)
-        const roleValue = currentUser?.role || user?.user_metadata?.role
+        const roleValue = data?.role || user?.user_metadata?.role
 
         if (import.meta.env.DEV) {
           console.log('[Layout][role-debug] users fetched', {
-            total: data.length,
-            currentUser,
             roleValue,
             userMetaRole: user?.user_metadata?.role,
             flags: {
@@ -112,7 +106,7 @@ const Layout = ({ children, user, loading }) => {
           })
         }
 
-        setIsAdmin(roleValue === 'admin' || adminAllowlist.includes(user?.id))
+        setIsAdmin(roleValue === 'admin')
       } else if (error && import.meta.env.DEV) {
         console.warn('[Layout][role-debug] error fetching users', error)
       }
@@ -120,7 +114,7 @@ const Layout = ({ children, user, loading }) => {
       console.error('Error checking user role:', err)
       // Fallback a user_metadata si falla la consulta
       const roleValue = user?.user_metadata?.role
-      setIsAdmin(roleValue === 'admin' || adminAllowlist.includes(user?.id))
+      setIsAdmin(roleValue === 'admin')
     }
   }
 

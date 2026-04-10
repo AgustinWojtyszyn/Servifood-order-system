@@ -9,11 +9,16 @@ const AdminRow = ({
   isExpanded,
   onTogglePerson,
   onRoleChange,
-  onDeleteUser
+  onDeleteUser,
+  isRoleUpdating,
+  isDeleting,
+  roleUpdatingById,
+  deletingById
 }) => {
   const personKey = user.person_id || user.id
   const accounts = Array.isArray(user.accounts) ? user.accounts : []
   const hasMultipleAccounts = (user.members_count || 0) > 1 || user.is_grouped || accounts.length > 1
+  const isBusy = !!isRoleUpdating || !!isDeleting
 
   if (variant === 'mobile') {
     return (
@@ -56,7 +61,7 @@ const AdminRow = ({
               name={`mobile-role-${user.person_id || user.id}`}
               value={user.role || 'user'}
               onChange={(e) => onRoleChange(user.primary_user_id, e.target.value)}
-              disabled={user.is_grouped || !user.primary_user_id}
+              disabled={user.is_grouped || !user.primary_user_id || isBusy}
               className="w-full text-sm border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium"
             >
               {ROLE_OPTIONS.map(option => (
@@ -69,7 +74,7 @@ const AdminRow = ({
           <div className="flex items-end">
             <button
               onClick={() => onDeleteUser(user.primary_user_id, user.full_name || user.email)}
-              disabled={user.is_grouped || !user.primary_user_id}
+              disabled={user.is_grouped || !user.primary_user_id || isBusy}
               className="px-4 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors font-semibold text-sm flex items-center gap-1"
               title="Eliminar usuario"
             >
@@ -131,7 +136,7 @@ const AdminRow = ({
                       <select
                         value={account.role || 'user'}
                         onChange={(e) => onRoleChange(account.id, e.target.value)}
-                        disabled={!account.id}
+                        disabled={!account.id || roleUpdatingById?.[account.id] || deletingById?.[account.id]}
                         className="flex-1 text-xs border-2 border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium"
                       >
                         {ROLE_OPTIONS.map(option => (
@@ -142,7 +147,7 @@ const AdminRow = ({
                       </select>
                       <button
                         onClick={() => onDeleteUser(account.id, account.full_name || account.email)}
-                        disabled={!account.id}
+                        disabled={!account.id || roleUpdatingById?.[account.id] || deletingById?.[account.id]}
                         className="px-3 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors font-semibold text-xs"
                         title="Eliminar cuenta"
                       >
@@ -200,7 +205,7 @@ const AdminRow = ({
               name={`table-role-${user.person_id || user.id}`}
               value={user.role || 'user'}
               onChange={(e) => onRoleChange(user.primary_user_id, e.target.value)}
-              disabled={user.is_grouped || !user.primary_user_id}
+              disabled={user.is_grouped || !user.primary_user_id || isBusy}
               className="text-base border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"
             >
               {ROLE_OPTIONS.map(option => (
@@ -211,7 +216,7 @@ const AdminRow = ({
             </select>
             <button
               onClick={() => onDeleteUser(user.primary_user_id, user.full_name || user.email)}
-              disabled={user.is_grouped || !user.primary_user_id}
+              disabled={user.is_grouped || !user.primary_user_id || isBusy}
               className="p-2.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors shrink-0"
               title="Eliminar usuario"
             >
@@ -270,7 +275,7 @@ const AdminRow = ({
                       <select
                         value={account.role || 'user'}
                         onChange={(e) => onRoleChange(account.id, e.target.value)}
-                        disabled={!account.id}
+                        disabled={!account.id || roleUpdatingById?.[account.id] || deletingById?.[account.id]}
                         className="text-sm border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium min-w-[120px]"
                       >
                         {ROLE_OPTIONS.map(option => (
@@ -281,7 +286,7 @@ const AdminRow = ({
                       </select>
                       <button
                         onClick={() => onDeleteUser(account.id, account.full_name || account.email)}
-                        disabled={!account.id}
+                        disabled={!account.id || roleUpdatingById?.[account.id] || deletingById?.[account.id]}
                         className="px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors font-semibold text-sm"
                         title="Eliminar cuenta"
                       >

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
-import { db } from '../supabaseClient'
+import { usersService } from '../services/users'
 import { Shield } from 'lucide-react'
 import RequireUser from './RequireUser'
 import { Sound } from '../utils/Sound'
@@ -31,7 +31,7 @@ import { useAdminCleanupActions } from '../hooks/admin/useAdminCleanupActions'
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('users')
   const { isAdmin, user, refreshSession, loading } = useAuthContext()
-  const { users, usersLoading, refreshUsers } = useAdminUsersData()
+  const { users, usersLoading, usersError, refreshUsers } = useAdminUsersData()
   const tomorrowISO = getTomorrowISOInTimeZone()
   const initialSelectedDates = [tomorrowISO]
   const [menuWeekBaseDate, setMenuWeekBaseDate] = useState(() => {
@@ -170,11 +170,9 @@ const AdminPanel = () => {
   })
 
   const [expandedPeople, setExpandedPeople] = useState({})
-  const allowedCafeteriaExportIds = [
-    'ae177d76-9f35-44ac-a662-1b1e4146dbe4',
-    '0732486b-6b27-4bf6-bf25-42d84b47662b'
-  ]
-  const canExportCafeteria = allowedCafeteriaExportIds.includes(user?.id)
+  const [roleUpdatingById, setRoleUpdatingById] = useState({})
+  const [deletingById, setDeletingById] = useState({})
+  const canExportCafeteria = isAdmin
   
   // Estados para búsqueda y filtrado de usuarios
   const {
@@ -184,7 +182,12 @@ const AdminPanel = () => {
     setRoleFilter,
     sortBy,
     setSortBy,
-    filteredUsers
+    filteredUsers,
+    pagedUsers,
+    page,
+    setPage,
+    totalPages,
+    pageSize
   } = useAdminFilters({ users })
   
   useEffect(() => {
@@ -248,10 +251,12 @@ const AdminPanel = () => {
   const isPersonExpanded = (personId) => !!expandedPeople[personId]
 
   const handleRoleChange = async (userId, newRole) => {
+    if (!userId || roleUpdatingById[userId] || deletingById[userId]) return
+    setRoleUpdatingById(prev => ({ ...prev, [userId]: true }))
     try {
       // Forzar minúsculas para el valor de rol
       const roleValue = newRole.toLowerCase()
-      const { data, error } = await db.updateUserRole(userId, roleValue)
+      const { data, error } = await usersService.updateUserRole(userId, roleValue)
       console.log('[SUPABASE UPDATE RESULT]', { data, error })
       if (error) {
         console.error('[SUPABASE ERROR] updateUserRole:', error)
@@ -270,10 +275,13 @@ const AdminPanel = () => {
       }
     } catch (err) {
       notifyError('Error al actualizar el rol')
+    } finally {
+      setRoleUpdatingById(prev => ({ ...prev, [userId]: false }))
     }
   }
 
   const handleDeleteUser = async (userId, userName) => {
+    if (!userId || deletingById[userId]) return
     const confirmed = await confirmAction({
       title: 'Eliminar usuario',
       message:
@@ -284,7 +292,8 @@ const AdminPanel = () => {
     if (!confirmed) return
 
     try {
-      const { error } = await db.deleteUser(userId)
+      setDeletingById(prev => ({ ...prev, [userId]: true }))
+      const { error } = await usersService.deleteUser(userId)
       
       if (error) {
         console.error('Error deleting user:', error)
@@ -296,6 +305,8 @@ const AdminPanel = () => {
     } catch (err) {
       console.error('Error:', err)
       notifyError('Error al eliminar el usuario')
+    } finally {
+      setDeletingById(prev => ({ ...prev, [userId]: false }))
     }
   }
 
@@ -353,8 +364,15 @@ const AdminPanel = () => {
           onRoleFilterChange={setRoleFilter}
           sortBy={sortBy}
           onSortChange={setSortBy}
-          filteredUsers={filteredUsers}
+          filteredUsers={pagedUsers}
           usersCount={users.length}
+          usersLoading={usersLoading}
+          usersError={usersError}
+          filteredTotalCount={filteredUsers.length}
+          page={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          onPageChange={setPage}
           onClearFilters={() => {
             setSearchTerm('')
             setRoleFilter('all')
@@ -363,6 +381,8 @@ const AdminPanel = () => {
           onTogglePersonDetails={togglePersonDetails}
           onRoleChange={handleRoleChange}
           onDeleteUser={handleDeleteUser}
+          roleUpdatingById={roleUpdatingById}
+          deletingById={deletingById}
         />
       )}
 

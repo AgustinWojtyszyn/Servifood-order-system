@@ -80,19 +80,16 @@ const mapAdminPeople = (people = [], accounts = []) => {
   for (const person of mappedPeople) {
     const personEmails = new Set((person.emails || []).map(normalizeEmail).filter(Boolean))
     const personUserIds = new Set((person.user_ids || []).filter(Boolean))
-    const personName = normalizeName(person.full_name || person.email)
     const personAccounts = Array.isArray(person.accounts) ? person.accounts : []
 
     const existing = dedupedPeople.find(p => {
       const existingEmails = new Set((p.emails || []).map(normalizeEmail).filter(Boolean))
       const existingUserIds = new Set((p.user_ids || []).filter(Boolean))
-      const existingName = normalizeName(p.full_name || p.email)
 
       const hasSharedUserId = [...personUserIds].some(id => existingUserIds.has(id))
       const hasSharedEmail = [...personEmails].some(email => existingEmails.has(email))
-      const hasSameName = personName !== '' && personName === existingName
 
-      return hasSharedUserId || hasSharedEmail || hasSameName
+      return hasSharedUserId || hasSharedEmail
     })
 
     if (!existing) {

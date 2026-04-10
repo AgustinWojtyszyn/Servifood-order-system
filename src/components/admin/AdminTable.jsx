@@ -9,15 +9,25 @@ const AdminTable = ({
   isPersonExpanded,
   onTogglePersonDetails,
   onRoleChange,
-  onDeleteUser
+  onDeleteUser,
+  usersLoading,
+  usersError,
+  roleUpdatingById,
+  deletingById
 }) => (
   <>
+    {usersLoading && (
+      <div className="mb-4 text-sm font-semibold text-gray-600">Cargando usuarios...</div>
+    )}
+
     <div className="block md:hidden space-y-4">
       {filteredUsers.map((user) => {
         const personKey = user.person_id || user.id
         const accounts = Array.isArray(user.accounts) ? user.accounts : []
         const hasMultipleAccounts = (user.members_count || 0) > 1 || user.is_grouped || accounts.length > 1
         const isExpanded = hasMultipleAccounts && isPersonExpanded(personKey)
+        const isRoleUpdating = roleUpdatingById?.[user.primary_user_id]
+        const isDeleting = deletingById?.[user.primary_user_id]
 
         return (
           <AdminRow
@@ -28,6 +38,10 @@ const AdminTable = ({
             onTogglePerson={onTogglePersonDetails}
             onRoleChange={onRoleChange}
             onDeleteUser={onDeleteUser}
+            isRoleUpdating={isRoleUpdating}
+            isDeleting={isDeleting}
+            roleUpdatingById={roleUpdatingById}
+            deletingById={deletingById}
           />
         )
       })}
@@ -60,6 +74,8 @@ const AdminTable = ({
             const accounts = Array.isArray(user.accounts) ? user.accounts : []
             const hasMultipleAccounts = (user.members_count || 0) > 1 || user.is_grouped || accounts.length > 1
             const isExpanded = hasMultipleAccounts && isPersonExpanded(personKey)
+            const isRoleUpdating = roleUpdatingById?.[user.primary_user_id]
+            const isDeleting = deletingById?.[user.primary_user_id]
 
             return (
               <AdminRow
@@ -70,6 +86,10 @@ const AdminTable = ({
                 onTogglePerson={onTogglePersonDetails}
                 onRoleChange={onRoleChange}
                 onDeleteUser={onDeleteUser}
+                isRoleUpdating={isRoleUpdating}
+                isDeleting={isDeleting}
+                roleUpdatingById={roleUpdatingById}
+                deletingById={deletingById}
               />
             )
           })}
@@ -77,23 +97,29 @@ const AdminTable = ({
       </table>
     </div>
 
-    {filteredUsers.length === 0 && (
+    {filteredUsers.length === 0 && !usersLoading && (
       <div className="text-center py-12">
         <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-gray-900 mb-2">No se encontraron usuarios</h3>
-        <p className="text-gray-600 mb-4">
-          {searchTerm || roleFilter !== 'all'
-            ? 'Intenta ajustar los filtros de búsqueda'
-            : 'No hay usuarios registrados en el sistema'}
-        </p>
-        {(searchTerm || roleFilter !== 'all') && (
-          <button
-            onClick={onClearFilters}
-            className="btn-secondary inline-flex items-center gap-2"
-          >
-            <X className="h-4 w-4" />
-            Limpiar filtros
-          </button>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          {usersError ? 'No se pudo cargar usuarios' : 'No se encontraron usuarios'}
+        </h3>
+        {!usersError && (
+          <>
+            <p className="text-gray-600 mb-4">
+              {searchTerm || roleFilter !== 'all'
+                ? 'Intenta ajustar los filtros de búsqueda'
+                : 'No hay usuarios registrados en el sistema'}
+            </p>
+            {(searchTerm || roleFilter !== 'all') && (
+              <button
+                onClick={onClearFilters}
+                className="btn-secondary inline-flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Limpiar filtros
+              </button>
+            )}
+          </>
         )}
       </div>
     )}

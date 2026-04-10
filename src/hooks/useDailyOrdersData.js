@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { db } from '../supabaseClient'
+import { usersService } from '../services/users'
 import { Sound } from '../utils/Sound'
 import { calculateStats } from '../utils/daily/dailyOrderCalculations'
 import { notifyError, notifyInfo, notifySuccess } from '../utils/notice'
@@ -26,10 +27,9 @@ export const useDailyOrdersData = (user) => {
       return
     }
     try {
-      const { data, error } = await db.getUsers()
+      const { data, error } = await usersService.getUserById(user.id)
       if (!error && data) {
-        const currentUser = data.find(u => u.id === user.id)
-        setIsAdmin(currentUser?.role === 'admin')
+        setIsAdmin(data?.role === 'admin')
       }
     } catch (err) {
       console.error('Error checking admin status:', err)
