@@ -77,7 +77,10 @@ const OrderForm = ({ user, loading }) => {
   const locationState = useLocation()
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
-  const defaultCompanySlug = COMPANY_LIST[0]?.slug || 'laja'
+  const recommendedCompany = typeof window !== 'undefined'
+    ? window.localStorage.getItem('lastCompany')
+    : null
+  const defaultCompanySlug = recommendedCompany || COMPANY_LIST[0]?.slug || 'laja'
   const rawCompanySlug = (companySlugParam || searchParams.get('company') || defaultCompanySlug || '')
     .trim()
     .toLowerCase()
@@ -103,6 +106,17 @@ const OrderForm = ({ user, loading }) => {
     () => companyConfig?.locations || COMPANY_LIST[0]?.locations || [],
     [companyConfig]
   )
+
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined') return
+      if (companyConfig?.slug) {
+        window.localStorage.setItem('lastCompany', companyConfig.slug)
+      }
+    } catch (err) {
+      // no-op: fallback sin persistencia
+    }
+  }, [companyConfig?.slug])
 
   const activeOptions = useMemo(
     () => customOptionsLunch.filter(opt => opt.active),
@@ -708,7 +722,8 @@ const OrderForm = ({ user, loading }) => {
     isOutsideWindow,
     setSelectedTurns,
     setSuccess,
-    navigate
+    navigate,
+    rawCompanySlug
   })
 
   if (success) {

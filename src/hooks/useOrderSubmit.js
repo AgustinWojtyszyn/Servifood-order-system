@@ -27,7 +27,8 @@ const useOrderSubmit = ({
   isOutsideWindow,
   setSelectedTurns,
   setSuccess,
-  navigate
+  navigate,
+  rawCompanySlug
 }) => {
   const [submitting, setSubmitting] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -125,6 +126,13 @@ const useOrderSubmit = ({
       }
 
       setSuccess(true)
+      try {
+        if (typeof window !== 'undefined' && rawCompanySlug) {
+          window.localStorage.setItem('lastCompanyConfirmed', rawCompanySlug)
+        }
+      } catch (err) {
+        // no-op
+      }
       const createdIds = submitResult?.createdOrderIds || []
       const latestCreatedId = createdIds.length ? createdIds[createdIds.length - 1] : null
       setTimeout(() => {

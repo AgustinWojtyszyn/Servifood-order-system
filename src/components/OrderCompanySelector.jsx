@@ -7,11 +7,33 @@ import { COMPANY_LIST, COMPANY_CATALOG } from '../constants/companyConfig'
 const OrderCompanySelector = ({ user, loading }) => {
   const navigate = useNavigate()
 
-  const orderedCompanies = useMemo(() => {
-    return [...COMPANY_LIST]
+  const lastCompanySelected = useMemo(() => {
+    if (typeof window === 'undefined') return ''
+    return window.localStorage.getItem('lastCompanySelected') || ''
   }, [])
 
+  const lastCompanyConfirmed = useMemo(() => {
+    if (typeof window === 'undefined') return ''
+    return window.localStorage.getItem('lastCompanyConfirmed') || ''
+  }, [])
+  const recommendedCompany = lastCompanySelected || lastCompanyConfirmed
+
+  const orderedCompanies = useMemo(() => {
+    return [...COMPANY_LIST].sort((a, b) => {
+      if (a.slug === recommendedCompany) return -1
+      if (b.slug === recommendedCompany) return 1
+      return 0
+    })
+  }, [recommendedCompany])
+
   const handleSelect = (slug) => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('lastCompanySelected', slug)
+      }
+    } catch (err) {
+      // no-op: fallback sin persistencia
+    }
     navigate(`/order/${slug}`)
   }
 
@@ -45,9 +67,16 @@ const OrderCompanySelector = ({ user, loading }) => {
                     <Building2 className="h-9 w-9 text-gray-800" />
                   </div>
                   <div>
-                    <p className={`inline-flex px-4 py-2.5 rounded-full text-xl font-black ${company.badgeClass} border border-white`}>
-                      {company.name}
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`inline-flex px-4 py-2.5 rounded-full text-xl font-black ${company.badgeClass} border border-white`}>
+                        {company.name}
+                      </p>
+                      {company.slug === recommendedCompany && (
+                        <span className="inline-flex px-3 py-1 text-xs font-bold rounded-full bg-emerald-600 text-white">
+                          Última usada
+                        </span>
+                      )}
+                    </div>
                     <p className="text-lg font-semibold text-gray-800 mt-1">
                       {company.subtitle || 'Flujo dedicado'}
                     </p>
