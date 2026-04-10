@@ -27,7 +27,16 @@ const AdminUsersSection = ({
   deletingById
 }) => (
   <div className="card bg-white/95 backdrop-blur-sm shadow-xl border-2 border-white/20">
-    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 drop-shadow">👥 Gestión de Usuarios</h2>
+    <div className="flex items-center justify-between mb-4 sm:mb-6">
+      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 drop-shadow">👥 Gestión de Usuarios</h2>
+      <button
+        type="button"
+        onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+        className="text-sm font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+      >
+        Bajar al final
+      </button>
+    </div>
 
     {usersError && (
       <div className="mb-4 rounded-lg border-2 border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
