@@ -71,7 +71,10 @@ const AdminUsersSection = ({
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => onPageChange(Math.max(1, page - 1))}
+          onClick={() => {
+            onPageChange(Math.max(1, page - 1))
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
           disabled={page <= 1}
           className="btn-secondary disabled:opacity-60"
         >
@@ -79,11 +82,21 @@ const AdminUsersSection = ({
         </button>
         <button
           type="button"
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          onClick={() => {
+            onPageChange(Math.min(totalPages, page + 1))
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
           disabled={page >= totalPages}
           className="btn-secondary disabled:opacity-60"
         >
           Siguiente
+        </button>
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="btn-secondary"
+        >
+          Volver arriba
         </button>
       </div>
     </div>
