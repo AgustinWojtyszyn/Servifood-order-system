@@ -79,6 +79,18 @@ La aplicación sigue una arquitectura web moderna:
 - Autenticación integrada para control de acceso
 - Panel administrativo para gestión del sistema
 
+### Order normalization (read-only)
+
+`normalizeOrderForReadOnly(order)` se usa únicamente en analytics, daily y monthly.
+
+- No modifica `order.items` ni `order.custom_responses`
+- Agrega: `normalizedItems`, `normalizedCustomResponses`
+- Uso exclusivo para lectura
+- Prohibido usar en submit, edición o idempotencia
+
+Motivo:
+Unificar lectura sin afectar el contrato persistido ni romper pedidos existentes
+
 
 ## Estado del proyecto
 
@@ -97,6 +109,5 @@ Incluye mejoras continuas en:
 
 Interfaz principal del sistema de pedidos utilizada por los usuarios para seleccionar su menú diario.
 <img width="1920" height="4081" alt="screencapture-servifoodapp-site-order-ccp-2026-03-17-10_07_54" src="https://github.com/user-attachments/assets/fcb25a81-79cd-42a2-b555-1d64453f6e75" />
-
 
 
