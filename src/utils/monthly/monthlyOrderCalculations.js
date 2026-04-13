@@ -1,5 +1,5 @@
 import { formatDateDMY, normalizeLabel, toDisplayString } from './monthlyOrderFormatters'
-import { normalizeOrderForRead } from '../order/normalizeOrderForRead'
+import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
 
 const incrementCount = (map, key, delta = 1) => {
   map[key] = (map[key] || 0) + delta
@@ -142,7 +142,7 @@ export const buildDailyBreakdownFromOrdersByDay = (dates = [], byDay = {}) => {
     }
 
     dayOrders.forEach(o => {
-      const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(o)
+      const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(o)
       row.count += 1
       normalizedItems.forEach(it => {
         const qty = it?.quantity || 1
@@ -251,7 +251,7 @@ export const buildDailyRows = (daily, byDay) => {
 
     if (dayOrders.length) {
       dayOrders.forEach(o => {
-        const { normalizedCustomResponses } = normalizeOrderForRead(o)
+        const { normalizedCustomResponses } = normalizeOrderForReadOnly(o)
         normalizedCustomResponses.forEach(cr => {
           const resp = toDisplayString(cr?.response)
           if (resp) addSideItem(resp, dayBuckets)

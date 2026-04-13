@@ -1,6 +1,6 @@
 import { BEVERAGE_KEYWORDS, DINNER_OVERRIDE_KEYWORDS } from './dailyOrderConstants'
 import { normalizeDishName } from './dailyOrderFormatters'
-import { normalizeOrderForRead } from '../order/normalizeOrderForRead'
+import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
 
 export const getCustomSideFromResponses = (responses = []) => {
   if (!Array.isArray(responses) || responses.length === 0) return null
@@ -26,7 +26,7 @@ export const isDinnerOverrideResponse = (resp = {}) => {
 export const getDinnerOverrideSelection = (order) => {
   if (!order || (order.service || 'lunch') !== 'dinner') return null
 
-  const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
+  const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
 
   if (Array.isArray(normalizedItems)) {
     const overrideItem = normalizedItems.find(it => it?.id === 'dinner-override' || matchesDinnerOverrideKeyword(it?.name))
@@ -107,7 +107,7 @@ export const summarizeOrderItems = (items = []) => {
 
 export const buildOrderPreview = (order) => {
   const items = []
-  const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
+  const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
   if (Array.isArray(normalizedItems)) {
     const principal = normalizedItems.filter(
       item => item && item.name && item.name.toLowerCase().includes('menú principal')
@@ -178,7 +178,7 @@ export const buildOperationalSummary = (ordersList = []) => {
 
   ;(ordersList || []).forEach(order => {
     if (!order) return
-    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
+    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
 
     if (Array.isArray(normalizedItems)) {
       normalizedItems.forEach(item => {
@@ -227,7 +227,7 @@ export const buildLocationCards = (ordersList = []) => {
 
   ;(ordersList || []).forEach(order => {
     if (!order) return
-    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
+    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
     const loc = order.location || 'Sin ubicación'
     if (!byLocation[loc]) {
       byLocation[loc] = { total: 0, dishCounts: {}, sideCounts: {} }
@@ -274,7 +274,7 @@ export const buildPrintStats = (ordersList = []) => {
 
   ;(ordersList || []).forEach(order => {
     if (!order) return
-    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
+    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
     const customResponses = Array.isArray(normalizedCustomResponses) ? normalizedCustomResponses : []
     const turn = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
     const itemsQty = Number(order.total_items || 0)
@@ -312,7 +312,7 @@ export const calculateStats = (ordersData = []) => {
   let pending = 0
 
   Array.isArray(ordersData) && ordersData.forEach(order => {
-    const { normalizedItems } = normalizeOrderForRead(order || {})
+    const { normalizedItems } = normalizeOrderForReadOnly(order || {})
     if (!byLocation[order.location]) {
       byLocation[order.location] = 0
     }
