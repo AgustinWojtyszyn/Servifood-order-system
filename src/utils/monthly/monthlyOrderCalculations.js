@@ -1,4 +1,5 @@
 import { formatDateDMY, normalizeLabel, toDisplayString } from './monthlyOrderFormatters'
+import { normalizeOrderForRead } from '../order/normalizeOrderForRead'
 
 const incrementCount = (map, key, delta = 1) => {
   map[key] = (map[key] || 0) + delta
@@ -141,17 +142,9 @@ export const buildDailyBreakdownFromOrdersByDay = (dates = [], byDay = {}) => {
     }
 
     dayOrders.forEach(o => {
+      const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(o)
       row.count += 1
-      let items = []
-      if (Array.isArray(o.items)) items = o.items
-      else if (typeof o.items === 'string') {
-        try {
-          items = JSON.parse(o.items)
-        } catch {
-          items = []
-        }
-      }
-      items.forEach(it => {
+      normalizedItems.forEach(it => {
         const qty = it?.quantity || 1
         const name = (it?.name || '').trim()
         if (!name) return
@@ -166,16 +159,7 @@ export const buildDailyBreakdownFromOrdersByDay = (dates = [], byDay = {}) => {
         }
       })
 
-      let custom = []
-      if (Array.isArray(o.custom_responses)) custom = o.custom_responses
-      else if (typeof o.custom_responses === 'string') {
-        try {
-          custom = JSON.parse(o.custom_responses)
-        } catch {
-          custom = []
-        }
-      }
-      custom.forEach(cr => {
+      normalizedCustomResponses.forEach(cr => {
         const resp = toDisplayString(cr?.response)
         if (resp) addSideItem(resp, sideBuckets)
         if (Array.isArray(cr?.options)) {
@@ -267,16 +251,8 @@ export const buildDailyRows = (daily, byDay) => {
 
     if (dayOrders.length) {
       dayOrders.forEach(o => {
-        let custom = []
-        if (Array.isArray(o.custom_responses)) custom = o.custom_responses
-        else if (typeof o.custom_responses === 'string') {
-          try {
-            custom = JSON.parse(o.custom_responses)
-          } catch (err) {
-            void err
-          }
-        }
-        custom.forEach(cr => {
+        const { normalizedCustomResponses } = normalizeOrderForRead(o)
+        normalizedCustomResponses.forEach(cr => {
           const resp = toDisplayString(cr?.response)
           if (resp) addSideItem(resp, dayBuckets)
           if (Array.isArray(cr?.options)) {

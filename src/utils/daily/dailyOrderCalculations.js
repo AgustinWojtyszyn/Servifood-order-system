@@ -1,5 +1,6 @@
 import { BEVERAGE_KEYWORDS, DINNER_OVERRIDE_KEYWORDS } from './dailyOrderConstants'
 import { normalizeDishName } from './dailyOrderFormatters'
+import { normalizeOrderForRead } from '../order/normalizeOrderForRead'
 
 export const getCustomSideFromResponses = (responses = []) => {
   if (!Array.isArray(responses) || responses.length === 0) return null
@@ -25,13 +26,15 @@ export const isDinnerOverrideResponse = (resp = {}) => {
 export const getDinnerOverrideSelection = (order) => {
   if (!order || (order.service || 'lunch') !== 'dinner') return null
 
-  if (Array.isArray(order.items)) {
-    const overrideItem = order.items.find(it => it?.id === 'dinner-override' || matchesDinnerOverrideKeyword(it?.name))
+  const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
+
+  if (Array.isArray(normalizedItems)) {
+    const overrideItem = normalizedItems.find(it => it?.id === 'dinner-override' || matchesDinnerOverrideKeyword(it?.name))
     if (overrideItem?.name) return overrideItem.name.replace(/^cena:\s*/i, '').trim() || overrideItem.name
   }
 
-  if (Array.isArray(order.custom_responses)) {
-    for (const resp of order.custom_responses) {
+  if (Array.isArray(normalizedCustomResponses)) {
+    for (const resp of normalizedCustomResponses) {
       if (isDinnerOverrideResponse(resp)) {
         const val = resp?.response ?? resp?.answer
         if (Array.isArray(val)) {
@@ -104,11 +107,12 @@ export const summarizeOrderItems = (items = []) => {
 
 export const buildOrderPreview = (order) => {
   const items = []
-  if (Array.isArray(order?.items)) {
-    const principal = order.items.filter(
+  const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
+  if (Array.isArray(normalizedItems)) {
+    const principal = normalizedItems.filter(
       item => item && item.name && item.name.toLowerCase().includes('menú principal')
     )
-    const others = order.items.filter(
+    const others = normalizedItems.filter(
       item => item && item.name && !item.name.toLowerCase().includes('menú principal')
     )
     if (principal.length > 0) {
@@ -118,10 +122,10 @@ export const buildOrderPreview = (order) => {
     others.forEach(i => items.push(`${normalizeDishName(i.name)} (x${i.quantity || 1})`))
   }
 
-  const customSide = getCustomSideFromResponses(order?.custom_responses || [])
+  const customSide = getCustomSideFromResponses(normalizedCustomResponses || [])
   if (customSide) items.push(`Guarnición: ${customSide}`)
 
-  const otherResponses = getOtherCustomResponses(order?.custom_responses || [])
+  const otherResponses = getOtherCustomResponses(normalizedCustomResponses || [])
   const customStrings = otherResponses.map(r => {
     const response = Array.isArray(r.response) ? r.response.join(', ') : r.response
     return `${r.title}: ${response}`
@@ -174,21 +178,22 @@ export const buildOperationalSummary = (ordersList = []) => {
 
   ;(ordersList || []).forEach(order => {
     if (!order) return
+    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
 
-    if (Array.isArray(order.items)) {
-      order.items.forEach(item => {
+    if (Array.isArray(normalizedItems)) {
+      normalizedItems.forEach(item => {
         if (!item?.name) return
         const normalizedName = normalizeDishName(item.name)
         dishCounts[normalizedName] = (dishCounts[normalizedName] || 0) + (item.quantity || 1)
       })
     }
 
-    const side = getCustomSideFromResponses(order.custom_responses || [])
+    const side = getCustomSideFromResponses(normalizedCustomResponses || [])
     if (side) {
       sideCounts[side] = (sideCounts[side] || 0) + 1
     }
 
-    const customResponses = Array.isArray(order.custom_responses) ? order.custom_responses : []
+    const customResponses = Array.isArray(normalizedCustomResponses) ? normalizedCustomResponses : []
     customResponses.forEach(resp => {
       const pushBeverage = (value) => {
         if (!value) return
@@ -222,14 +227,15 @@ export const buildLocationCards = (ordersList = []) => {
 
   ;(ordersList || []).forEach(order => {
     if (!order) return
+    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
     const loc = order.location || 'Sin ubicación'
     if (!byLocation[loc]) {
       byLocation[loc] = { total: 0, dishCounts: {}, sideCounts: {} }
     }
     byLocation[loc].total += 1
 
-    if (Array.isArray(order.items)) {
-      order.items.forEach(item => {
+    if (Array.isArray(normalizedItems)) {
+      normalizedItems.forEach(item => {
         if (!item?.name) return
         const normalizedName = normalizeDishName(item.name)
         byLocation[loc].dishCounts[normalizedName] =
@@ -237,7 +243,7 @@ export const buildLocationCards = (ordersList = []) => {
       })
     }
 
-    const side = getCustomSideFromResponses(order.custom_responses || [])
+    const side = getCustomSideFromResponses(normalizedCustomResponses || [])
     if (side) {
       byLocation[loc].sideCounts[side] = (byLocation[loc].sideCounts[side] || 0) + 1
     }
@@ -268,7 +274,8 @@ export const buildPrintStats = (ordersList = []) => {
 
   ;(ordersList || []).forEach(order => {
     if (!order) return
-    const customResponses = Array.isArray(order.custom_responses) ? order.custom_responses : []
+    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForRead(order)
+    const customResponses = Array.isArray(normalizedCustomResponses) ? normalizedCustomResponses : []
     const turn = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
     const itemsQty = Number(order.total_items || 0)
 
@@ -305,13 +312,14 @@ export const calculateStats = (ordersData = []) => {
   let pending = 0
 
   Array.isArray(ordersData) && ordersData.forEach(order => {
+    const { normalizedItems } = normalizeOrderForRead(order || {})
     if (!byLocation[order.location]) {
       byLocation[order.location] = 0
     }
     byLocation[order.location]++
 
-    if (order.items && Array.isArray(order.items)) {
-      order.items.forEach(item => {
+    if (Array.isArray(normalizedItems)) {
+      normalizedItems.forEach(item => {
         if (item?.name) {
           const normalizedName = normalizeDishName(item.name)
           if (!byDish[normalizedName]) {

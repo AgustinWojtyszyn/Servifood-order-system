@@ -2,6 +2,7 @@ import { supabase } from '../../supabaseClient'
 import { COUNTABLE_STATUSES } from '../monthly/monthlyOrderConstants'
 import { addSideItem, createSideBuckets, isOptionName } from '../monthly/monthlyOrderCalculations'
 import { normalizeLabel, toDisplayString } from '../monthly/monthlyOrderFormatters'
+import { normalizeOrderForRead } from '../order/normalizeOrderForRead'
 
 const PAGE_SIZE = 1000
 
@@ -78,8 +79,8 @@ const normalizeMenuLabel = (name = '') => {
 export const buildMenuCounts = (orders = []) => {
   const counts = {}
   orders.forEach(order => {
-    const items = parseItems(order?.items)
-    items.forEach(item => {
+    const { normalizedItems } = normalizeOrderForRead(order)
+    normalizedItems.forEach(item => {
       const label = normalizeMenuLabel(item?.name || '')
       if (!label) return
       const qty = Number(item?.quantity || 1)
@@ -118,8 +119,8 @@ const isMainDishResponse = (value = '', title = '') => {
 export const buildSideBucketsFromOrders = (orders = []) => {
   const buckets = createSideBuckets()
   orders.forEach(order => {
-    const responses = parseResponses(order?.custom_responses)
-    responses.forEach(resp => {
+    const { normalizedCustomResponses } = normalizeOrderForRead(order)
+    normalizedCustomResponses.forEach(resp => {
       const respValue = toDisplayString(resp?.response)
       const respTitle = toDisplayString(resp?.title)
       if (respValue && !isMainDishResponse(respValue, respTitle)) addSideItem(respValue, buckets)
@@ -137,8 +138,8 @@ export const buildSideBucketsFromOrders = (orders = []) => {
 export const buildBifeCounts = (orders = []) => {
   const counts = {}
   orders.forEach(order => {
-    const items = parseItems(order?.items)
-    items.forEach(item => {
+    const { normalizedItems } = normalizeOrderForRead(order)
+    normalizedItems.forEach(item => {
       const rawName = toDisplayString(item?.name)
       const normalized = normalizeLabel(rawName)
       if (!normalized || !normalized.includes('bife')) return
