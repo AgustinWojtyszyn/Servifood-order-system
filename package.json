@@ -13,7 +13,7 @@
     "test:light": "node testing/load/test-load.js 10 5",
     "test:medium": "node testing/load/test-load.js 50 10",
     "test:heavy": "node testing/load/test-load.js 100 20",
-    "check:optimizations": "./check-optimizations.sh",
+    "check:optimizations": "./testing/scripts/check-optimizations.sh",
     "deploy": "npm run build && echo 'Build completado. Listo para deployment'"
   },
   "dependencies": {
