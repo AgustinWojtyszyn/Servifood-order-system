@@ -34,11 +34,11 @@ npm run test:heavy
 ```bash
 npm run test:load
 # O con parámetros:
-node test-load.js <usuarios> <pedidos_por_usuario>
+node testing/load/test-load.js <usuarios> <pedidos_por_usuario>
 
 # Ejemplos:
-node test-load.js 25 8     # 25 usuarios, 8 pedidos cada uno = 200 pedidos totales
-node test-load.js 200 15   # 200 usuarios, 15 pedidos cada uno = 3000 pedidos totales
+node testing/load/test-load.js 25 8     # 25 usuarios, 8 pedidos cada uno = 200 pedidos totales
+node testing/load/test-load.js 200 15   # 200 usuarios, 15 pedidos cada uno = 3000 pedidos totales
 ```
 
 ## 📊 Qué Hace el Script
@@ -173,7 +173,7 @@ Crea datos rápidamente para probar la UI.
 
 **Testing de Base de Datos**:
 ```bash
-node test-load.js 500 50
+node testing/load/test-load.js 500 50
 ```
 Prueba extrema: 25,000 pedidos para verificar límites.
 
@@ -261,4 +261,4 @@ $ npm run test:medium
 
 ---
 
-¿Dudas? Revisa el código del script: `test-load.js`
+¿Dudas? Revisa el código del script: `testing/load/test-load.js`
