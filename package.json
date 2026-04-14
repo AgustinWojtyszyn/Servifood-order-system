@@ -44,7 +44,6 @@
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/react": "^19.1.16",
-    "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
     "baseline-browser-mapping": "^2.9.19",
