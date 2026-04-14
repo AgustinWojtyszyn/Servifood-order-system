@@ -22,15 +22,18 @@ El proyecto está orientado a demostrar el desarrollo de una aplicación web ful
 
 ## Tecnologías utilizadas
 
-Frontend
+### Frontend
+
 - React
 - Vite
 - Tailwind CSS
 
-Servicios y backend
+### Servicios y backend
+
 - Supabase (base de datos y autenticación)
 
-Otras herramientas
+### Otras herramientas
+
 - React Router
 - Lucide Icons
 
@@ -51,6 +54,8 @@ Sirve como ejemplo de:
 ---
 
 ## Estructura general del proyecto
+
+
 public/
 src/
 supabase/
@@ -69,6 +74,7 @@ Algunos detalles técnicos y configuraciones internas fueron omitidos del reposi
 Agustin Wojtyszyn  
 Desarrollador Web Full Stack
 
+---
 
 ## Arquitectura general
 
@@ -88,9 +94,10 @@ La aplicación sigue una arquitectura web moderna:
 - Uso exclusivo para lectura
 - Prohibido usar en submit, edición o idempotencia
 
-Motivo:
+Motivo:  
 Unificar lectura sin afectar el contrato persistido ni romper pedidos existentes
 
+---
 
 ## Estado del proyecto
 
@@ -102,12 +109,10 @@ Incluye mejoras continuas en:
 - optimización del sistema
 - nuevas funcionalidades administrativas
 
-
-
+---
 
 ## Vista del sistema
 
 Interfaz principal del sistema de pedidos utilizada por los usuarios para seleccionar su menú diario.
+
 <img width="1920" height="4081" alt="screencapture-servifoodapp-site-order-ccp-2026-03-17-10_07_54" src="https://github.com/user-attachments/assets/fcb25a81-79cd-42a2-b555-1d64453f6e75" />
-
-
