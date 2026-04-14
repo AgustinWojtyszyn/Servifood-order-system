@@ -83,11 +83,12 @@ export default function EditOrderForm({ user, loading }) {
     }
     setSelectedItems(selected)
 
-    // Load custom responses
+    // Load custom responses (persisted shape: { id, title, response })
     const responses = {}
     if (order.custom_responses) {
       order.custom_responses.forEach(resp => {
-        responses[resp.option_id] = resp.response
+        if (!resp?.id) return
+        responses[resp.id] = resp.response
       })
     }
     setCustomResponses(responses)
@@ -282,7 +283,7 @@ export default function EditOrderForm({ user, loading }) {
           return true
         })
         .map(option => ({
-          option_id: option.id,
+          id: option.id,
           title: option.title,
           response: customResponses[option.id]
         }))
