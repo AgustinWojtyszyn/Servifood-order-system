@@ -37,3 +37,4 @@ venv/
 *.njsproj
 *.sln
 *.sw?
+.codex/
