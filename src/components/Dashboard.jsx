@@ -1,9 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../supabaseClient'
 import { usersService } from '../services/users'
-import { ShoppingCart, Clock, CheckCircle, Package, Eye, RefreshCw, Edit, Trash2, Archive } from 'lucide-react'
-import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import { isOrderEditable } from '../utils'
 import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
 import RequireUser from './RequireUser'
@@ -19,418 +16,77 @@ import ToastBanner from './dashboard/ToastBanner'
 import { notifyError, notifyInfo, notifySuccess, notifyWarning } from '../utils/notice'
 import { confirmAction } from '../utils/confirm'
 import {
-  ensureArray,
   getCustomSideFromResponses,
   summarizeOrderItems,
   serviceBadge,
-  parseDeliveryDate,
-  getStartOfWeek,
   formatWeeklyDate,
   getServiceLabel,
   getStatusLabel,
-  getMainMenuLabel
+  getMainMenuLabel,
+  formatOrderDate
 } from '../utils/dashboard/dashboardHelpers.jsx'
-
-const ORDER_START_HOUR = 9
-const ORDER_CUTOFF_HOUR = 22
-const ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'
-
-const formatHeaderStatus = (status = 'pending') => {
-  if (status === 'archived') return 'Confirmado'
-  if (status === 'cancelled') return 'Cancelado'
-  return 'Pendiente'
-}
-
-const buildItemsSummary = (items) => {
-  const list = ensureArray(items)
-  if (list.length === 0) return 'Sin items'
-  const displayItems = list.slice(0, 4).map((item) => {
-    const name = item?.name || 'Item'
-    const qty = item?.quantity || 1
-    return `${name} x${qty}`
-  })
-  const remaining = list.length - displayItems.length
-  return remaining > 0 ? `${displayItems.join(', ')}, +${remaining} más` : displayItems.join(', ')
-}
-
+import { useDashboardToast } from '../hooks/dashboard/useDashboardToast'
+import { useDashboardCountdown } from '../hooks/dashboard/useDashboardCountdown'
+import { useDashboardOrders } from '../hooks/dashboard/useDashboardOrders'
+import { useDashboardDerived } from '../hooks/dashboard/useDashboardDerived'
+import { useDashboardOrderActions } from '../hooks/dashboard/useDashboardOrderActions'
+import OrderRegisteredCard from './dashboard/OrderRegisteredCard'
 
 const Dashboard = ({ user, loading }) => {
-  const [orders, setOrders] = useState([])
-  const [ordersLoading, setOrdersLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [deleteConfirmOrder, setDeleteConfirmOrder] = useState(null)
-  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
-  const [toast, setToast] = useState(null)
-  const toastTimerRef = useRef(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    archived: 0
-  })
-  const [countdownLabel, setCountdownLabel] = useState('Cierra en')
-  const [countdownValue, setCountdownValue] = useState('--:--:--')
-  const [countdownTone, setCountdownTone] = useState('normal')
   const navigate = useNavigate()
+
+  const { toast, showToast } = useDashboardToast()
+  const { countdownLabel, countdownValue, countdownTone } = useDashboardCountdown()
+
+  const {
+    orders,
+    setOrders,
+    ordersLoading,
+    isAdmin,
+    refreshing,
+    stats,
+    fetchOrders,
+    calculateStats,
+    handleRefresh
+  } = useDashboardOrders({ user, db, usersService })
+
+  const {
+    weeklyOrders,
+    headerOrder,
+    headerStatus,
+    headerSummary,
+    deliveryText,
+    isDeliveringTomorrow
+  } = useDashboardDerived({ orders })
+
+  const {
+    deleteConfirmOrder,
+    deleteSubmitting,
+    handleEditOrder,
+    handleDeleteOrder,
+    confirmDeleteOrder,
+    closeDeleteConfirm,
+    handleViewOrder
+  } = useDashboardOrderActions({
+    orders,
+    setOrders,
+    fetchOrders,
+    calculateStats,
+    navigate,
+    db,
+    isOrderEditable,
+    EDIT_WINDOW_MINUTES,
+    confirmAction,
+    notifyError,
+    notifyInfo,
+    notifySuccess,
+    notifyWarning,
+    showToast
+  })
+
   useOverlayLock(!!deleteConfirmOrder)
 
-  useEffect(() => {
-    if (!user?.id) return
-    checkIfAdmin()
-  }, [user])
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    const formatCountdown = (ms) => {
-      const totalSeconds = Math.max(Math.floor(ms / 1000), 0)
-      const hours = Math.floor(totalSeconds / 3600)
-      const minutes = Math.floor((totalSeconds % 3600) / 60)
-      const seconds = totalSeconds % 60
-      const pad = (n) => String(n).padStart(2, '0')
-      return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
-    }
-
-    const updateCountdown = () => {
-      try {
-        const nowBA = new Date(new Date().toLocaleString('en-US', { timeZone: ORDER_TIMEZONE }))
-        const openTime = new Date(nowBA)
-        openTime.setHours(ORDER_START_HOUR, 0, 0, 0)
-        const closeTime = new Date(nowBA)
-        closeTime.setHours(ORDER_CUTOFF_HOUR, 0, 0, 0)
-
-        let label = 'Cierra en'
-        let target = closeTime
-
-        if (nowBA < openTime) {
-          label = 'Abre en'
-          target = openTime
-        } else if (nowBA >= closeTime) {
-          label = 'Abre en'
-          const nextOpen = new Date(openTime)
-          nextOpen.setDate(nextOpen.getDate() + 1)
-          target = nextOpen
-        }
-
-        const remainingMs = target - nowBA
-        let tone = 'normal'
-        if (label === 'Cierra en') {
-          if (remainingMs <= 15 * 60 * 1000) {
-            tone = 'urgent'
-          } else if (remainingMs < 60 * 60 * 1000) {
-            tone = 'warn'
-          }
-        }
-
-        setCountdownLabel(label)
-        setCountdownValue(formatCountdown(remainingMs))
-        setCountdownTone(tone)
-      } catch (err) {
-        console.error('Error updating countdown', err)
-      }
-    }
-
-    updateCountdown()
-    const interval = setInterval(updateCountdown, 1000)
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
-    if (!user?.id || isAdmin === null) return
-    if (isAdmin !== null) {
-      fetchOrders()
-      
-      // Auto-refresh cada 30 segundos
-      const interval = setInterval(() => {
-        fetchOrders(true) // true = silent refresh
-      }, 30000)
-
-      return () => clearInterval(interval)
-    }
-  }, [isAdmin, user])
-
-  const checkIfAdmin = async () => {
-    if (!user?.id) return
-    try {
-      const { data, error } = await usersService.getUserById(user.id)
-      if (!error && data) {
-        setIsAdmin(data?.role === 'admin')
-      }
-    } catch (err) {
-      console.error('Error checking admin status:', err)
-    }
-  }
-
-  const fetchOrders = async (silent = false) => {
-    if (!user?.id) return
-    try {
-      if (!silent) {
-        setOrdersLoading(true)
-      }
-      
-      // TODOS (admins y usuarios) solo ven sus propios pedidos en el Dashboard
-      const { data, error } = await db.getOrdersWithPersonKey({ userId: user.id })
-
-      if (error) {
-        console.error('Error fetching orders:', error)
-      } else {
-        // Resolver nombre/email por persona unificada (grupo o usuario suelto)
-        const { data: peopleData } = await db.getAdminPeopleUnified()
-        const personById = new Map(
-          (Array.isArray(peopleData) ? peopleData : []).map(person => [person.person_id, person])
-        )
-        
-        // Obtener fecha de hoy
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        
-        let ordersWithUserNames = (data || []).map(order => {
-          const displayStatus = order.status
-          const personId = order.person_key || (order.user_id ? String(order.user_id) : null)
-          const person = personId ? personById.get(personId) : null
-          const emails = Array.isArray(person?.emails) ? person.emails.filter(Boolean) : []
-          // Intentar obtener el nombre de diferentes fuentes
-          let userName = 'Usuario'
-          if (person) {
-            userName = person.display_name ||
-                      emails[0]?.split('@')[0] ||
-                      order.customer_name ||
-                      'Usuario'
-          } else if (order.customer_name) {
-            userName = order.customer_name
-          }
-          
-          return {
-            ...order,
-            displayStatus,
-            user_name: userName,
-            user_email: order.customer_email || emails[0] || ''
-          }
-        })
-        
-        setOrders(ordersWithUserNames)
-        calculateStats(ordersWithUserNames)
-      }
-    } catch (err) {
-      console.error('Error:', err)
-    } finally {
-      if (!silent) {
-        setOrdersLoading(false)
-      }
-    }
-  }
-
-  // Función para refrescar manualmente
-  const handleRefresh = async () => {
-    setRefreshing(true)
-    await fetchOrders()
-    setRefreshing(false)
-  }
-
-  const calculateStats = (ordersData) => {
-    // Obtener fecha de hoy a las 00:00:00
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    // Filtrar solo pedidos de hoy
-    const todayOrders = ordersData.filter(order => {
-      const orderDate = new Date(order.created_at)
-      orderDate.setHours(0, 0, 0, 0)
-      return orderDate.getTime() === today.getTime()
-    })
-    
-    const total = todayOrders.length
-    const pending = todayOrders.filter(order => (order.displayStatus || order.status) === 'pending').length
-    const archived = todayOrders.filter(order => 
-      (order.displayStatus || order.status) === 'archived'
-    ).length
-
-    setStats({ total, pending, archived })
-  }
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const handleMarkAsArchived = async (orderId) => {
-    const confirmed = await confirmAction({
-      title: 'Archivar pedido',
-      message: 'Este pedido pasará a estado archivado y no se podrá modificar.',
-      confirmText: 'Archivar'
-    })
-    if (confirmed) {
-      try {
-        const { error } = await db.updateOrderStatus(orderId, 'archived')
-        if (error) {
-          notifyError('Error al actualizar el pedido')
-        } else {
-          setOrders((prev) => {
-            if (!Array.isArray(prev)) return prev
-            const next = prev.map((order) =>
-              order?.id === orderId ? { ...order, status: 'archived', displayStatus: 'archived' } : order
-            )
-            calculateStats(next)
-            return next
-          })
-          setTimeout(() => fetchOrders(true), 1500)
-        }
-      } catch (err) {
-        console.error('Error:', err)
-        notifyError('Error al actualizar el pedido')
-      }
-    }
-  }
-
-  const handleStatusChange = async (orderId, newStatus, currentStatus) => {
-    if (currentStatus === newStatus) return // No hacer nada si es el mismo estado
-    
-    const statusNames = {
-      'pending': 'Pendiente',
-      'archived': 'Archivado',
-      'cancelled': 'Cancelado'
-    }
-    
-    const confirmed = await confirmAction({
-      title: 'Cambiar estado del pedido',
-      message: `¿Querés cambiar el estado a "${statusNames[newStatus]}"?`,
-      confirmText: 'Cambiar estado'
-    })
-    if (confirmed) {
-      try {
-        const { error } = await db.updateOrderStatus(orderId, newStatus)
-        if (error) {
-          notifyError('Error al actualizar el pedido')
-        } else {
-          setOrders((prev) => {
-            if (!Array.isArray(prev)) return prev
-            const next = prev.map((order) =>
-              order?.id === orderId ? { ...order, status: newStatus, displayStatus: newStatus } : order
-            )
-            calculateStats(next)
-            return next
-          })
-          setTimeout(() => fetchOrders(true), 1500)
-        }
-      } catch (err) {
-        console.error('Error:', err)
-        notifyError('Error al actualizar el pedido')
-      }
-    }
-  }
-
-  const handleArchiveAllPending = async () => {
-    const pendingOrders = orders.filter(order => order.status === 'pending')
-
-    if (pendingOrders.length === 0) {
-      notifyInfo('No hay pedidos pendientes para archivar')
-      return
-    }
-
-    const confirmed = await confirmAction({
-      title: 'Archivar pedidos pendientes',
-      message: `Se archivarán ${pendingOrders.length} pedidos pendientes.`,
-      confirmText: 'Archivar todos'
-    })
-    if (confirmed) {
-      try {
-        const promises = pendingOrders.map(order =>
-          db.updateOrderStatus(order.id, 'archived')
-        )
-
-        const results = await Promise.all(promises)
-        const errors = results.filter(r => r.error)
-
-        if (errors.length > 0) {
-          notifyWarning(`Se actualizaron ${pendingOrders.length - errors.length} pedidos. ${errors.length} fallaron.`)
-        } else {
-          notifySuccess(`✓ ${pendingOrders.length} pedidos archivados`)
-        }
-
-        setOrders((prev) => {
-          if (!Array.isArray(prev)) return prev
-          const next = prev.map((order) =>
-            order?.status === 'pending' ? { ...order, status: 'archived', displayStatus: 'archived' } : order
-          )
-          calculateStats(next)
-          return next
-        })
-        setTimeout(() => fetchOrders(true), 1500)
-      } catch (err) {
-        console.error('Error:', err)
-        notifyError('Error al actualizar los pedidos')
-      }
-    }
-  }
-
-  const handleEditOrder = (order) => {
-    if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
-      notifyInfo(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
-      return
-    }
-    // Navigate to edit order page with order data
-    navigate('/edit-order', { state: { order } })
-  }
-
-  const handleDeleteOrder = async (order) => {
-    if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
-      showToast(`Solo puedes eliminar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
-      return
-    }
-
-    setDeleteConfirmOrder(order)
-  }
-
-  const confirmDeleteOrder = async () => {
-    if (!deleteConfirmOrder) return
-    setDeleteSubmitting(true)
-    try {
-      const { error } = await db.deleteOrder(deleteConfirmOrder.id)
-      if (error) {
-        showToast('Error al eliminar el pedido: ' + error.message, 'error')
-        return
-      }
-      showToast('Pedido eliminado exitosamente')
-      fetchOrders() // Recargar pedidos
-      setDeleteConfirmOrder(null)
-    } catch (err) {
-      console.error('Error:', err)
-      showToast('Error al eliminar el pedido', 'error')
-    } finally {
-      setDeleteSubmitting(false)
-    }
-  }
-
-  const closeDeleteConfirm = () => {
-    if (deleteSubmitting) return
-    setDeleteConfirmOrder(null)
-  }
-
-  const showToast = (message, variant = 'info') => {
-    setToast({ message, variant })
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current)
-    }
-    toastTimerRef.current = setTimeout(() => {
-      setToast(null)
-    }, 3500)
-  }
-
-  const handleViewOrder = (orderId) => {
-    if (!orderId) return
-    navigate(`/orders/${orderId}`)
-  }
+  const formatDate = formatOrderDate
 
   if (ordersLoading) {
     return (
@@ -441,56 +97,6 @@ const Dashboard = ({ user, loading }) => {
       </RequireUser>
     )
   }
-
-  const startOfWeek = getStartOfWeek(new Date())
-  const endOfWeek = new Date(startOfWeek)
-  endOfWeek.setDate(endOfWeek.getDate() + 7)
-  const weeklyOrders = orders
-    .filter((order) => {
-      const deliveryDate = parseDeliveryDate(order.delivery_date)
-      return deliveryDate && deliveryDate >= startOfWeek && deliveryDate < endOfWeek
-    })
-    .sort(
-      (a, b) =>
-        parseDeliveryDate(b.delivery_date) -
-        parseDeliveryDate(a.delivery_date)
-    )
-
-  const sortedOrders = (Array.isArray(orders) ? [...orders] : []).sort(
-    (a, b) => new Date(b.created_at) - new Date(a.created_at)
-  )
-  const pendingOrder = sortedOrders.find(
-    (order) => (order.displayStatus || order.status) === 'pending'
-  )
-  const headerOrder = pendingOrder || sortedOrders[0] || null
-  const headerStatus = headerOrder ? formatHeaderStatus(headerOrder.displayStatus || headerOrder.status) : 'Sin pedido'
-  const headerSummary = headerOrder ? buildItemsSummary(headerOrder.items) : 'Sin pedido activo'
-  const deliveryText = (() => {
-    if (!headerOrder?.delivery_date) return 'Fecha de entrega sin definir'
-    const timeZone = 'America/Argentina/Buenos_Aires'
-    const now = new Date()
-    const nowLocal = new Date(now.toLocaleString('en-US', { timeZone }))
-    const today = new Date(nowLocal)
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const deliveryDate = new Date(headerOrder.delivery_date)
-    deliveryDate.setHours(0, 0, 0, 0)
-
-    if (deliveryDate.getTime() === today.getTime()) {
-      return nowLocal.getHours() < 12 ? 'Se entrega mañana' : 'Se entrega hoy'
-    }
-    if (deliveryDate.getTime() === tomorrow.getTime()) {
-      return 'Se entrega mañana'
-    }
-    return new Date(headerOrder.delivery_date).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  })()
-  const isDeliveringTomorrow = deliveryText === 'Se entrega mañana'
 
   return (
     <RequireUser user={user} loading={loading}>
@@ -515,62 +121,12 @@ const Dashboard = ({ user, loading }) => {
         <StatsCards stats={stats} />
       </div>
 
-      {headerOrder && (
-        <div
-          className={`rounded-2xl border bg-white px-4 py-4 sm:px-5 ${
-            isDeliveringTomorrow
-              ? 'border-amber-200 bg-amber-50/70 shadow-lg shadow-amber-200/50 px-5 py-5 sm:px-6 sm:py-6'
-              : 'border-slate-200'
-          }`}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Pedido registrado correctamente</h3>
-              <p className="text-sm text-gray-700 font-semibold mt-1">
-                Ya registramos tu pedido. Lo vas a recibir en la fecha indicada.
-              </p>
-              <p
-                className={`mt-1 ${
-                  isDeliveringTomorrow
-                    ? 'inline-flex items-center rounded-lg bg-amber-100 text-amber-900 px-4 py-2 text-base sm:text-lg font-black'
-                    : 'text-sm text-gray-600 font-semibold'
-                }`}
-              >
-                {isDeliveringTomorrow ? 'Se entrega mañana' : `Entrega: ${deliveryText}`}
-              </p>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              {getServiceLabel(headerOrder?.service)}
-            </div>
-          </div>
-          <p className="text-sm sm:text-base text-gray-800 font-semibold mt-3">
-            {headerSummary}
-          </p>
-          {(() => {
-            const optionsList = ensureArray(headerOrder?.custom_responses)
-            const optionsSummary = optionsList
-              .map((r) => {
-                const title = (r?.title || '').toString().trim()
-                const raw = r?.answer ?? r?.response ?? ''
-                const value = Array.isArray(raw) ? raw.filter(Boolean).join(', ') : String(raw || '').trim()
-                if (!title || !value) return null
-                return { title, value }
-              })
-              .filter(Boolean)
-            if (optionsSummary.length === 0) return null
-            return (
-              <div className="text-sm text-gray-700 font-semibold mt-2 space-y-1">
-                {optionsSummary.map((opt, idx) => (
-                  <p key={`${opt.title}-${idx}`}>{opt.title}: {opt.value}</p>
-                ))}
-              </div>
-            )
-          })()}
-          <p className="text-sm text-gray-600 font-semibold mt-1">
-            No tenés que hacer nada más por ahora.
-          </p>
-        </div>
-      )}
+      <OrderRegisteredCard
+        headerOrder={headerOrder}
+        headerSummary={headerSummary}
+        deliveryText={deliveryText}
+        isDeliveringTomorrow={isDeliveringTomorrow}
+      />
 
       <WeeklyOrdersSection
         weeklyOrders={weeklyOrders}

@@ -131,6 +131,34 @@ const getMainMenuLabel = (order) => {
   return summary.principal[0]?.name || summary.others[0]?.name || 'Menú no disponible'
 }
 
+const formatHeaderStatus = (status = 'pending') => {
+  if (status === 'archived') return 'Confirmado'
+  if (status === 'cancelled') return 'Cancelado'
+  return 'Pendiente'
+}
+
+const buildItemsSummary = (items) => {
+  const list = ensureArray(items)
+  if (list.length === 0) return 'Sin items'
+  const displayItems = list.slice(0, 4).map((item) => {
+    const name = item?.name || 'Item'
+    const qty = item?.quantity || 1
+    return `${name} x${qty}`
+  })
+  const remaining = list.length - displayItems.length
+  return remaining > 0 ? `${displayItems.join(', ')}, +${remaining} más` : displayItems.join(', ')
+}
+
+const formatOrderDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 export {
   ensureArray,
   getCustomSideFromResponses,
@@ -141,5 +169,8 @@ export {
   formatWeeklyDate,
   getServiceLabel,
   getStatusLabel,
-  getMainMenuLabel
+  getMainMenuLabel,
+  formatHeaderStatus,
+  buildItemsSummary,
+  formatOrderDate
 }
