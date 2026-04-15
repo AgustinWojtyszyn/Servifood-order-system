@@ -20,15 +20,10 @@ import OrderSuccessScreen from './order-form/OrderSuccessScreen'
 import OrderHoursBanner from './order-form/OrderHoursBanner'
 import { formatResponseValue } from '../utils/order/orderFormatters'
 import { notifyInfo } from '../utils/notice'
-import {
-  buildSelectedItemsList,
-  countSelectedItems
-} from '../utils/order/orderFormHelpers'
 import { useOrderSubmit } from '../hooks/useOrderSubmit'
 import {
   isGenneiaPostreOption,
   isBeverageOrDessertOption,
-  matchesOverrideKeyword,
   isDinnerOverrideValue,
   isOutsideWindow
 } from '../utils/order/orderBusinessRules'
@@ -43,10 +38,10 @@ import { useOrderLunchSelection } from '../hooks/orderForm/useOrderLunchSelectio
 import { useOrderDinnerSelection } from '../hooks/orderForm/useOrderDinnerSelection'
 import { useOrderRepeatPayload } from '../hooks/orderForm/useOrderRepeatPayload'
 import { useOrderSuggestionHandlers } from '../hooks/orderForm/useOrderSuggestionHandlers'
+import { useOrderCustomResponses } from '../hooks/orderForm/useOrderCustomResponses'
+import { useOrderTotals } from '../hooks/orderForm/useOrderTotals'
 import {
   clearDinnerOverrideResponses as clearDinnerOverrideResponsesPure,
-  getDinnerOverrideChoice as getDinnerOverrideChoicePure,
-  validateDinnerExclusivity as validateDinnerExclusivityPure
 } from '../utils/order/orderDinnerOverride'
 
 const OrderForm = ({ user, loading }) => {
@@ -257,70 +252,40 @@ const OrderForm = ({ user, loading }) => {
     })
   }
 
-  const handleCustomResponse = (optionId, value, type) => {
-    const option = visibleLunchOptions.find(opt => opt?.id === optionId)
-    const isCustomSideOption = (option?.title || '').toLowerCase().includes('guarn')
-    if (isCustomSideOption && !canChooseCustomSideForSelection) {
-      notifyInfo('La guarnición distinta no está disponible para esta opción.')
-      return
-    }
-
-    if (type === 'checkbox') {
-      // Para checkboxes, mantener un array de valores seleccionados
-      setCustomResponses(prev => {
-        const current = prev[optionId] || []
-        const isChecked = current.includes(value)
-        return {
-          ...prev,
-          [optionId]: isChecked
-            ? current.filter(v => v !== value)
-            : [...current, value]
-        }
-      })
-      return
-    }
-
-    if (type === 'multiple_choice') {
-      // Permitir deseleccionar si se hace clic en la opción ya elegida
-      setCustomResponses(prev => {
-        const current = prev[optionId]
-        return {
-          ...prev,
-          [optionId]: current === value ? null : value
-        }
-      })
-      return
-    }
-
-    // Para otros tipos, simplemente guardar el valor
-    setCustomResponses(prev => ({
-      ...prev,
-      [optionId]: value
-    }))
-  }
-
-  const setCustomResponsesDinnerSafe = (updater, optionMeta) => {
-    if (dinnerSpecialChoice && !isBeverageOrDessertOption(optionMeta)) {
-      notifyInfo('Si elegís la opción de cena, no podés seleccionar otras opciones.')
-      return
-    }
-    const isCustomSideOption = (optionMeta?.title || '').toLowerCase().includes('guarn')
-    if (isCustomSideOption && !canChooseCustomSideForDinner) {
-      notifyInfo('La guarnición distinta no está disponible para esta opción.')
-      return
-    }
-    setCustomResponsesDinner(prev => (typeof updater === 'function' ? updater(prev) : updater))
-  }
-
-  const getSelectedItemsList = () => buildSelectedItemsList(menuItems, selectedItems)
-
-  const calculateTotal = () => countSelectedItems(getSelectedItemsList())
-
-  const getSelectedItemsListDinner = () => buildSelectedItemsList(menuItems, selectedItemsDinner)
+  const { handleCustomResponse, setCustomResponsesDinnerSafe } = useOrderCustomResponses({
+    visibleLunchOptions,
+    setCustomResponses,
+    notifyInfo,
+    canChooseCustomSideForSelection,
+    dinnerSpecialChoice,
+    setCustomResponsesDinner,
+    isBeverageOrDessertOption,
+    canChooseCustomSideForDinner
+  })
 
   const clearDinnerOverrideResponses = () => {
     setCustomResponsesDinner(prev => clearDinnerOverrideResponsesPure({ prevResponses: prev, isDinnerOverrideValue }))
   }
+
+  const {
+    getSelectedItemsList,
+    getSelectedItemsListDinner,
+    calculateTotal,
+    calculateTotalDinner,
+    getDinnerOverrideChoice,
+    validateDinnerExclusivity,
+    hasAnySelectedItems
+  } = useOrderTotals({
+    menuItems,
+    selectedItems,
+    selectedItemsDinner,
+    dinnerSpecialChoice,
+    customResponsesDinner,
+    visibleDinnerOptions,
+    selectedTurns,
+    dinnerEnabled,
+    dinnerMenuEnabled
+  })
 
   const {
     handleItemSelectDinner,
@@ -336,30 +301,6 @@ const OrderForm = ({ user, loading }) => {
     clearDinnerOverrideResponses,
     notifyInfo
   })
-
-  const getDinnerOverrideChoice = () => getDinnerOverrideChoicePure({
-    dinnerSpecialChoice,
-    customResponsesDinner,
-    visibleDinnerOptions,
-    matchesOverrideKeyword
-  })
-
-  const calculateTotalDinner = () => {
-    const base = countSelectedItems(getSelectedItemsListDinner())
-    if (base > 0) return base
-    return getDinnerOverrideChoice() ? 1 : 0
-  }
-
-  const validateDinnerExclusivity = () => {
-    const itemsCount = countSelectedItems(getSelectedItemsListDinner())
-    const overrideChoice = getDinnerOverrideChoice()
-    return validateDinnerExclusivityPure({ itemsCount, overrideChoice })
-  }
-
-  const hasLunchSelection = selectedTurns.lunch && getSelectedItemsList().length > 0
-  const hasDinnerSelection =
-    selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled && (getSelectedItemsListDinner().length > 0 || !!getDinnerOverrideChoice())
-  const hasAnySelectedItems = hasLunchSelection || hasDinnerSelection
 
   const { handleRepeatSuggestion, handleDismissSuggestion } = useOrderSuggestionHandlers({
     suggestion,
