@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ShoppingCart } from 'lucide-react'
 import RequireUser from './RequireUser'
@@ -40,6 +40,7 @@ import { useOrderRepeatPayload } from '../hooks/orderForm/useOrderRepeatPayload'
 import { useOrderSuggestionHandlers } from '../hooks/orderForm/useOrderSuggestionHandlers'
 import { useOrderCustomResponses } from '../hooks/orderForm/useOrderCustomResponses'
 import { useOrderTotals } from '../hooks/orderForm/useOrderTotals'
+import { useOrderFormEffects } from '../hooks/orderForm/useOrderFormEffects'
 import {
   clearDinnerOverrideResponses as clearDinnerOverrideResponsesPure,
 } from '../utils/order/orderDinnerOverride'
@@ -182,28 +183,19 @@ const OrderForm = ({ user, loading }) => {
     setSuggestionLoading
   })
 
-  useEffect(() => {
-    // Redirigir a la selección si llega un slug desconocido
-    if (companySlugParam && !COMPANY_CATALOG[rawCompanySlug]) {
-      navigate('/order', { replace: true })
-    }
-  }, [companySlugParam, navigate, rawCompanySlug])
-
-  useEffect(() => {
-    if (!dinnerMenuSpecial) {
-      setDinnerSpecialChoice(null)
-    }
-  }, [dinnerMenuSpecial])
-
-  useEffect(() => {
-    const defaultLocation = locations[0] || ''
-    setFormData(prev => {
-      if (!prev.location || !locations.includes(prev.location)) {
-        return { ...prev, location: defaultLocation }
-      }
-      return prev
-    })
-  }, [locations])
+  useOrderFormEffects({
+    companySlugParam,
+    rawCompanySlug,
+    companyCatalog: COMPANY_CATALOG,
+    navigate,
+    dinnerMenuSpecial,
+    setDinnerSpecialChoice,
+    locations,
+    setFormData,
+    setCustomResponses,
+    success,
+    playSuccess: Sound.playSuccess
+  })
 
   useOrderRepeatPayload({
     locationState,
@@ -221,16 +213,6 @@ const OrderForm = ({ user, loading }) => {
     setMode,
     setFormData
   })
-
-  useEffect(() => {
-    setCustomResponses({})
-  }, [rawCompanySlug])
-
-  useEffect(() => {
-    if (success) {
-      Sound.playSuccess()
-    }
-  }, [success])
 
   // Genneia postre/fruta moved to useGenneiaPostreRules
 
