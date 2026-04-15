@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ShoppingCart } from 'lucide-react'
 import RequireUser from './RequireUser'
-import { COMPANY_CATALOG, COMPANY_LIST } from '../constants/companyConfig'
+import { COMPANY_CATALOG } from '../constants/companyConfig'
 import { Sound } from '../utils/Sound'
 import OrderErrorBanner from './order-form/OrderErrorBanner'
 import OrderFormHeader from './order-form/OrderFormHeader'
@@ -25,7 +25,6 @@ import {
   countSelectedItems
 } from '../utils/order/orderFormHelpers'
 import { useOrderSubmit } from '../hooks/useOrderSubmit'
-import { buildResponsesMap, mapOrderItemsToSelection } from '../utils/order/orderSelectionHelpers'
 import {
   isGenneiaPostreOption,
   isBeverageOrDessertOption,
@@ -33,9 +32,22 @@ import {
   isDinnerOverrideValue,
   isOutsideWindow
 } from '../utils/order/orderBusinessRules'
-import { canChooseCustomSide } from '../utils/order/orderCustomSideRules'
-import { getMenuDish } from '../utils/order/menuDisplay'
 import { useOrderBootstrap } from '../hooks/useOrderBootstrap'
+import { useOrderCompany } from '../hooks/orderForm/useOrderCompany'
+import { useGenneiaPostreDay } from '../hooks/orderForm/useGenneiaPostreDay'
+import { useGenneiaPostreRules } from '../hooks/orderForm/useGenneiaPostreRules'
+import { useCustomSideGuards } from '../hooks/orderForm/useCustomSideGuards'
+import { useLunchOptionsUI } from '../hooks/orderForm/useLunchOptionsUI'
+import { useDinnerMenuItemsUI } from '../hooks/orderForm/useDinnerMenuItemsUI'
+import { useOrderLunchSelection } from '../hooks/orderForm/useOrderLunchSelection'
+import { useOrderDinnerSelection } from '../hooks/orderForm/useOrderDinnerSelection'
+import { useOrderRepeatPayload } from '../hooks/orderForm/useOrderRepeatPayload'
+import { useOrderSuggestionHandlers } from '../hooks/orderForm/useOrderSuggestionHandlers'
+import {
+  clearDinnerOverrideResponses as clearDinnerOverrideResponsesPure,
+  getDinnerOverrideChoice as getDinnerOverrideChoicePure,
+  validateDinnerExclusivity as validateDinnerExclusivityPure
+} from '../utils/order/orderDinnerOverride'
 
 const OrderForm = ({ user, loading }) => {
   const [menuItems, setMenuItems] = useState([])
@@ -66,7 +78,6 @@ const OrderForm = ({ user, loading }) => {
   const [suggestionLoading, setSuggestionLoading] = useState(false)
   const [suggestionSummary, setSuggestionSummary] = useState('')
   const [suggestionMode, setSuggestionMode] = useState('last')
-  const repeatAppliedRef = useRef(false)
   const [dinnerMenuEnabled, setDinnerMenuEnabled] = useState(() => {
     if (typeof window === 'undefined') return false
     const stored = localStorage.getItem('dinner_menu_enabled')
@@ -75,48 +86,18 @@ const OrderForm = ({ user, loading }) => {
   })
   const navigate = useNavigate()
   const locationState = useLocation()
-  const { companySlug: companySlugParam } = useParams()
-  const [searchParams] = useSearchParams()
-  const recommendedCompany = typeof window !== 'undefined'
-    ? window.localStorage.getItem('lastCompany')
-    : null
-  const defaultCompanySlug = recommendedCompany || COMPANY_LIST[0]?.slug || 'laja'
-  const rawCompanySlug = (companySlugParam || searchParams.get('company') || defaultCompanySlug || '')
-    .trim()
-    .toLowerCase()
-  const companyConfig = COMPANY_CATALOG[rawCompanySlug] || COMPANY_CATALOG[defaultCompanySlug]
-  const companyOptionsSlug = (companyConfig?.optionsSourceSlug || companyConfig?.slug || rawCompanySlug || '')
-    .trim()
-    .toLowerCase()
-  const isGenneia = (companyConfig?.slug || rawCompanySlug || '').toLowerCase() === 'genneia'
-  const isGenneiaPostreOptionLocal = (option = {}) => isGenneiaPostreOption(isGenneia, option)
-  const argentinaWeekday = useMemo(() => {
-    try {
-      return new Intl.DateTimeFormat('es-AR', { weekday: 'long', timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date())
-    } catch (err) {
-      return new Date().toLocaleDateString('es-AR', { weekday: 'long' })
-    }
-  }, [])
-  const normalizedWeekday = useMemo(
-    () => (argentinaWeekday || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
-    [argentinaWeekday]
-  )
-  const isGenneiaPostreDay = isGenneia && (normalizedWeekday === 'lunes' || normalizedWeekday === 'miercoles')
-  const locations = useMemo(
-    () => companyConfig?.locations || COMPANY_LIST[0]?.locations || [],
-    [companyConfig]
-  )
 
-  useEffect(() => {
-    try {
-      if (typeof window === 'undefined') return
-      if (companyConfig?.slug) {
-        window.localStorage.setItem('lastCompany', companyConfig.slug)
-      }
-    } catch (err) {
-      // no-op: fallback sin persistencia
-    }
-  }, [companyConfig?.slug])
+  const {
+    companySlugParam,
+    rawCompanySlug,
+    companyConfig,
+    companyOptionsSlug,
+    isGenneia,
+    locations
+  } = useOrderCompany()
+
+  const isGenneiaPostreOptionLocal = (option = {}) => isGenneiaPostreOption(isGenneia, option)
+  const { isGenneiaPostreDay } = useGenneiaPostreDay({ isGenneia })
 
   const activeOptions = useMemo(
     () => customOptionsLunch.filter(opt => opt.active),
@@ -129,98 +110,38 @@ const OrderForm = ({ user, loading }) => {
     [activeOptions]
   )
 
-  const customSideOptionIds = useMemo(
-    () => visibleLunchOptions
-      .filter(opt => (opt?.title || '').toLowerCase().includes('guarn'))
-      .map(opt => opt.id),
-    [visibleLunchOptions]
-  )
-
-  const canChooseCustomSideForSelection = useMemo(() => {
-    const selectedList = buildSelectedItemsList(menuItems, selectedItems)
-    if (!selectedList.length) return false
-    return selectedList.every(item => canChooseCustomSide(item))
-  }, [menuItems, selectedItems])
-
-  const lunchOptionsUI = useMemo(() => {
-    return visibleLunchOptions.map(option => {
-      const isPostreGroup = isGenneia && option.title?.toLowerCase().includes('postre')
-      const isCustomSideOption = (option.title || '').toLowerCase().includes('guarn')
-      const customSideBlocked = isCustomSideOption && !canChooseCustomSideForSelection
-      const helperPostreContent = isPostreGroup ? (
-        <>
-          Solo elegí <b>Postre del día</b> lunes y miércoles (entrega martes y jueves). El resto de los días marcá <b>Fruta</b>. Los martes, jueves y viernes el postre queda deshabilitado.
-        </>
-      ) : null
-      const choices = (option.options || []).map(opt => {
-        const isSelected = customResponses[option.id] === opt
-        const isChecked = (customResponses[option.id] || []).includes(opt)
-        const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
-        const isDisabled = (isPostreOption && !isGenneiaPostreDay) || customSideBlocked
-        return {
-          value: opt,
-          isSelected,
-          isChecked,
-          isDisabled,
-          showUnavailableLabel: isPostreOption && !isGenneiaPostreDay
-        }
-      })
-        return {
-          id: option.id,
-          title: option.title,
-          required: option.required,
-          type: option.type,
-          helperPostreContent,
-          choices,
-          textValue: option.type === 'text' ? (customResponses[option.id] || '') : '',
-          isDisabled: customSideBlocked
-        }
-      })
-  }, [visibleLunchOptions, customResponses, isGenneia, isGenneiaPostreDay, canChooseCustomSideForSelection])
-
-  const dinnerMenuItemsUI = useMemo(() => {
-    return menuItems.map((item, index) => {
-      const isSelected = !!selectedItemsDinner[item.id]
-      const slotIndex = Number.isFinite(item?.slotIndex) ? item.slotIndex : index
-      const isMain = slotIndex === 0
-      const hasMainSelected = Object.keys(selectedItemsDinner).some(id => {
-        if (!selectedItemsDinner[id]) return false
-        const found = menuItems.find(mi => mi.id === id)
-        const foundIndex = menuItems.indexOf(found)
-        const foundSlot = Number.isFinite(found?.slotIndex) ? found.slotIndex : foundIndex
-        return foundSlot === 0
-      })
-      const isDisabled = isMain ? hasMainSelected && !isSelected : false
-      return {
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        isSelected,
-        isDisabled
-      }
-    })
-  }, [menuItems, selectedItemsDinner])
-
   // Opciones visibles para cena (incluye comunes + solo cena; se vacía si el usuario no tiene cena habilitada)
   const visibleDinnerOptions = useMemo(() => {
     if (!dinnerEnabled) return []
     return customOptionsDinner.filter(opt => opt.active)
   }, [customOptionsDinner, dinnerEnabled])
 
-  const dinnerCustomSideOptionIds = useMemo(
-    () => visibleDinnerOptions
-      .filter(opt => (opt?.title || '').toLowerCase().includes('guarn'))
-      .map(opt => opt.id),
-    [visibleDinnerOptions]
-  )
+  const {
+    canChooseCustomSideForSelection,
+    canChooseCustomSideForDinner
+  } = useCustomSideGuards({
+    isGenneia,
+    selectedTurns,
+    menuItems,
+    selectedItems,
+    selectedItemsDinner,
+    visibleLunchOptions,
+    visibleDinnerOptions,
+    setCustomResponses,
+    setCustomResponsesDinner
+  })
 
-  const canChooseCustomSideForDinner = useMemo(() => {
-    if (!isGenneia) return true
-    if (!selectedTurns.dinner) return true
-    const selectedList = buildSelectedItemsList(menuItems, selectedItemsDinner)
-    if (!selectedList.length) return false
-    return selectedList.every(item => canChooseCustomSide(item))
-  }, [isGenneia, selectedTurns.dinner, menuItems, selectedItemsDinner])
+  const lunchOptionsUI = useLunchOptionsUI({
+    visibleLunchOptions,
+    customResponses,
+    isGenneia,
+    isGenneiaPostreDay,
+    canChooseCustomSideForSelection
+  })
+
+  const dinnerMenuItemsUI = useDinnerMenuItemsUI({ menuItems, selectedItemsDinner })
+
+  // Custom side guards moved to useCustomSideGuards
 
   // Unificado (evitar duplicados por id)
   const allCustomOptions = useMemo(() => {
@@ -232,6 +153,16 @@ const OrderForm = ({ user, loading }) => {
       return true
     })
   }, [customOptionsLunch, customOptionsDinner])
+
+  useGenneiaPostreRules({
+    isGenneia,
+    isGenneiaPostreDay,
+    allCustomOptions,
+    visibleDinnerOptions,
+    isGenneiaPostreOption: isGenneiaPostreOptionLocal,
+    setCustomResponses,
+    setCustomResponsesDinner
+  })
 
   useOrderBootstrap({
     user,
@@ -279,45 +210,22 @@ const OrderForm = ({ user, loading }) => {
     })
   }, [locations])
 
-  useEffect(() => {
-    if (repeatAppliedRef.current) return
-    if (!menuItems.length) return
-    const payload = locationState?.state?.repeatPayload
-    if (!payload) return
-
-    const draftItems = Array.isArray(payload.items) ? payload.items : []
-    const draftResponses = Array.isArray(payload.custom_responses) ? payload.custom_responses : []
-    const draftService = (payload.service || 'lunch').toLowerCase()
-    const responsesMap = buildResponsesMap(draftResponses)
-
-    if (draftService === 'dinner' && dinnerEnabled && dinnerMenuEnabled) {
-      const selectedDinnerMap = mapOrderItemsToSelection(draftItems, menuItems)
-      setSelectedItems({})
-      setSelectedItemsDinner(selectedDinnerMap)
-      setCustomResponsesDinner(responsesMap)
-      setSelectedTurns({ lunch: false, dinner: true })
-      setMode('dinner')
-      if (selectedDinnerMap && Object.keys(selectedDinnerMap).length > 0) {
-        clearDinnerOverrideResponses()
-      }
-    } else {
-      const selectedMap = mapOrderItemsToSelection(draftItems, menuItems)
-      setSelectedItems(selectedMap)
-      setSelectedItemsDinner({})
-      setCustomResponses(responsesMap)
-      setCustomResponsesDinner({})
-      setSelectedTurns({ lunch: true, dinner: false })
-      setMode('lunch')
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      comments: payload.comments || '',
-      location: payload.location || locations[0] || prev.location
-    }))
-
-    repeatAppliedRef.current = true
-  }, [locationState, menuItems.length, dinnerEnabled, dinnerMenuEnabled, locations])
+  useOrderRepeatPayload({
+    locationState,
+    menuItems,
+    menuItemsLength: menuItems.length,
+    locations,
+    dinnerEnabled,
+    dinnerMenuEnabled,
+    setSelectedItems,
+    setSelectedItemsDinner,
+    setCustomResponses,
+    setCustomResponsesDinner,
+    setDinnerSpecialChoice,
+    setSelectedTurns,
+    setMode,
+    setFormData
+  })
 
   useEffect(() => {
     setCustomResponses({})
@@ -329,167 +237,18 @@ const OrderForm = ({ user, loading }) => {
     }
   }, [success])
 
-  useEffect(() => {
-    if (!isGenneia) return
-    setCustomResponses((prev) => {
-      let changed = false
-      const updated = { ...prev }
+  // Genneia postre/fruta moved to useGenneiaPostreRules
 
-      allCustomOptions.forEach((option) => {
-        if (!isGenneiaPostreOptionLocal(option)) return
-
-        const current = prev[option.id]
-        const isPostreSelected =
-          typeof current === 'string' && current.toLowerCase().includes('postre')
-        const frutaOption = option.options?.find((opt) => opt?.toLowerCase().includes('fruta'))
-
-        // Forzar fruta cuando no es día de postre o preseleccionar fruta si está vacío
-        const shouldForceFruta = !isGenneiaPostreDay && frutaOption
-        if (shouldForceFruta && (!current || isPostreSelected)) {
-          updated[option.id] = frutaOption
-          changed = true
-        }
-      })
-
-      return changed ? updated : prev
-    })
-  }, [isGenneia, isGenneiaPostreDay, allCustomOptions])
-
-  useEffect(() => {
-    if (!isGenneia) return
-    if (!visibleDinnerOptions.length) return
-    setCustomResponsesDinner((prev) => {
-      let changed = false
-      const updated = { ...prev }
-
-      visibleDinnerOptions.forEach((option) => {
-        if (!isGenneiaPostreOptionLocal(option)) return
-
-        const current = prev[option.id]
-        const frutaOption = option.options?.find((opt) => opt?.toLowerCase().includes('fruta'))
-        const shouldForceFruta = !isGenneiaPostreDay && frutaOption
-
-        if (Array.isArray(current)) {
-          const cleaned = current.filter((val) => !val?.toLowerCase().includes('postre'))
-          if (cleaned.length !== current.length) {
-            updated[option.id] = cleaned.length ? cleaned : (shouldForceFruta ? [frutaOption] : [])
-            changed = true
-          } else if (!current.length && shouldForceFruta) {
-            updated[option.id] = [frutaOption]
-            changed = true
-          }
-          return
-        }
-
-        const isPostreSelected =
-          typeof current === 'string' && current.toLowerCase().includes('postre')
-        if (shouldForceFruta && (!current || isPostreSelected)) {
-          updated[option.id] = frutaOption
-          changed = true
-        } else if (!isGenneiaPostreDay && isPostreSelected && !frutaOption) {
-          updated[option.id] = null
-          changed = true
-        }
-      })
-
-      return changed ? updated : prev
-    })
-  }, [isGenneia, isGenneiaPostreDay, visibleDinnerOptions, isGenneiaPostreOptionLocal])
-
-  useEffect(() => {
-    if (canChooseCustomSideForSelection) return
-    if (!customSideOptionIds.length) return
-    setCustomResponses(prev => {
-      let changed = false
-      const next = { ...prev }
-      customSideOptionIds.forEach((id) => {
-        if (next[id]) {
-          delete next[id]
-          changed = true
-        }
-      })
-      return changed ? next : prev
-    })
-  }, [canChooseCustomSideForSelection, customSideOptionIds])
-
-  useEffect(() => {
-    if (canChooseCustomSideForDinner) return
-    if (!dinnerCustomSideOptionIds.length) return
-    setCustomResponsesDinner(prev => {
-      let changed = false
-      const next = { ...prev }
-      dinnerCustomSideOptionIds.forEach((id) => {
-        if (next[id]) {
-          delete next[id]
-          changed = true
-        }
-      })
-      return changed ? next : prev
-    })
-  }, [canChooseCustomSideForDinner, dinnerCustomSideOptionIds])
+  // Custom side cleanup moved to useCustomSideGuards
 
   // bootstrap moved to useOrderBootstrap
 
-  const handleItemSelect = (itemId, isSelected) => {
-    const item = menuItems.find(m => m.id === itemId)
-    const dish = getMenuDish(item)
-    const isEnsalada = dish.toLowerCase().includes('ensalada')
-
-    if (isSelected) {
-      // Si está seleccionando
-      if (isEnsalada) {
-        // Para ensaladas, solo permitir 1
-        setSelectedItems(prev => ({
-          ...prev,
-          [itemId]: true
-        }))
-      } else {
-        // Para menús principales, verificar si ya hay uno seleccionado
-        const mainMenuSelected = menuItems
-          .filter(m => !getMenuDish(m).toLowerCase().includes('ensalada'))
-          .some(m => selectedItems[m.id])
-
-        if (mainMenuSelected && !selectedItems[itemId]) {
-          notifyInfo('Solo puedes seleccionar 1 menú por persona.')
-          return
-        }
-        setSelectedItems(prev => ({
-          ...prev,
-          [itemId]: true
-        }))
-      }
-    } else {
-      // Si está deseleccionando
-      setSelectedItems(prev => ({
-        ...prev,
-        [itemId]: false
-      }))
-    }
-  }
-
-  const handleItemSelectDinner = (itemId, isSelected) => {
-    const item = menuItems.find(m => m.id === itemId)
-    if (!item) return
-    const anySelected = Object.values(selectedItemsDinner).some(Boolean)
-
-    if (isSelected) {
-      if (dinnerSpecialChoice) {
-        notifyInfo('Si elegís la opción de cena, no podés seleccionar otro menú u opción.')
-        return
-      }
-      // Si ya hay algo elegido (menú u otra opción), bloquear
-      if (anySelected && !selectedItemsDinner[itemId]) {
-        notifyInfo('Solo puedes seleccionar 1 menú por persona en cena.')
-        return
-      }
-      // Limpiar overrides de cena si elige un plato
-      clearDinnerOverrideResponses()
-      setDinnerSpecialChoice(null)
-      setSelectedItemsDinner(prev => ({ ...prev, [itemId]: true }))
-    } else {
-      setSelectedItemsDinner(prev => ({ ...prev, [itemId]: false }))
-    }
-  }
+  const { handleItemSelect } = useOrderLunchSelection({
+    menuItems,
+    selectedItems,
+    setSelectedItems,
+    notifyInfo
+  })
 
   const handleFormChange = (e) => {
     setFormData({
@@ -560,57 +319,30 @@ const OrderForm = ({ user, loading }) => {
   const getSelectedItemsListDinner = () => buildSelectedItemsList(menuItems, selectedItemsDinner)
 
   const clearDinnerOverrideResponses = () => {
-    setCustomResponsesDinner(prev => {
-      const next = {}
-      Object.entries(prev || {}).forEach(([k, v]) => {
-        if (!isDinnerOverrideValue(v)) next[k] = v
-      })
-      return next
-    })
+    setCustomResponsesDinner(prev => clearDinnerOverrideResponsesPure({ prevResponses: prev, isDinnerOverrideValue }))
   }
 
-  const clearDinnerMenuSelections = () => {
-    setSelectedItemsDinner({})
-  }
+  const {
+    handleItemSelectDinner,
+    clearDinnerMenuSelections,
+    handleDinnerSpecialSelect
+  } = useOrderDinnerSelection({
+    menuItems,
+    selectedItemsDinner,
+    setSelectedItemsDinner,
+    dinnerSpecialChoice,
+    setDinnerSpecialChoice,
+    setCustomResponsesDinner,
+    clearDinnerOverrideResponses,
+    notifyInfo
+  })
 
-  const handleDinnerSpecialSelect = (value) => {
-    if (!value) return
-    if (dinnerSpecialChoice === value) {
-      setDinnerSpecialChoice(null)
-      return
-    }
-    setDinnerSpecialChoice(value)
-    setSelectedItemsDinner({})
-    setCustomResponsesDinner({})
-  }
-
-  const getDinnerOverrideChoice = () => {
-    if (dinnerSpecialChoice) return dinnerSpecialChoice
-    // 1) Detectar por respuestas (valor)
-    const responses = customResponsesDinner || {}
-    for (const value of Object.values(responses)) {
-      if (Array.isArray(value)) {
-        const match = value.find(v => matchesOverrideKeyword(v))
-        if (match) return match
-      } else if (matchesOverrideKeyword(value)) {
-        return value
-      }
-    }
-
-    // 2) Detectar por título de la pregunta (por si la opción es Sí/No)
-    if (Array.isArray(visibleDinnerOptions)) {
-      for (const opt of visibleDinnerOptions) {
-        if (!opt || !opt.id) continue
-        if (!matchesOverrideKeyword(opt.title || '')) continue
-
-        const resp = responses[opt.id]
-        if (Array.isArray(resp) && resp.length > 0) return resp[0]
-        if (typeof resp === 'string' && resp.trim() !== '') return resp
-      }
-    }
-
-    return null
-  }
+  const getDinnerOverrideChoice = () => getDinnerOverrideChoicePure({
+    dinnerSpecialChoice,
+    customResponsesDinner,
+    visibleDinnerOptions,
+    matchesOverrideKeyword
+  })
 
   const calculateTotalDinner = () => {
     const base = countSelectedItems(getSelectedItemsListDinner())
@@ -620,14 +352,8 @@ const OrderForm = ({ user, loading }) => {
 
   const validateDinnerExclusivity = () => {
     const itemsCount = countSelectedItems(getSelectedItemsListDinner())
-    const override = getDinnerOverrideChoice()
-    if (itemsCount > 0 && override) {
-      return 'Para cena elegí menú o la opción de cena, no ambas.'
-    }
-    if (itemsCount > 1) {
-      return 'Solo un menú por persona en cena.'
-    }
-    return null
+    const overrideChoice = getDinnerOverrideChoice()
+    return validateDinnerExclusivityPure({ itemsCount, overrideChoice })
   }
 
   const hasLunchSelection = selectedTurns.lunch && getSelectedItemsList().length > 0
@@ -635,58 +361,25 @@ const OrderForm = ({ user, loading }) => {
     selectedTurns.dinner && dinnerEnabled && dinnerMenuEnabled && (getSelectedItemsListDinner().length > 0 || !!getDinnerOverrideChoice())
   const hasAnySelectedItems = hasLunchSelection || hasDinnerSelection
 
-
-  const handleRepeatSuggestion = () => {
-    if (!suggestion) return
-
-    const suggestionService = (suggestion.service || 'lunch').toLowerCase()
-    const isDinnerSuggestion = suggestionService === 'dinner'
-    const responsesMap = buildResponsesMap(suggestion.custom_responses || [])
-    const hasDinnerOverride = Object.values(responsesMap).some((value) => isDinnerOverrideValue(value))
-
-    if (isGenneia && isDinnerSuggestion) {
-      const selectedDinnerMap = mapOrderItemsToSelection(suggestion.items || [], menuItems)
-      setSelectedItems({})
-      setSelectedItemsDinner(hasDinnerOverride ? {} : selectedDinnerMap)
-      if (hasDinnerOverride) {
-        const overrideValue = Object.values(responsesMap || {}).find((value) => isDinnerOverrideValue(value))
-        setDinnerSpecialChoice(typeof overrideValue === 'string' ? overrideValue : null)
-        setCustomResponsesDinner({})
-      } else {
-        setDinnerSpecialChoice(null)
-      }
-      setSelectedTurns({ lunch: false, dinner: true })
-      setMode('dinner')
-      if (!hasDinnerOverride) {
-        setCustomResponsesDinner(responsesMap)
-      }
-      setCustomResponses({})
-      if (!hasDinnerOverride) {
-        clearDinnerOverrideResponses()
-      }
-    } else {
-      const selectedMap = mapOrderItemsToSelection(suggestion.items || [], menuItems)
-      setSelectedItems(selectedMap)
-      setSelectedItemsDinner({})
-      setCustomResponses(responsesMap)
-      setCustomResponsesDinner({})
-      setDinnerSpecialChoice(null)
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      comments: suggestion.comments || '',
-      location: suggestion.location || locations[0] || prev.location
-    }))
-    setSuggestionVisible(false)
-  }
-
-  const handleDismissSuggestion = () => {
-    setSuggestionVisible(false)
-    setSuggestion(null)
-    setSuggestionSummary('')
-    setSuggestionMode('last')
-  }
+  const { handleRepeatSuggestion, handleDismissSuggestion } = useOrderSuggestionHandlers({
+    suggestion,
+    setSuggestionVisible,
+    setSuggestion,
+    setSuggestionSummary,
+    setSuggestionMode,
+    menuItems,
+    locations,
+    isGenneia,
+    setSelectedItems,
+    setSelectedItemsDinner,
+    setCustomResponses,
+    setCustomResponsesDinner,
+    setDinnerSpecialChoice,
+    setSelectedTurns,
+    setMode,
+    setFormData,
+    clearDinnerOverrideResponses
+  })
 
 
   const {
