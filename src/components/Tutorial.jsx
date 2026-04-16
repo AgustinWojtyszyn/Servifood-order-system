@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { X, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, BookOpen, CheckCircle } from 'lucide-react'
 import { useOverlayLock } from '../contexts/OverlayLockContext'
+import { TUTORIAL_STEPS } from './tutorial/tutorialSteps'
 
 const Tutorial = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0)
@@ -11,47 +12,16 @@ const Tutorial = ({ isOpen, onClose }) => {
     onClose()
   }
 
-  const steps = [
-    {
-      title: 'Paso 1: Entrá a Nuevo Pedido',
-      content: 'Abrí el menú lateral y tocá "Nuevo Pedido". Ese botón te lleva al flujo de carga. Si estás en celular, primero abrí el menú con el ícono de la esquina.',
-      image: '🧭'
-    },
-    {
-      title: 'Paso 2: Elegí la empresa',
-      content: 'Seleccioná la empresa correcta para tu pedido (La Laja, Ccp, Padre Bueno, Los Berros o Genneia). Esto es importante porque cada empresa puede mostrar opciones adicionales diferentes.',
-      image: '🏢'
-    },
-    {
-      title: 'Paso 3: Seleccioná tu menú',
-      content: 'Marcá el plato que querés pedir y completá las opciones que aparezcan (por ejemplo: guarniciones o preguntas obligatorias). Revisá que quede seleccionado lo que realmente querés enviar.',
-      image: '📝'
-    },
-    {
-      title: 'Paso 4: Completá tus datos',
-      content: 'Comprobá tu ubicación y tus datos personales: nombre, correo y teléfono. Si necesitás, agregá comentarios claros para cocina o entrega antes de confirmar.',
-      image: '👤'
-    },
-    {
-      title: 'Paso 5: Confirmá el pedido',
-      content: 'Cuando todo esté listo, presioná "Crear pedido". Si no falta ningún dato, vas a ver la pantalla de confirmación y tu pedido quedará registrado.',
-      image: '✅'
-    },
-    {
-      title: 'Paso 6: Revisá el estado',
-      content: 'Volvé al panel principal para seguir el estado de tu pedido (pendiente, en preparación o completado). Si querés repasar, podés abrir este tutorial de nuevo en cualquier momento.',
-      image: '🚀'
-    }
-  ]
+  const steps = TUTORIAL_STEPS
 
   if (!isOpen) return null
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
-    } else {
-      handleClose()
+      return
     }
+    handleClose()
   }
 
   const handlePrev = () => {
@@ -113,11 +83,14 @@ const Tutorial = ({ isOpen, onClose }) => {
               <button
                 key={index}
                 onClick={() => setCurrentStep(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === currentStep 
-                    ? 'w-8 bg-primary-600' 
-                    : 'w-2 bg-gray-300 hover:bg-gray-400'
+                className={`h-3 rounded-full transition-all shadow-sm ${
+                  index === currentStep
+                    ? 'bg-blue-600 w-8 shadow-md'
+                    : index < currentStep
+                    ? 'bg-green-500 w-3'
+                    : 'bg-gray-400 w-3'
                 }`}
+                title={`Ir al paso ${index + 1}`}
               />
             ))}
           </div>
@@ -147,8 +120,12 @@ const Tutorial = ({ isOpen, onClose }) => {
               onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #283593, #303f9f)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #1a237e, #283593)'}
             >
-              {currentStep === steps.length - 1 ? 'Finalizar' : 'Siguiente'}
-              {currentStep < steps.length - 1 && <ChevronRight className="h-5 w-5" />}
+              {currentStep === steps.length - 1 ? '¡Entendido!' : 'Siguiente'}
+              {currentStep === steps.length - 1 ? (
+                <CheckCircle className="h-5 w-5" />
+              ) : (
+                <ChevronRight className="h-5 w-5" />
+              )}
             </button>
           </div>
         </div>
