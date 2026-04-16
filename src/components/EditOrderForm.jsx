@@ -1,11 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { db } from '../supabaseClient'
-import { ordersService } from '../services/orders'
-import { Plus, Minus, X, Clock, AlertTriangle, Save, CheckCircle } from 'lucide-react'
-import { isOrderEditable } from '../utils'
+import { Clock, Save } from 'lucide-react'
 import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
-import { notifyInfo } from '../utils/notice'
 import RequireUser from './RequireUser'
 import { COMPANY_LOCATIONS } from '../constants/companyConfig'
 import EditOrderCustomOptionsSection from './edit-order/EditOrderCustomOptionsSection'
@@ -13,48 +9,46 @@ import EditOrderPersonalInfoSection from './edit-order/EditOrderPersonalInfoSect
 import EditOrderSummarySection from './edit-order/EditOrderSummarySection'
 import EditOrderMenuSection from './edit-order/EditOrderMenuSection'
 import { Sound } from '../utils/Sound'
-import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
-import { sortMenuItems } from '../utils/order/orderMenuHelpers'
-import { getMenuDish, withMenuSlotIndex } from '../utils/order/menuDisplay'
-
+import { useEditOrderBootstrap } from '../hooks/orderEdit/useEditOrderBootstrap'
+import { useEditOrderSelection } from '../hooks/orderEdit/useEditOrderSelection'
+import { useEditOrderSubmit } from '../hooks/orderEdit/useEditOrderSubmit'
 
 export default function EditOrderForm({ user, loading }) {
-  const [menuItems, setMenuItems] = useState([])
-  const [customOptions, setCustomOptions] = useState([])
-  const [customResponses, setCustomResponses] = useState({})
-  const [selectedItems, setSelectedItems] = useState({})
-  const [formData, setFormData] = useState({
-    location: '',
-    name: '',
-    email: '',
-    phone: '',
-    comments: ''
-  })
-  const [localLoading, setLocalLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
-  const location = useLocation()
-  const order = location.state?.order
+  const routerLocation = useLocation()
+  const order = routerLocation.state?.order
 
   const locations = COMPANY_LOCATIONS
 
-  useEffect(() => {
-    if (!order) {
-      navigate('/dashboard')
-      return
-    }
+  const {
+    menuItems,
+    customOptions,
+    customResponses,
+    selectedItems,
+    formData,
+    setFormData,
+    setCustomResponses,
+    setSelectedItems
+  } = useEditOrderBootstrap({ order, user, navigate })
 
-    if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
-      notifyInfo(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos de haberlo creado.`)
-      navigate('/dashboard')
-      return
-    }
+  const { handleItemSelect, getSelectedItemsList, total } = useEditOrderSelection({
+    service: order?.service,
+    dinnerOverrideChoice: customResponses?.['dinner-special'],
+    menuItems,
+    selectedItems,
+    setSelectedItems
+  })
 
-    fetchMenuItems()
-    fetchCustomOptions()
-    loadOrderData()
-  }, [order, navigate])
+  const selectedItemsList = getSelectedItemsList()
+
+  const { handleSubmit, error, success } = useEditOrderSubmit({
+    order,
+    user,
+    formData,
+    selectedItemsList,
+    customOptions,
+    customResponses
+  })
 
   useEffect(() => {
     if (success) {
@@ -62,133 +56,20 @@ export default function EditOrderForm({ user, loading }) {
     }
   }, [success])
 
-  const loadOrderData = () => {
-    if (!order) return
+  const handleFormChange = useCallback((e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }, [setFormData])
 
-    // Load form data
-    setFormData({
-      location: order.location || '',
-      name: order.customer_name || user?.user_metadata?.full_name || '',
-      email: order.customer_email || user?.email || '',
-      phone: order.customer_phone || '',
-      comments: order.comments || ''
-    })
+  const handleCustomResponse = useCallback((optionId, value, type) => {
+    const isSelectingDinnerSpecial = optionId === 'dinner-special'
+      && type === 'multiple_choice'
+      && customResponses?.[optionId] !== value
 
-    // Load selected items
-    const selected = {}
-    if (order.items) {
-      order.items.forEach(item => {
-        selected[item.id] = true
-      })
-    }
-    setSelectedItems(selected)
-
-    // Load custom responses (persisted shape: { id, title, response })
-    const responses = {}
-    if (order.custom_responses) {
-      order.custom_responses.forEach(resp => {
-        if (!resp?.id) return
-        responses[resp.id] = resp.response
-      })
-    }
-    setCustomResponses(responses)
-  }
-
-  const fetchMenuItems = async () => {
-    try {
-      const fallbackDate = getTomorrowISOInTimeZone()
-      const menuDate = order?.delivery_date || fallbackDate
-      const { data, error } = await db.getMenuItemsByDate(menuDate)
-
-      if (error) {
-        console.error('Error fetching menu:', error)
-        // Set default menu items if none exist
-        setMenuItems(withMenuSlotIndex(sortMenuItems([
-          { id: 1, name: 'Plato Principal 1', description: 'Delicioso plato principal' },
-          { id: 2, name: 'Plato Principal 2', description: 'Otro plato delicioso' },
-          { id: 3, name: 'Plato Principal 3', description: 'Plato especial del día' },
-          { id: 4, name: 'Plato Principal 4', description: 'Plato vegetariano' },
-          { id: 5, name: 'Plato Principal 5', description: 'Plato de la casa' },
-          { id: 6, name: 'Plato Principal 6', description: 'Plato recomendado' }
-        ])))
-      } else {
-        setMenuItems(withMenuSlotIndex(sortMenuItems(data || [])))
-      }
-    } catch (err) {
-      console.error('Error:', err)
-    }
-  }
-
-  const fetchCustomOptions = async () => {
-    try {
-      const fallbackDate = getTomorrowISOInTimeZone()
-      const deliveryDate = order?.delivery_date || fallbackDate
-      const service = order?.service || 'lunch'
-      const filterByMealScope = (options = [], meal) =>
-        (options || []).filter(opt => {
-          const scope = opt?.meal_scope || (opt?.dinner_only ? 'dinner' : 'both')
-          return scope === 'both' || scope === meal
-        })
-      const { data, error } = await db.getVisibleCustomOptions({
-        company: order?.company || order?.company_id || null,
-        meal: service,
-        date: deliveryDate
-      })
-      if (!error && data) setCustomOptions(filterByMealScope(data, service))
-      if (error) console.error('Error fetching visible custom options:', error)
-    } catch (err) {
-      console.error('Error fetching custom options:', err)
-    }
-  }
-
-  const handleItemSelect = (itemId, isSelected) => {
-    const item = menuItems.find(m => m.id === itemId)
-    const dish = getMenuDish(item)
-    const isEnsalada = dish.toLowerCase().includes('ensalada')
-
-    if (isSelected) {
-      // Si está seleccionando
-      if (isEnsalada) {
-        // Para ensaladas, solo permitir 1
-        setSelectedItems(prev => ({
-          ...prev,
-          [itemId]: true
-        }))
-      } else {
-        // Para menús principales, verificar si ya hay uno seleccionado
-        const mainMenuSelected = menuItems
-          .filter(m => !getMenuDish(m).toLowerCase().includes('ensalada'))
-          .some(m => selectedItems[m.id])
-
-        if (mainMenuSelected && !selectedItems[itemId]) {
-          notifyInfo('Solo puedes seleccionar 1 menú por persona.')
-          return
-        }
-
-        setSelectedItems(prev => ({
-          ...prev,
-          [itemId]: true
-        }))
-      }
-    } else {
-      // Si está deseleccionando
-      setSelectedItems(prev => ({
-        ...prev,
-        [itemId]: false
-      }))
-    }
-  }
-
-  const handleFormChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
-
-  const handleCustomResponse = (optionId, value, type) => {
     if (type === 'checkbox') {
-      // Para checkboxes, mantener un array de valores seleccionados
       setCustomResponses(prev => {
         const current = prev[optionId] || []
         const isChecked = current.includes(value)
@@ -203,7 +84,6 @@ export default function EditOrderForm({ user, loading }) {
     }
 
     if (type === 'multiple_choice') {
-      // Permitir deseleccionar si se hace clic en la opción ya elegida
       setCustomResponses(prev => {
         const current = prev[optionId]
         return {
@@ -211,116 +91,17 @@ export default function EditOrderForm({ user, loading }) {
           [optionId]: current === value ? null : value
         }
       })
+      if (isSelectingDinnerSpecial) {
+        setSelectedItems({})
+      }
       return
     }
 
-    // Para otros tipos, simplemente guardar el valor
     setCustomResponses(prev => ({
       ...prev,
       [optionId]: value
     }))
-  }
-
-  const getSelectedItemsList = () => {
-    return menuItems.filter(item => selectedItems[item.id] === true)
-  }
-
-  const calculateTotal = () => {
-    return getSelectedItemsList().length
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    if (!isOrderEditable(order?.created_at, EDIT_WINDOW_MINUTES)) {
-      setError(`Solo puedes editar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos de haberlo creado.`)
-      return
-    }
-
-    setLocalLoading(true)
-    setError('')
-    if (!user?.id) {
-      setError('No se pudo validar el usuario. Intenta nuevamente.')
-      setLocalLoading(false)
-      return
-    }
-
-    const selectedItemsList = getSelectedItemsList()
-
-    if (!formData.location) {
-      setError('Por favor selecciona un lugar de trabajo')
-      setLocalLoading(false)
-      return
-    }
-
-    if (selectedItemsList.length === 0) {
-      setError('Por favor selecciona al menos un plato del menú')
-      setLocalLoading(false)
-      return
-    }
-
-    // Validar opciones requeridas (solo las que están activas)
-    const missingRequiredOptions = customOptions
-      .filter(opt => opt.active && opt.required && !customResponses[opt.id])
-      .map(opt => opt.title)
-
-    if (missingRequiredOptions.length > 0) {
-      setError(`Por favor completa: ${missingRequiredOptions.join(', ')}`)
-      setLocalLoading(false)
-      return
-    }
-
-    try {
-      // Preparar respuestas personalizadas (solo las activas con respuesta válida)
-      const customResponsesArray = customOptions
-        .filter(opt => {
-          if (!opt.active) return false
-          const response = customResponses[opt.id]
-          // Verificar que la respuesta existe y no está vacía
-          if (!response) return false
-          if (Array.isArray(response) && response.length === 0) return false
-          if (typeof response === 'string' && response.trim() === '') return false
-          return true
-        })
-        .map(option => ({
-          id: option.id,
-          title: option.title,
-          response: customResponses[option.id]
-        }))
-
-      // Obtener el nombre del usuario desde auth
-      const userName = user?.user_metadata?.full_name ||
-                      formData.name ||
-                      user?.email?.split('@')[0] ||
-                      'Usuario'
-
-      const orderData = {
-        location: formData.location,
-        customer_name: userName, // Usar el nombre del usuario autenticado
-        customer_email: formData.email || user?.email,
-        customer_phone: formData.phone,
-        items: selectedItemsList.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: 1
-        })),
-        comments: formData.comments,
-        custom_responses: customResponsesArray
-      }
-
-      const { error } = await ordersService.updateOrder(order.id, orderData)
-
-      if (error) {
-        setError('Error al actualizar el pedido: ' + error.message)
-      } else {
-        setSuccess(true)
-      }
-    } catch (err) {
-      setError('Error al actualizar el pedido')
-    } finally {
-      setLocalLoading(false)
-    }
-  }
+  }, [customResponses, setCustomResponses, setSelectedItems])
 
   if (!order) {
     return (
@@ -406,8 +187,8 @@ export default function EditOrderForm({ user, loading }) {
           />
 
           <EditOrderSummarySection
-            items={getSelectedItemsList()}
-            total={calculateTotal()}
+            items={selectedItemsList}
+            total={total}
             onRemove={(itemId) => handleItemSelect(itemId, false)}
           />
 
@@ -455,7 +236,7 @@ export default function EditOrderForm({ user, loading }) {
               </button>
               <button
                 type="submit"
-                disabled={loading || getSelectedItemsList().length === 0}
+                disabled={loading || selectedItemsList.length === 0}
                 style={{
                   backgroundColor: '#16a34a',
                   color: '#ffffff',
