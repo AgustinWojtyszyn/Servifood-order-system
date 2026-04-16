@@ -115,10 +115,14 @@ const Tutorial = ({ isOpen, onClose }) => {
 
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-3 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-              style={{background: 'linear-gradient(to right, #1a237e, #283593)'}}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #283593, #303f9f)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #1a237e, #283593)'}
+              className={`flex items-center gap-2 px-6 py-3 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 ${
+                currentStep === steps.length - 1
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : ''
+              }`}
+              style={currentStep === steps.length - 1 ? {} : { background: 'linear-gradient(to right, #1a237e, #283593)' }}
+              onMouseEnter={(e) => currentStep !== steps.length - 1 && (e.currentTarget.style.background = 'linear-gradient(to right, #283593, #303f9f)')}
+              onMouseLeave={(e) => currentStep !== steps.length - 1 && (e.currentTarget.style.background = 'linear-gradient(to right, #1a237e, #283593)')}
             >
               {currentStep === steps.length - 1 ? '¡Entendido!' : 'Siguiente'}
               {currentStep === steps.length - 1 ? (
