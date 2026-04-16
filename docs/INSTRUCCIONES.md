@@ -1,29 +1,30 @@
 # 📋 Instrucciones de Configuración
 
+## Estado del documento
+
+- No implementado (repo): `fix-admin-permissions-FINAL.sql` no existe en este repo.
+- Implementado: exportación a Excel + compartir WhatsApp en `DailyOrders`.
+- Implementado: exportación usa `exceljs` (no `xlsx`).
+
 ## 🔐 Paso 1: Arreglar Permisos de Administradores
 
 Para que **TODOS los administradores** tengan los mismos permisos completos (sin distinción de superadmin):
 
-1. Ve a **Supabase Dashboard** → SQL Editor
-2. Copia y pega el contenido del archivo: `fix-admin-permissions-FINAL.sql`
-3. Haz clic en **Run** para ejecutar el script
-4. Deberías ver mensajes de confirmación indicando que las políticas se actualizaron correctamente
+Estado: **Ejemplo / configuración externa**.
+
+Este repo no trae un script único para policies de admin. Para alinear permisos:
+
+1. Ve a **Supabase Dashboard** → revisa RLS/policies de las tablas relevantes.
+2. Asegurate de que los usuarios admin tengan `role = 'admin'` en `public.users`.
+3. Proba el flujo en la app (menú, opciones, cleanup, exportaciones).
 
 ### ¿Qué hace este script?
 
-- ✅ **Elimina la columna `is_superadmin`** - Ya no existe distinción entre administradores
-- ✅ Crea una función `is_admin()` que verifica si un usuario tiene rol de admin
-- ✅ Da permisos completos a **TODOS** los administradores por igual
-- ✅ Los admin pueden:
-  - Editar el menú (agregar/modificar/eliminar platos)
-  - Cambiar roles de usuarios
-  - Ver y editar todos los pedidos
-  - Acceder a todas las funciones administrativas
+Estado: **No implementado en el repo** (se eliminó del doc porque el script no existe).
 
 ### ⚠️ Importante:
-- **NO HAY** más categoría "superadmin"
-- **TODOS** los usuarios con rol `admin` tienen exactamente los mismos permisos
-- El panel de administración se ve igual para todos los admin
+- La UI habilita acciones de admin, pero el enforcement real depende de Supabase (RLS/policies).
+- Ver doc: `docs/ADMIN-PERMISSIONS-FIX.md`
 
 ---
 
@@ -76,7 +77,7 @@ Para que **TODOS los administradores** tengan los mismos permisos completos (sin
 
 ## 📦 Dependencias Instaladas
 
-- `xlsx` (v0.18.5): Librería para generar archivos Excel compatibles
+- `exceljs`: Librería para generar archivos Excel (XLSX)
 
 ---
 
@@ -84,10 +85,9 @@ Para que **TODOS los administradores** tengan los mismos permisos completos (sin
 
 ### Archivos Modificados:
 - `src/components/DailyOrders.jsx`: Exportación XLSX + compartir WhatsApp
-- `package.json`: Dependencia xlsx agregada
+- `package.json`: Dependencia `exceljs` agregada
 
 ### Archivos Nuevos:
-- `fix-admin-permissions-FINAL.sql`: Script SQL para arreglar permisos
 - `INSTRUCCIONES.md`: Este archivo
 
 ---
@@ -95,7 +95,7 @@ Para que **TODOS los administradores** tengan los mismos permisos completos (sin
 ## 🐛 Solución de Problemas
 
 ### "Los administradores no pueden editar el menú"
-→ Ejecuta el script `fix-admin-permissions-FINAL.sql` en Supabase
+→ Revisa RLS/policies en Supabase (no hay script versionado en este repo).
 
 ### "El archivo Excel no se abre correctamente"
 → El formato XLSX es compatible con Excel 2016+. Si usas una versión más antigua, actualiza Excel o usa LibreOffice/Google Sheets

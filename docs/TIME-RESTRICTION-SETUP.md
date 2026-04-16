@@ -1,132 +1,60 @@
-# 🕐 Horario de pedidos 24/7
+# 🕐 Horario de pedidos (frontend)
 
 ## Estado actual
 
-- ✅ No hay límite horario: los pedidos se aceptan las 24 horas.
-- ✅ Frontend y backend ya no bloquean por hora.
-- ✅ Script vigente: `add-time-restriction-validation.sql` crea un trigger sin restricción y una política RLS permisiva.
+- **Implementado (frontend):** la app valida horario **09:00 a 22:00** (hora Buenos Aires) antes de crear pedidos.
+- **Parcial:** el horario también se muestra en UI (banners/header).
+- **No implementado (repo):** no hay script/migración versionada para enforcement en DB (no existe `add-time-restriction-validation.sql` en este repo).
 
 ## ¿Por qué cambió?
 
-Antes se bloqueaba a las 22:00, pero ahora se requiere operación continua. Se dejó el trigger/política para poder revertir rápidamente si se necesita otro horario.
+La versión anterior de este documento describía un esquema 24/7 con trigger/policy, pero esos archivos no están en el repo actual. Se actualiza para reflejar el comportamiento real: validación de horario en frontend.
 
 ### Cómo funciona hoy
 
 ```
-1️⃣ Frontend (OrderForm.jsx)     → sin validación de horario
-2️⃣ Política RLS (Supabase)      → `Allow orders 24/7` (USING/WITH CHECK true)
-3️⃣ Trigger (PostgreSQL)         → retorna NEW sin chequear hora
+1️⃣ Frontend (OrderForm)           → valida ventana 09:00–22:00
+2️⃣ Base de datos (Supabase/RLS)   → no documentada/versionada en este repo
 ```
 
-## 🚀 Cómo Aplicar
+## Implementado — Dónde está en el código
 
-### Paso 1: Abrir Supabase
-
-1. Ve a [supabase.com](https://supabase.com)
-2. Entra a tu proyecto
-3. Ve a **SQL Editor**
-
-### Paso 2: Ejecutar el Script
-
-1. Abre `add-time-restriction-validation.sql`
-2. Copia **TODO** el contenido
-3. Pega en SQL Editor
-4. Click en **Run**
-
-### Paso 3: Verificar
-
-Deberías ver en la consola:
-- ✅ Trigger creado: `enforce_order_time_limit`
-- ✅ Política creada: `Allow orders 24/7`
+- Constantes: `src/constants/orderRules.js`
+  - `ORDER_START_HOUR = 9`
+  - `ORDER_CUTOFF_HOUR = 22`
+  - `ORDER_TIMEZONE = 'America/Argentina/Buenos_Aires'`
+- Validación de submit (mensaje de error): `src/utils/order/orderValidation.js`
+- Mensaje visual de horario:
+  - `src/components/order-form/OrderHoursBanner.jsx`
+  - `src/components/dashboard/DashboardHeader.jsx`
 
 ## 🎯 Funcionamiento
 
-### Operación actual
+### Operación actual (frontend)
 ```
-Usuario crea pedido → ✅ PERMITIDO → Pedido creado exitosamente (cualquier hora)
-```
-
-## 🌍 Configurar Zona Horaria
-
-Por defecto usa: `America/Argentina/Buenos_Aires`
-
-Para cambiar, edita la línea en el script:
-```sql
--- Cambiar esto:
-AT TIME ZONE 'America/Argentina/Buenos_Aires'
-
--- Por tu zona horaria, ejemplo:
-AT TIME ZONE 'America/Mexico_City'
-AT TIME ZONE 'America/Santiago'
-AT TIME ZONE 'Europe/Madrid'
+Usuario crea pedido dentro de horario → ✅ PERMITIDO
+Usuario crea pedido fuera de horario → ❌ Bloqueado con mensaje “Pedidos disponibles de 09:00 a 22:00…”
 ```
 
-### Ver todas las zonas disponibles:
-```sql
-SELECT name FROM pg_timezone_names WHERE name LIKE 'America%';
-```
+## 🌍 Zona horaria
 
-## 🧪 Probar que Funciona
+Por defecto usa: `America/Argentina/Buenos_Aires` (ver `ORDER_TIMEZONE` en `src/constants/orderRules.js`).
 
-### Prueba 1: App (cualquier hora)
-Intenta crear un pedido desde la app:
-- ✅ Debería funcionar normalmente
+## 🔧 Cambiar el horario (cómo hacerlo de forma segura)
 
-### Prueba 2: Usando API directamente
-Intenta insertar directamente en SQL Editor:
-```sql
-INSERT INTO public.orders (user_id, location, customer_name, customer_email, items, total_items, status)
-VALUES (auth.uid(), 'Los Berros', 'Test', 'test@example.com', '[]'::jsonb, 0, 'pending');
-```
-- ✅ Debería funcionar (sin restricciones de horario)
-
-## 🔧 Volver a poner límite (si se necesita)
-
-1. Edita la función `check_order_time_limit` en `add-time-restriction-validation.sql` para comparar la hora y lanzar excepción.
-2. Cambia la política `Allow orders 24/7` por otra con `WITH CHECK (EXTRACT(HOUR ...) < HORA_LIMITE)`.
-3. Reejecuta el script completo en SQL Editor.
+1) Ajustar `ORDER_START_HOUR`, `ORDER_CUTOFF_HOUR` y/o `ORDER_TIMEZONE` en `src/constants/orderRules.js`.  
+2) Verificar que el mensaje/UI de horario quede consistente (banner/header).  
+3) (Opcional) Implementar enforcement en DB en Supabase (trigger/RLS) si necesitás que no se pueda bypassear. **Estado: Ejemplo** (no está versionado en este repo).
 
 ## 🛠️ Mantenimiento
 
-### Deshabilitar temporalmente:
-```sql
-DROP TRIGGER enforce_order_time_limit ON public.orders;
-DROP POLICY "Allow orders 24/7" ON public.orders;
-```
-
-### Reactivar:
-Vuelve a ejecutar el script completo.
-
-### Ver si está activo:
-```sql
--- Ver trigger
-SELECT trigger_name FROM information_schema.triggers 
-WHERE trigger_name = 'enforce_order_time_limit';
-
--- Ver política
-SELECT policyname FROM pg_policies 
-WHERE policyname = 'Allow orders 24/7';
-```
+Estado: **No aplica** (no hay scripts de DB en el repo).
 
 ## ⚡ Rendimiento
 
-- **Impacto**: Mínimo (< 1ms por pedido)
-- **Solo afecta**: Operaciones INSERT en `orders`
-- **No afecta**: Lectura de pedidos, updates, deletes
+La validación de frontend es O(1) por submit y no afecta lecturas.
 
 ## 🐛 Solución de Problemas
-
-### Error: "trigger already exists"
-```sql
-DROP TRIGGER IF EXISTS enforce_order_time_limit ON public.orders;
--- Luego vuelve a ejecutar el script
-```
-
-### Error: "policy already exists"
-```sql
-DROP POLICY IF EXISTS "Allow orders 24/7" ON public.orders;
--- Luego vuelve a ejecutar el script
-```
 
 ### Pedidos se bloquean a hora incorrecta
 - Verifica la zona horaria configurada
@@ -134,43 +62,16 @@ DROP POLICY IF EXISTS "Allow orders 24/7" ON public.orders;
 
 ## 📊 Comparación Antes/Después
 
-### ANTES ❌
-- Validación solo en frontend
-- Fácil de bypasear
-- Usuarios técnicos podían engañar al sistema
-- Sin protección real
-
-### DESPUÉS ✅
-- Validación en backend (PostgreSQL)
-- Imposible de bypasear
-- Protección a nivel de base de datos
-- Triple barrera de seguridad
+Estado: **Ejemplo**. Este repo solo garantiza validación en frontend.
 
 ## 💡 Notas Importantes
 
-1. **Zona Horaria del Servidor:**
-   - Supabase usa UTC por defecto
-   - El script convierte a tu zona horaria local
-   - Verifica que sea la correcta
-
-2. **Mensaje de Error:**
-   - El usuario verá el error del trigger
-   - Es claro y descriptivo
-   - Puedes personalizar el mensaje en el script
-
-3. **Excepciones:**
-   - No hay excepciones por rol
-   - Ni siquiera los admins pueden crear pedidos después de las 22:00
-   - Si necesitas excepciones, modifica el trigger
-
-4. **Logs:**
-   - Supabase registra todos los errores
-   - Puedes ver intentos de crear pedidos fuera de horario
-   - Ve a Logs > Database en Supabase Dashboard
+1) Esta validación es de frontend; un usuario técnico podría intentar bypassearla si no hay enforcement en DB.  
+2) El horario objetivo se define por `ORDER_TIMEZONE`; si usuarios están en otra zona horaria, el horario mostrado/esperado debe quedar claro.  
+3) Si necesitás excepciones por rol o reglas más estrictas, implementá enforcement en Supabase (RLS/trigger) y versionalo en `supabase/migrations/`.  
 
 ---
 
 **Creado**: 2025-11-11  
 **Versión**: 1.0  
-**Estado**: Listo para aplicar  
-**Prioridad**: Alta - Seguridad crítica
+**Estado**: Actualizado a “enforcement frontend” (sin scripts DB en repo)

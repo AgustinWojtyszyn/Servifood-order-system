@@ -1,5 +1,10 @@
 # Solución al Error: "Database error saving new user"
 
+## Estado del documento
+
+- No implementado (repo): este repo no incluye `supabase-setup-complete.sql`.
+- Ejemplo: la solución se aplica creando función + trigger manualmente en Supabase (SQL Editor).
+
 ## 🔴 Problema
 
 Al registrar un nuevo usuario aparece el error: **"Database error saving new user"**
@@ -16,7 +21,7 @@ Cuando un usuario se registra:
 
 ## ✅ Solución
 
-Debes ejecutar el script SQL completo en Supabase que crea un **trigger automático** para insertar usuarios.
+Debes crear un **trigger automático** en Supabase que inserte el usuario en `public.users` cuando se registra en `auth.users`.
 
 ### Pasos para Solucionar:
 
@@ -24,11 +29,9 @@ Debes ejecutar el script SQL completo en Supabase que crea un **trigger automát
 - Abre tu proyecto en [supabase.com](https://supabase.com)
 - Ve a **SQL Editor** (en el menú lateral izquierdo)
 
-#### 2. Ejecutar el Script
-- Abre el archivo `supabase-setup-complete.sql` de este proyecto
-- Copia TODO el contenido
-- Pégalo en el SQL Editor de Supabase
-- Haz clic en **Run** (o presiona Ctrl/Cmd + Enter)
+#### 2. Ejecutar el SQL (Ejemplo)
+
+Este repo no trae un archivo `supabase-setup-complete.sql`. Copia y pega el SQL de la sección siguiente (“Qué hace el trigger”) en el SQL Editor y ejecútalo.
 
 #### 3. Verificar que Funcionó
 Ejecuta esta consulta para verificar que el trigger se creó:
@@ -159,9 +162,9 @@ En Supabase:
 
 ## 🔗 Archivos Relacionados
 
-- `supabase-setup-complete.sql` - Script completo para ejecutar en Supabase
+- (No implementado) `supabase-setup-complete.sql` no existe en este repo.
 - `README.md` - Documentación general del proyecto
-- `COMO_CREAR_ADMIN.md` - Cómo crear el primer usuario administrador
+- `docs/COMO_CREAR_ADMIN.md` - Cómo crear el primer usuario administrador
 
 ## ✅ Resultado Esperado
 

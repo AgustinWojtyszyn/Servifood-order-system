@@ -1,5 +1,10 @@
 # 🔧 Pasos para Solucionar "Database error saving new user"
 
+## Estado del documento
+
+- No implementado (repo): este repo no incluye `supabase-setup-complete.sql`.
+- Ejemplo: la solución se aplica en Supabase creando la función + trigger manualmente desde SQL Editor.
+
 ## ⚡ SOLUCIÓN RÁPIDA (5 minutos)
 
 ### Paso 1: Ir a Supabase SQL Editor
@@ -7,11 +12,14 @@
 2. Selecciona tu proyecto
 3. En el menú lateral, haz clic en **SQL Editor**
 
-### Paso 2: Ejecutar el Script Completo
-1. Abre el archivo `supabase-setup-complete.sql` de este proyecto
-2. **Copia TODO el contenido** (Ctrl+A, Ctrl+C)
-3. **Pégalo en el SQL Editor** de Supabase
-4. Haz clic en **"Run"** (botón verde) o presiona **Ctrl + Enter**
+### Paso 2: Crear la función + trigger (Ejemplo)
+
+Este repo no trae un “setup completo” en un archivo SQL único. La forma segura es:
+
+1. Crear/actualizar la función `public.handle_new_user()`
+2. Crear el trigger `on_auth_user_created` que la ejecuta
+
+Podés usar como referencia el SQL incluido en `docs/SOLUCION_ERROR_REGISTRO.md` (sección “Qué hace el trigger”).
 
 ### Paso 3: Verificar que Funcionó
 Ejecuta esta consulta en el SQL Editor:
@@ -219,7 +227,7 @@ END $$;
 
 Marca con ✅ lo que ya verificaste:
 
-- [ ] Ejecuté el script `supabase-setup-complete.sql`
+- [ ] Creé/actualicé manualmente la función + trigger (no hay script versionado en este repo)
 - [ ] El trigger `on_auth_user_created` existe
 - [ ] La función `handle_new_user` existe
 - [ ] Las tablas `users`, `orders`, `menu_items` existen
@@ -248,7 +256,7 @@ DROP TABLE IF EXISTS public.users CASCADE;
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 
--- 3. Ejecutar de nuevo el script completo supabase-setup-complete.sql
+-- 3. Volver a crear la función + trigger manualmente (ver docs/SOLUCION_ERROR_REGISTRO.md)
 ```
 
 ---

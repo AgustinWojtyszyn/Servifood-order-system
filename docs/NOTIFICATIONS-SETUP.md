@@ -2,13 +2,14 @@
 
 ## ⚠️ Estado Actual
 
-El sistema de notificaciones está **deshabilitado temporalmente** porque la tabla `notifications` no existe en la base de datos.
+- **No implementado (DB/UI):** no hay tabla `notifications` versionada en el repo ni UI de campana.
+- **Implementado (hardening):** el código evita fallar cuando la tabla `notifications` no existe (acciones relacionadas quedan en “no-op” o comentadas).
 
 ## 📋 Síntomas
 
 Si intentas:
-- Eliminar un usuario
-- Limpiar todas las notificaciones desde el panel SuperAdmin
+- Eliminar un usuario (flujo admin)
+- Ejecutar código que intente borrar notificaciones
 
 Podrías haber visto el error:
 ```
@@ -17,55 +18,32 @@ Error: Could not find the table 'public.notifications' in the schema cache
 
 ## ✅ Solución Implementada
 
-Se ha comentado temporalmente el código que accede a la tabla `notifications`:
-- `deleteUser()` - Ya no intenta eliminar notificaciones del usuario
-- `deleteAllNotifications()` - Retorna éxito sin hacer nada
+Se desactivó/evitó el acceso directo a `notifications` para que la app funcione aunque la tabla no exista:
+
+- `db.deleteAllNotifications()` (en `src/supabaseClient.js`) retorna `{ data: null, error: null }` sin tocar DB.
+- En servicios de usuarios hay bloques comentados/guardados donde antes se intentaba borrar `notifications`.
 
 Esto permite que la aplicación funcione normalmente sin el sistema de notificaciones.
 
 ## 🚀 Cómo Habilitar las Notificaciones (Opcional)
 
-Si deseas activar el sistema completo de notificaciones:
+### Estado: Ejemplo (no hay script en este repo)
 
-### Paso 1: Ejecutar el Script SQL
+En este repo **no existe** un archivo `add-notifications.sql` ni una migración equivalente.
 
-1. Ve a tu proyecto en **Supabase Dashboard**
-2. Navega a **SQL Editor**
-3. Abre el archivo `add-notifications.sql` de este proyecto
-4. Copia y pega todo el contenido en el editor SQL
-5. Haz clic en **Run** (Ejecutar)
+Si querés implementar notificaciones, necesitás (fuera de este repo):
 
-### Paso 2: Descomentar el Código
+1. Crear tabla `notifications` + índices.
+2. Definir RLS/policies para que cada usuario lea/actualice sus notificaciones.
+3. Definir cómo se crean (trigger en `orders` o job/función server-side).
+4. Implementar UI (campana) y suscripciones (realtime) si aplica.
 
-Abre `src/supabaseClient.js` y:
+### Paso 2: Conectar el código (Ejemplo)
 
-1. **En la función `deleteUser`** (línea ~110):
-   ```javascript
-   // Descomentar esto:
-   /*
-   const { error: notificationsError } = await supabase
-     .from('notifications')
-     .delete()
-     .eq('user_id', userId)
+- Reemplazar los “no-op”/bloques comentados por operaciones reales contra `notifications`.
+- Agregar/crear un componente de UI (hoy no existe uno en `src/components/`).
 
-   if (notificationsError) return { error: notificationsError }
-   */
-   ```
-
-2. **En la función `deleteAllNotifications`** (línea ~138):
-   ```javascript
-   // Reemplazar esto:
-   return { data: null, error: null }
-   
-   // Por esto:
-   const { data, error } = await supabase
-     .from('notifications')
-     .delete()
-     .neq('id', '00000000-0000-0000-0000-000000000000')
-   return { data, error }
-   ```
-
-### Paso 3: Reiniciar el Servidor
+### Paso 3: Reiniciar
 
 ```bash
 npm run dev
@@ -73,45 +51,30 @@ npm run dev
 
 ## 📦 Características del Sistema de Notificaciones
 
-Una vez habilitado, tendrás:
-
-✨ **Notificaciones automáticas** cuando un pedido es entregado
-🔔 **Campana de notificaciones** en el header
-📱 **Notificaciones en tiempo real** mediante WebSocket
-👀 **Contador de no leídas** visible para el usuario
-✅ **Marcar como leídas** individual o todas a la vez
+Estado: **No implementado** en el repo actual.
 
 ## 🔍 Verificar que Funciona
 
-Después de habilitar:
-
-1. Marca un pedido como "Completado" desde el Dashboard Admin
-2. El usuario debería recibir una notificación automáticamente
-3. La campana de notificaciones mostrará el contador actualizado
+Estado: **Ejemplo** (depende de implementación externa).
 
 ## 💡 Notas Importantes
 
 - **Sin notificaciones**: La app funciona perfectamente sin este sistema
-- **Seguridad**: Las políticas RLS aseguran que cada usuario solo ve sus notificaciones
-- **Rendimiento**: Los índices optimizan las consultas
-- **Triggers**: Se crean notificaciones automáticas al cambiar estado de pedidos
+- **Seguridad/RLS**: no está versionado en este repo; depende de Supabase.
 
 ## 🆘 Problemas Comunes
 
 ### "Error creating notification"
-- Verifica que ejecutaste el script SQL completo
-- Revisa que las políticas RLS estén habilitadas
+- Implementá la tabla/policies y verificá RLS en Supabase.
 
 ### "No recibo notificaciones"
-- Asegúrate de haber descomentado el código
-- Verifica que el trigger esté creado: `trigger_notify_order_delivered`
+- Asegurate de tener UI + suscripción + un mecanismo de creación de notificaciones.
 
 ### "Notificaciones duplicadas"
-- Esto es normal si cambias el estado varias veces
-- El trigger solo notifica la primera vez que se marca como completado
+- Depende de la lógica que implementes (trigger/job).
 
 ---
 
 **Creado**: 2025-11-11  
 **Versión**: 1.0  
-**Estado**: Sistema opcional - Funciona sin él
+**Estado**: No implementado (DB/UI) + hardening implementado

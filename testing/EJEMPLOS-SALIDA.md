@@ -2,6 +2,12 @@
 
 Este archivo muestra ejemplos de lo que verás al ejecutar cada script.
 
+## Estado del documento
+
+- Ejemplo: la salida puede cambiar según versión del repo y datos reales en Supabase.
+- Nota: el runner principal actual está en `testing/load/test-load.js` (y scripts `npm run test:*` en la raíz). Este archivo todavía incluye ejemplos antiguos de `load-test.js`.
+- Nota: la distribución por `status` en ejemplos puede no coincidir con los estados reales que usa tu instancia.
+
 ---
 
 ## 1. create-test-users.js
@@ -148,7 +154,9 @@ Selecciona una opción: 2
 
 ---
 
-## 5. SQL Scripts (ejecutados en Supabase)
+## 5. SQL Scripts (Ejemplo)
+
+Estado: **No implementado (repo)**. Este repo no incluye `generate-test-users.sql` ni `generate-test-orders.sql`. Se deja el ejemplo para referencia si querés crear tus propios scripts en Supabase.
 
 ### generate-test-users.sql
 

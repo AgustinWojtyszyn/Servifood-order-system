@@ -1,142 +1,96 @@
 # 🚀 Inicio Rápido: Configurar Pruebas de Carga
 
-## ❌ Error Actual
+## Estado del documento
+
+- Implementado: scripts de carga `npm run test:*` y lectura de `.env`.
+- Implementado: script `testing/scripts/setup-env.sh` (crea `.env` en la raíz).
+- No implementado: `./setup-env.sh` en la raíz (no existe).
+
+---
+
+## ❌ Error típico
+
 ```
-❌ Error: Faltan variables de entorno VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
+Faltan variables de entorno VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
 ```
 
-## ✅ Solución en 3 Pasos
+## ✅ Solución (opción A o B)
 
-### Opción A: Script Automático (Recomendado)
+### Opción A: Script automático (recomendado)
+
+Desde la raíz del repo:
 
 ```bash
-./setup-env.sh
+chmod +x testing/scripts/setup-env.sh
+./testing/scripts/setup-env.sh
 ```
-
-El script te pedirá las credenciales y creará el archivo `.env` automáticamente.
 
 ### Opción B: Manual
 
-#### Paso 1: Crear archivo .env
+1) Crea `.env` en la raíz:
 
 ```bash
 nano .env
 ```
 
-#### Paso 2: Pegar este contenido (reemplaza los valores)
+2) Pega (reemplaza valores):
 
 ```env
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# (Opcional) parámetros de tests de carga
+TEST_USERS_COUNT=100
+CONCURRENT_USERS=50
+ORDERS_PER_USER=3
+DELAY_MS=500
+USER_DELAY_MS=100
 ```
 
-#### Paso 3: Guardar y cerrar
+## 🔑 ¿Dónde obtener credenciales?
 
-- En nano: `Ctrl+O` → Enter → `Ctrl+X`
-- En vim: `Esc` → `:wq` → Enter
+### Implementado — Supabase Dashboard
 
-### 🔑 ¿Dónde Encuentro mis Credenciales?
+1. Supabase Dashboard → tu proyecto
+2. Settings → API
+3. Copia:
+   - Project URL → `VITE_SUPABASE_URL`
+   - anon public key → `VITE_SUPABASE_ANON_KEY`
 
-#### Método 1: Supabase Dashboard (Recomendado)
+### Ejemplo — Variables del host (Render, etc.)
 
-1. Ve a https://supabase.com/dashboard
-2. Selecciona tu proyecto "food-order-app" o similar
-3. Click en **Settings** (⚙️) en el menú lateral izquierdo
-4. Click en **API**
-5. Copia:
-   - **Project URL** → `VITE_SUPABASE_URL`
-   - **anon public** (en la sección "Project API keys") → `VITE_SUPABASE_ANON_KEY`
+Si ya desplegaste, tu proveedor suele mostrar variables de entorno del servicio. Copia las que empiecen por `VITE_SUPABASE_`.
 
-#### Método 2: Variables de Render (si ya desplegaste)
-
-1. Ve a https://dashboard.render.com
-2. Selecciona tu servicio "food-order-app"
-3. Click en **Environment**
-4. Busca las variables que comienzan con `VITE_SUPABASE_`
-
-#### Método 3: Inspeccionar la app en producción
-
-1. Abre https://food-order-app-3avy.onrender.com
-2. Presiona `F12` para abrir DevTools
-3. Ve a la pestaña **Console**
-4. Pega este código:
-
-```javascript
-// Esto NO revelará credenciales privadas, solo las públicas
-console.log('URL:', window.__SUPABASE_URL__ || 'No disponible')
-console.log('KEY (primeros 20 chars):', window.__SUPABASE_KEY__?.substring(0,20) || 'No disponible')
-```
-
-## ✅ Verificar que Funcionó
-
-Después de crear el `.env`, verifica:
+## ✅ Verificar que funcionó
 
 ```bash
-# Verificar que existe
 ls -la .env
-
-# Ver contenido (¡NO compartas este output públicamente!)
-cat .env
-
-# Probar carga de variables
 npm run test:light
-```
-
-Deberías ver:
-```
-🚀 INICIANDO PRUEBA DE CARGA - SERVIFOOD
-============================================================
-
-📋 Configuración:
-   - Usuarios a simular: 10
-   - Pedidos por usuario: 5
-   ...
 ```
 
 ## 🔒 Seguridad
 
-**IMPORTANTE:**
-
-- ✅ El archivo `.env` está en `.gitignore` (no se sube a GitHub)
-- ✅ Las credenciales son solo para uso local
-- ❌ **NUNCA** compartas tu `.env` públicamente
-- ❌ **NUNCA** subas `.env` a GitHub
+- ✅ `.env` es para uso local (no lo subas a Git).
+- ❌ No compartas el contenido de `.env` públicamente.
 
 ## 🆘 Troubleshooting
 
-### Problema: "No such file .env"
+### No se encuentra `.env`
+
 ```bash
-# Asegúrate de estar en la raíz del proyecto
-cd /home/aggustin/.vscode/food-order-app
-pwd  # Debe mostrar: /home/aggustin/.vscode/food-order-app
+pwd
+ls -la .env
 ```
 
-### Problema: "Variables no se cargan"
-```bash
-# Verifica el formato del archivo
-cat .env | head -5
+### Variables no se cargan
 
-# Debe verse así:
-# VITE_SUPABASE_URL=https://...
-# VITE_SUPABASE_ANON_KEY=eyJ...
-# (sin espacios extra antes o después del =)
+```bash
+cat .env | head -20
 ```
 
-### Problema: "Permission denied: setup-env.sh"
-```bash
-chmod +x setup-env.sh
-./setup-env.sh
-```
+Verifica que no haya espacios alrededor del `=`.
 
-## 📚 Más Ayuda
+## 📚 Más ayuda
 
-- Documentación completa: `TEST-LOAD-README.md`
-- Ejemplo de .env: `.env.example`
-- Soporte Supabase: https://supabase.com/docs/guides/api
-
----
-
-**Siguiente paso:** Una vez configurado el `.env`, ejecuta:
-```bash
-npm run test:light
-```
+- Guía completa de carga: `docs/TEST-LOAD-README.md`
+- Ejemplo de variables: `.env.example`

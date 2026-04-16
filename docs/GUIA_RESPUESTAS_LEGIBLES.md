@@ -1,5 +1,11 @@
 # 📊 Guía para Ver Respuestas Personalizadas en Supabase
 
+## Estado del documento
+
+- No implementado (repo): este repo no incluye `create-readable-responses-views.sql` ni `export-responses-readable.sql`.
+- Ejemplo: las vistas/consultas de este documento sirven si **vos** las creás en Supabase (SQL Editor) con tu propio script.
+- Implementado (app): los pedidos guardan `custom_responses` en formato JSON, pero la capa de “vistas legibles” es externa (DB).
+
 ## 🎯 Objetivo
 Esta guía te explica cómo ver de forma **legible y organizada** todas las respuestas a las opciones personalizadas (encuestas, preferencias, alergias, etc.) que los usuarios completan en sus pedidos.
 
@@ -11,11 +17,9 @@ Esta guía te explica cómo ver de forma **legible y organizada** todas las resp
    - Ve a tu proyecto ServiFood
    - Haz clic en **SQL Editor** en el menú lateral
 
-2. **Ejecuta el script de vistas**
-   - Abre el archivo: `create-readable-responses-views.sql`
-   - Copia TODO el contenido
-   - Pégalo en el SQL Editor
-   - Haz clic en **"Run"**
+2. **Crear las vistas (Ejemplo)**
+   - Este repo no trae el archivo `create-readable-responses-views.sql`.
+   - Si querés estas vistas, tenés que escribir/pegar el SQL en el **SQL Editor** de Supabase y ejecutarlo.
 
 3. **Verifica que se crearon**
    - Deberías ver un mensaje de éxito
@@ -161,10 +165,7 @@ AND comentarios != '';
 3. Abre en Excel o Google Sheets
 
 ### Opción 2: Usar el script de exportación
-1. Abre el archivo: `export-responses-readable.sql`
-2. Elige una de las consultas incluidas
-3. Ejecútala en SQL Editor
-4. Descarga como CSV
+Estado: **Ejemplo**. Este repo no incluye `export-responses-readable.sql`. Podés copiar las consultas de este documento (o las tuyas) en el SQL Editor y descargar CSV desde Supabase.
 
 ---
 
