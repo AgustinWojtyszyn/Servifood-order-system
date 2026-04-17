@@ -7,6 +7,7 @@ Este archivo muestra ejemplos de lo que verás al ejecutar cada script.
 - Ejemplo: la salida puede cambiar según versión del repo y datos reales en Supabase.
 - Nota: el runner principal actual está en `testing/load/test-load.js` (y scripts `npm run test:*` en la raíz). Este archivo todavía incluye ejemplos antiguos de `load-test.js`.
 - Nota: la distribución por `status` en ejemplos puede no coincidir con los estados reales que usa tu instancia.
+- Nota: flujo operativo actual: `pending` y `archived`. Otros estados mostrados aquí se consideran legacy/no operativos.
 
 ---
 
@@ -102,10 +103,8 @@ Este archivo muestra ejemplos de lo que verás al ejecutar cada script.
 📊 DISTRIBUCIÓN POR ESTADO
 ──────────────────────────────────────────────────────────────────
    ⏳ Pendiente            625 (50.0%) █████████████████████████
-   🔄 En Proceso           375 (30.0%) ███████████████
-   ✅ Completado           188 (15.0%) ███████
-   🚚 Entregado             50 (4.0%)  ██
-   ❌ Cancelado             12 (1.0%)  
+   📦 Archivado            375 (30.0%) ███████████████
+   ❌ Cancelado (legacy)    12 (1.0%)  
 
 ══════════════════════════════════════════════════════════════════
 ⏱️  Actualización cada 2s | Presiona Ctrl+C para salir
@@ -200,9 +199,7 @@ GROUP BY status;
   status    | cantidad
 ────────────┼──────────
  pending    |      250
- processing |      150
- completed  |       75
- delivered  |       20
+ archived   |      245
  cancelled  |        5
 (5 rows)
 ```

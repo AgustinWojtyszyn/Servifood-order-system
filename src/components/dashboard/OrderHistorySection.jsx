@@ -3,7 +3,9 @@ const OrderHistorySection = ({
   formatDate,
   summarizeOrderItems,
   getCustomSideFromResponses,
-  serviceBadge
+  serviceBadge,
+  getStatusLabel,
+  getStatusBadgeClass
 }) => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -49,16 +51,9 @@ const OrderHistorySection = ({
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {(() => {
-                    const status = order.displayStatus || order.status
-                    return (
-                      <span className="inline-flex px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-gray-100 text-gray-800 border border-gray-300">
-                        {status === 'archived' ? 'Archivado' :
-                         status === 'pending' ? 'Pendiente' :
-                         'Cancelado'}
-                      </span>
-                    )
-                  })()}
+                  <span className={`inline-flex px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full ${getStatusBadgeClass(order.displayStatus || order.status)}`}>
+                    {getStatusLabel(order.displayStatus || order.status)}
+                  </span>
                   <span className="inline-flex px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-blue-50 text-blue-800 border border-blue-200">
                     {order.total_items || (order.items?.length || 0)} items
                   </span>

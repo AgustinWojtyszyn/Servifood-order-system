@@ -7,6 +7,7 @@ const WeeklyOrdersSection = ({
   getServiceLabel,
   getMainMenuLabel,
   getStatusLabel,
+  getStatusBadgeClass,
   onEditOrder,
   onDeleteOrder,
   canEditOrder
@@ -58,11 +59,7 @@ const WeeklyOrdersSection = ({
                       </button>
                     </>
                   )}
-                  <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap self-start sm:self-auto ${
-                    status === 'archived' ? 'bg-green-100 text-green-800' :
-                    status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
+                  <span className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap self-start sm:self-auto ${getStatusBadgeClass(status)}`}>
                     {getStatusLabel(status)}
                   </span>
                 </div>

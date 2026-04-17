@@ -19,7 +19,7 @@ const StatsCards = ({ stats }) => {
       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex items-center gap-2">
           <CheckCircle className="h-4 w-4 text-emerald-600" />
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Confirmados</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archivados</p>
         </div>
         <p className="text-3xl sm:text-4xl font-black text-slate-900">{stats.archived}</p>
       </div>

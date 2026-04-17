@@ -26,11 +26,21 @@
 
 ### Estados relevantes en UI del Dashboard
 
-En las secciones del Dashboard se usan principalmente:
+En las secciones del Dashboard se usan operativamente:
 
 - `pending` → Pendiente
-- `archived` → Archivado / Confirmado (según sección)
-- `cancelled` → Cancelado
+- `archived` → Archivado
+
+Estados legacy/no operativos detectados en repo/docs/testing:
+
+- `cancelled`
+- `preparing`
+- `ready`
+- `completed`
+- `delivered`
+- `processing`
+
+Si aparece un estado desconocido, la UI lo muestra como `Estado desconocido`.
 
 ---
 

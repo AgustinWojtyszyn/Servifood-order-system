@@ -140,6 +140,8 @@ const useOrderBootstrap = ({
       if (!error && data) {
         const today = new Date()
         today.setHours(0,0,0,0)
+        // Compatibilidad legacy: algunos pedidos históricos pueden venir como preparing/ready.
+        // Operativamente hoy se trabaja con pending/archived, pero para bloqueo diario se tratan como activos.
         const pendingLunch = data.some(order => {
           const d = new Date(order.created_at)
           d.setHours(0,0,0,0)

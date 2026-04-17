@@ -27,11 +27,21 @@ Implementación: `src/components/dashboard/ArchivedOrdersSection.jsx`.
 
 ## Implementado — Estados usados en el Dashboard
 
-En UI se trabajan principalmente estos estados:
+En UI se trabajan operativamente estos estados:
 
 - `pending` → Pendiente
-- `archived` → Archivado / Confirmado (según sección)
-- `cancelled` → Cancelado
+- `archived` → Archivado
+
+Estados legacy/no operativos que pueden aparecer en datos históricos o pruebas:
+
+- `cancelled`
+- `preparing`
+- `ready`
+- `completed`
+- `delivered`
+- `processing`
+
+Si aparece un estado desconocido, la UI muestra `Estado desconocido` (sin mapearlo a otro estado operativo).
 
 ## 🧪 Checklist rápido
 

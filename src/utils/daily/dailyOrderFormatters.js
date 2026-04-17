@@ -34,13 +34,19 @@ export const formatDate = (dateString) => {
 }
 
 export const getStatusColor = (status) => {
-  if (status === 'archived') return STATUS_COLORS.archived
-  return STATUS_COLORS.pending
+  const normalized = String(status || '').trim().toLowerCase()
+  if (normalized === 'archived') return STATUS_COLORS.archived
+  if (normalized === 'pending') return STATUS_COLORS.pending
+  if (normalized === 'cancelled') return STATUS_COLORS.cancelled
+  return STATUS_COLORS.unknown
 }
 
 export const getStatusText = (status) => {
-  if (status === 'archived') return STATUS_LABELS.archived
-  return STATUS_LABELS.pending
+  const normalized = String(status || '').trim().toLowerCase()
+  if (normalized === 'archived') return STATUS_LABELS.archived
+  if (normalized === 'pending') return STATUS_LABELS.pending
+  if (normalized === 'cancelled') return STATUS_LABELS.cancelled
+  return STATUS_LABELS.unknown
 }
 
 export const getLocationBadgeColor = () => LOCATION_BADGE_COLOR

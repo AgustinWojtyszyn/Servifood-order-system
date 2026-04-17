@@ -59,7 +59,7 @@ node testing/load/test-load.js 10 5
 node testing/monitor.js
 ```
 
-Nota: el monitor muestra distribución por `status`. Si tus estados reales no incluyen categorías como “processing/completed/delivered”, los porcentajes/labels pueden no representar tu flujo actual.
+Nota: el flujo operativo actual usa `pending` y `archived`. Estados como `cancelled`, `preparing`, `ready`, `completed`, `delivered` y `processing` son legacy/no operativos en este repo y pueden aparecer en ejemplos históricos.
 
 ---
 
@@ -71,4 +71,3 @@ Estado: **Parcial** (no recomendado hasta alinearlo).
 ---
 
 **Última actualización de este doc:** 2026-04-16
-

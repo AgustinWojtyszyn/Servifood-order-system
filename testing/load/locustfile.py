@@ -118,11 +118,11 @@ class AppReadOnlyUser(HttpUser):
         self.supabase_get(path, name="SB GET users paginated", range_header=range_header)
 
     @task(5)
-    def completed_orders_ids(self):
+    def archived_orders_ids(self):
         params = {
             "select": "id",
-            "status": "eq.completed",
+            "status": "eq.archived",
         }
         range_header = random_range_header()
         path = "/orders?" + urlencode(params, safe=",*=")
-        self.supabase_get(path, name="SB GET orders completed ids", range_header=range_header)
+        self.supabase_get(path, name="SB GET orders archived ids", range_header=range_header)

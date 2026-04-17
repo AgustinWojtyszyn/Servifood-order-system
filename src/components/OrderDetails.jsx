@@ -66,7 +66,8 @@ const formatDateOnly = (value) => {
 const statusMeta = {
   pending: { label: 'Pendiente', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
   archived: { label: 'Archivado', className: 'bg-green-100 text-green-800 border-green-200' },
-  cancelled: { label: 'Cancelado', className: 'bg-red-100 text-red-800 border-red-200' }
+  cancelled: { label: 'Cancelado', className: 'bg-red-100 text-red-800 border-red-200' },
+  unknown: { label: 'Estado desconocido', className: 'bg-slate-100 text-slate-700 border-slate-300' }
 }
 
 
@@ -131,8 +132,8 @@ const OrderDetails = ({ user, loading }) => {
   const serviceLabel = service === 'dinner' ? 'Cena' : 'Almuerzo'
   const serviceIcon = service === 'dinner' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
 
-  const status = order?.displayStatus || order?.status || 'pending'
-  const statusInfo = statusMeta[status] || { label: status, className: 'bg-blue-100 text-blue-800 border-blue-200' }
+  const status = String(order?.displayStatus || order?.status || '').toLowerCase()
+  const statusInfo = statusMeta[status] || statusMeta.unknown
 
   const company = companyByLocation.get(String(order?.location || '').toLowerCase())
   const canEditOrder = order?.created_at

@@ -1,5 +1,9 @@
+import { Navigate, useLocation } from 'react-router-dom'
+
 export default function RequireUser({ user, loading, children }) {
-  if (loading || !user?.id) {
+  const location = useLocation()
+
+  if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-linear-to-br from-primary-700 via-primary-800 to-primary-900">
         <div className="text-center">
@@ -8,6 +12,11 @@ export default function RequireUser({ user, loading, children }) {
         </div>
       </div>
     )
+  }
+
+  if (!user?.id) {
+    const next = `${location.pathname}${location.search}`
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />
   }
 
   return <>{children}</>

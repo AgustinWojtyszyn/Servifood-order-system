@@ -17,6 +17,7 @@ const Login = () => {
   const { search } = useLocation()
   const params = new URLSearchParams(search)
   const confirmed = params.get('confirmed')
+  const next = params.get('next')
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -50,10 +51,11 @@ const Login = () => {
           setError('📧 Tu correo electrónico aún no ha sido verificado. Por favor, revisa tu bandeja de entrada y confirma tu email antes de iniciar sesión.')
           await auth.signOut()
         } else {
-          navigate('/')
+          const target = next && next.startsWith('/') ? next : '/dashboard'
+          navigate(target, { replace: true })
         }
       }
-    } catch (err) {
+    } catch {
       setError('Error al iniciar sesión. Por favor, intenta nuevamente.')
     } finally {
       setLoading(false)
@@ -74,7 +76,7 @@ const Login = () => {
         setError(error.message || 'Error al iniciar sesión con Google.')
         setOauthLoading(false)
       }
-    } catch (err) {
+    } catch {
       setError('Error al iniciar sesión con Google. Por favor, intenta nuevamente.')
       setOauthLoading(false)
     }

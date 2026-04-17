@@ -110,10 +110,25 @@ const getServiceLabel = (service = 'lunch') => {
   return (service || 'lunch').toLowerCase() === 'dinner' ? 'Cena' : 'Almuerzo'
 }
 
+const normalizeOrderStatus = (status) => {
+  if (typeof status !== 'string') return ''
+  return status.trim().toLowerCase()
+}
+
 const getStatusLabel = (status = 'pending') => {
-  if (status === 'archived') return 'Archivado'
-  if (status === 'cancelled') return 'Cancelado'
-  return 'Pendiente'
+  const normalized = normalizeOrderStatus(status)
+  if (normalized === 'archived') return 'Archivado'
+  if (normalized === 'pending') return 'Pendiente'
+  if (normalized === 'cancelled') return 'Cancelado'
+  return 'Estado desconocido'
+}
+
+const getStatusBadgeClass = (status = 'pending') => {
+  const normalized = normalizeOrderStatus(status)
+  if (normalized === 'archived') return 'bg-green-100 text-green-800 border border-green-300'
+  if (normalized === 'pending') return 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+  if (normalized === 'cancelled') return 'bg-red-100 text-red-800 border border-red-300'
+  return 'bg-slate-100 text-slate-700 border border-slate-300'
 }
 
 const getMainMenuLabel = (order) => {
@@ -132,9 +147,7 @@ const getMainMenuLabel = (order) => {
 }
 
 const formatHeaderStatus = (status = 'pending') => {
-  if (status === 'archived') return 'Confirmado'
-  if (status === 'cancelled') return 'Cancelado'
-  return 'Pendiente'
+  return getStatusLabel(status)
 }
 
 const buildItemsSummary = (items) => {
@@ -169,6 +182,7 @@ export {
   formatWeeklyDate,
   getServiceLabel,
   getStatusLabel,
+  getStatusBadgeClass,
   getMainMenuLabel,
   formatHeaderStatus,
   buildItemsSummary,

@@ -166,7 +166,7 @@ async function createRandomOrder(user, orderIndex) {
     delivery_date: deliveryDate.toISOString().split('T')[0],
     items,
     total_items: items.reduce((sum, item) => sum + item.quantity, 0),
-    status: randomItem(['pending', 'pending', 'pending', 'completed']), // 75% pending, 25% completed
+    status: randomItem(['pending', 'pending', 'pending', 'archived']), // 75% pending, 25% archived
     comments: randomInt(0, 3) > 0 ? `Pedido de prueba #${orderIndex + 1}` : null,
     custom_responses: []
   }

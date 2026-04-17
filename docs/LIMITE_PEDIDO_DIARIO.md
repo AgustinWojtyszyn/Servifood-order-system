@@ -15,8 +15,8 @@
 En el chequeo de pedidos del día y en la validación del submit se consideran activos:
 
 - `pending`
-- `preparing`
-- `ready`
+- `preparing` (legacy, compatibilidad)
+- `ready` (legacy, compatibilidad)
 
 ### Qué se bloquea
 
@@ -59,11 +59,10 @@ Una policy de INSERT podría:
 
 ### “Me deja crear más de un pedido”
 
-- Verifica que el pedido anterior esté en `pending|preparing|ready`.
+- Verifica que el pedido anterior esté en `pending|preparing|ready` (`preparing/ready` se contemplan por compatibilidad legacy).
 - Verifica que sea del mismo día y mismo servicio (almuerzo/cena).
 - Si querés enforcement “a prueba de bypass”, implementalo en DB (Supabase RLS).
 
 ---
 
 **Última actualización de este doc:** 2026-04-16
-

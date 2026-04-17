@@ -22,6 +22,7 @@ import {
   formatWeeklyDate,
   getServiceLabel,
   getStatusLabel,
+  getStatusBadgeClass,
   getMainMenuLabel,
   formatOrderDate
 } from '../utils/dashboard/dashboardHelpers.jsx'
@@ -134,6 +135,7 @@ const Dashboard = ({ user, loading }) => {
         getServiceLabel={getServiceLabel}
         getMainMenuLabel={getMainMenuLabel}
         getStatusLabel={getStatusLabel}
+        getStatusBadgeClass={getStatusBadgeClass}
         onEditOrder={handleEditOrder}
         onDeleteOrder={handleDeleteOrder}
         canEditOrder={(order) => isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)}
@@ -155,6 +157,8 @@ const Dashboard = ({ user, loading }) => {
         summarizeOrderItems={summarizeOrderItems}
         getCustomSideFromResponses={getCustomSideFromResponses}
         serviceBadge={serviceBadge}
+        getStatusLabel={getStatusLabel}
+        getStatusBadgeClass={getStatusBadgeClass}
       />
 
       {deleteConfirmOrder && (
