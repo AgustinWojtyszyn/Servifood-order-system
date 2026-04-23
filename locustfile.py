@@ -1,35 +1,35 @@
 import os
 import random
-from datetime import datetime, timedelta, timezone
-from urllib.parse import urlencode
-from uuid import uuid4
+import time
+import uuid
 
 from locust import HttpUser, between, task
 from locust.exception import StopUser
 
 
-APP_BASE_URL = os.getenv("APP_BASE_URL", "http://127.0.0.1:5000").rstrip("/")
-SUPABASE_URL = os.getenv("SUPABASE_URL", os.getenv("VITE_SUPABASE_URL", "")).rstrip("/")
-SUPABASE_REST_URL = os.getenv("SUPABASE_REST_URL", f"{SUPABASE_URL}/rest/v1").rstrip("/")
-SUPABASE_AUTH_URL = os.getenv("SUPABASE_AUTH_URL", f"{SUPABASE_URL}/auth/v1").rstrip("/")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", os.getenv("VITE_SUPABASE_ANON_KEY", "")).strip()
+SUPABASE_URL = os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
 
-NORMAL_USER_EMAIL = os.getenv("NORMAL_USER_EMAIL", "").strip()
-NORMAL_USER_PASSWORD = os.getenv("NORMAL_USER_PASSWORD", "").strip()
-ADMIN_USER_EMAIL = os.getenv("ADMIN_USER_EMAIL", "").strip()
-ADMIN_USER_PASSWORD = os.getenv("ADMIN_USER_PASSWORD", "").strip()
+NORMAL_USER_EMAIL = os.getenv("NORMAL_USER_EMAIL", "normal@test.local")
+NORMAL_USER_PASSWORD = os.getenv("NORMAL_USER_PASSWORD", "test123")
+ADMIN_USER_EMAIL = os.getenv("ADMIN_USER_EMAIL", "admin@test.local")
+ADMIN_USER_PASSWORD = os.getenv("ADMIN_USER_PASSWORD", "admin123")
 
-LOCATIONS = ["Los Berros", "La Laja", "Padre Bueno", "Ccp", "Genneia"]
-COMPANIES = ["laja", "losberros", "padrebueno", "ccp", "genneia"]
-ORDER_STATUS_FLOW = ["pending", "preparing", "ready", "archived"]
+MAX_LOGIN_RETRIES = int(os.getenv("MAX_LOGIN_RETRIES", "1"))
+LOGIN_RETRY_BACKOFF_SEC = float(os.getenv("LOGIN_RETRY_BACKOFF_SEC", "4"))
+ENABLE_WRITE_TASKS = os.getenv("ENABLE_WRITE_TASKS", "0") == "1"
 
-
-def tomorrow_iso_date():
-    return (datetime.now(timezone.utc) + timedelta(days=1)).date().isoformat()
+LOCATIONS = ["Los Berros", "La Laja", "Padre Bueno"]
 
 
-class BaseAppUser(HttpUser):
-    host = APP_BASE_URL
+if not SUPABASE_URL:
+    raise RuntimeError("Missing SUPABASE_URL (or VITE_SUPABASE_URL)")
+if not SUPABASE_ANON_KEY:
+    raise RuntimeError("Missing SUPABASE_ANON_KEY (or VITE_SUPABASE_ANON_KEY)")
+
+
+class SupabaseUser(HttpUser):
+    host = SUPABASE_URL
     wait_time = between(1, 3)
     abstract = True
 
@@ -39,319 +39,226 @@ class BaseAppUser(HttpUser):
 
     def on_start(self):
         self.access_token = None
-        self.refresh_token = None
         self.user_id = None
-        self.user_email_runtime = None
+        self.login_with_supabase()
 
-        if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-            raise StopUser("Missing SUPABASE_URL/VITE_SUPABASE_URL or SUPABASE_ANON_KEY/VITE_SUPABASE_ANON_KEY")
-
-        if not self.user_email or not self.user_password:
-            raise StopUser(
-                f"Missing credentials for role '{self.role_name}'. Set env vars for this user before running Locust."
-            )
-
-        self.login_with_supabase(self.user_email, self.user_password)
-
-    @property
-    def supabase_base_headers(self):
+    def _login_headers(self):
         return {
             "apikey": SUPABASE_ANON_KEY,
-            "Accept": "application/json",
             "Content-Type": "application/json",
         }
 
-    @property
-    def auth_headers(self):
-        if not self.access_token:
-            return dict(self.supabase_base_headers)
-        headers = dict(self.supabase_base_headers)
-        headers["Authorization"] = f"Bearer {self.access_token}"
+    def _auth_headers(self, with_content_type=False):
+        headers = {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": f"Bearer {self.access_token}",
+        }
+        if with_content_type:
+            headers["Content-Type"] = "application/json"
         return headers
 
-    def login_with_supabase(self, email, password):
-        login_url = f"{SUPABASE_AUTH_URL}/token?grant_type=password"
-        payload = {"email": email, "password": password}
+    @staticmethod
+    def _body_exact(resp):
+        return (resp.text or "").strip()
 
-        with self.client.post(
-            login_url,
-            json=payload,
-            headers=self.supabase_base_headers,
-            name=f"AUTH {self.role_name} login",
-            catch_response=True,
-        ) as resp:
-            if resp.status_code in (401, 403, 500):
-                resp.failure(f"auth error {resp.status_code}")
-                raise StopUser(f"{self.role_name} login failed with status {resp.status_code}")
-            if resp.status_code != 200:
-                resp.failure(f"auth unexpected {resp.status_code}")
-                raise StopUser(f"{self.role_name} login unexpected status {resp.status_code}")
+    def login_with_supabase(self):
+        endpoint = "/auth/v1/token?grant_type=password"
+        payload = {
+            "email": self.user_email,
+            "password": self.user_password,
+        }
 
-            data = resp.json() if resp.text else {}
-            token = data.get("access_token")
-            user = data.get("user") or {}
-            if not token or not user.get("id"):
-                resp.failure("auth payload missing access_token/user.id")
-                raise StopUser(f"{self.role_name} login response missing token or user id")
+        for attempt in range(1, MAX_LOGIN_RETRIES + 1):
+            with self.client.post(
+                endpoint,
+                json=payload,
+                headers=self._login_headers(),
+                name=f"AUTH {self.role_name} login",
+                catch_response=True,
+            ) as resp:
+                if resp.status_code == 200:
+                    try:
+                        data = resp.json() if resp.text else {}
+                    except Exception as exc:
+                        resp.failure(f"login invalid JSON response ({exc})")
+                        continue
 
-            self.access_token = token
-            self.refresh_token = data.get("refresh_token")
-            self.user_id = user.get("id")
-            self.user_email_runtime = user.get("email")
-            resp.success()
+                    token = data.get("access_token")
+                    user = data.get("user") or {}
+                    user_id = user.get("id")
 
-    def request_with_checks(
-        self,
-        method,
-        url,
-        name,
-        *,
-        headers=None,
-        json_body=None,
-        data_body=None,
-        expected_statuses=(200,),
-    ):
+                    if not token or not user_id:
+                        resp.failure("login response missing access_token or user.id")
+                        continue
+
+                    self.access_token = token
+                    self.user_id = user_id
+                    resp.success()
+                    return
+
+                body = self._body_exact(resp)
+
+                if resp.status_code == 429:
+                    resp.failure(
+                        f"rate limited (429) attempt={attempt}/{MAX_LOGIN_RETRIES} body={body}"
+                    )
+                elif resp.status_code == 400:
+                    resp.failure(
+                        f"bad request (400) attempt={attempt}/{MAX_LOGIN_RETRIES} body={body}"
+                    )
+                else:
+                    resp.failure(
+                        f"unexpected status={resp.status_code} attempt={attempt}/{MAX_LOGIN_RETRIES} body={body}"
+                    )
+
+            if attempt < MAX_LOGIN_RETRIES:
+                sleep_for = LOGIN_RETRY_BACKOFF_SEC * attempt
+                time.sleep(sleep_for)
+
+        raise StopUser(
+            f"{self.role_name} login failed after {MAX_LOGIN_RETRIES} attempts"
+        )
+
+    def checked(self, method, path, name, expected=(200,), headers=None, **kwargs):
+        req_headers = headers or self._auth_headers()
+
         with self.client.request(
             method,
-            url,
+            path,
+            headers=req_headers,
             name=name,
-            headers=headers,
-            json=json_body,
-            data=data_body,
             catch_response=True,
+            **kwargs,
         ) as resp:
-            if resp.status_code in (401, 403, 500):
-                resp.failure(f"{name} failed {resp.status_code}")
+            if resp.status_code in (401, 403, 429) or resp.status_code >= 500:
+                body = self._body_exact(resp)
+                resp.failure(
+                    f"{name} auth/rate/server failure status={resp.status_code} body={body}"
+                )
                 return None
-            if resp.status_code not in expected_statuses:
-                resp.failure(f"{name} unexpected {resp.status_code}")
+
+            if resp.status_code not in expected:
+                body = self._body_exact(resp)
+                resp.failure(
+                    f"{name} unexpected={resp.status_code} expected={expected} body={body}"
+                )
                 return None
+
             resp.success()
             if not resp.text:
                 return {}
             try:
                 return resp.json()
             except Exception:
-                return {"raw": resp.text}
+                return {}
 
-    def supabase_get(self, path, name, query=None, expected_statuses=(200,)):
-        url = f"{SUPABASE_REST_URL}/{path.lstrip('/')}"
-        if query:
-            url = f"{url}?{urlencode(query, safe=',.*()')}"
-        return self.request_with_checks("GET", url, name, headers=self.auth_headers, expected_statuses=expected_statuses)
-
-    def supabase_post(self, path, name, payload, expected_statuses=(200, 201)):
-        url = f"{SUPABASE_REST_URL}/{path.lstrip('/')}"
-        return self.request_with_checks(
-            "POST",
-            url,
-            name,
-            headers=self.auth_headers,
-            json_body=payload,
-            expected_statuses=expected_statuses,
-        )
-
-    def supabase_patch(self, path, name, payload, query=None, expected_statuses=(200, 204)):
-        url = f"{SUPABASE_REST_URL}/{path.lstrip('/')}"
-        if query:
-            url = f"{url}?{urlencode(query, safe=',.*()')}"
-        headers = dict(self.auth_headers)
-        headers["Prefer"] = "return=representation"
-        return self.request_with_checks(
-            "PATCH",
-            url,
-            name,
-            headers=headers,
-            json_body=payload,
-            expected_statuses=expected_statuses,
-        )
-
-    def make_order_payload(self):
-        location = random.choice(LOCATIONS)
-        menu_item_name = random.choice(
-            [
-                "Menú principal",
-                "Milanesa con papas",
-                "Pollo al horno",
-                "Ensalada completa",
-            ]
-        )
-        return {
-            "user_id": self.user_id,
-            "location": location,
-            "customer_name": self.user_email_runtime or self.user_email,
-            "customer_email": self.user_email_runtime or self.user_email,
-            "customer_phone": "+5492641234567",
-            "items": [{"id": "menu-main", "name": menu_item_name, "quantity": 1}],
-            "comments": "Pedido de carga Locust",
-            "delivery_date": tomorrow_iso_date(),
-            "status": "pending",
-            "total_items": 1,
-            "custom_responses": [],
-            "idempotency_key": str(uuid4()),
-            "service": "lunch",
-        }
-
-
-class NormalUser(BaseAppUser):
+class NormalUser(SupabaseUser):
     weight = 4
     role_name = "normal"
     user_email = NORMAL_USER_EMAIL
     user_password = NORMAL_USER_PASSWORD
 
-    @task(2)
-    def home(self):
-        self.request_with_checks("GET", "/", "WEB GET /", expected_statuses=(200,))
-
-    @task(2)
-    def view_profile(self):
-        url = f"{SUPABASE_AUTH_URL}/user"
-        self.request_with_checks("GET", url, "AUTH GET profile", headers=self.auth_headers, expected_statuses=(200,))
+    @task(3)
+    def profile(self):
+        self.checked("GET", "/auth/v1/user", "API GET /auth/v1/user")
 
     @task(3)
-    def view_menu(self):
-        self.supabase_get(
-            "menu_items",
-            "SB GET menu_items by date",
-            query={
-                "select": "id,name,description,menu_date,created_at",
-                "menu_date": f"eq.{tomorrow_iso_date()}",
-                "order": "created_at.desc",
-            },
-        )
-        self.supabase_post(
-            "rpc/get_visible_custom_options",
-            "SB RPC get_visible_custom_options",
-            {
-                "p_company": random.choice(COMPANIES),
-                "p_meal": "lunch",
-                "p_date": tomorrow_iso_date(),
-                "p_country_code": "AR",
-            },
-            expected_statuses=(200,),
+    def my_orders(self):
+        self.checked(
+            "GET",
+            f"/rest/v1/orders?select=id,status,created_at,location,service&user_id=eq.{self.user_id}&order=created_at.desc&limit=20",
+            "API GET /rest/v1/orders (my)",
+            headers=self._auth_headers(),
         )
 
-    @task(3)
-    def create_order(self):
-        pending_orders = self.supabase_get(
-            "orders",
-            "SB GET my pending orders",
-            query={
-                "select": "id,status",
-                "user_id": f"eq.{self.user_id}",
-                "status": "eq.pending",
-                "limit": "1",
-            },
+    @task(2)
+    def my_features(self):
+        self.checked(
+            "GET",
+            f"/rest/v1/user_features?select=feature,enabled&user_id=eq.{self.user_id}",
+            "API GET /rest/v1/user_features (my)",
+            headers=self._auth_headers(),
         )
-        if isinstance(pending_orders, list) and pending_orders:
+
+    @task(2)
+    def menu_list(self):
+        self.checked(
+            "GET",
+            "/rest/v1/menu_items?select=id,name,description,created_at,menu_date&order=created_at.desc&limit=20",
+            "API GET /rest/v1/menu_items",
+            headers=self._auth_headers(),
+        )
+
+    @task(1)
+    def create_order_rpc(self):
+        if not ENABLE_WRITE_TASKS:
             return
 
-        order_payload = self.make_order_payload()
-        self.supabase_post(
-            "rpc/create_order_idempotent",
-            "SB RPC create_order_idempotent",
-            {
-                "p_user_id": self.user_id,
-                "p_idempotency_key": order_payload["idempotency_key"],
-                "p_payload": order_payload,
+        idem = f"locust-{self.user_id}-{uuid.uuid4()}"
+        payload = {
+            "p_user_id": self.user_id,
+            "p_idempotency_key": idem,
+            "p_payload": {
+                "user_id": self.user_id,
+                "location": random.choice(LOCATIONS),
+                "service": "lunch",
+                "items": [{"id": "menu-1", "name": "Milanesa con papas", "quantity": 1}],
             },
-            expected_statuses=(200,),
-        )
+        }
 
-    @task(3)
-    def view_my_orders(self):
-        self.supabase_get(
-            "orders",
-            "SB GET my orders",
-            query={
-                "select": "id,status,service,location,delivery_date,total_items,created_at",
-                "user_id": f"eq.{self.user_id}",
-                "order": "created_at.desc",
-                "limit": "25",
-            },
+        self.checked(
+            "POST",
+            "/rest/v1/rpc/create_order_idempotent",
+            "API POST /rest/v1/rpc/create_order_idempotent",
+            headers=self._auth_headers(with_content_type=True),
+            json=payload,
+            expected=(200, 201),
         )
 
 
-class AdminUser(BaseAppUser):
+class AdminUser(SupabaseUser):
     weight = 1
     role_name = "admin"
     user_email = ADMIN_USER_EMAIL
     user_password = ADMIN_USER_PASSWORD
 
     @task(2)
-    def admin_dashboard(self):
-        self.request_with_checks("GET", "/admin", "WEB GET /admin", expected_statuses=(200,))
-        self.request_with_checks("GET", "/health", "WEB GET /health", expected_statuses=(200,))
-
-    @task(3)
-    def list_global_orders(self):
-        self.supabase_get(
-            "orders",
-            "SB GET orders global",
-            query={
-                "select": "id,user_id,status,service,location,delivery_date,created_at",
-                "order": "created_at.desc",
-                "limit": "100",
-            },
+    def admin_orders(self):
+        self.checked(
+            "GET",
+            "/rest/v1/orders?select=id,status,created_at,user_id,location&order=created_at.desc&limit=30",
+            "API GET /rest/v1/orders (admin)",
+            headers=self._auth_headers(),
         )
 
     @task(2)
-    def list_users(self):
-        self.supabase_get(
-            "users",
-            "SB GET users admin",
-            query={
-                "select": "id,email,full_name,role,created_at",
-                "order": "created_at.desc",
-                "limit": "100",
-            },
-        )
-
-    @task(2)
-    def update_order_status_or_archive(self):
-        orders = self.supabase_get(
-            "orders",
-            "SB GET pending order for admin update",
-            query={
-                "select": "id,status",
-                "status": "eq.pending",
-                "order": "created_at.desc",
-                "limit": "1",
-            },
-        )
-        if not isinstance(orders, list) or not orders:
-            return
-
-        order_id = orders[0].get("id")
-        if not order_id:
-            return
-
-        next_status = random.choice(ORDER_STATUS_FLOW[1:])
-        self.supabase_patch(
-            "orders",
-            "SB PATCH order status",
-            {"status": next_status, "updated_at": datetime.now(timezone.utc).isoformat()},
-            query={"id": f"eq.{order_id}"},
-            expected_statuses=(200,),
+    def admin_users(self):
+        self.checked(
+            "GET",
+            "/rest/v1/users?select=id,email,role,created_at&order=created_at.desc&limit=30",
+            "API GET /rest/v1/users (admin)",
+            headers=self._auth_headers(),
         )
 
     @task(1)
-    def audit_and_metrics(self):
-        self.supabase_get(
-            "audit_logs",
-            "SB GET audit_logs",
-            query={
-                "select": "id,action,details,created_at,request_id",
-                "order": "created_at.desc",
-                "limit": "100",
-            },
+    def admin_audit_logs(self):
+        self.checked(
+            "GET",
+            "/rest/v1/audit_logs?select=id,action,created_at&order=created_at.desc&limit=30",
+            "API GET /rest/v1/audit_logs (admin)",
+            headers=self._auth_headers(),
+            expected=(200,),
         )
-        self.supabase_get(
-            "orders",
-            "SB GET orders metrics range",
-            query={
-                "select": "id,status,delivery_date,total_items,created_at,items,custom_responses",
-                "order": "created_at.desc",
-                "limit": "200",
-            },
+
+    @task(1)
+    def archive_pending_rpc(self):
+        if not ENABLE_WRITE_TASKS:
+            return
+        self.checked(
+            "POST",
+            "/rest/v1/rpc/archive_orders_bulk",
+            "API POST /rest/v1/rpc/archive_orders_bulk (admin)",
+            headers=self._auth_headers(with_content_type=True),
+            json={"statuses": ["pending"]},
+            expected=(200, 204),
         )
