@@ -33,6 +33,7 @@ const CafeteriaNewOrderPage = lazy(() => import('./components/cafeteria/Cafeteri
 const CafeteriaCurrentOrderPage = lazy(() => import('./components/cafeteria/CafeteriaCurrentOrderPage'))
 const CafeteriaSuccessPage = lazy(() => import('./components/cafeteria/CafeteriaSuccessPage'))
 const TendenciasPage = lazy(() => import('./pages/TendenciasPage'))
+const ExcelAnalysis = lazy(() => import('./components/ExcelAnalysis'))
 
 const AdminCafeteriaDashboardPage = withAdmin(CafeteriaDashboardPage)
 const AdminCafeteriaNewOrderPage = withAdmin(CafeteriaNewOrderPage)
@@ -253,6 +254,9 @@ function App() {
             } />
             <Route path="/tendencias" element={
               !loading && (user ? <Layout user={user} loading={loading}><AdminTendenciasPage /></Layout> : <Navigate to="/login" />)
+            } />
+            <Route path="/excel-analysis" element={
+              !loading && (user ? <Layout user={user} loading={loading}><ExcelAnalysis /></Layout> : <Navigate to="/login" />)
             } />
             {/* Redirección global para rutas inexistentes */}
             <Route

@@ -10,6 +10,28 @@ import { fileURLToPath } from 'url';
 import { sendDailyOrdersExcel } from './sendDailyOrdersEmail.js';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import multer from 'multer';
+import XLSX from 'xlsx';
+
+// Supabase JWT verification middleware
+const verifySupabaseJWT = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authorization header missing or invalid' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    req.user = user;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Token verification failed' });
+  }
+};
 
 const PORT = process.env.PORT || 3000;
 const numCPUs = os.cpus().length;
@@ -77,7 +99,53 @@ if (cluster.isMaster) {
     res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()');
     next();
   });
-  app.use(bodyParser.json());
+  app.use(bodyParser.json({ limit: '10mb' }));
+  app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+  });
+
+  // Excel upload endpoint with JWT auth
+  app.post('/api/upload-excel', verifySupabaseJWT, upload.single('excel'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No Excel file uploaded' });
+      }
+
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+      const results = {
+        filename: req.file.originalname,
+        rowCount: jsonData.length,
+        columns: Object.keys(jsonData[0] || {}),
+        sampleData: jsonData.slice(0, 5), // First 5 rows
+        processedAt: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('analysis_history')
+        .insert([{
+          user_id: req.user.id,
+          filename: req.file.originalname,
+          results
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      res.json({ success: true, data });
+    } catch (err) {
+      console.error('Excel upload error:', err);
+      res.status(500).json({ error: 'Processing failed' });
+    }
+  });
   // Endpoint para enviar pedidos diarios por email
   app.post('/api/send-daily-orders-email', async (req, res) => {
     const { toEmail, orders } = req.body;
