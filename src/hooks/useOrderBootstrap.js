@@ -73,9 +73,18 @@ const useOrderBootstrap = ({
       if (lunchError) console.error('Error fetching lunch custom options:', lunchError)
       if (dinnerError) console.error('Error fetching dinner custom options:', dinnerError)
 
+      const lunchOptions = filterByMealScope(lunchData, 'lunch')
+      const dinnerOptionsFromDinnerQuery = filterByMealScope(dinnerData, 'dinner')
+      // Fallback defensivo: si la consulta específica de cena devuelve vacío
+      // (por reglas/RPC/whitelist), reutilizamos el catálogo de almuerzo filtrado
+      // para mostrar opciones compatibles con cena.
+      const dinnerOptions = dinnerOptionsFromDinnerQuery.length > 0
+        ? dinnerOptionsFromDinnerQuery
+        : filterByMealScope(lunchData, 'dinner')
+
       // Filtro defensivo por alcance de comida: asegura que cada opción solo aparezca en el turno elegido
-      setCustomOptionsLunch(filterByMealScope(lunchData, 'lunch'))
-      setCustomOptionsDinner(filterByMealScope(dinnerData, 'dinner'))
+      setCustomOptionsLunch(lunchOptions)
+      setCustomOptionsDinner(dinnerOptions)
     } catch (err) {
       console.error('Error fetching custom options:', err)
     }

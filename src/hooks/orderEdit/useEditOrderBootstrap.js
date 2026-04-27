@@ -61,14 +61,37 @@ export const useEditOrderBootstrap = ({ order, user, navigate }) => {
           return scope === 'both' || scope === meal
         })
 
-      const { data, error } = await db.getVisibleCustomOptions({
-        company: order?.company || order?.company_id || null,
-        meal: service,
-        date: deliveryDate
-      })
+      if (service === 'dinner') {
+        const [{ data: lunchData, error: lunchError }, { data: dinnerData, error: dinnerError }] = await Promise.all([
+          db.getVisibleCustomOptions({
+            company: order?.company || order?.company_id || null,
+            meal: 'lunch',
+            date: deliveryDate
+          }),
+          db.getVisibleCustomOptions({
+            company: order?.company || order?.company_id || null,
+            meal: 'dinner',
+            date: deliveryDate
+          })
+        ])
 
-      if (!error && data) setCustomOptions(filterByMealScope(data, service))
-      if (error) console.error('Error fetching visible custom options:', error)
+        if (lunchError) console.error('Error fetching visible lunch custom options:', lunchError)
+        if (dinnerError) console.error('Error fetching visible dinner custom options:', dinnerError)
+
+        const dinnerOptionsFromDinnerQuery = filterByMealScope(dinnerData, 'dinner')
+        const dinnerOptions = dinnerOptionsFromDinnerQuery.length > 0
+          ? dinnerOptionsFromDinnerQuery
+          : filterByMealScope(lunchData, 'dinner')
+        setCustomOptions(dinnerOptions)
+      } else {
+        const { data, error } = await db.getVisibleCustomOptions({
+          company: order?.company || order?.company_id || null,
+          meal: service,
+          date: deliveryDate
+        })
+        if (!error && data) setCustomOptions(filterByMealScope(data, service))
+        if (error) console.error('Error fetching visible custom options:', error)
+      }
     } catch (err) {
       console.error('Error fetching custom options:', err)
     }
