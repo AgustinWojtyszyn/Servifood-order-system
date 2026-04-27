@@ -115,12 +115,18 @@ const useOrderBootstrap = ({
         const dinner = data.find(f => f.feature === 'dinner' && f.enabled)
         if (dinner) {
           setDinnerEnabled(true)
+          // Habilitar turno de cena si tiene la feature
+          setSelectedTurns(prev => ({ ...prev, dinner: true }))
         } else {
           const lowerId = (user?.id || '').toLowerCase()
           const lowerEmail = (user?.email || '').toLowerCase()
           const fallback = DINNER_FALLBACK_WHITELIST.has(lowerId) || DINNER_FALLBACK_WHITELIST.has(lowerEmail)
           setDinnerEnabled(fallback)
-          if (!fallback) {
+          if (fallback) {
+            // Si está en whitelist, habilitar turno de cena por defecto
+            setSelectedTurns({ lunch: true, dinner: true })
+            setMode('both')
+          } else {
             setSelectedTurns({ lunch: true, dinner: false })
             setMode('lunch')
           }
