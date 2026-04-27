@@ -11,7 +11,6 @@ const useOrderBootstrap = ({
   user,
   rawCompanySlug,
   companyOptionsSlug,
-  dinnerEnabled,
   setDinnerEnabled,
   setSelectedTurns,
   setMode,
@@ -119,7 +118,7 @@ const useOrderBootstrap = ({
   const fetchUserFeatures = async () => {
     if (!user?.id) return
     try {
-      const { data, error } = await db.getUserFeatures()
+      const { data, error } = await db.getUserFeatures(user.id)
       if (!error && Array.isArray(data)) {
         const dinner = data.find(f => f.feature === 'dinner' && f.enabled)
         if (dinner) {
@@ -127,8 +126,8 @@ const useOrderBootstrap = ({
           // Habilitar turno de cena si tiene la feature
           setSelectedTurns(prev => ({ ...prev, dinner: true }))
         } else {
-          const lowerId = (user?.id || '').toLowerCase()
-          const lowerEmail = (user?.email || '').toLowerCase()
+          const lowerId = (user?.id || '').toString().trim().toLowerCase()
+          const lowerEmail = (user?.email || '').toString().trim().toLowerCase()
           const fallback = DINNER_FALLBACK_WHITELIST.has(lowerId) || DINNER_FALLBACK_WHITELIST.has(lowerEmail)
           setDinnerEnabled(fallback)
           if (fallback) {

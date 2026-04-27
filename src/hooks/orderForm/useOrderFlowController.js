@@ -136,7 +136,6 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     user,
     rawCompanySlug,
     companyOptionsSlug,
-    dinnerEnabled,
     setDinnerEnabled,
     setSelectedTurns,
     setMode,
@@ -356,4 +355,3 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     }
   }
 }
-

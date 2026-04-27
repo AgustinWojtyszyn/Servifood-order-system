@@ -112,13 +112,18 @@ export const createUsersService = ({
     },
 
     // Pedidos
-    getUserFeatures: async () => {
-      const cacheKey = 'user-features'
+    getUserFeatures: async (userId = null) => {
+      const normalizedUserId = (userId || '').toString().trim().toLowerCase() || 'me'
+      const cacheKey = `user-features:${normalizedUserId}`
       const cached = cache?.get?.(cacheKey)
       if (cached) return { data: cached, error: null }
-      const { data, error } = await supabase
+      let query = supabase
         .from('user_features')
         .select('feature, enabled')
+      if (userId) {
+        query = query.eq('user_id', userId)
+      }
+      const { data, error } = await query
       if (!error && data && cache?.set) {
         cache.set(cacheKey, data, 60_000)
       }
@@ -126,4 +131,3 @@ export const createUsersService = ({
     }
   }
 }
-
