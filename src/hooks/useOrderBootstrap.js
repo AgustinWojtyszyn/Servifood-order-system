@@ -128,13 +128,36 @@ const useOrderBootstrap = ({
           slotIndex: Number.isFinite(item?.slotIndex) ? item.slotIndex : index
         }))
       )
-      setDinnerMenuSpecial(null)
+
+      // Además, cargar el menú específico de cena desde admin como opciones adicionales exclusivas.
+      const { data: dinnerData, error: dinnerError } = await db.getDinnerMenuByDate({
+        date: deliveryDate,
+        company: companyOptionsSlug
+      })
+      if (dinnerError) {
+        console.error('Error fetching dinner special options:', dinnerError)
+        setDinnerMenuSpecial(null)
+        return
+      }
+
+      const dinnerOptions = Array.isArray(dinnerData?.options)
+        ? dinnerData.options.map(opt => (opt || '').toString().trim()).filter(Boolean)
+        : []
+
+      if (dinnerData && dinnerData.active && dinnerOptions.length > 0) {
+        setDinnerMenuSpecial({
+          title: dinnerData.title || 'Opción de cena',
+          options: dinnerOptions
+        })
+      } else {
+        setDinnerMenuSpecial(null)
+      }
     } catch (err) {
       console.error('Error fetching dinner menu by date:', err)
       setDinnerMenuItems([])
       setDinnerMenuSpecial(null)
     }
-  }, [selectedDinnerDate, setDinnerMenuItems, setDinnerMenuSpecial])
+  }, [companyOptionsSlug, selectedDinnerDate, setDinnerMenuItems, setDinnerMenuSpecial])
 
   const fetchUserFeatures = useCallback(async () => {
     if (!user?.id) return
