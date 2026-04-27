@@ -16,8 +16,11 @@ const useOrderBootstrap = ({
   setMode,
   setFormData,
   setMenuItems,
+  setDinnerMenuItems,
   setCustomOptionsLunch,
   setCustomOptionsDinner,
+  selectedDinnerDate,
+  setSelectedDinnerDate,
   setDinnerMenuSpecial,
   setPendingLunch,
   setPendingDinner,
@@ -91,26 +94,43 @@ const useOrderBootstrap = ({
 
   const fetchDinnerMenuSpecial = async () => {
     try {
-      const deliveryDate = getTomorrowISOInTimeZone()
+      const fallbackDate = getTomorrowISOInTimeZone()
+      const deliveryDate = selectedDinnerDate || fallbackDate
+      if (!selectedDinnerDate) {
+        setSelectedDinnerDate(fallbackDate)
+      }
       const { data, error } = await db.getDinnerMenuByDate({
         date: deliveryDate,
         company: companyOptionsSlug
       })
       if (error) {
         console.error('Error fetching dinner menu special:', error)
+        setDinnerMenuItems([])
         setDinnerMenuSpecial(null)
         return
       }
-      if (data && data.active) {
-        setDinnerMenuSpecial({
-          title: data.title,
-          options: Array.isArray(data.options) ? data.options : []
-        })
+      const options = Array.isArray(data?.options)
+        ? data.options.map(opt => (opt || '').toString().trim()).filter(Boolean)
+        : []
+
+      if (data && data.active && options.length > 0) {
+        setDinnerMenuItems(
+          options.map((option, index) => ({
+            id: `dinner-${deliveryDate}-${index + 1}`,
+            name: option,
+            description: '',
+            slotIndex: index
+          }))
+        )
+        // Mantener compat con lógica legacy sin duplicar sección de "opción de cena".
+        setDinnerMenuSpecial(null)
       } else {
+        setDinnerMenuItems([])
         setDinnerMenuSpecial(null)
       }
     } catch (err) {
       console.error('Error fetching dinner menu special:', err)
+      setDinnerMenuItems([])
       setDinnerMenuSpecial(null)
     }
   }
@@ -223,7 +243,7 @@ const useOrderBootstrap = ({
       email: user?.email || ''
     }))
     setBootstrapping(false)
-  }, [user, rawCompanySlug, companyOptionsSlug])
+  }, [user, rawCompanySlug, companyOptionsSlug, selectedDinnerDate])
 
   return { bootstrapping }
 }

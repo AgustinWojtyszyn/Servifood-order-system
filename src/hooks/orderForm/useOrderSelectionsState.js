@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { getTomorrowISOInTimeZone } from '../../utils/dateUtils'
 
 const DINNER_STORAGE_KEY = 'order_dinner_selections'
 
@@ -36,6 +37,10 @@ export const useOrderSelectionsState = () => {
   const savedDinner = loadDinnerSelections()
 
   const [menuItems, setMenuItems] = useState([])
+  const [dinnerMenuItems, setDinnerMenuItems] = useState([])
+  const [selectedDinnerDate, setSelectedDinnerDate] = useState(
+    savedDinner?.selectedDinnerDate || getTomorrowISOInTimeZone()
+  )
   const [customOptionsLunch, setCustomOptionsLunch] = useState([])
   const [customOptionsDinner, setCustomOptionsDinner] = useState([])
   const [customResponses, setCustomResponses] = useState({})
@@ -48,41 +53,54 @@ export const useOrderSelectionsState = () => {
   // Persistir晚餐 selections cuando cambien
   useEffect(() => {
     const data = {
+      selectedDinnerDate,
       selectedItemsDinner,
       dinnerSpecialChoice,
       customResponsesDinner
     }
     saveDinnerSelections(data)
-  }, [selectedItemsDinner, dinnerSpecialChoice, customResponsesDinner])
+  }, [selectedDinnerDate, selectedItemsDinner, dinnerSpecialChoice, customResponsesDinner])
 
   // Wrappers con persistencia para setters de cena
   const setSelectedItemsDinnerPersisted = useCallback((value) => {
     setSelectedItemsDinner(prev => {
       const next = typeof value === 'function' ? value(prev) : value
-      saveDinnerSelections({ selectedItemsDinner: next, dinnerSpecialChoice, customResponsesDinner })
+      saveDinnerSelections({ selectedDinnerDate, selectedItemsDinner: next, dinnerSpecialChoice, customResponsesDinner })
       return next
     })
-  }, [dinnerSpecialChoice, customResponsesDinner])
+  }, [selectedDinnerDate, dinnerSpecialChoice, customResponsesDinner])
 
   const setDinnerSpecialChoicePersisted = useCallback((value) => {
-    setDinnerSpecialChoice(prev => {
+    setDinnerSpecialChoice(() => {
       const next = value
-      saveDinnerSelections({ selectedItemsDinner, dinnerSpecialChoice: next, customResponsesDinner })
+      saveDinnerSelections({ selectedDinnerDate, selectedItemsDinner, dinnerSpecialChoice: next, customResponsesDinner })
       return next
     })
-  }, [selectedItemsDinner, customResponsesDinner])
+  }, [selectedDinnerDate, selectedItemsDinner, customResponsesDinner])
 
   const setCustomResponsesDinnerPersisted = useCallback((value) => {
     setCustomResponsesDinner(prev => {
       const next = typeof value === 'function' ? value(prev) : value
-      saveDinnerSelections({ selectedItemsDinner, dinnerSpecialChoice, customResponsesDinner: next })
+      saveDinnerSelections({ selectedDinnerDate, selectedItemsDinner, dinnerSpecialChoice, customResponsesDinner: next })
       return next
     })
-  }, [selectedItemsDinner, dinnerSpecialChoice])
+  }, [selectedDinnerDate, selectedItemsDinner, dinnerSpecialChoice])
+
+  const setSelectedDinnerDatePersisted = useCallback((value) => {
+    setSelectedDinnerDate(prev => {
+      const next = typeof value === 'function' ? value(prev) : value
+      saveDinnerSelections({ selectedDinnerDate: next, selectedItemsDinner, dinnerSpecialChoice, customResponsesDinner })
+      return next
+    })
+  }, [selectedItemsDinner, dinnerSpecialChoice, customResponsesDinner])
 
   return {
     menuItems,
     setMenuItems,
+    dinnerMenuItems,
+    setDinnerMenuItems,
+    selectedDinnerDate,
+    setSelectedDinnerDate: setSelectedDinnerDatePersisted,
     customOptionsLunch,
     setCustomOptionsLunch,
     customOptionsDinner,
@@ -101,4 +119,3 @@ export const useOrderSelectionsState = () => {
     setSelectedItemsDinner: setSelectedItemsDinnerPersisted
   }
 }
-

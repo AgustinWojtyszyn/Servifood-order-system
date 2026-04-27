@@ -30,7 +30,7 @@ import { clearDinnerOverrideResponses as clearDinnerOverrideResponsesPure } from
 export const useOrderFlowController = ({ user, locationState, navigate } = {}) => {
   const {
     formData, setFormData,
-    mode, setMode,
+    setMode,
     dinnerEnabled, setDinnerEnabled,
     selectedTurns, setSelectedTurns,
     success, setSuccess,
@@ -42,11 +42,13 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     suggestionLoading, setSuggestionLoading,
     suggestionSummary, setSuggestionSummary,
     suggestionMode, setSuggestionMode,
-    dinnerMenuEnabled, setDinnerMenuEnabled
+    dinnerMenuEnabled
   } = useOrderFormState()
 
   const {
     menuItems, setMenuItems,
+    dinnerMenuItems, setDinnerMenuItems,
+    selectedDinnerDate, setSelectedDinnerDate,
     customOptionsLunch, setCustomOptionsLunch,
     customOptionsDinner, setCustomOptionsDinner,
     customResponses, setCustomResponses,
@@ -110,7 +112,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     canChooseCustomSideForSelection
   })
 
-  const dinnerMenuItemsUI = useDinnerMenuItemsUI({ menuItems, selectedItemsDinner })
+  const dinnerMenuItemsUI = useDinnerMenuItemsUI({ menuItems: dinnerMenuItems, selectedItemsDinner })
 
   const allCustomOptions = useMemo(() => {
     const seen = new Set()
@@ -141,8 +143,11 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     setMode,
     setFormData,
     setMenuItems,
+    setDinnerMenuItems,
     setCustomOptionsLunch,
     setCustomOptionsDinner,
+    selectedDinnerDate,
+    setSelectedDinnerDate,
     setDinnerMenuSpecial,
     setPendingLunch,
     setPendingDinner,
@@ -171,7 +176,9 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
   useOrderRepeatPayload({
     locationState,
     menuItems,
+    dinnerMenuItems,
     menuItemsLength: menuItems.length,
+    dinnerMenuItemsLength: dinnerMenuItems.length,
     locations,
     dinnerEnabled,
     dinnerMenuEnabled,
@@ -224,6 +231,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     hasAnySelectedItems
   } = useOrderTotals({
     menuItems,
+    dinnerMenuItems,
     selectedItems,
     selectedItemsDinner,
     dinnerSpecialChoice,
@@ -239,7 +247,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     clearDinnerMenuSelections,
     handleDinnerSpecialSelect
   } = useOrderDinnerSelection({
-    menuItems,
+    dinnerMenuItems,
     selectedItemsDinner,
     setSelectedItemsDinner,
     dinnerSpecialChoice,
@@ -256,6 +264,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     setSuggestionSummary,
     setSuggestionMode,
     menuItems,
+    dinnerMenuItems,
     locations,
     isGenneia,
     setSelectedItems,
@@ -326,6 +335,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
       removeLunchItem
     },
     dinner: {
+      selectedDinnerDate,
       dinnerMenuItemsUI,
       visibleDinnerOptions,
       customResponsesDinner,

@@ -5,6 +5,7 @@ import { getDinnerOverrideChoice as getDinnerOverrideChoicePure, validateDinnerE
 
 export const useOrderTotals = ({
   menuItems,
+  dinnerMenuItems,
   selectedItems,
   selectedItemsDinner,
   dinnerSpecialChoice,
@@ -16,8 +17,8 @@ export const useOrderTotals = ({
 } = {}) => {
   const getSelectedItemsList = useCallback(() => buildSelectedItemsList(menuItems, selectedItems), [menuItems, selectedItems])
   const getSelectedItemsListDinner = useCallback(
-    () => buildSelectedItemsList(menuItems, selectedItemsDinner),
-    [menuItems, selectedItemsDinner]
+    () => buildSelectedItemsList(dinnerMenuItems, selectedItemsDinner),
+    [dinnerMenuItems, selectedItemsDinner]
   )
 
   const calculateTotal = useCallback(() => countSelectedItems(getSelectedItemsList()), [getSelectedItemsList])
@@ -70,4 +71,3 @@ export const useOrderTotals = ({
     hasAnySelectedItems
   }
 }
-

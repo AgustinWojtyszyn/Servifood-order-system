@@ -9,6 +9,7 @@ const normalizeLocation = ({ draftLocation, locations, fallbackLocation }) => {
 export const buildDraftFromPayload = ({
   payload,
   menuItems,
+  dinnerMenuItems,
   locations,
   dinnerEnabled,
   dinnerMenuEnabled
@@ -24,7 +25,7 @@ export const buildDraftFromPayload = ({
   }
 
   if (draftService === 'dinner' && dinnerEnabled && dinnerMenuEnabled) {
-    const selectedDinnerMap = mapOrderItemsToSelection(draftItems, menuItems)
+    const selectedDinnerMap = mapOrderItemsToSelection(draftItems, dinnerMenuItems)
     return {
       service: 'dinner',
       selectedItems: {},
@@ -60,6 +61,7 @@ export const buildDraftFromPayload = ({
 export const buildDraftFromSuggestion = ({
   suggestion,
   menuItems,
+  dinnerMenuItems,
   locations,
   isGenneia
 }) => {
@@ -74,7 +76,7 @@ export const buildDraftFromSuggestion = ({
   }
 
   if (isGenneia && isDinnerSuggestion) {
-    const selectedDinnerMap = mapOrderItemsToSelection(suggestion?.items || [], menuItems)
+    const selectedDinnerMap = mapOrderItemsToSelection(suggestion?.items || [], dinnerMenuItems)
     if (hasDinnerOverride) {
       const overrideValue = Object.values(responsesMap || {}).find((value) => isDinnerOverrideValue(value))
       return {

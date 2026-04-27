@@ -6,7 +6,9 @@ import { isDinnerOverrideValue } from '../../utils/order/orderBusinessRules'
 export const useOrderRepeatPayload = ({
   locationState,
   menuItems,
+  dinnerMenuItems,
   menuItemsLength,
+  dinnerMenuItemsLength,
   locations,
   dinnerEnabled,
   dinnerMenuEnabled,
@@ -26,10 +28,13 @@ export const useOrderRepeatPayload = ({
     if (!menuItemsLength) return
     const payload = locationState?.state?.repeatPayload
     if (!payload) return
+    const payloadService = (payload?.service || 'lunch').toLowerCase()
+    if (payloadService === 'dinner' && !dinnerMenuItemsLength) return
 
     const draft = buildDraftFromPayload({
       payload,
       menuItems,
+      dinnerMenuItems,
       locations,
       dinnerEnabled,
       dinnerMenuEnabled
@@ -56,6 +61,7 @@ export const useOrderRepeatPayload = ({
   }, [
     locationState,
     menuItemsLength,
+    dinnerMenuItemsLength,
     dinnerEnabled,
     dinnerMenuEnabled,
     locations

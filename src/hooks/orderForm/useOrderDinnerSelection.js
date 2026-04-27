@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 
 export const useOrderDinnerSelection = ({
-  menuItems,
+  dinnerMenuItems,
   selectedItemsDinner,
   setSelectedItemsDinner,
   dinnerSpecialChoice,
@@ -11,7 +11,7 @@ export const useOrderDinnerSelection = ({
   notifyInfo
 }) => {
   const handleItemSelectDinner = useCallback((itemId, isSelected) => {
-    const item = menuItems.find(m => m.id === itemId)
+    const item = dinnerMenuItems.find(m => m.id === itemId)
     if (!item) return
     const anySelected = Object.values(selectedItemsDinner).some(Boolean)
 
@@ -33,7 +33,7 @@ export const useOrderDinnerSelection = ({
       setSelectedItemsDinner(prev => ({ ...prev, [itemId]: false }))
     }
   }, [
-    menuItems,
+    dinnerMenuItems,
     selectedItemsDinner,
     setSelectedItemsDinner,
     dinnerSpecialChoice,

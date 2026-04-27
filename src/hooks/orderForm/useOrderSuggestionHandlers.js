@@ -8,6 +8,7 @@ export const useOrderSuggestionHandlers = ({
   setSuggestionSummary,
   setSuggestionMode,
   menuItems,
+  dinnerMenuItems,
   locations,
   isGenneia,
   setSelectedItems,
@@ -26,6 +27,7 @@ export const useOrderSuggestionHandlers = ({
     const draft = buildDraftFromSuggestion({
       suggestion,
       menuItems,
+      dinnerMenuItems,
       locations,
       isGenneia
     })
@@ -51,6 +53,7 @@ export const useOrderSuggestionHandlers = ({
   }, [
     suggestion,
     menuItems,
+    dinnerMenuItems,
     locations,
     isGenneia,
     setSelectedItems,
@@ -74,4 +77,3 @@ export const useOrderSuggestionHandlers = ({
 
   return { handleRepeatSuggestion, handleDismissSuggestion }
 }
-

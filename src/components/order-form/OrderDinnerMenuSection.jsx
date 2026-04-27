@@ -12,8 +12,13 @@ const OrderDinnerMenuSection = ({ items, total, onToggleItem }) => (
         <p className="text-sm sm:text-base text-gray-700 font-semibold mt-1">Selecciona tu plato para la cena (whitelist).</p>
       </div>
     </div>
-    <div className="space-y-3">
-      {items.map((item, index) => {
+    {(!items || items.length === 0) ? (
+      <div className="rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-4 text-sm sm:text-base font-semibold text-amber-900">
+        No hay menú de cena cargado para esta fecha
+      </div>
+    ) : (
+      <div className="space-y-3">
+        {items.map((item, index) => {
         const { label, dish } = getMenuDisplay(item, Number.isFinite(item?.slotIndex) ? item.slotIndex : index)
         return (
         <button
@@ -41,7 +46,8 @@ const OrderDinnerMenuSection = ({ items, total, onToggleItem }) => (
           </div>
         </button>
       )})}
-    </div>
+      </div>
+    )}
     <div className="border-t border-gray-200 pt-3 sm:pt-4 mt-3">
       <div className="flex justify-between items-center text-lg sm:text-xl font-semibold">
         <span>Total de items (cena):</span>
