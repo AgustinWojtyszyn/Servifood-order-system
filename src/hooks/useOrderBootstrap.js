@@ -111,38 +111,10 @@ const useOrderBootstrap = ({
     try {
       const fallbackDate = getTomorrowISOInTimeZone()
       const deliveryDate = selectedDinnerDate || fallbackDate
-      const { data, error } = await db.getDinnerMenuByDate({
-        date: deliveryDate,
-        company: companyOptionsSlug
-      })
-      if (error) {
-        console.error('Error fetching dinner menu by date:', error)
-        setDinnerMenuItems([])
-        setDinnerMenuSpecial(null)
-        return
-      }
-
-      const options = Array.isArray(data?.options)
-        ? data.options.map(opt => (opt || '').toString().trim()).filter(Boolean)
-        : []
-
-      if (data && data.active && options.length > 0) {
-        setDinnerMenuItems(
-          options.map((option, index) => ({
-            id: `dinner-${deliveryDate}-${index + 1}`,
-            name: option,
-            description: '',
-            slotIndex: index
-          }))
-        )
-        setDinnerMenuSpecial(null)
-        return
-      }
-
-      // Fallback de UX: si no hay menú específico de cena, mostrar menú completo base.
+      // En cena se muestra primero el menú completo base (mismo bloque que almuerzo).
       const { data: lunchMenuData, error: lunchMenuError } = await db.getMenuItemsByDate(deliveryDate)
       if (lunchMenuError) {
-        console.error('Error fetching fallback lunch menu for dinner:', lunchMenuError)
+        console.error('Error fetching base menu for dinner:', lunchMenuError)
         setDinnerMenuItems([])
         setDinnerMenuSpecial(null)
         return
@@ -162,7 +134,7 @@ const useOrderBootstrap = ({
       setDinnerMenuItems([])
       setDinnerMenuSpecial(null)
     }
-  }, [companyOptionsSlug, selectedDinnerDate, setDinnerMenuItems, setDinnerMenuSpecial])
+  }, [selectedDinnerDate, setDinnerMenuItems, setDinnerMenuSpecial])
 
   const fetchUserFeatures = useCallback(async () => {
     if (!user?.id) return
