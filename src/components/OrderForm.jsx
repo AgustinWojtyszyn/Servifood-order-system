@@ -12,7 +12,6 @@ import OrderTurnSelector from './order-form/OrderTurnSelector'
 import OrderLunchMenuSection from './order-form/OrderLunchMenuSection'
 import OrderConfirmModal from './order-form/OrderConfirmModal'
 import OrderLunchOptionsSection from './order-form/OrderLunchOptionsSection'
-import OrderDinnerMenuSection from './order-form/OrderDinnerMenuSection'
 import OrderDinnerOptionsSection from './order-form/OrderDinnerOptionsSection'
 import OrderSuccessScreen from './order-form/OrderSuccessScreen'
 import OrderHoursBanner from './order-form/OrderHoursBanner'
@@ -96,10 +95,16 @@ const OrderForm = ({ user, loading }) => {
 
             {controller.turns.dinnerEnabled && controller.turns.dinnerMenuEnabled && controller.turns.selectedTurns.dinner && (
               <div className="space-y-4">
-                <OrderDinnerMenuSection
+                <OrderLunchMenuSection
                   items={controller.dinner.dinnerMenuItemsUI}
-                  total={controller.dinner.calculateTotalDinner()}
+                  selectedItems={controller.dinner.selectedItemsDinner}
                   onToggleItem={controller.dinner.handleItemSelectDinner}
+                />
+
+                <OrderLunchSummary
+                  items={controller.dinner.getSelectedItemsListDinner()}
+                  total={controller.dinner.calculateTotalDinner()}
+                  onRemove={(itemId) => controller.dinner.handleItemSelectDinner(itemId, false)}
                 />
 
                 <OrderDinnerOptionsSection

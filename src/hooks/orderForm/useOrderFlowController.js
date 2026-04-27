@@ -337,6 +337,8 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     dinner: {
       selectedDinnerDate,
       dinnerMenuItemsUI,
+      selectedItemsDinner,
+      getSelectedItemsListDinner,
       visibleDinnerOptions,
       customResponsesDinner,
       setCustomResponsesDinnerSafe,
