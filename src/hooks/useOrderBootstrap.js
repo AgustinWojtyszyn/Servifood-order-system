@@ -139,7 +139,23 @@ const useOrderBootstrap = ({
         return
       }
 
-      setDinnerMenuItems([])
+      // Fallback de UX: si no hay menú específico de cena, mostrar menú completo base.
+      const { data: lunchMenuData, error: lunchMenuError } = await db.getMenuItemsByDate(deliveryDate)
+      if (lunchMenuError) {
+        console.error('Error fetching fallback lunch menu for dinner:', lunchMenuError)
+        setDinnerMenuItems([])
+        setDinnerMenuSpecial(null)
+        return
+      }
+
+      const normalizedLunchMenu = withMenuSlotIndex(sortMenuItems(lunchMenuData || []))
+      setDinnerMenuItems(
+        normalizedLunchMenu.map((item, index) => ({
+          ...item,
+          id: `dinner-fallback-${deliveryDate}-${item.id || index + 1}`,
+          slotIndex: Number.isFinite(item?.slotIndex) ? item.slotIndex : index
+        }))
+      )
       setDinnerMenuSpecial(null)
     } catch (err) {
       console.error('Error fetching dinner menu by date:', err)
