@@ -52,7 +52,7 @@ class UsersService {
       const queryFn = async () => {
         let query = supabase
           .from('users')
-          .select(includeAuthData ? '*' : 'id, email, full_name, role, created_at, updated_at')
+          .select(includeAuthData ? '*' : 'id, email, full_name, role, created_at')
           .order('created_at', { ascending: false })
           .range(offset, offset + limit - 1)
 

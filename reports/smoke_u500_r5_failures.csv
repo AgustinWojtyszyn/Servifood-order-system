@@ -1,0 +1,13 @@
+Method,Name,Error,Occurrences
+GET,READ /rest/v1/menu_items,"CatchResponseError('READ /rest/v1/menu_items auth/rate/server failure status=500 body={\n  ""message"":""An unexpected error occurred""\n}')",1100
+GET,READ /rest/v1/menu_items,"CatchResponseError('READ /rest/v1/menu_items unexpected=0 expected=(200,) body=')",2873
+GET,ADMIN /rest/v1/orders,"CatchResponseError('ADMIN /rest/v1/orders auth/rate/server failure status=500 body={\n  ""message"":""An unexpected error occurred""\n}')",363
+GET,READ /rest/v1/users (self),"CatchResponseError('READ /rest/v1/users (self) unexpected=0 expected=(200,) body=')",2853
+GET,ADMIN /rest/v1/users,"CatchResponseError('ADMIN /rest/v1/users auth/rate/server failure status=500 body={\n  ""message"":""An unexpected error occurred""\n}')",357
+GET,ADMIN /rest/v1/orders,"CatchResponseError('ADMIN /rest/v1/orders unexpected=0 expected=(200,) body=')",989
+GET,READ /rest/v1/users (self),"CatchResponseError('READ /rest/v1/users (self) auth/rate/server failure status=500 body={\n  ""message"":""An unexpected error occurred""\n}')",1094
+GET,READ /rest/v1/orders (my),"CatchResponseError('READ /rest/v1/orders (my) auth/rate/server failure status=500 body={\n  ""message"":""An unexpected error occurred""\n}')",1468
+POST,AUTH admin login,CatchResponseError('unexpected status=0 attempt=1/1 body='),37
+GET,ADMIN /rest/v1/users,"CatchResponseError('ADMIN /rest/v1/users unexpected=0 expected=(200,) body=')",955
+GET,READ /rest/v1/orders (my),"CatchResponseError('READ /rest/v1/orders (my) unexpected=0 expected=(200,) body=')",3741
+POST,AUTH normal login,CatchResponseError('unexpected status=0 attempt=1/1 body='),211
