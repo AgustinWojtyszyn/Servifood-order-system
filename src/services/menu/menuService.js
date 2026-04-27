@@ -150,22 +150,89 @@ export const createMenuService = ({
     }
   }
 
+  const isMissingColumnError = (error = null, column = '') => {
+    if (!error || !column) return false
+    const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase()
+    return message.includes('column') && message.includes(column.toLowerCase())
+  }
+
+  const executeDinnerQuery = async (buildQuery) => {
+    const queryWithCena = buildQuery().eq('meal_type', 'cena')
+    const cenaResult = await queryWithCena
+    if (!isMissingColumnError(cenaResult?.error, 'meal_type')) return cenaResult
+
+    const queryWithDinner = buildQuery().eq('meal_type', 'dinner')
+    const dinnerResult = await queryWithDinner
+    if (!isMissingColumnError(dinnerResult?.error, 'meal_type')) return dinnerResult
+
+    return buildQuery()
+  }
+
   // Menú de cena por fecha (opción exclusiva)
   const getDinnerMenuByDate = async ({ date, company }) => {
-    const baseQuery = supabase
-      .from('dinner_menu_by_date')
-      .select('*')
-      .eq('delivery_date', date)
-      .limit(1)
-      .maybeSingle()
+    if (!date) return { data: null, error: null }
 
-    if (company) {
-      const { data, error } = await baseQuery.eq('company', company)
-      if (!error && data) return { data, error: null }
+    const normalizedCompany = (company || '').toString().trim()
+    const companyCandidates = Array.from(new Set(
+      [normalizedCompany, normalizedCompany.toLowerCase()].filter(Boolean)
+    ))
+
+    const companyNameCandidates = Array.from(new Set(
+      companyCandidates.flatMap(value => {
+        const normalized = value.replace(/[_-]+/g, ' ').trim()
+        if (!normalized) return []
+        const titled = normalized
+          .split(' ')
+          .filter(Boolean)
+          .map(part => part[0].toUpperCase() + part.slice(1))
+          .join(' ')
+        return [normalized, titled]
+      })
+    ))
+
+    const fetchSingleByColumn = async ({ column, value, useNull = false }) => {
+      const buildQuery = () => {
+        let query = supabase
+          .from('dinner_menu_by_date')
+          .select('*')
+          .eq('delivery_date', date)
+          .limit(1)
+          .maybeSingle()
+        query = useNull ? query.is(column, null) : query.eq(column, value)
+        return query
+      }
+      const result = await executeDinnerQuery(buildQuery)
+      if (isMissingColumnError(result?.error, column)) return { data: null, error: null }
+      return result
     }
 
-    const { data, error } = await baseQuery.is('company', null)
-    return { data, error }
+    for (const candidate of companyCandidates) {
+      const result = await fetchSingleByColumn({ column: 'company', value: candidate })
+      if (!result?.error && result?.data) return { data: result.data, error: null }
+      if (result?.error) return result
+    }
+
+    for (const candidate of companyCandidates) {
+      const result = await fetchSingleByColumn({ column: 'company_id', value: candidate })
+      if (!result?.error && result?.data) return { data: result.data, error: null }
+      if (result?.error) return result
+    }
+
+    for (const candidate of companyNameCandidates) {
+      const result = await fetchSingleByColumn({ column: 'company_name', value: candidate })
+      if (!result?.error && result?.data) return { data: result.data, error: null }
+      if (result?.error) return result
+    }
+
+    const globalNullResult = await fetchSingleByColumn({ column: 'company', useNull: true })
+    if (!globalNullResult?.error && globalNullResult?.data) return { data: globalNullResult.data, error: null }
+    if (globalNullResult?.error) return globalNullResult
+
+    const globalEmptyResult = await fetchSingleByColumn({ column: 'company', value: '' })
+    if (!globalEmptyResult?.error && globalEmptyResult?.data) return { data: globalEmptyResult.data, error: null }
+    if (globalEmptyResult?.error) return globalEmptyResult
+
+    return { data: null, error: null }
   }
 
   const upsertDinnerMenuByDate = async ({ deliveryDate, company, title, options, active = true }) => {
@@ -203,4 +270,3 @@ export const createMenuService = ({
     getDinnerMenusByDateRange
   }
 }
-

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getTomorrowISOInTimeZone } from '../../utils/dateUtils'
+import { getTodayISOInTimeZone, getTomorrowISOInTimeZone } from '../../utils/dateUtils'
 
 const DINNER_STORAGE_KEY = 'order_dinner_selections'
 
@@ -10,8 +10,8 @@ const loadDinnerSelections = () => {
     const raw = localStorage.getItem(DINNER_STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    // Verificar que sea del día actual
-    const today = new Date().toISOString().split('T')[0]
+    // Verificar que sea del día actual en horario de negocio
+    const today = getTodayISOInTimeZone()
     if (parsed?._date !== today) return null
     return parsed
   } catch {
@@ -25,11 +25,18 @@ const saveDinnerSelections = (data) => {
   try {
     localStorage.setItem(DINNER_STORAGE_KEY, JSON.stringify({
       ...data,
-      _date: new Date().toISOString().split('T')[0]
+      _date: getTodayISOInTimeZone()
     }))
   } catch {
     // ignore
   }
+}
+
+const toValidISODateOrFallback = (value, fallback) => {
+  if (typeof value !== 'string') return fallback
+  const normalized = value.trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return fallback
+  return normalized
 }
 
 export const useOrderSelectionsState = () => {
@@ -39,7 +46,7 @@ export const useOrderSelectionsState = () => {
   const [menuItems, setMenuItems] = useState([])
   const [dinnerMenuItems, setDinnerMenuItems] = useState([])
   const [selectedDinnerDate, setSelectedDinnerDate] = useState(
-    savedDinner?.selectedDinnerDate || getTomorrowISOInTimeZone()
+    toValidISODateOrFallback(savedDinner?.selectedDinnerDate, getTomorrowISOInTimeZone())
   )
   const [customOptionsLunch, setCustomOptionsLunch] = useState([])
   const [customOptionsDinner, setCustomOptionsDinner] = useState([])
@@ -50,7 +57,7 @@ export const useOrderSelectionsState = () => {
   const [selectedItems, setSelectedItems] = useState({})
   const [selectedItemsDinner, setSelectedItemsDinner] = useState(savedDinner?.selectedItemsDinner || {})
 
-  // Persistir晚餐 selections cuando cambien
+  // Persistir selecciones de cena cuando cambien
   useEffect(() => {
     const data = {
       selectedDinnerDate,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { db } from '../supabaseClient'
 import { sortMenuItems } from '../utils/order/orderMenuHelpers'
 import { withMenuSlotIndex } from '../utils/order/menuDisplay'
@@ -6,6 +6,21 @@ import { DINNER_FALLBACK_WHITELIST } from '../constants/dinnerWhitelist'
 import { buildSuggestionSummary, buildOptionsSummary } from '../utils/order/orderFormatters'
 import { hasMainMenuSelected } from '../utils/order/orderSelectionHelpers'
 import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
+
+const DEFAULT_MENU_ITEMS = [
+  { id: 1, name: 'Plato Principal 1', description: 'Delicioso plato principal' },
+  { id: 2, name: 'Plato Principal 2', description: 'Otro plato delicioso' },
+  { id: 3, name: 'Plato Principal 3', description: 'Plato especial del día' },
+  { id: 4, name: 'Plato Principal 4', description: 'Plato vegetariano' },
+  { id: 5, name: 'Plato Principal 5', description: 'Plato de la casa' },
+  { id: 6, name: 'Plato Principal 6', description: 'Plato recomendado' }
+]
+
+const filterByMealScope = (options = [], meal) =>
+  (options || []).filter(opt => {
+    const scope = opt?.meal_scope || (opt?.dinner_only ? 'dinner' : 'both')
+    return scope === 'both' || scope === meal
+  })
 
 const useOrderBootstrap = ({
   user,
@@ -33,82 +48,80 @@ const useOrderBootstrap = ({
 }) => {
   const [bootstrapping, setBootstrapping] = useState(false)
 
-  const fetchMenuItems = async () => {
+  const fetchMenuItems = useCallback(async () => {
     try {
       const menuDate = getTomorrowISOInTimeZone()
       const { data, error } = await db.getMenuItemsByDate(menuDate)
 
       if (error) {
         console.error('Error fetching menu:', error)
-        // Set default menu items if none exist
-        setMenuItems(withMenuSlotIndex(sortMenuItems([
-          { id: 1, name: 'Plato Principal 1', description: 'Delicioso plato principal' },
-          { id: 2, name: 'Plato Principal 2', description: 'Otro plato delicioso' },
-          { id: 3, name: 'Plato Principal 3', description: 'Plato especial del día' },
-          { id: 4, name: 'Plato Principal 4', description: 'Plato vegetariano' },
-          { id: 5, name: 'Plato Principal 5', description: 'Plato de la casa' },
-          { id: 6, name: 'Plato Principal 6', description: 'Plato recomendado' }
-        ])))
-      } else {
-        setMenuItems(withMenuSlotIndex(sortMenuItems(data || [])))
+        setMenuItems(withMenuSlotIndex(sortMenuItems(DEFAULT_MENU_ITEMS)))
+        return
       }
+
+      setMenuItems(withMenuSlotIndex(sortMenuItems(data || [])))
     } catch (err) {
       console.error('Error:', err)
     }
-  }
+  }, [setMenuItems])
 
-  const fetchCustomOptions = async () => {
+  const fetchLunchCustomOptions = useCallback(async () => {
     try {
       const deliveryDate = getTomorrowISOInTimeZone()
-
-      const filterByMealScope = (options = [], meal) =>
-        (options || []).filter(opt => {
-          const scope = opt?.meal_scope || (opt?.dinner_only ? 'dinner' : 'both')
-          return scope === 'both' || scope === meal
-        })
-
-      const [{ data: lunchData, error: lunchError }, { data: dinnerData, error: dinnerError }] = await Promise.all([
-        db.getVisibleCustomOptions({ company: companyOptionsSlug, meal: 'lunch', date: deliveryDate }),
-        db.getVisibleCustomOptions({ company: companyOptionsSlug, meal: 'dinner', date: deliveryDate })
-      ])
-
-      if (lunchError) console.error('Error fetching lunch custom options:', lunchError)
-      if (dinnerError) console.error('Error fetching dinner custom options:', dinnerError)
-
-      const lunchOptions = filterByMealScope(lunchData, 'lunch')
-      const dinnerOptionsFromDinnerQuery = filterByMealScope(dinnerData, 'dinner')
-      // Fallback defensivo: si la consulta específica de cena devuelve vacío
-      // (por reglas/RPC/whitelist), reutilizamos el catálogo de almuerzo filtrado
-      // para mostrar opciones compatibles con cena.
-      const dinnerOptions = dinnerOptionsFromDinnerQuery.length > 0
-        ? dinnerOptionsFromDinnerQuery
-        : filterByMealScope(lunchData, 'dinner')
-
-      // Filtro defensivo por alcance de comida: asegura que cada opción solo aparezca en el turno elegido
-      setCustomOptionsLunch(lunchOptions)
-      setCustomOptionsDinner(dinnerOptions)
+      const { data, error } = await db.getVisibleCustomOptions({
+        company: companyOptionsSlug,
+        meal: 'lunch',
+        date: deliveryDate
+      })
+      if (error) {
+        console.error('Error fetching lunch custom options:', error)
+        setCustomOptionsLunch([])
+        return
+      }
+      setCustomOptionsLunch(filterByMealScope(data, 'lunch'))
     } catch (err) {
-      console.error('Error fetching custom options:', err)
+      console.error('Error fetching lunch custom options:', err)
+      setCustomOptionsLunch([])
     }
-  }
+  }, [companyOptionsSlug, setCustomOptionsLunch])
 
-  const fetchDinnerMenuSpecial = async () => {
+  const fetchDinnerCustomOptions = useCallback(async () => {
+    try {
+      const fallbackDate = getTomorrowISOInTimeZone()
+      const dinnerDate = selectedDinnerDate || fallbackDate
+      const { data, error } = await db.getVisibleCustomOptions({
+        company: companyOptionsSlug,
+        meal: 'dinner',
+        date: dinnerDate
+      })
+      if (error) {
+        console.error('Error fetching dinner custom options:', error)
+        setCustomOptionsDinner([])
+        return
+      }
+      // Cena siempre se resuelve con su consulta específica, sin reutilizar catálogo de almuerzo.
+      setCustomOptionsDinner(filterByMealScope(data, 'dinner'))
+    } catch (err) {
+      console.error('Error fetching dinner custom options:', err)
+      setCustomOptionsDinner([])
+    }
+  }, [companyOptionsSlug, selectedDinnerDate, setCustomOptionsDinner])
+
+  const fetchDinnerMenuSpecial = useCallback(async () => {
     try {
       const fallbackDate = getTomorrowISOInTimeZone()
       const deliveryDate = selectedDinnerDate || fallbackDate
-      if (!selectedDinnerDate) {
-        setSelectedDinnerDate(fallbackDate)
-      }
       const { data, error } = await db.getDinnerMenuByDate({
         date: deliveryDate,
         company: companyOptionsSlug
       })
       if (error) {
-        console.error('Error fetching dinner menu special:', error)
+        console.error('Error fetching dinner menu by date:', error)
         setDinnerMenuItems([])
         setDinnerMenuSpecial(null)
         return
       }
+
       const options = Array.isArray(data?.options)
         ? data.options.map(opt => (opt || '').toString().trim()).filter(Boolean)
         : []
@@ -122,20 +135,20 @@ const useOrderBootstrap = ({
             slotIndex: index
           }))
         )
-        // Mantener compat con lógica legacy sin duplicar sección de "opción de cena".
         setDinnerMenuSpecial(null)
-      } else {
-        setDinnerMenuItems([])
-        setDinnerMenuSpecial(null)
+        return
       }
+
+      setDinnerMenuItems([])
+      setDinnerMenuSpecial(null)
     } catch (err) {
-      console.error('Error fetching dinner menu special:', err)
+      console.error('Error fetching dinner menu by date:', err)
       setDinnerMenuItems([])
       setDinnerMenuSpecial(null)
     }
-  }
+  }, [companyOptionsSlug, selectedDinnerDate, setDinnerMenuItems, setDinnerMenuSpecial])
 
-  const fetchUserFeatures = async () => {
+  const fetchUserFeatures = useCallback(async () => {
     if (!user?.id) return
     try {
       const { data, error } = await db.getUserFeatures(user.id)
@@ -143,7 +156,6 @@ const useOrderBootstrap = ({
         const dinner = data.find(f => f.feature === 'dinner' && f.enabled)
         if (dinner) {
           setDinnerEnabled(true)
-          // Habilitar turno de cena si tiene la feature
           setSelectedTurns(prev => ({ ...prev, dinner: true }))
         } else {
           const lowerId = (user?.id || '').toString().trim().toLowerCase()
@@ -151,7 +163,6 @@ const useOrderBootstrap = ({
           const fallback = DINNER_FALLBACK_WHITELIST.has(lowerId) || DINNER_FALLBACK_WHITELIST.has(lowerEmail)
           setDinnerEnabled(fallback)
           if (fallback) {
-            // Si está en whitelist, habilitar turno de cena por defecto
             setSelectedTurns({ lunch: true, dinner: true })
             setMode('both')
           } else {
@@ -163,31 +174,31 @@ const useOrderBootstrap = ({
     } catch (err) {
       console.error('Error fetching user features', err)
     }
-  }
+  }, [setDinnerEnabled, setMode, setSelectedTurns, user?.email, user?.id])
 
-  const checkTodayOrder = async () => {
+  const checkTodayOrder = useCallback(async () => {
     if (!user?.id) return
     setSuggestionLoading(true)
     try {
-      // Obtener solo los pedidos del usuario actual
       const { data, error } = await db.getOrders(user.id)
       if (!error && data) {
         const today = new Date()
-        today.setHours(0,0,0,0)
-        // Compatibilidad legacy: algunos pedidos históricos pueden venir como preparing/ready.
-        // Operativamente hoy se trabaja con pending/archived, pero para bloqueo diario se tratan como activos.
+        today.setHours(0, 0, 0, 0)
+
         const pendingLunch = data.some(order => {
           const d = new Date(order.created_at)
-          d.setHours(0,0,0,0)
+          d.setHours(0, 0, 0, 0)
           const isToday = d.getTime() === today.getTime()
-          return isToday && (order.service || 'lunch') === 'lunch' && ['pending','preparing','ready'].includes(order.status)
+          return isToday && (order.service || 'lunch') === 'lunch' && ['pending', 'preparing', 'ready'].includes(order.status)
         })
+
         const pendingDinner = data.some(order => {
           const d = new Date(order.created_at)
-          d.setHours(0,0,0,0)
+          d.setHours(0, 0, 0, 0)
           const isToday = d.getTime() === today.getTime()
-          return isToday && (order.service || 'lunch') === 'dinner' && ['pending','preparing','ready'].includes(order.status)
+          return isToday && (order.service || 'lunch') === 'dinner' && ['pending', 'preparing', 'ready'].includes(order.status)
         })
+
         setPendingLunch(pendingLunch)
         setPendingDinner(pendingDinner)
         setHasOrderToday(pendingLunch || pendingDinner)
@@ -226,24 +237,67 @@ const useOrderBootstrap = ({
     } finally {
       setSuggestionLoading(false)
     }
-  }
+  }, [
+    setHasOrderToday,
+    setPendingDinner,
+    setPendingLunch,
+    setSuggestion,
+    setSuggestionLoading,
+    setSuggestionMode,
+    setSuggestionSummary,
+    setSuggestionVisible,
+    user?.id
+  ])
+
+  useEffect(() => {
+    if (selectedDinnerDate) return
+    setSelectedDinnerDate(getTomorrowISOInTimeZone())
+  }, [selectedDinnerDate, setSelectedDinnerDate])
 
   useEffect(() => {
     if (!user?.id) return
-    setBootstrapping(true)
-    fetchMenuItems()
-    fetchCustomOptions()
+    let isMounted = true
+
+    const run = async () => {
+      setBootstrapping(true)
+      await Promise.all([
+        fetchMenuItems(),
+        fetchLunchCustomOptions(),
+        fetchUserFeatures(),
+        checkTodayOrder()
+      ])
+
+      if (!isMounted) return
+      setFormData(prev => ({
+        ...prev,
+        name: user?.user_metadata?.full_name || prev.name || '',
+        email: user?.email || prev.email || ''
+      }))
+      setBootstrapping(false)
+    }
+
+    run()
+    return () => {
+      isMounted = false
+    }
+  }, [
+    user?.id,
+    user?.email,
+    user?.user_metadata?.full_name,
+    rawCompanySlug,
+    companyOptionsSlug,
+    fetchMenuItems,
+    fetchLunchCustomOptions,
+    fetchUserFeatures,
+    checkTodayOrder,
+    setFormData
+  ])
+
+  useEffect(() => {
+    if (!user?.id) return
     fetchDinnerMenuSpecial()
-    checkTodayOrder()
-    fetchUserFeatures()
-    // Pre-fill user data
-    setFormData(prev => ({
-      ...prev,
-      name: user?.user_metadata?.full_name || '',
-      email: user?.email || ''
-    }))
-    setBootstrapping(false)
-  }, [user, rawCompanySlug, companyOptionsSlug, selectedDinnerDate])
+    fetchDinnerCustomOptions()
+  }, [user?.id, companyOptionsSlug, selectedDinnerDate, fetchDinnerCustomOptions, fetchDinnerMenuSpecial])
 
   return { bootstrapping }
 }
