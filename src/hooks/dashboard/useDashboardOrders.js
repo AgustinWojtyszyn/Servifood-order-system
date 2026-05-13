@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export const useDashboardOrders = ({ user, db, usersService } = {}) => {
   const [orders, setOrders] = useState([])
@@ -10,6 +10,7 @@ export const useDashboardOrders = ({ user, db, usersService } = {}) => {
     pending: 0,
     archived: 0
   })
+  const isFetchingRef = useRef(false)
 
   const calculateStats = useCallback((ordersData) => {
     const today = new Date()
@@ -30,6 +31,8 @@ export const useDashboardOrders = ({ user, db, usersService } = {}) => {
 
   const fetchOrders = useCallback(async (silent = false) => {
     if (!user?.id) return
+    if (isFetchingRef.current) return
+    isFetchingRef.current = true
     try {
       if (!silent) {
         setOrdersLoading(true)
@@ -76,6 +79,7 @@ export const useDashboardOrders = ({ user, db, usersService } = {}) => {
     } catch (err) {
       console.error('Error:', err)
     } finally {
+      isFetchingRef.current = false
       if (!silent) {
         setOrdersLoading(false)
       }
@@ -131,4 +135,3 @@ export const useDashboardOrders = ({ user, db, usersService } = {}) => {
     handleRefresh
   }
 }
-

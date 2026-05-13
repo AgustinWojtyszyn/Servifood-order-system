@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { auditService } from '../../services/audit'
 import { healthCheck, supabase } from '../../services/supabase'
 
@@ -17,6 +17,7 @@ export const useAuditLogsData = () => {
   const [healthLogs, setHealthLogs] = useState([])
   const [healthLogsLoading, setHealthLogsLoading] = useState(true)
   const [healthLogsError, setHealthLogsError] = useState(null)
+  const isFetchingOrdersCountRef = useRef(false)
 
   const loadLogs = useCallback(async () => {
     setLoading(true)
@@ -66,6 +67,8 @@ export const useAuditLogsData = () => {
   }, [])
 
   const loadOrdersCount = useCallback(async (silent = false) => {
+    if (isFetchingOrdersCountRef.current) return
+    isFetchingOrdersCountRef.current = true
     if (!silent) setOrdersError(null)
     try {
       const start = new Date()
@@ -85,6 +88,8 @@ export const useAuditLogsData = () => {
       }
     } catch (err) {
       setOrdersError(err?.message || 'Error desconocido al contar pedidos del día')
+    } finally {
+      isFetchingOrdersCountRef.current = false
     }
   }, [])
 
@@ -123,4 +128,3 @@ export const useAuditLogsData = () => {
     loadHealthProbes
   }
 }
-

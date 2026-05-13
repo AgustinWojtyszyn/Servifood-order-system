@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { db } from '../supabaseClient'
 import { usersService } from '../services/users'
 import { Sound } from '../utils/Sound'
@@ -20,6 +20,7 @@ export const useDailyOrdersData = (user) => {
     archived: 0,
     pending: 0
   })
+  const isFetchingRef = useRef(false)
 
   const checkIfAdmin = useCallback(async () => {
     if (!user?.id) {
@@ -39,6 +40,8 @@ export const useDailyOrdersData = (user) => {
 
   const fetchDailyOrders = useCallback(async (silent = false) => {
     if (!user?.id) return
+    if (isFetchingRef.current) return
+    isFetchingRef.current = true
     try {
       if (!silent) {
         setOrdersLoading(true)
@@ -99,6 +102,7 @@ export const useDailyOrdersData = (user) => {
     } catch (err) {
       console.error('Error:', err)
     } finally {
+      isFetchingRef.current = false
       if (!silent) {
         setOrdersLoading(false)
       }
