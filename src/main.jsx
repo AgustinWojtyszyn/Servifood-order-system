@@ -5,6 +5,7 @@ import './mobile-optimizations.css'
 
 import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext'
+import AppErrorBoundary from './components/ui/ErrorBoundary'
 
 // No limpiar localStorage ni sessionStorage para mantener la sesión activa
 
@@ -26,7 +27,9 @@ if (import.meta.env.DEV) {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
     </AuthProvider>
   </StrictMode>,
 )

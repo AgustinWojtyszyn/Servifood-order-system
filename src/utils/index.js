@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify'
 import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
+export { cn } from './cn'
 
 // Utilidades de validación y sanitización
 export const sanitizeInput = (input) => {

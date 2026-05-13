@@ -243,6 +243,28 @@ export const healthCheck = async (timeoutMs = 4000) => {
   }
 }
 
+const METRICS_CIRCUIT = {
+  failures: 0,
+  nextRetryAt: 0
+}
+
+export const tryLogMetric = async (payload) => {
+  const nowTs = Date.now()
+  if (nowTs < METRICS_CIRCUIT.nextRetryAt) return
+  try {
+    await supabase.rpc('log_metric', payload)
+    METRICS_CIRCUIT.failures = 0
+    METRICS_CIRCUIT.nextRetryAt = 0
+  } catch (e) {
+    METRICS_CIRCUIT.failures += 1
+    const backoffMs = Math.min(60000, 1000 * Math.pow(2, METRICS_CIRCUIT.failures - 1))
+    METRICS_CIRCUIT.nextRetryAt = Date.now() + backoffMs
+    if (import.meta.env.DEV) {
+      console.error('[metrics] log_metric rpc failed', e?.message || e)
+    }
+  }
+}
+
 export const instrumentRpc = async (rpcName, args = {}, metaContext = {}, options = {}) => {
   const now = () => (
     typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -262,18 +284,14 @@ export const instrumentRpc = async (rpcName, args = {}, metaContext = {}, option
     return { data, error, durationMs }
   }
 
-  try {
-    await supabase.rpc('log_metric', {
-      p_op: `rpc.${rpcName}`,
-      p_ok: !error,
-      p_duration_ms: durationMs,
-      p_screen: null,
-      p_error_code: error ? String(error.code || error.message || 'rpc_error').slice(0, 180) : null,
-      p_meta: metaContext || {}
-    })
-  } catch (e) {
-    console.error('[metrics] log_metric rpc failed', e?.message || e)
-  }
+  await tryLogMetric({
+    p_op: `rpc.${rpcName}`,
+    p_ok: !error,
+    p_duration_ms: durationMs,
+    p_screen: null,
+    p_error_code: error ? String(error.code || error.message || 'rpc_error').slice(0, 180) : null,
+    p_meta: metaContext || {}
+  })
 
   return { data, error, durationMs }
 }

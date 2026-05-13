@@ -44,7 +44,15 @@ const ExcelAnalysis = () => {
         body: formData
       })
 
-      const payload = await response.json()
+      const contentType = response.headers.get('content-type') || ''
+      let payload = null
+      if (contentType.toLowerCase().includes('application/json')) {
+        payload = await response.json()
+      } else {
+        const textPayload = await response.text()
+        payload = { error: textPayload || 'Respuesta no JSON del servidor.' }
+      }
+
       if (!response.ok) {
         throw new Error(payload?.error || 'Error subiendo archivo.')
       }
