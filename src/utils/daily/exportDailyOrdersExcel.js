@@ -22,7 +22,37 @@ export async function exportDailyOrdersExcel({
   selectedStatus,
   stats
 }) {
-  const ordersToExport = filterOrdersByCompany(sortedOrders, exportCompany)
+  const filteredOrders = filterOrdersByCompany(sortedOrders, exportCompany)
+
+  // Dedupe defensivo por id para evitar filas duplicadas por inconsistencias en origen.
+  const ordersById = new Map()
+  const ordersWithoutId = []
+  let duplicateCount = 0
+
+  filteredOrders.forEach((order) => {
+    if (!order || !order.id) {
+      ordersWithoutId.push(order)
+      console.warn('[exportDailyOrdersExcel] Pedido sin id detectado; se exportará sin deduplicación por id.', {
+        created_at: order?.created_at,
+        customer_email: order?.customer_email,
+        location: order?.location
+      })
+      return
+    }
+
+    if (ordersById.has(order.id)) {
+      duplicateCount += 1
+      return
+    }
+
+    ordersById.set(order.id, order)
+  })
+
+  if (duplicateCount > 0) {
+    console.warn(`[exportDailyOrdersExcel] Se removieron ${duplicateCount} pedidos duplicados por id antes de exportar.`)
+  }
+
+  const ordersToExport = [...ordersById.values(), ...ordersWithoutId]
 
   if (ordersToExport.length === 0) {
     notifyInfo('No hay pedidos para exportar')
