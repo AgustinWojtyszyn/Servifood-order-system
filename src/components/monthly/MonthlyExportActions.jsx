@@ -4,7 +4,7 @@ import { Download, Printer } from 'lucide-react'
 const MonthlyExportActions = ({
   metrics,
   canExportDaily,
-  dailyDataForView,
+  _dailyDataForView,
   onExportAllExcel,
   onExportExcel,
   onExportDailyExcel,

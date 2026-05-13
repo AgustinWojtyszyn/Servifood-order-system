@@ -31,7 +31,7 @@ export const useCafeteriaPendingOrder = (user) => {
       const scoped = (Array.isArray(data) ? data : []).filter((order) => matchesUser(order, user))
       const sorted = scoped.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       setPendingOrder(sorted[0] || null)
-    } catch (err) {
+    } catch (_err) {
       setError('No se pudo cargar el pedido de cafetería.')
       setPendingOrder(null)
     } finally {

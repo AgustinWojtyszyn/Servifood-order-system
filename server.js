@@ -13,6 +13,8 @@ import crypto from 'crypto';
 import multer from 'multer';
 import XLSX from 'xlsx';
 
+let supabase = null;
+
 // Supabase JWT verification middleware
 const verifySupabaseJWT = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -28,7 +30,7 @@ const verifySupabaseJWT = async (req, res, next) => {
     }
     req.user = user;
     next();
-  } catch (err) {
+} catch (_err) {
     return res.status(401).json({ error: 'Token verification failed' });
   }
 };
@@ -67,7 +69,7 @@ if (cluster.isMaster) {
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
-  cluster.on('exit', (worker, code, signal) => {
+  cluster.on('exit', (worker, _code, _signal) => {
     console.log(`Worker ${worker.process.pid} murió. Lanzando uno nuevo...`);
     cluster.fork();
   });
@@ -79,7 +81,7 @@ if (cluster.isMaster) {
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
   const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
-  const supabase = SUPABASE_URL
+  supabase = SUPABASE_URL
     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY, { auth: { persistSession: false } })
     : null;
 
@@ -328,7 +330,7 @@ if (cluster.isMaster) {
   }
 
   // Si se solicita un archivo con extensión y no existe, devolver 404 sin fallback a index.html
-  app.get(/^.+\.[a-zA-Z0-9]+$/, (req, res, next) => {
+  app.get(/^.+\.[a-zA-Z0-9]+$/, (req, res) => {
     res.status(404).type('text/plain').send('Not found');
   });
 
@@ -339,7 +341,7 @@ if (cluster.isMaster) {
   });
 
   // Manejo global de errores
-  app.use((err, req, res, next) => {
+  app.use((err, req, res, _next) => {
     console.error('Error global:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   });
@@ -347,7 +349,7 @@ if (cluster.isMaster) {
   process.on('uncaughtException', (err) => {
     console.error('Excepción no capturada:', err);
   });
-  process.on('unhandledRejection', (reason, promise) => {
+  process.on('unhandledRejection', (reason, _promise) => {
     console.error('Promesa no manejada:', reason);
   });
 

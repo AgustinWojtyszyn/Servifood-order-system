@@ -50,7 +50,7 @@ const AdminDinnerOptionSection = ({
         .format(date)
         .replace('.', '')
         .toUpperCase()
-    } catch (err) {
+    } catch (_err) {
       return toISODate(date)
     }
   }
@@ -58,7 +58,7 @@ const AdminDinnerOptionSection = ({
   const formatDayNumber = (date) => {
     try {
       return new Intl.DateTimeFormat('es-AR', { day: '2-digit' }).format(date)
-    } catch (err) {
+    } catch (_err) {
       return String(date.getDate()).padStart(2, '0')
     }
   }
@@ -69,7 +69,7 @@ const AdminDinnerOptionSection = ({
         .format(date)
         .replace('.', '')
         .toUpperCase()
-    } catch (err) {
+    } catch (_err) {
       return ''
     }
   }

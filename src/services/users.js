@@ -227,7 +227,7 @@ class UsersService {
         if (notificationsError) {
           console.warn('Error eliminando notificaciones del usuario:', notificationsError)
         }
-      } catch (e) {
+      } catch (_e) {
         // Tabla de notificaciones podría no existir
       }
 

@@ -11,7 +11,7 @@ export const getBuenosAiresHour = () => {
     })
     const hour = Number(formatter.format(new Date()))
     return Number.isFinite(hour) ? hour : null
-  } catch (err) {
+  } catch (_err) {
     return new Date().getHours()
   }
 }

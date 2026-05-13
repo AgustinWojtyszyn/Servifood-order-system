@@ -19,7 +19,7 @@ const Layout = ({ children, user, loading }) => {
   const [externalLocks, setExternalLocks] = useState(0)
   const navigate = useNavigate()
   // Helpers de diagnóstico siempre disponibles bajo window.__logScrollMetrics y __logScrollContainers.
-  const isScrollDebug = (() => {
+  const _isScrollDebug = (() => {
     if (typeof import.meta === 'undefined') return false
     const envFlag = import.meta?.env?.VITE_SCROLL_DEBUG === '1'
     const isDev = import.meta?.env?.DEV
@@ -110,8 +110,8 @@ const Layout = ({ children, user, loading }) => {
       } else if (error && import.meta.env.DEV) {
         console.warn('[Layout][role-debug] error fetching users', error)
       }
-    } catch (err) {
-      console.error('Error checking user role:', err)
+    } catch (_err) {
+      console.error('Error checking user role:', _err)
       // Fallback a user_metadata si falla la consulta
       const roleValue = user?.user_metadata?.role
       setIsAdmin(roleValue === 'admin')
@@ -126,8 +126,8 @@ const Layout = ({ children, user, loading }) => {
       try {
         const { clearSupabaseStorage } = await import('../supabaseClient')
         clearSupabaseStorage()
-      } catch (err) {
-        console.error('Error cleaning Supabase storage after signOut:', err)
+      } catch (_err) {
+        console.error('Error cleaning Supabase storage after signOut:', _err)
       }
     }
 

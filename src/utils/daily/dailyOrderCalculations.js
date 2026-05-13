@@ -274,7 +274,7 @@ export const buildPrintStats = (ordersList = []) => {
 
   ;(ordersList || []).forEach(order => {
     if (!order) return
-    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
+    const { normalizedCustomResponses } = normalizeOrderForReadOnly(order)
     const customResponses = Array.isArray(normalizedCustomResponses) ? normalizedCustomResponses : []
     const turn = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
     const itemsQty = Number(order.total_items || 0)

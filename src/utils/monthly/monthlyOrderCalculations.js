@@ -98,7 +98,7 @@ export const buildRangeDates = (start, end) => {
   return dates
 }
 
-export const indexOrdersByDay = (orders = [], timeZone = 'America/Argentina/San_Juan') => {
+export const indexOrdersByDay = (orders = [], _timeZone = 'America/Argentina/San_Juan') => {
   const byDay = {}
   const bucketForOrder = (o) => {
     if (o?.delivery_date) return o.delivery_date.slice(0, 10)

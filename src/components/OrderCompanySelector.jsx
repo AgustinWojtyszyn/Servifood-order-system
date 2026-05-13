@@ -31,7 +31,7 @@ const OrderCompanySelector = ({ user, loading }) => {
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('lastCompanySelected', slug)
       }
-    } catch (err) {
+    } catch (_err) {
       // no-op: fallback sin persistencia
     }
     navigate(`/order/${slug}`)

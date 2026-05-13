@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { auth, supabase } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle, Mail, AlertCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
@@ -20,7 +20,6 @@ const Register = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState('')
-  const navigate = useNavigate()
   const inFlightRef = useRef(false)
 
   const handleChange = (e) => {
@@ -87,9 +86,8 @@ const Register = () => {
         setUserEmail(formData.email)
         setSuccess(true)
       }
-    } catch (err) {
-      console.error('Error en handleSubmit:', err)
-      setError(`Error al crear la cuenta: ${err.message || 'Error desconocido'}`)
+    } catch (_err) {
+      setError('Error al crear la cuenta: Error desconocido')
     } finally {
       setLoading(false)
       inFlightRef.current = false
@@ -108,7 +106,7 @@ const Register = () => {
         setGoogleError(error.message || 'Error al registrarse con Google.')
         setGoogleLoading(false)
       }
-    } catch (err) {
+    } catch (_err) {
       setGoogleError('Error al registrarse con Google. Por favor, intenta nuevamente.')
       setGoogleLoading(false)
     }

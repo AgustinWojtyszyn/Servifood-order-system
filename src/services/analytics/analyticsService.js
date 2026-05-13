@@ -132,7 +132,7 @@ export const createAnalyticsService = ({ supabase } = {}) => {
         if (Array.isArray(o.items)) {
           items = o.items
         } else if (typeof o.items === 'string') {
-          try { items = JSON.parse(o.items) } catch {}
+          try { items = JSON.parse(o.items) } catch (_err) { /* ignore malformed payload */ }
         }
         items.forEach(item => {
           const qty = (item?.quantity ?? 1)
@@ -154,7 +154,7 @@ export const createAnalyticsService = ({ supabase } = {}) => {
         if (Array.isArray(o.custom_responses)) {
           customResponses = o.custom_responses
         } else if (typeof o.custom_responses === 'string') {
-          try { customResponses = JSON.parse(o.custom_responses) } catch {}
+          try { customResponses = JSON.parse(o.custom_responses) } catch (_err) { /* ignore malformed payload */ }
         }
         customResponses.forEach(resp => {
           const r = norm(resp?.response)
@@ -190,4 +190,3 @@ export const createAnalyticsService = ({ supabase } = {}) => {
     }
   }
 }
-

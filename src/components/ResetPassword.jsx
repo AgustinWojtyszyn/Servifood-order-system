@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { auth, supabase } from '../supabaseClient'
+import { supabase } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 
@@ -141,7 +141,7 @@ const ResetPassword = () => {
       setTimeout(() => {
         navigate('/login?reset=ok')
       }, 1500)
-    } catch (err) {
+    } catch (_err) {
       setError('Error al actualizar la contraseña')
     } finally {
       setLoading(false)

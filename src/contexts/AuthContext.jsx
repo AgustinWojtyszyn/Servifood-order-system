@@ -27,7 +27,7 @@ export const useAuthContext = () => {
 }
 
 // HOC para componentes que requieren autenticación
-export const withAuth = (Component) => {
+export const withAuth = (_Component) => {
   return function AuthenticatedComponent(props) {
     const { isAuthenticated, loading } = useAuthContext()
 
@@ -66,12 +66,12 @@ export const withAuth = (Component) => {
       )
     }
 
-    return <Component {...props} />
+    return <_Component {...props} />
   }
 }
 
 // HOC para componentes que requieren rol de admin
-export const withAdmin = (Component) => {
+export const withAdmin = (_Component) => {
   return function AdminComponent(props) {
     const { isAdmin, isAuthenticated, loading } = useAuthContext()
 
@@ -131,6 +131,6 @@ export const withAdmin = (Component) => {
       )
     }
 
-    return <Component {...props} />
+    return <_Component {...props} />
   }
 }

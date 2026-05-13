@@ -51,7 +51,7 @@ const ForgotPassword = () => {
 
       if (normalizedEmail) setLastResetAt(normalizedEmail, Date.now())
       setSuccess(true)
-    } catch (err) {
+    } catch (_err) {
       setError('Error al enviar el correo de recuperación')
     } finally {
       setLoading(false)

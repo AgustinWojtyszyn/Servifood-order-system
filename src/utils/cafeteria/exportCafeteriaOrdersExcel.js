@@ -3,16 +3,7 @@ import { CAFETERIA_PLANS } from '../../cafeteria/cafeteriaPlans'
 import { downloadWorkbook } from '../daily/dailyOrderCalculations'
 import { notifyError, notifyInfo, notifySuccess } from '../notice'
 
-const buildPlanMap = () => {
-  const map = {}
-  CAFETERIA_PLANS.forEach((plan) => {
-    map[plan.id] = plan.name
-  })
-  return map
-}
-
 const normalizeOrderRow = (order) => {
-  const planMap = buildPlanMap()
   const quantities = {}
   CAFETERIA_PLANS.forEach((plan) => {
     quantities[plan.id] = 0

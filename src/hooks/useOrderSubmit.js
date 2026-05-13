@@ -85,9 +85,6 @@ const useOrderSubmit = ({
       customResponsesDinnerArray,
       deliveryDate,
       turnosSeleccionados,
-      lunchSelected,
-      dinnerSelected,
-      dinnerItemsForSummary,
       confirmationData
     } = validation.data
 
@@ -130,7 +127,7 @@ const useOrderSubmit = ({
         if (typeof window !== 'undefined' && rawCompanySlug) {
           window.localStorage.setItem('lastCompanyConfirmed', rawCompanySlug)
         }
-      } catch (err) {
+      } catch (_err) {
         // no-op
       }
       const createdIds = submitResult?.createdOrderIds || []
@@ -140,8 +137,8 @@ const useOrderSubmit = ({
           state: latestCreatedId ? { highlightOrderId: latestCreatedId } : null
         })
       }, 2000)
-    } catch (err) {
-      setError('Error al crear el pedido: ' + (err?.message || JSON.stringify(err)))
+    } catch (_err) {
+      setError('Error al crear el pedido: ' + (_err?.message || JSON.stringify(_err)))
     } finally {
       submitLockRef.current = false
       setSubmitting(false)

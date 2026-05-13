@@ -10,7 +10,7 @@ const resolveIsAdminForUser = async (user) => {
   try {
     const { data } = await usersService.getUserById(user.id)
     return data?.role === 'admin'
-  } catch (error) {
+  } catch (_error) {
     return false
   }
 }

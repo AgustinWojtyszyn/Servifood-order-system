@@ -128,7 +128,7 @@ export default function AuthCallback() {
       }
       setOtpSent(true)
       setLoading(false)
-    } catch (err) {
+    } catch (_err) {
       setError('Error al iniciar el vínculo con Google. Por favor, intenta nuevamente.')
       setLoading(false)
     }
@@ -140,7 +140,7 @@ export default function AuthCallback() {
     try {
       await supabase.auth.signOut()
       navigate('/login', { replace: true })
-    } catch (err) {
+    } catch (_err) {
       setError('No se pudo cerrar sesión. Intenta nuevamente.')
       setLoading(false)
     }

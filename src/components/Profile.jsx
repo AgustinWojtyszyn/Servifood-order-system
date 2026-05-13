@@ -122,7 +122,7 @@ const Profile = ({ user, loading }) => {
             : '¡Perfil actualizado exitosamente!'
         })
       }
-    } catch (err) {
+    } catch (_err) {
       setMessage({
         type: 'error',
         text: 'Error al actualizar el perfil'
@@ -147,7 +147,7 @@ const Profile = ({ user, loading }) => {
         setGoogleError(error.message || 'Error al vincular Google.')
         setGoogleLoading(false)
       }
-    } catch (err) {
+    } catch (_err) {
       setGoogleError('Error al vincular Google. Por favor, intenta nuevamente.')
       setGoogleLoading(false)
     }

@@ -30,32 +30,6 @@ export const fetchOrdersByRange = async ({ start, end }) => {
   return (all || []).filter(o => COUNTABLE_STATUSES.includes(o.status))
 }
 
-const parseItems = (items) => {
-  if (Array.isArray(items)) return items
-  if (typeof items === 'string') {
-    try {
-      const parsed = JSON.parse(items)
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  }
-  return []
-}
-
-const parseResponses = (responses) => {
-  if (Array.isArray(responses)) return responses
-  if (typeof responses === 'string') {
-    try {
-      const parsed = JSON.parse(responses)
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  }
-  return []
-}
-
 const normalizeMenuLabel = (name = '') => {
   const base = toDisplayString(name)
   if (!base) return null

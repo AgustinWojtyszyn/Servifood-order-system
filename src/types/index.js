@@ -27,7 +27,7 @@ export const validatePassword = (password) => {
 }
 
 export const validatePhone = (phone) => {
-  const phoneRegex = /^\+?[\d\s\-\(\)]{8,}$/
+  const phoneRegex = /^\+?[\d\s\-()]{8,}$/
   return phoneRegex.test(phone)
 }
 

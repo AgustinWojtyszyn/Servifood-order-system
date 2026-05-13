@@ -18,6 +18,7 @@ const CafeteriaHome = ({ user, loading }) => {
   const [notes, setNotes] = useState('')
   const navigate = useNavigate()
   const detailsRef = useRef(null)
+  const submitLockRef = useRef(false)
 
   const selectedPlan = useMemo(
     () => CAFETERIA_PLANS.find((plan) => plan.id === selectedPlanId) || null,
@@ -36,62 +37,64 @@ const CafeteriaHome = ({ user, loading }) => {
     }, 80)
   }
 
-  const handleConfirm = () => {
-    if (submitting) return
-    if (!isCafeteriaWithinWindow()) {
-      setError(`Pedidos de cafeteria disponibles de ${getCafeteriaWindowLabel()}. La entrega es al dia siguiente.`)
-      return
+  const handleConfirm = async () => {
+    if (submitLockRef.current) return
+    submitLockRef.current = true
+    setSubmitting(true)
+
+    try {
+      if (!isCafeteriaWithinWindow()) {
+        setError(`Pedidos de cafeteria disponibles de ${getCafeteriaWindowLabel()}. La entrega es al dia siguiente.`)
+        return
+      }
+      const order = buildOrderFromQuantities(quantities)
+      if (!order.items.length) {
+        setError('Selecciona al menos un plan para confirmar.')
+        return
+      }
+      if (!companySlug) {
+        setError('Selecciona la empresa para el pedido de cafeteria.')
+        return
+      }
+      const payload = {
+        ...order,
+        createdAt: new Date().toISOString(),
+        userId: user?.id || null,
+        company_slug: companySlug,
+        company_name: COMPANY_LIST.find((c) => c.slug === companySlug)?.name || '',
+        admin_name: user?.user_metadata?.full_name || user?.email || '',
+        admin_email: user?.email || '',
+        notes: notes || ''
+      }
+      saveCafeteriaOrder(payload)
+      await createOrder(payload)
+    } catch {
+      setError('No se pudo guardar el pedido en el historial. Reintenta.')
+    } finally {
+      submitLockRef.current = false
+      setSubmitting(false)
     }
-    const order = buildOrderFromQuantities(quantities)
-    if (!order.items.length) {
-      setError('Selecciona al menos un plan para confirmar.')
-      return
-    }
-    if (!companySlug) {
-      setError('Selecciona la empresa para el pedido de cafeteria.')
-      return
-    }
-    const payload = {
-      ...order,
-      createdAt: new Date().toISOString(),
-      userId: user?.id || null,
-      company_slug: companySlug,
-      company_name: COMPANY_LIST.find((c) => c.slug === companySlug)?.name || '',
-      admin_name: user?.user_metadata?.full_name || user?.email || '',
-      admin_email: user?.email || '',
-      notes: notes || ''
-    }
-    saveCafeteriaOrder(payload)
-    createOrder(payload)
   }
 
   const createOrder = async (payload) => {
-    setSubmitting(true)
     setError('')
-    try {
-      const { data, error: createError } = await db.createCafeteriaOrder({
-        userId: payload.userId,
-        items: payload.items,
-        totalItems: payload.totalItems,
-        companySlug: payload.company_slug,
-        companyName: payload.company_name,
-        adminName: payload.admin_name,
-        adminEmail: payload.admin_email,
-        notes: payload.notes
-      })
-      if (createError) {
-        setError('No se pudo guardar el pedido en el historial. Reintenta.')
-        return
-      }
-      navigate('/cafeteria/confirm', {
-        replace: true,
-        state: { orderId: data.id, order: payload, justCreated: true, redirectTo: '/cafeteria' }
-      })
-    } catch (err) {
-      setError('No se pudo guardar el pedido en el historial. Reintenta.')
-    } finally {
-      setSubmitting(false)
+    const { data, error: createError } = await db.createCafeteriaOrder({
+      userId: payload.userId,
+      items: payload.items,
+      totalItems: payload.totalItems,
+      companySlug: payload.company_slug,
+      companyName: payload.company_name,
+      adminName: payload.admin_name,
+      adminEmail: payload.admin_email,
+      notes: payload.notes
+    })
+    if (createError) {
+      throw createError
     }
+    navigate('/cafeteria/confirm', {
+      replace: true,
+      state: { orderId: data.id, order: payload, justCreated: true, redirectTo: '/cafeteria' }
+    })
   }
 
   const updateQuantity = (planId, delta) => {

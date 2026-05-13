@@ -16,7 +16,7 @@ export const matchIntent = (text) => {
 }
 
 // Respuestas por intención
-export const getResponseForIntent = (intent, { screenContext, SUPPORT_PHONE, TUTORIAL_URL, MANUAL_ORDER_TEXT }) => {
+export const getResponseForIntent = (intent, { _screenContext, SUPPORT_PHONE, TUTORIAL_URL, MANUAL_ORDER_TEXT }) => {
   switch (intent) {
     case 'errores':
       return {
@@ -73,7 +73,7 @@ export const getResponseForIntent = (intent, { screenContext, SUPPORT_PHONE, TUT
 }
 
 // Respuestas por código de error
-export const getErrorResponse = (errorCode, { screenContext, SUPPORT_PHONE, TUTORIAL_URL, MANUAL_ORDER_TEXT }) => {
+export const getErrorResponse = (errorCode, { _screenContext, SUPPORT_PHONE, TUTORIAL_URL, MANUAL_ORDER_TEXT }) => {
   switch (errorCode) {
     case 'VALIDATION_ERROR':
       return {

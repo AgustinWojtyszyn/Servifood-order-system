@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { authService } from '../services/auth'
 import { usersService } from '../services/users'
-import { safeLocalStorage } from '../utils'
 
 export const useAuth = () => {
   const [user, setUser] = useState(null)

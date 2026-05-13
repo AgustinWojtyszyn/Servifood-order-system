@@ -108,7 +108,7 @@ const OrderDetails = ({ user, loading }) => {
         }
 
         setOrder(data)
-      } catch (err) {
+      } catch (_err) {
         setError('No se pudo cargar el pedido. Intenta nuevamente.')
         setOrder(null)
       } finally {
@@ -186,7 +186,7 @@ const OrderDetails = ({ user, loading }) => {
       }
       notifySuccess('Pedido eliminado.')
       navigate('/dashboard', { replace: true })
-    } catch (err) {
+    } catch (_err) {
       notifyError('Error al eliminar el pedido')
     } finally {
       setDeleteSubmitting(false)

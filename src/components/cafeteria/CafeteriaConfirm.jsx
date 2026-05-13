@@ -90,7 +90,7 @@ const CafeteriaConfirm = ({ user, loading, orderId: orderIdOverride, initialOrde
         return
       }
       setMessage('Cambios guardados correctamente.')
-    } catch (err) {
+    } catch (_err) {
       setMessage('No se pudo guardar en el historial. Reintenta.')
     }
   }
@@ -108,7 +108,7 @@ const CafeteriaConfirm = ({ user, loading, orderId: orderIdOverride, initialOrde
       }
       setMessage('Pedido eliminado.')
       navigate('/cafeteria', { replace: true })
-    } catch (err) {
+    } catch (_err) {
       setMessage('No se pudo eliminar el pedido.')
     }
   }
@@ -127,7 +127,7 @@ const CafeteriaConfirm = ({ user, loading, orderId: orderIdOverride, initialOrde
           setCompanySlug(data.company_slug || '')
           setNotes(data.notes || '')
         }
-      } catch (err) {
+      } catch (_err) {
         setLoadError('No se pudo cargar el pedido.')
       } finally {
         setLoadingOrder(false)

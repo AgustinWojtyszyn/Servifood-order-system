@@ -160,7 +160,6 @@ const TendenciasPage = () => {
 
   const analysisType = filtersApplied.analysisType
   const showMenus = analysisType === 'all' || analysisType === 'menus'
-  const showOptions = analysisType === 'all' || analysisType === 'options'
   const showSides = analysisType === 'all' || analysisType === 'sides'
   const showBeverages = analysisType === 'all' || analysisType === 'beverages'
 

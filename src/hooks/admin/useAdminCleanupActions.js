@@ -41,7 +41,7 @@ const useAdminCleanupActions = ({
         await onRefreshData?.()
         await refreshArchivedOrdersCount?.()
       }
-    } catch (err) {
+    } catch (_err) {
       notifyError('Error inesperado al archivar pedidos pendientes. Intenta nuevamente.')
     } finally {
       setArchivingPending(false)
@@ -75,8 +75,8 @@ const useAdminCleanupActions = ({
         clearArchivedOrdersCount()
         await onRefreshData?.()
       }
-    } catch (err) {
-      console.error('Error:', err)
+    } catch (_err) {
+      console.error('Error:', _err)
       notifyError('Error al eliminar los pedidos')
     } finally {
       setDeletingOrders(false)

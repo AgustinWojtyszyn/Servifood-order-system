@@ -6,7 +6,7 @@ export const loadCafeteriaOrder = () => {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     return JSON.parse(raw)
-  } catch (err) {
+  } catch (_err) {
     return null
   }
 }
@@ -15,7 +15,7 @@ export const saveCafeteriaOrder = (order) => {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(order))
-  } catch (err) {
+  } catch (_err) {
     // ignore
   }
 }

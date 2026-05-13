@@ -114,8 +114,6 @@ const DonutChartPro = ({
             const startAngle = slice.start + padAngle / 2
             const endAngle = slice.end - padAngle / 2
             if (endAngle <= startAngle) return null
-            const midAngle = (startAngle + endAngle) / 2
-            const labelPos = polarToCartesian(center, center, radius - 22, midAngle)
             const isActive = activeIndex === index
             return (
               <g key={`${slice.label}-${index}`}>

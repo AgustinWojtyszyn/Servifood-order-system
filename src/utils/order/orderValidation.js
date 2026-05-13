@@ -4,7 +4,7 @@ import { canChooseCustomSide } from './orderCustomSideRules'
 const validateOrderSubmission = ({
   user,
   formData,
-  locations,
+  _locations,
   selectedTurns,
   dinnerEnabled,
   dinnerMenuEnabled,
@@ -21,7 +21,7 @@ const validateOrderSubmission = ({
   dinnerSpecialTitle,
   validateDinnerExclusivity,
   calculateTotal,
-  calculateTotalDinner,
+  _calculateTotalDinner,
   companyConfig,
   isOutsideWindow
 }) => {

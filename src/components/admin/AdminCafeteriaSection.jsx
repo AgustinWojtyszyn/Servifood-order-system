@@ -23,7 +23,7 @@ const AdminCafeteriaSection = ({ adminName }) => {
         } else {
           setOrders(Array.isArray(data) ? data : [])
         }
-      } catch (err) {
+      } catch (_err) {
         setError('No se pudo cargar los pedidos de cafeteria.')
       } finally {
         setLoading(false)
