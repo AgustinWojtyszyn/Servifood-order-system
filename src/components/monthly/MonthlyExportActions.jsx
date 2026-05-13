@@ -11,8 +11,8 @@ const MonthlyExportActions = ({
   onPrintPdf,
   excelLogo
 }) => {
-  if (!metrics) return null
   const [exportType, setExportType] = useState('all')
+  if (!metrics) return null
   const isDailyExport = exportType === 'daily'
   const isAllExport = exportType === 'all'
   const isExportDisabled = (isDailyExport || isAllExport) ? !canExportDaily : false

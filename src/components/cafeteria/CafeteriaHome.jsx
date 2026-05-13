@@ -13,6 +13,7 @@ const CafeteriaHome = ({ user, loading }) => {
   const [previewPlanId, setPreviewPlanId] = useState(null)
   const [quantities, setQuantities] = useState(() => buildEmptyQuantities(CAFETERIA_PLANS))
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [companySlug, setCompanySlug] = useState('')
   const [notes, setNotes] = useState('')
   const navigate = useNavigate()
@@ -36,6 +37,7 @@ const CafeteriaHome = ({ user, loading }) => {
   }
 
   const handleConfirm = () => {
+    if (submitting) return
     if (!isCafeteriaWithinWindow()) {
       setError(`Pedidos de cafeteria disponibles de ${getCafeteriaWindowLabel()}. La entrega es al dia siguiente.`)
       return
@@ -64,6 +66,7 @@ const CafeteriaHome = ({ user, loading }) => {
   }
 
   const createOrder = async (payload) => {
+    setSubmitting(true)
     setError('')
     try {
       const { data, error: createError } = await db.createCafeteriaOrder({
@@ -86,6 +89,8 @@ const CafeteriaHome = ({ user, loading }) => {
       })
     } catch (err) {
       setError('No se pudo guardar el pedido en el historial. Reintenta.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -246,7 +251,7 @@ const CafeteriaHome = ({ user, loading }) => {
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={totalSelected === 0}
+              disabled={totalSelected === 0 || submitting}
               className="inline-flex items-center gap-2 rounded-full bg-[#0b1f3a] text-white font-bold text-base px-5 py-2.5 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Confirmar pedido

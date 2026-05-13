@@ -36,7 +36,7 @@ class ErrorFallback extends Component {
               Ha ocurrido un error inesperado. Nuestros desarrolladores han sido notificados.
             </p>
 
-            {process.env.NODE_ENV === 'development' && (
+            {import.meta.env.DEV && (
               <details className="mb-6 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
                   Detalles técnicos
@@ -85,7 +85,7 @@ class ErrorFallback extends Component {
 
 const logError = (error, errorInfo) => {
   // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.group('🚨 Error Boundary')
     console.error('Error:', error)
     console.error('Error Info:', errorInfo)

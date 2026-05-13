@@ -17,6 +17,7 @@ const Input = forwardRef(({
   'aria-label': ariaLabelProp,
   ...props
 }, ref) => {
+  const generatedId = useId()
   const [showPassword, setShowPassword] = useState(false)
   const [inputType, setInputType] = useState(type)
 
@@ -27,7 +28,7 @@ const Input = forwardRef(({
 
   const isPassword = type === 'password'
   const hasError = !!error
-  const inputId = id || useId()
+  const inputId = id || generatedId
    // Garantiza name estable (ayuda a autocompletar y session restore)
   const inputName = name || inputId
   const ariaLabel = ariaLabelProp || (!label ? inputName : undefined)
