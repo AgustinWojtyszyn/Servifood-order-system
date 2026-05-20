@@ -57,6 +57,27 @@ const ResetPassword = () => {
           const cleanUrl = `${window.location.origin}${window.location.pathname}`
           window.history.replaceState({}, document.title, cleanUrl)
         }
+        // OTP recovery: el link trae `token_hash` + `type=recovery`.
+        else if (tokenHash && type === 'recovery') {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: 'recovery',
+            token_hash: tokenHash
+          })
+          console.debug('[auth-recovery] verifyOtp(recovery)', {
+            ok: !verifyError,
+            hasError: Boolean(verifyError)
+          })
+
+          if (verifyError) {
+            if (!isMounted) return
+            setHasRecoverySession(false)
+            setError('El enlace de recuperación es inválido o expiró. Pedí uno nuevo.')
+            return
+          }
+
+          const cleanUrl = `${window.location.origin}${window.location.pathname}`
+          window.history.replaceState({}, document.title, cleanUrl)
+        }
 
         const { data: { session } } = await supabase.auth.getSession()
         console.debug('[auth-recovery] getSession', { hasSession: Boolean(session) })
@@ -165,7 +186,7 @@ const ResetPassword = () => {
               Tu contraseña ha sido restablecida exitosamente.
             </p>
             <p className="text-sm sm:text-base text-gray-500 mb-4">
-              Ya podés iniciar sesión con tu nueva contraseña.
+              Contraseña actualizada correctamente. Ya podés iniciar sesión.
             </p>
             <p className="text-sm sm:text-base text-gray-500">
               Redirigiendo al inicio de sesión...

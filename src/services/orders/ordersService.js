@@ -5,8 +5,6 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
 
   // Archivar todos los pedidos pendientes (de cualquier día)
   const archiveAllPendingOrders = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    console.log('session?', !!session, session?.user?.id)
     const pendingLike = ['pending']
     const { data, error } = await supabase.rpc('archive_orders_bulk', {
       statuses: pendingLike
@@ -151,4 +149,3 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
     }
   }
 }
-

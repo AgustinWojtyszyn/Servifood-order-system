@@ -101,7 +101,7 @@ export const auth = {
     if (import.meta.env.DEV) {
       console.debug('[auth-recovery] resetPassword redirectTo', redirectTo)
     }
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { data, error } = await supabase.auth.resetPasswordForEmail((email || '').toLowerCase().trim(), {
       redirectTo
     })
     return { data, error }

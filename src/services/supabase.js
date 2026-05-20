@@ -2,8 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 import { sanitizeInput } from '../utils'
 
 // Configuración del cliente Supabase optimizada
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const rawSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const isLocalSupabaseUrl = /^https?:\/\/(127\.0\.0\.1|localhost):54321(?:\/|$)/i.test(rawSupabaseUrl)
+const allowLocalSupabase = import.meta.env.VITE_ALLOW_LOCAL_SUPABASE === 'true'
+const supabaseUrl = (!isLocalSupabaseUrl || allowLocalSupabase) ? rawSupabaseUrl : ''
 
 // Log controlado para diagnosticar env vars en producción
 // Activa esto seteando VITE_LOG_SUPABASE_ENV="true" en el entorno de deploy
@@ -17,6 +20,9 @@ if (import.meta.env.VITE_LOG_SUPABASE_ENV === 'true') {
 }
 
 if (!supabaseUrl || !supabaseAnonKey) {
+  if (isLocalSupabaseUrl && !allowLocalSupabase) {
+    throw new Error('Invalid Supabase URL: local Supabase is only allowed when VITE_ALLOW_LOCAL_SUPABASE=true')
+  }
   throw new Error('Missing Supabase environment variables')
 }
 
