@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Clock, Edit, Plus, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react'
+import { Building2, Clock, Edit, Plus, RefreshCw, ShoppingCart, Trash2 } from 'lucide-react'
 
 const DashboardHeader = ({
   user,
@@ -13,7 +13,10 @@ const DashboardHeader = ({
   headerSummary,
   canEditOrder,
   onEditOrder,
-  onDeleteOrder
+  onDeleteOrder,
+  onOpenChangeCompany,
+  canOpenChangeCompany,
+  changeCompanyHint
 }) => {
   const allowEdit = headerOrder && canEditOrder ? canEditOrder(headerOrder) : false
 
@@ -92,6 +95,20 @@ const DashboardHeader = ({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onOpenChangeCompany}
+              disabled={!canOpenChangeCompany}
+              title={changeCompanyHint || ''}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-colors ${
+                canOpenChangeCompany
+                  ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                  : 'bg-slate-200/25 text-slate-200 border-slate-200/30 cursor-not-allowed'
+              }`}
+            >
+              <Building2 className="h-4 w-4" />
+              Cambiar empresa
+            </button>
             {headerOrder && (
               <>
                 <button

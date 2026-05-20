@@ -9,6 +9,20 @@ export const createUsersService = ({
   }
 
   return {
+    getUserCompanySwitchContext: async () => {
+      const { data, error } = await supabase.rpc('get_user_company_switch_context')
+      return { data, error }
+    },
+
+    changeActiveCompanyForToday: async ({ newCompanySlug, reason = null } = {}) => {
+      invalidateCache()
+      const { data, error } = await supabase.rpc('change_active_company_for_today', {
+        p_new_company_slug: newCompanySlug,
+        p_reason: reason
+      })
+      return { data, error }
+    },
+
     // Usuarios
     getUsers: async (force = false) => {
       // Usar cache para reducir consultas repetidas

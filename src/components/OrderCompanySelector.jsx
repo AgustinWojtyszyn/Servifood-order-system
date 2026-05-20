@@ -1,11 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react'
+import { Building2, ArrowRight, ShieldCheck } from 'lucide-react'
 import RequireUser from './RequireUser'
-import { COMPANY_LIST, COMPANY_CATALOG } from '../constants/companyConfig'
+import { COMPANY_LIST } from '../constants/companyConfig'
+import { db } from '../supabaseClient'
 
 const OrderCompanySelector = ({ user, loading }) => {
   const navigate = useNavigate()
+  const [activeCompanySlug, setActiveCompanySlug] = useState('')
 
   const lastCompanySelected = useMemo(() => {
     if (typeof window === 'undefined') return ''
@@ -16,7 +18,21 @@ const OrderCompanySelector = ({ user, loading }) => {
     if (typeof window === 'undefined') return ''
     return window.localStorage.getItem('lastCompanyConfirmed') || ''
   }, [])
-  const recommendedCompany = lastCompanySelected || lastCompanyConfirmed
+  const recommendedCompany = activeCompanySlug || lastCompanySelected || lastCompanyConfirmed
+
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      const { data, error } = await db.getUserCompanySwitchContext()
+      if (!mounted || error) return
+      const slug = (data?.current_company_slug || '').toString().trim()
+      if (slug) setActiveCompanySlug(slug)
+    }
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const orderedCompanies = useMemo(() => {
     return [...COMPANY_LIST].sort((a, b) => {

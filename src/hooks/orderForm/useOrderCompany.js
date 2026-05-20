@@ -1,16 +1,18 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../../constants/companyConfig'
+import { db } from '../../supabaseClient'
 
 export const useOrderCompany = () => {
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
+  const [activeCompanySlug, setActiveCompanySlug] = useState('')
 
   const recommendedCompany = typeof window !== 'undefined'
     ? window.localStorage.getItem('lastCompany')
     : null
 
-  const defaultCompanySlug = recommendedCompany || COMPANY_LIST[0]?.slug || 'laja'
+  const defaultCompanySlug = activeCompanySlug || recommendedCompany || COMPANY_LIST[0]?.slug || 'laja'
   const rawCompanySlug = (companySlugParam || searchParams.get('company') || defaultCompanySlug || '')
     .trim()
     .toLowerCase()
@@ -26,6 +28,20 @@ export const useOrderCompany = () => {
     () => companyConfig?.locations || COMPANY_LIST[0]?.locations || [],
     [companyConfig]
   )
+
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      const { data, error } = await db.getUserCompanySwitchContext()
+      if (!mounted || error) return
+      const slug = (data?.current_company_slug || '').toString().trim().toLowerCase()
+      if (slug) setActiveCompanySlug(slug)
+    }
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   useEffect(() => {
     try {

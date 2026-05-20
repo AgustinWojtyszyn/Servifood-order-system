@@ -1,0 +1,178 @@
+RESUMEN DE CAMBIOS IMPLEMENTADOS
+Funcionalidad: Cambio de empresa/sede del usuario (ServiFood)
+Fecha: 2026-05-20
+
+1) OBJETIVO IMPLEMENTADO
+Se implementó el flujo completo de cambio de empresa/sede con impacto real en backend, no solo visual:
+- Dashboard: botón + modal de 2 pasos con confirmación explícita.
+- Persistencia diaria de empresa/sede activa por usuario.
+- Historial/auditoría de cambios.
+- Límite duro de 2 cambios por día (en backend).
+- Validación de horario de pedidos (en backend).
+- Actualización de pedido pendiente del día del mismo usuario.
+- Nuevos pedidos del día usan empresa/sede activa desde DB.
+
+2) ARCHIVOS MODIFICADOS / CREADOS
+2.1) SQL / Backend (migración)
+- Archivo creado:
+  supabase/migrations/20260520190000_user_company_daily_change.sql
+
+  Incluye:
+  a) Nueva tabla: user_daily_company_profiles
+     - user_id
+     - active_date
+     - company_slug
+     - location
+     - created_at
+     - updated_at
+     - PK (user_id, active_date)
+
+  b) Nueva tabla: user_company_changes
+     - id (uuid)
+     - user_id
+     - previous_location
+     - new_location
+     - previous_company_slug
+     - new_company_slug
+     - change_date
+     - reason
+     - changed_at
+     - created_at
+
+  c) Función: resolve_company_location(p_company_slug)
+     - Mapea slug -> location (laja, ccp, padrebueno, losberros, genneia).
+
+  d) RPC: get_user_company_switch_context()
+     - Devuelve contexto de cambio del día:
+       current_company_slug, current_location,
+       changes_used, remaining_changes,
+       within_order_window, change_date, etc.
+
+  e) RPC transaccional: change_active_company_for_today(p_new_company_slug, p_reason)
+     Flujo interno:
+     1. valida usuario autenticado
+     2. valida horario permitido (09:00 a 22:00 BA)
+     3. valida empresa destino
+     4. lock transaccional por usuario+día (advisory lock)
+     5. cuenta cambios del día y bloquea si >= 2
+     6. bloquea si intenta misma empresa
+     7. upsert de empresa/sede activa del día
+     8. update de pedidos pending del usuario para HOY (solo hoy)
+     9. inserta auditoría en user_company_changes
+     10. devuelve resultado (remaining_changes, updated_pending_orders, etc.)
+
+  f) Override de RPC existente create_order_idempotent(...)
+     - Antes insertaba location desde payload del frontend.
+     - Ahora prioriza location de user_daily_company_profiles para el día actual.
+     - Garantiza que pedidos nuevos posteriores al cambio salgan con empresa/sede actualizada.
+
+2.2) Servicios frontend
+- Archivo modificado:
+  src/services/users/usersService.js
+
+  Métodos agregados:
+  - getUserCompanySwitchContext()
+    -> llama RPC get_user_company_switch_context
+  - changeActiveCompanyForToday({ newCompanySlug, reason })
+    -> llama RPC change_active_company_for_today
+
+2.3) Dashboard UI / Flujo
+- Archivo modificado:
+  src/components/dashboard/DashboardHeader.jsx
+  Cambios:
+  - Nuevo botón: “Cambiar empresa”
+  - Estado disabled según horario/límite
+  - Tooltip/mensaje de restricción
+
+- Archivo creado:
+  src/components/dashboard/ChangeCompanyModal.jsx
+  Flujo de 2 pasos:
+  Paso 1:
+  - selección de nueva empresa/sede
+  - muestra cambios restantes
+  Paso 2:
+  - confirmación explícita de cambio
+  - muestra empresa actual y nueva
+  - advertencia de impacto y límite diario
+
+- Archivo modificado:
+  src/components/Dashboard.jsx
+  Cambios:
+  - estado del modal y stepper
+  - carga contexto desde backend
+  - validaciones previas de UX (horario/límite/misma empresa)
+  - confirmación final contra RPC backend
+  - manejo de errores por código/mensaje:
+    * daily_limit_reached
+    * outside_order_window
+    * same_company
+  - refresh posterior del dashboard + contexto
+  - sincronización de localStorage (lastCompany*) tras éxito
+
+2.4) Selector de empresa / Formulario de pedido
+- Archivo modificado:
+  src/components/OrderCompanySelector.jsx
+  Cambio:
+  - consulta contexto diario en backend y prioriza empresa activa diaria como recomendada.
+
+- Archivo modificado:
+  src/hooks/orderForm/useOrderCompany.js
+  Cambio:
+  - defaultCompanySlug prioriza empresa activa diaria obtenida desde backend.
+  - mantiene fallback a localStorage si no hay contexto diario.
+
+3) COMPORTAMIENTO FUNCIONAL LOGRADO
+3.1) Cambio de empresa/sede desde dashboard
+- Usuario abre modal desde “Cambiar empresa”.
+- Si está fuera de horario: bloqueado.
+- Si agotó 2 cambios diarios: bloqueado.
+- Si elige misma empresa: bloqueado.
+- Si confirma correctamente:
+  - se actualiza empresa activa del día
+  - se actualiza pedido pending de HOY (si existe)
+  - se registra historial/auditoría del cambio
+
+3.2) Regla de pedidos existentes
+- Si NO tiene pedido hoy: solo se actualiza perfil diario.
+- Si tiene pedido pending hoy: también se actualiza location de ese pedido.
+- NO se tocan pedidos archived.
+- NO se tocan pedidos de otros días.
+- NO se tocan pedidos de otros usuarios.
+
+3.3) Nuevos pedidos después del cambio
+- create_order_idempotent ahora toma location diaria activa de DB.
+- evita depender solo de estado frontend.
+
+4) IMPACTO EN PEDIDOS DIARIOS Y EXCEL
+- Pedidos Diarios y export Excel ya consumen location del pedido.
+- Al actualizarse location del pedido pending del día + persistencia para nuevos pedidos:
+  - Daily Orders refleja la nueva empresa/sede.
+  - Export Excel refleja la nueva empresa/sede.
+- Se evita exportar con perfil viejo cuando el pedido fue actualizado.
+
+5) VALIDACIÓN TÉCNICA
+- Build ejecutado:
+  npm run build
+- Resultado:
+  Build exitoso (sin errores de compilación).
+
+6) NOTAS IMPORTANTES DE REPO / GIT
+- El repo tiene regla global en .gitignore: *.sql
+- Por eso la migración SQL nueva no queda trackeada automáticamente.
+- Para incluirla en commit:
+  git add -f supabase/migrations/20260520190000_user_company_daily_change.sql
+
+7) ESTADO RESPECTO A REQUISITOS SOLICITADOS
+Cumplido en esta entrega (prioridad principal):
+1. tabla/historial: SI
+2. RPC/backend transaccional: SI
+3. botón/modal en dashboard: SI
+4. actualización de pedido pendiente: SI
+5. reflejo en Pedidos Diarios: SI (vía location del pedido actualizada)
+6. reflejo en Excel: SI (vía location del pedido actualizada)
+
+8) PENDIENTE OPCIONAL
+- Visualización explícita del evento en sección de Auditoría UI (tipo “Usuario X cambió…”)
+  Nota: el registro en tabla de cambios ya existe en DB.
+
+FIN DEL RESUMEN
