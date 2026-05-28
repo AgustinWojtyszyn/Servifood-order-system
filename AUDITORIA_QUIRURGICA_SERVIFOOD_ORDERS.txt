@@ -1,0 +1,454 @@
+SERVIFOOD ORDER SYSTEM — AUDITORIA QUIRURGICA
+Fecha de auditoría: 2026-05-28
+Repo auditado: /home/aggustin/.vscode/food-order-app (origin: https://github.com/AgustinWojtyszyn/Servifood-order-system)
+Sitio productivo referenciado: https://servifoodapp.site/dashboard
+Alcance: auditoría técnica integral sin implementación de cambios.
+
+A. RESUMEN EJECUTIVO
+- Estado general: la app funciona y tiene buena cobertura funcional, pero existen inconsistencias críticas de reglas de negocio y de seguridad/arquitectura (estado de pedidos, enforcement en DB, gestión de roles y superficies expuestas en servidor).
+- Riesgos principales:
+  1) Regla de 2 estados violada en múltiples capas (frontend + SQL + analytics).
+  2) Enforcements críticos dependen parcialmente de frontend/UX y no de constraints duras en DB para todos los casos.
+  3) `server.js` expone endpoint sensible sin auth (`/api/send-daily-orders-email`).
+  4) Criterios de “pedido del día” mezclan `created_at` con `delivery_date`, generando invisibilidad/inconsistencia.
+  5) Duplicación de capas de acceso a órdenes (`services/orders.js` y `services/orders/ordersService.js`) con comportamientos divergentes.
+- Nota de preparación para producción (1-10): 6/10.
+
+B. HALLAZGOS (CRITICOS / ALTOS / MEDIOS / BAJOS)
+
+[CRITICO-01]
+- Severidad: CRITICO
+- Archivo(s):
+  - src/types/index.js
+  - src/services/orders/ordersService.js
+  - src/services/orders.js
+  - src/utils/monthly/monthlyOrderConstants.js
+  - src/services/analytics/analyticsService.js
+  - src/hooks/useOrderBootstrap.js
+  - supabase/migrations/20250101000000_local_base_schema.sql
+  - supabase/migrations/20260226_archive_orders_bulk.sql
+- Problema:
+  - La regla de negocio exige solo dos estados principales: `pending` y `archived`.
+  - El código y SQL aún permiten/usan `cancelled`; además analytics y bootstrap contemplan `preparing`/`ready`.
+- Impacto:
+  - Inconsistencia de reportes y UI.
+  - Riesgo de pedidos “no contemplados” por filtros.
+  - Deuda semántica: estados fuera de contrato funcional.
+- Cómo comprobarlo:
+  - Buscar en repo: `cancelled`, `preparing`, `ready`.
+  - Ver `ORDER_STATUS` incluyendo `CANCELLED`.
+  - Ver `COUNTABLE_STATUSES` con `preparing`, `ready`, `cancelled`.
+- Fix recomendado:
+  - Definir SoT de estados en un solo módulo compartido.
+  - Reducir estados funcionales a `pending|archived` en frontend y SQL.
+  - Migración SQL para constraint y limpieza de datos legacy.
+- Riesgo del fix:
+  - Medio/alto (puede impactar históricos y dashboards).
+
+[CRITICO-02]
+- Severidad: CRITICO
+- Archivo(s): server.js
+- Problema:
+  - Endpoint `/api/send-daily-orders-email` no exige JWT ni rol admin.
+- Impacto:
+  - Cualquier cliente que alcance el endpoint podría disparar envíos de email (abuso, spam, costos, reputación).
+- Cómo comprobarlo:
+  - Revisar ruta en `server.js`: no usa `verifySupabaseJWT` ni chequeo de admin.
+- Fix recomendado:
+  - Exigir auth (`verifySupabaseJWT`) y autorización admin server-side.
+  - Añadir rate limit específico por endpoint + validación estricta payload.
+- Riesgo del fix:
+  - Bajo.
+
+[CRITICO-03]
+- Severidad: CRITICO
+- Archivo(s):
+  - src/hooks/useDailyOrdersData.js
+  - src/hooks/dashboard/useDashboardOrders.js
+  - src/hooks/useOrderBootstrap.js
+- Problema:
+  - Varias vistas/controles usan `created_at` para decidir “hoy”, mientras negocio opera por `delivery_date` (pedido un día antes).
+- Impacto:
+  - Pedidos invisibles o mal contados en dashboard/daily.
+  - Errores al bloquear nuevo pedido por “ya tienes pendiente”.
+- Cómo comprobarlo:
+  - `useDailyOrdersData`: filtra órdenes de hoy por `created_at`.
+  - `useDashboardOrders`: stats de hoy por `created_at`.
+  - `useOrderBootstrap.checkTodayOrder`: pending por `created_at`.
+- Fix recomendado:
+  - Unificar criterio por `delivery_date` para operación de pedidos.
+  - Mantener `created_at` solo como metadata temporal.
+- Riesgo del fix:
+  - Medio (cambia comportamiento visible).
+
+[ALTO-01]
+- Severidad: ALTO
+- Archivo(s): src/services/orders/ordersService.js, src/services/orders.js, src/supabaseClient.js
+- Problema:
+  - Existen dos servicios de órdenes con contratos distintos:
+    - uno vía RPC idempotente/con retry,
+    - otro con CRUD directo incluyendo `deleteAllOrders`, `deleteAllPendingOrders` (cancelación), etc.
+- Impacto:
+  - Riesgo de bypass de reglas, divergencia funcional y bugs no deterministas según ruta usada.
+- Cómo comprobarlo:
+  - Comparar `createOrdersService` vs clase `OrdersService`.
+- Fix recomendado:
+  - Consolidar en una sola capa de acceso a órdenes.
+- Riesgo del fix:
+  - Medio.
+
+[ALTO-02]
+- Severidad: ALTO
+- Archivo(s): src/hooks/useDailyOrdersData.js, src/hooks/dashboard/useDashboardOrderActions.js, src/services/orders.js
+- Problema:
+  - Existen operaciones de borrado/cambio de estado que no están claramente alineadas a “archivar” como único cierre funcional.
+  - Persisten funciones de “cancelar” y “delete” en capas activas.
+- Impacto:
+  - Pérdida de trazabilidad histórica o estados fuera de política.
+- Cómo comprobarlo:
+  - Buscar `deleteOrder`, `deleteAllOrders`, `status: 'cancelled'`.
+- Fix recomendado:
+  - Restringir acciones de cierre a archivado en caminos de negocio.
+  - Mantener delete solo para tareas de mantenimiento controladas.
+- Riesgo del fix:
+  - Medio.
+
+[ALTO-03]
+- Severidad: ALTO
+- Archivo(s): src/hooks/useAuth.js, src/contexts/AuthContext.jsx, src/components/Layout.jsx
+- Problema:
+  - El rol admin se resuelve mezclando metadata auth + tabla users + lógica frontend.
+- Impacto:
+  - Riesgo de autorización inconsistente entre vistas.
+- Cómo comprobarlo:
+  - Revisar `roleFromMetadata`, fallback DB y checks repetidos.
+- Fix recomendado:
+  - Unificar fuente de verdad de rol y centralizar resolución.
+- Riesgo del fix:
+  - Medio.
+
+[ALTO-04]
+- Severidad: ALTO
+- Archivo(s): supabase/migrations/20250101000000_local_base_schema.sql
+- Problema:
+  - Política `users_select_auth` permite `select` de toda la tabla `public.users` a todo autenticado (`using (true)`).
+- Impacto:
+  - Exposición de datos de usuarios entre cuentas (emails/nombres/roles), aunque sea interno.
+- Cómo comprobarlo:
+  - Revisar policy `users_select_auth`.
+- Fix recomendado:
+  - Limitar select a self y/o admin.
+- Riesgo del fix:
+  - Medio (puede romper pantallas admin no preparadas).
+
+[ALTO-05]
+- Severidad: ALTO
+- Archivo(s): server.js
+- Problema:
+  - Se instancia cliente Supabase de backend aceptando fallback a `SUPABASE_ANON_KEY` si no existe service role.
+- Impacto:
+  - Comportamiento ambiguo en producción; endpoints backend pueden fallar o comportarse diferente según env.
+- Cómo comprobarlo:
+  - `createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY, ...)`.
+- Fix recomendado:
+  - Exigir service role explícito para backend y fallar rápido si falta.
+- Riesgo del fix:
+  - Bajo/medio.
+
+[MEDIO-01]
+- Severidad: MEDIO
+- Archivo(s): src/hooks/useOrderSubmit.js, src/utils/order/orderSubmit.js, src/utils/order/orderIdempotency.js
+- Problema:
+  - Idempotencia local depende de `sessionStorage`; en otra pestaña/dispositivo no reutiliza key local.
+- Impacto:
+  - Mitigación parcial contra doble submit del cliente.
+- Cómo comprobarlo:
+  - Ver construcción de key y uso de `sessionStorage`.
+- Fix recomendado:
+  - Mantener idempotencia server-side como autoridad (ya existe RPC) y endurecer feedback UX multi-submit.
+- Riesgo del fix:
+  - Bajo.
+
+[MEDIO-02]
+- Severidad: MEDIO
+- Archivo(s): src/hooks/useOrderBootstrap.js
+- Problema:
+  - Mensajes de bloqueo de pendiente dicen “espera a que se complete” (estado inexistente según regla de 2 estados).
+- Impacto:
+  - UX confusa y desalineada con negocio.
+- Cómo comprobarlo:
+  - Mensajes en validación/errores de submit.
+- Fix recomendado:
+  - Reescribir textos a “hasta que se archive”.
+- Riesgo del fix:
+  - Bajo.
+
+[MEDIO-03]
+- Severidad: MEDIO
+- Archivo(s): src/main.jsx
+- Problema:
+  - En DEV se loguea URL Supabase completa en consola.
+- Impacto:
+  - Riesgo bajo (URL pública), pero innecesario para higiene de seguridad.
+- Cómo comprobarlo:
+  - `console.log('[App] Boot start', { supabaseUrl: ... })`.
+- Fix recomendado:
+  - Ocultar URL completa o truncar.
+- Riesgo del fix:
+  - Bajo.
+
+[MEDIO-04]
+- Severidad: MEDIO
+- Archivo(s): server.js
+- Problema:
+  - Código del servidor contiene duplicidad sospechosa en middleware static:
+    `})(req, res, next);` repetido.
+- Impacto:
+  - Riesgo de error de parseo/ejecución si este servidor se usa en runtime real.
+- Cómo comprobarlo:
+  - Revisar bloque de `express.static` para archivos sueltos.
+- Fix recomendado:
+  - Corregir cierre de callback y validar arranque de `node server.js`.
+- Riesgo del fix:
+  - Bajo.
+
+[MEDIO-05]
+- Severidad: MEDIO
+- Archivo(s): src/services/analytics/analyticsService.js
+- Problema:
+  - Filtro de estados para métricas incluye estados legacy; distorsiona analytics.
+- Impacto:
+  - Totales y tendencias inconsistentes.
+- Cómo comprobarlo:
+  - `COUNTABLE_STATUSES` local del servicio.
+- Fix recomendado:
+  - Alinear estados contables al contrato funcional.
+- Riesgo del fix:
+  - Bajo.
+
+[BAJO-01]
+- Severidad: BAJO
+- Archivo(s): múltiples
+- Problema:
+  - Exceso de logs de debugging en DEV y algunos warnings de hooks (lint).
+- Impacto:
+  - Mantenibilidad y ruido.
+- Cómo comprobarlo:
+  - `npm run lint` => 12 warnings, 0 errores.
+- Fix recomendado:
+  - Limpieza de logs y dependencias de hooks.
+- Riesgo del fix:
+  - Bajo.
+
+C. LOGICA DE PEDIDOS
+- Creación:
+  - Usa `create_order_idempotent` (bien para concurrencia).
+  - Se asigna `delivery_date = mañana` desde frontend (`getTomorrowISOInTimeZone`).
+- Edición:
+  - Ventana de 15 minutos para usuario no admin (en frontend + service).
+- Archivado:
+  - Disponible por orden y en bulk.
+  - Existen caminos alternativos con `cancelled` y delete que rompen la regla de 2 estados.
+- Historial:
+  - Mezcla de criterios por `created_at` en lugar de `delivery_date` en algunas vistas.
+- Estados permitidos (objetivo):
+  - Objetivo explícito: solo `pending` y `archived`.
+  - Estado real actual: también `cancelled`, y lógica heredada con `preparing`/`ready`.
+- Fechas y timezone:
+  - Hay utilidades timezone BA correctas para cálculo de mañana.
+  - Pero varios filtros operativos usan `new Date(created_at)` local del cliente.
+- Regla “pedido un día antes”:
+  - Parcialmente implementada por `delivery_date` mañana.
+  - Inconsistente en reporting/dashboard por uso de `created_at`.
+- Riesgo de duplicados:
+  - Mitigado por idempotency key única + RPC con `ON CONFLICT`.
+- Doble submit:
+  - Mitigado por lock local (`submitLockRef`) + idempotencia.
+- Pedidos invisibles:
+  - Riesgo medio/alto por filtros por `created_at` en daily/dashboard.
+
+D. REGLA CRITICA DE NORMALIZACION
+- Uso de `normalizeOrderForReadOnly(order)`:
+  - Encontrado en:
+    - src/utils/daily/dailyOrderCalculations.js
+    - src/utils/monthly/monthlyOrderCalculations.js
+    - src/utils/analytics/trendsHelpers.js
+- Veredicto de uso:
+  - Se usa solo en contextos de lectura/cálculo (daily/monthly/analytics).
+  - No encontrado en submit, edición, archivado, guardado ni idempotencia.
+- Mutación de datos originales:
+  - La función no muta `order.items` ni `order.custom_responses`; agrega `normalizedItems` y `normalizedCustomResponses`.
+- Estado:
+  - Regla crítica cumplida en el estado actual del repo.
+
+E. SUPABASE, RLS Y SEGURIDAD
+- Variables de entorno:
+  - `.env` y `.env.local` no están trackeados por git (correcto).
+  - `.env.example` presente.
+- Service role expuesta:
+  - No encontrada en archivos trackeados de repo.
+  - Riesgo operativo: fallback a anon key en `server.js`.
+- Queries y roles:
+  - App depende fuerte de RLS + roles `public.users.role`.
+- Protección admin:
+  - En UI existe guard (`withAdmin`, validaciones de rol).
+  - En DB hay policies admin para tablas críticas (migración local base).
+- Acceso entre usuarios:
+  - `orders` policy owner/admin está bien en base.
+  - `users` select global a autenticados es excesivo.
+- Fugas de datos potenciales:
+  - Riesgo en `users` por policy amplia.
+- Acciones protegidas solo por UI:
+  - Algunas rutas endpoint en backend (email diario) sin auth.
+
+F. AUTH Y ROLES
+- Login/Logout/Persistencia:
+  - Flujos base correctos con Supabase Auth y persistSession.
+- Sesión expirada:
+  - Manejo presente en auth state y redirecciones.
+- Guards:
+  - `RequireUser` y `withAdmin` activos.
+- Usuario no admin en rutas admin:
+  - UI lo bloquea; pero la defensa principal debe seguir en RLS/backend.
+- Flashes de datos sensibles:
+  - No se observan `dangerouslySetInnerHTML`; riesgo de flash bajo.
+
+G. FORMULARIOS Y VALIDACIONES
+- Cantidades/campos vacíos:
+  - Se validan mínimos y presencia general.
+- Strings con espacios:
+  - Sanitización básica existe (`sanitizeInput`, DOMPurify wrapper).
+- Cero/negativos/NaN/altos:
+  - No se observa validación exhaustiva de cotas numéricas en todos los payloads.
+- Observaciones:
+  - Comentarios se envían con saneamiento básico por capa de servicio.
+- Zod/react-hook-form/DOMPurify:
+  - Dependencias instaladas.
+  - DOMPurify sí se usa en utilidades.
+  - Uso de Zod/react-hook-form no está extendido de forma homogénea en todos los formularios.
+
+H. UI/UX
+- Dashboard usuario/admin:
+  - Funcional y claro en general.
+- Estados loading/error/empty/success:
+  - Cobertura razonable.
+- Botones repetibles:
+  - En submit principal hay lock; en otras acciones depende de estado local y puede repetirse en escenarios rápidos.
+- Mensajes confusos:
+  - Persisten textos “completado/completar” incompatibles con modelo de 2 estados.
+- Responsive/accesibilidad básica:
+  - Base responsive implementada; accesibilidad mejorable (consistencia labels/feedback).
+
+I. REPORTES, HISTORIAL Y DATOS
+- Pedidos diarios/mensuales/analytics:
+  - Buena cobertura de funcionalidades.
+- Inconsistencia clave:
+  - Estados legacy impactan conteos.
+  - Criterio temporal mixto (`created_at` vs `delivery_date`) genera diferencias entre paneles.
+- Exportaciones/totales/filtros:
+  - Implementados; precisión depende de resolver inconsistencias anteriores.
+
+J. PERFORMANCE Y ESTABILIDAD
+- Queries repetidas:
+  - Hay cachés y polling cada 30s; correcto pero mejorable.
+- Race conditions:
+  - Mitigadas en submit por lock + RPC idempotente.
+- useEffect sospechosos:
+  - Lint detecta dependencias faltantes en hooks.
+- Renders innecesarios:
+  - Potenciales por dependencias incompletas y logs de debug.
+- Bundle:
+  - Build produce chunks; configuración de split manual presente.
+- React 19 / Router 7 / Vite 7:
+  - Stack actualizada y compila.
+
+K. DEPLOY Y PRODUCCION
+- `render.yaml`:
+  - Start command usa `serve -s dist`; no usa `server.js` en Render según archivo.
+- Headers/cache:
+  - Reglas configuradas; JS/CSS con revalidación agresiva (evita chunks viejos).
+- SPA refresh:
+  - Cubierto por `--single` en serve.
+- Variables de entorno:
+  - `.env.example` existe.
+- Documentación deploy:
+  - Hay documentación amplia, aunque dispersa.
+
+L. SEGURIDAD FRONTEND
+- XSS:
+  - No se detectó `dangerouslySetInnerHTML`.
+  - Sanitización existe pero heterogénea.
+- localStorage/sessionStorage:
+  - Uso intensivo para estado UX y idempotencia local; no se guardan secretos sensibles evidentes.
+- Links externos:
+  - Sin hallazgos críticos.
+- Errores con datos sensibles:
+  - Logs DEV exponen datos de contexto (rol/sesión), no claves.
+- Rate limiting backend:
+  - Global en `server.js`; falta endurecer endpoint de email diario.
+- Nodemailer:
+  - Implementado en backend; endpoint asociado carece de auth.
+
+M. LIMPIEZA Y CONSISTENCIA
+- Archivos muertos/duplicados:
+  - Coexisten dos capas de órdenes y mucha lógica histórica/documentos previos.
+- TODO/FIXME/HACK:
+  - Hay deuda en documentación y mensajes de negocio legacy.
+- Console logs:
+  - Múltiples logs de debug en DEV y servicios.
+- Catch vacíos:
+  - Hay algunos catches silenciosos puntuales (p.ej. bloques no-op en UI).
+- Constantes mágicas:
+  - Persisten valores hardcoded (intervalos, mensajes) en varios hooks.
+- Lógica de fechas duplicada:
+  - Sí, y no unificada por `delivery_date`.
+- Nombres inconsistentes:
+  - `cancelled`/`archived`/“completado” mezclados en código/mensajes.
+
+N. LISTA PRIORIZADA DE FIXES
+1. Inmediatos de bajo riesgo
+- Proteger `/api/send-daily-orders-email` con JWT + rol admin.
+- Unificar copy de UX para eliminar “completado/completar” y hablar de “archivado”.
+- Ajustar `COUNTABLE_STATUSES` en analytics/monthly/daily al contrato vigente.
+- Corregir bloque duplicado en middleware static de `server.js`.
+
+2. Importantes pero con cuidado
+- Migrar modelo de estados a solo `pending|archived` en toda la app + DB (incluye datos legacy).
+- Consolidar servicio de órdenes para eliminar rutas divergentes.
+- Restringir policy de `public.users` (select) para minimizar exposición.
+- Unificar criterios operativos por `delivery_date` en dashboard/daily/validaciones.
+
+3. Refactors para más adelante
+- Centralizar motor de reglas de negocio (estado, fechas, permisos).
+- Reducir duplicidad de hooks de fetch/stats y mejorar caché invalidation.
+- Estandarizar validaciones con schema único (Zod) en todos los formularios críticos.
+
+O. PLAN DE EJECUCION SEGURO
+- Orden recomendado de commits:
+  1) Seguridad backend endpoint email + tests manuales API.
+  2) Corrección textual/UX de estados + constantes de estados en reportes.
+  3) Unificación de criterio temporal por `delivery_date` en dashboard/daily.
+  4) Consolidación de capa de órdenes (sin cambiar contrato externo inicialmente).
+  5) Migración SQL de estados + limpieza de datos legacy.
+  6) Hardening RLS `users` y validación integral de permisos.
+- Qué testear después de cada commit:
+  - Crear pedido (almuerzo/cena), editar en ventana, archivar individual y bulk.
+  - Visualización dashboard usuario/admin, daily/monthly/tendencias.
+  - Login/logout, sesión expirada, rutas admin como usuario no admin.
+  - Exportaciones y conteos por estado y fecha.
+- Qué NO tocar todavía:
+  - No introducir estados nuevos.
+  - No cambiar reglas funcionales de negocio fuera del contrato pedido.
+  - No desactivar idempotencia RPC existente.
+
+P. IMPLEMENTACION
+- No se implementaron cambios. Solo auditoría y documentación.
+
+FIXES SEGUROS PROPUESTOS PARA UNA SIGUIENTE ITERACION
+- Asegurar auth+admin en `/api/send-daily-orders-email`.
+- Cambiar textos de UI y errores de “completado” a “archivado”.
+- Normalizar `COUNTABLE_STATUSES` a `pending|archived` en analytics/monthly.
+- Corregir bloque duplicado de middleware en `server.js` y validar arranque.
+- Agregar test/check automatizado que falle si aparece estado distinto de `pending|archived` en frontend.
+- Agregar test/check automatizado que falle si `normalizeOrderForReadOnly` se importa fuera de daily/monthly/analytics.
+- Reemplazar filtros por `created_at` con `delivery_date` donde el objetivo sea operación del día de entrega.

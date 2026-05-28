@@ -7,7 +7,6 @@ import cluster from 'cluster';
 import os from 'os';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { sendDailyOrdersExcel } from './sendDailyOrdersEmail.js';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import multer from 'multer';
@@ -148,21 +147,6 @@ if (cluster.isMaster) {
       res.status(500).json({ error: 'Processing failed' });
     }
   });
-  // Endpoint para enviar pedidos diarios por email
-  app.post('/api/send-daily-orders-email', async (req, res) => {
-    const { toEmail, orders } = req.body;
-    if (!toEmail || !orders || !Array.isArray(orders)) {
-      return res.status(400).json({ error: 'Faltan datos o formato incorrecto' });
-    }
-    try {
-      await sendDailyOrdersExcel(toEmail, orders);
-      res.json({ success: true });
-    } catch (err) {
-      console.error('Error enviando email:', err);
-      res.status(500).json({ error: 'Error enviando email' });
-    }
-  });
-
   // --- Health check con auditoría liviana ---
   app.get('/health', async (req, res) => {
     const start = Date.now();
