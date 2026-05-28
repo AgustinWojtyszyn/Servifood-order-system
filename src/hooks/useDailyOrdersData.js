@@ -5,6 +5,7 @@ import { Sound } from '../utils/Sound'
 import { calculateStats } from '../utils/daily/dailyOrderCalculations'
 import { notifyError, notifyInfo, notifySuccess } from '../utils/notice'
 import { confirmAction } from '../utils/confirm'
+import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
 
 export const useDailyOrdersData = (user) => {
   const [orders, setOrders] = useState([])
@@ -57,16 +58,13 @@ export const useDailyOrdersData = (user) => {
           (Array.isArray(peopleData) ? peopleData : []).map(person => [person.person_id, person])
         )
 
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
+        const operationalDate = getTomorrowISOInTimeZone()
 
         const dishesSet = new Set()
 
         const todayOrders = Array.isArray(ordersData) ? ordersData.filter(order => {
-          if (!order || !order.created_at) return false
-          const orderDate = new Date(order.created_at)
-          orderDate.setHours(0, 0, 0, 0)
-          return orderDate.getTime() === today.getTime()
+          if (!order) return false
+          return String(order.delivery_date || '') === operationalDate
         }).map(order => {
           const personId = order.person_key || (order.user_id ? String(order.user_id) : null)
           const person = personId ? personById.get(personId) : null
