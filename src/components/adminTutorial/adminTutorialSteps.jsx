@@ -74,9 +74,9 @@ export const ADMIN_TUTORIAL_STEPS = [
           </div>
 
           <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
-            <h4 className="font-bold text-yellow-900 mb-2">Pedidos Completados</h4>
+            <h4 className="font-bold text-yellow-900 mb-2">Pedidos Archivados</h4>
             <p className="text-yellow-800">
-              Tienes acceso a la sección de <strong>"Pedidos Completados"</strong> donde puedes revisar el historial completo.
+              Tienes acceso a la sección de <strong>"Pedidos Archivados"</strong> donde puedes revisar el historial completo.
             </p>
           </div>
         </div>
@@ -103,15 +103,9 @@ export const ADMIN_TUTORIAL_STEPS = [
             </div>
             <div className="flex items-start gap-3">
               <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap">
-                Completado
+                Archivado
               </span>
-              <p className="text-yellow-900">Pedido preparado y entregado. El usuario recibirá una <strong>notificación automática</strong>.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap">
-                Cancelado
-              </span>
-              <p className="text-yellow-900">Pedido cancelado por algún motivo.</p>
+              <p className="text-yellow-900">Pedido archivado en el sistema. El usuario recibirá una <strong>notificación automática</strong>.</p>
             </div>
           </div>
         </div>
@@ -122,7 +116,7 @@ export const ADMIN_TUTORIAL_STEPS = [
             ¡Importante! Notificaciones Automáticas
           </h4>
           <p className="text-blue-800">
-            Cuando marcas un pedido como <strong>"Completado"</strong>, el usuario recibe automáticamente:
+            Cuando marcas un pedido como <strong>"Archivado"</strong>, el usuario recibe automáticamente:
           </p>
           <ul className="mt-2 ml-4 space-y-1 text-blue-700">
             <li>• Una notificación en la campana 🔔</li>
@@ -298,7 +292,7 @@ export const ADMIN_TUTORIAL_STEPS = [
               </li>
               <li className="flex items-start gap-2">
                 <span>❌</span>
-                <span>Pedidos completados se ocultan</span>
+                <span>Pedidos archivados se ocultan</span>
               </li>
             </ul>
           </div>
@@ -359,7 +353,7 @@ export const ADMIN_TUTORIAL_STEPS = [
             <div className="bg-white p-3 rounded-lg shadow-sm">
               <h5 className="font-semibold text-gray-900 mb-1">2️⃣ Responde rápido a los pedidos</h5>
               <p className="text-gray-700 text-sm">
-                Cambia el estado de "Pendiente" a "Completado" tan pronto como el pedido esté listo.
+                Cambia el estado de "Pendiente" a "Archivado" cuando el pedido corresponda cerrarlo.
               </p>
             </div>
 
@@ -409,4 +403,3 @@ export const ADMIN_TUTORIAL_STEPS = [
     )
   }
 ]
-

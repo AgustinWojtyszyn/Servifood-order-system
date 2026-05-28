@@ -88,7 +88,7 @@ const submitOrders = async ({
       if (msg.includes('violates row-level security policy') || msg.includes('new row violates row-level security')) {
         return {
           ok: false,
-          errorMessage: 'Ya tienes un pedido pendiente. Espera a que se complete para crear uno nuevo.',
+          errorMessage: 'Ya tienes un pedido pendiente. Espera hasta que se archive para crear uno nuevo.',
           forceLunchOnly: false
         }
       }
