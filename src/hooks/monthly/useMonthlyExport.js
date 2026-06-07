@@ -23,10 +23,14 @@ const SUMMARY_COLUMNS = [
   { header: 'OPCIÓN 4', key: 'OPCIÓN 4', width: 12 },
   { header: 'OPCIÓN 5', key: 'OPCIÓN 5', width: 12 },
   { header: 'OPCIÓN 6', key: 'OPCIÓN 6', width: 12 },
-  { header: 'Total opciones', key: 'Total opciones', width: 15 },
+  { header: 'Total opciones de almuerzo', key: 'Total opciones de almuerzo', width: 26 },
   { header: 'Guarniciones reales', key: 'Guarniciones reales', width: 20 },
-  { header: 'Bebidas', key: 'Bebidas', width: 12 },
-  { header: 'Postres', key: 'Postres', width: 12 }
+  { header: 'Bebidas de almuerzo', key: 'Bebidas de almuerzo', width: 20 },
+  { header: 'Bebidas de cena', key: 'Bebidas de cena', width: 18 },
+  { header: 'Bebidas totales', key: 'Bebidas totales', width: 16 },
+  { header: 'Postres de almuerzo', key: 'Postres de almuerzo', width: 20 },
+  { header: 'Postres de cena', key: 'Postres de cena', width: 18 },
+  { header: 'Postres totales', key: 'Postres totales', width: 16 }
 ]
 
 const DAILY_COLUMNS = [
@@ -49,7 +53,7 @@ const formatResponseSummary = (responses = []) => {
     .map(resp => {
       const title = toDisplayString(resp?.title || resp?.label || resp?.question || resp?.name)
       const values = []
-      const response = toDisplayString(resp?.response)
+      const response = toDisplayString(resp?.response ?? resp?.answer)
       if (response) values.push(response)
       if (Array.isArray(resp?.options)) {
         resp.options.forEach(opt => {
@@ -57,23 +61,12 @@ const formatResponseSummary = (responses = []) => {
           if (value) values.push(value)
         })
       }
+      const uniqueValues = Array.from(new Set(values))
       if (!title && !values.length) return ''
-      return title ? `${title}: ${values.join(', ') || '-'}` : values.join(', ')
+      return title ? `${title}: ${uniqueValues.join(', ') || '-'}` : uniqueValues.join(', ')
     })
     .filter(Boolean)
     .join(' | ') || '-'
-}
-
-const formatDinnerDish = (order = {}) => {
-  const { normalizedItems } = normalizeOrderForReadOnly(order)
-  return normalizedItems
-    .map(item => {
-      const name = toDisplayString(item?.name)
-      if (!name) return ''
-      return `${name} (x${Number(item?.quantity) || 1})`
-    })
-    .filter(Boolean)
-    .join('; ') || '-'
 }
 
 const styleWorksheet = (ws, options = {}) => {
@@ -175,9 +168,14 @@ export const useMonthlyExport = ({
       ['Raciones de almuerzo', model.totals.racionesAlmuerzo],
       ['Raciones de cena', model.totals.racionesCena],
       ['Solicitudes con más de una ración', model.totals.solicitudesMasDeUnaRacion],
+      ['Total opciones de almuerzo', model.totals.totalOpciones],
       ['Total guarniciones reales', model.totals.sideBuckets.totalGuarniciones],
-      ['Total bebidas', model.totals.sideBuckets.totalBebidas],
-      ['Total postres', model.totals.sideBuckets.totalPostres]
+      ['Bebidas de almuerzo', model.totals.mealBuckets.lunch.totalBebidas],
+      ['Bebidas de cena', model.totals.mealBuckets.dinner.totalBebidas],
+      ['Bebidas totales', model.totals.mealBuckets.total.totalBebidas],
+      ['Postres de almuerzo', model.totals.mealBuckets.lunch.totalPostres],
+      ['Postres de cena', model.totals.mealBuckets.dinner.totalPostres],
+      ['Postres totales', model.totals.mealBuckets.total.totalPostres]
     ]
     ws.addRows(kpiRows)
     ws.addRow([])
@@ -211,7 +209,7 @@ export const useMonthlyExport = ({
       { header: 'Respuestas adicionales', key: 'Respuestas adicionales', width: 50 },
       { header: 'Estado', key: 'Estado', width: 14 }
     ]
-    const rows = model.dinnerRows.map(order => {
+    const rows = model.dinnerDetails.map(({ order, dinnerDish }) => {
       const { normalizedCustomResponses } = normalizeOrderForReadOnly(order)
       return {
         Fecha: formatDateDMY(getOrderDate(order)),
@@ -219,7 +217,7 @@ export const useMonthlyExport = ({
         Cliente: order?.customer_name || order?.user_name || 'Sin nombre',
         Email: order?.customer_email || order?.user_email || 'Sin email',
         Cantidad: getOrderQuantity(order),
-        'Plato de cena': formatDinnerDish(order),
+        'Plato de cena': dinnerDish?.dish || '',
         'Respuestas adicionales': formatResponseSummary(normalizedCustomResponses),
         Estado: order?.status || '-'
       }
@@ -238,27 +236,30 @@ export const useMonthlyExport = ({
   }
 
   const addValidationsSheet = (wb, model) => {
-    const expectedMay2026 = dateRange?.start === '2026-05-01' && dateRange?.end === '2026-05-31' && isEmpresaAll
     const checks = [
-      ['Cantidad de filas de pedidos', model.validations.orderRows, expectedMay2026 ? 1828 : model.validations.orderRows],
-      ['Suma de total_items', model.validations.totalItems, expectedMay2026 ? 1833 : model.validations.totalItems],
-      ['Diferencia entre filas y raciones', model.validations.rowsVsRationsDifference, expectedMay2026 ? 5 : model.validations.rowsVsRationsDifference],
-      ['Pedidos con más de una ración', model.validations.multiRationOrders, expectedMay2026 ? 5 : model.validations.multiRationOrders],
-      ['Pedidos de cena', model.validations.dinnerOrders, expectedMay2026 ? 117 : model.validations.dinnerOrders],
+      ['Solicitudes registradas', model.validations.orderRows, '—'],
+      ['Raciones totales', model.validations.totalItems, '—'],
+      ['Diferencia entre solicitudes y raciones', model.validations.rowsVsRationsDifference, '—'],
+      ['Solicitudes con más de una ración', model.validations.multiRationOrders, '—'],
+      ['Cenas registradas', model.validations.dinnerOrders, '—'],
+      ['Cenas con plato identificado', model.validations.dinnerDishesIdentified, model.validations.dinnerOrders],
+      ['Guarniciones reales', model.totals.sideBuckets.totalGuarniciones, '—'],
+      ['Bebidas de almuerzo', model.totals.mealBuckets.lunch.totalBebidas, '—'],
+      ['Bebidas de cena', model.totals.mealBuckets.dinner.totalBebidas, '—'],
+      ['Bebidas totales', model.totals.mealBuckets.total.totalBebidas, '—'],
+      ['Postres de almuerzo', model.totals.mealBuckets.lunch.totalPostres, '—'],
+      ['Postres de cena', model.totals.mealBuckets.dinner.totalPostres, '—'],
+      ['Postres totales', model.totals.mealBuckets.total.totalPostres, '—'],
       ['Pedidos eliminados incluidos', model.validations.deletedOrdersIncluded, 0],
-      ['Ítems no clasificados', model.validations.unclassifiedItems, 0],
-      ['Diferencia entre suma de selecciones y suma de total_items', model.validations.selectionsVsTotalItemsDifference, model.totals.racionesCena]
+      ['Items no clasificados', model.validations.unclassifiedItems, 0],
+      ['Respuestas no clasificadas', model.validations.unclassifiedResponses, 0]
     ]
-    if (expectedMay2026) {
-      checks.push(['Raciones de almuerzo mayo 2026', model.totals.racionesAlmuerzo, 1716])
-      checks.push(['Raciones de cena mayo 2026', model.totals.racionesCena, 117])
-    }
     const rows = checks.map(([metric, value, expected]) => {
-      const ok = value === expected
+      const ok = expected === '—' || value === expected
       return {
         Validación: metric,
-        Valor: value,
-        Esperado: expected,
+        'Valor actual': value,
+        'Esperado o referencia': expected,
         Estado: ok ? 'OK' : 'ADVERTENCIA'
       }
     })
@@ -266,15 +267,15 @@ export const useMonthlyExport = ({
     if (hasWarning) {
       rows.unshift({
         Validación: 'ADVERTENCIA',
-        Valor: 'Revisar diferencias inesperadas antes de operar con este archivo.',
-        Esperado: '',
+        'Valor actual': 'Revisar diferencias inesperadas antes de operar con este archivo.',
+        'Esperado o referencia': '',
         Estado: 'ADVERTENCIA'
       })
     }
     const ws = addRowsSheet(wb, 'Validaciones', [
       { header: 'Validación', key: 'Validación', width: 48 },
-      { header: 'Valor', key: 'Valor', width: 18 },
-      { header: 'Esperado', key: 'Esperado', width: 18 },
+      { header: 'Valor actual', key: 'Valor actual', width: 22 },
+      { header: 'Esperado o referencia', key: 'Esperado o referencia', width: 24 },
       { header: 'Estado', key: 'Estado', width: 18 }
     ], rows)
     ws.eachRow((row, rowNumber) => {
@@ -285,6 +286,48 @@ export const useMonthlyExport = ({
         row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } }
       }
     })
+    const reviewRows = [
+      ...(model.manualReviewOrders || []),
+      ...(model.unclassifiedItems || []),
+      ...(model.unclassifiedResponses || [])
+    ]
+    if (reviewRows.length) {
+      ws.addRow([])
+      const titleRow = ws.addRow(['Pedidos para revisar manualmente'])
+      titleRow.font = { bold: true, color: { argb: 'FF7F1D1D' } }
+      titleRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } }
+      const detailHeaders = [
+        'ID del pedido',
+        'Fecha',
+        'Empresa',
+        'Cliente',
+        'Email',
+        'Servicio',
+        'Items originales',
+        'Respuestas originales',
+        'Motivo de revisión'
+      ]
+      const headerRow = ws.addRow(detailHeaders)
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } }
+      reviewRows.forEach(item => {
+        ws.addRow([
+          item.id,
+          formatDateDMY(item.fecha),
+          item.empresa,
+          item.cliente,
+          item.email,
+          item.servicio,
+          item.itemsOriginales,
+          item.respuestasOriginales,
+          item.motivo
+        ])
+      })
+      ws.getColumn(1).width = 48
+      ws.getColumn(7).width = 60
+      ws.getColumn(8).width = 60
+      ws.getColumn(9).width = 42
+    }
     return ws
   }
 

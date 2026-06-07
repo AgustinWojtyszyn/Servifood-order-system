@@ -22,15 +22,21 @@ const getOrderQuantity = (order = {}) => {
   return itemsTotal || 1
 }
 
-const addResponseValues = (resp, callback) => {
-  const baseResp = toDisplayString(resp?.response)
-  if (baseResp) callback(baseResp)
-  if (Array.isArray(resp?.options)) {
-    resp.options.forEach(opt => {
-      const value = toDisplayString(opt)
-      if (value) callback(value)
-    })
+const getResponseValues = (resp = {}) => {
+  const values = []
+  const addValue = (value) => {
+    const displayValue = toDisplayString(value)
+    if (displayValue) values.push(displayValue)
   }
+  addValue(resp?.response ?? resp?.answer)
+  if (Array.isArray(resp?.options)) {
+    resp.options.forEach(addValue)
+  }
+  return Array.from(new Set(values))
+}
+
+const addResponseValues = (resp, callback) => {
+  getResponseValues(resp).forEach(callback)
 }
 
 const isQuestionTitle = (resp = {}, keywords = []) => {
@@ -41,6 +47,62 @@ const isQuestionTitle = (resp = {}, keywords = []) => {
 const isSideQuestion = (resp = {}) => isQuestionTitle(resp, ['guarnicion', 'guarn'])
 const isBeverageQuestion = (resp = {}) => isQuestionTitle(resp, ['bebida', 'bebidas'])
 const isDessertQuestion = (resp = {}) => isQuestionTitle(resp, ['postre', 'postres'])
+const isDinnerQuestion = (resp = {}) => {
+  if (isSideQuestion(resp) || isBeverageQuestion(resp) || isDessertQuestion(resp)) return false
+  return isQuestionTitle(resp, ['cena', 'plato de cena', 'opcion de cena', 'menu de cena'])
+}
+
+const formatOriginalValue = (value) => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string') return value
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+const cleanDinnerDishLabel = (value = '') => {
+  const label = toDisplayString(value)
+    .replace(/^cena\s*:\s*/i, '')
+    .replace(/^opci[oó]n\s+de\s+cena\s*:\s*/i, '')
+    .trim()
+  const normalized = normalizeLabel(label)
+  if (!label || ['cena', 'opcion de cena', 'menu de cena', 'sin cena', 'sin opcion'].includes(normalized)) return ''
+  if (/^\d+$/.test(normalized)) return ''
+  return label
+}
+
+export const identifyDinnerDish = (order = {}) => {
+  const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
+  const itemLabels = normalizedItems
+    .map(item => {
+      const name = cleanDinnerDishLabel(item?.name)
+      if (!name || getOptionKey(name)) return ''
+      const qty = Number(item?.quantity) || 1
+      return qty > 1 ? `${name} (x${qty})` : name
+    })
+    .filter(Boolean)
+
+  if (itemLabels.length) {
+    return { identified: true, dish: itemLabels.join('; '), source: 'items' }
+  }
+
+  const responseLabels = []
+  normalizedCustomResponses.forEach(resp => {
+    if (!isDinnerQuestion(resp)) return
+    getResponseValues(resp).forEach(value => {
+      const label = cleanDinnerDishLabel(value)
+      if (label) responseLabels.push(label)
+    })
+  })
+
+  if (responseLabels.length) {
+    return { identified: true, dish: Array.from(new Set(responseLabels)).join('; '), source: 'custom_responses' }
+  }
+
+  return { identified: false, dish: '', source: null, reason: 'No se pudo identificar el plato de cena desde items ni respuestas de cena.' }
+}
 
 const addBucketItem = (label, buckets, bucketName, delta = 1) => {
   if (!label) return
@@ -66,6 +128,33 @@ export const createSideBuckets = () => ({
   totalBebidas: 0,
   totalPostres: 0
 })
+
+const createMealBuckets = () => ({
+  lunch: createSideBuckets(),
+  dinner: createSideBuckets(),
+  total: createSideBuckets()
+})
+
+const addMealBucketItem = (label, mealBuckets, service, bucketName, delta = 1) => {
+  const meal = service === 'dinner' ? 'dinner' : 'lunch'
+  addBucketItem(label, mealBuckets[meal], bucketName, delta)
+  addBucketItem(label, mealBuckets.total, bucketName, delta)
+}
+
+const createManualReview = (order, motivo) => {
+  const normalized = normalizeOrderForReadOnly(order)
+  return {
+    id: order?.id || '',
+    fecha: (order?.delivery_date || '').slice(0, 10) || '',
+    empresa: order?.location || 'Sin ubicación',
+    cliente: order?.customer_name || order?.user_name || 'Sin nombre',
+    email: order?.customer_email || order?.user_email || 'Sin email',
+    servicio: getService(order),
+    itemsOriginales: formatOriginalValue(normalized.normalizedItems.length ? normalized.normalizedItems : order?.items),
+    respuestasOriginales: formatOriginalValue(normalized.normalizedCustomResponses.length ? normalized.normalizedCustomResponses : order?.custom_responses),
+    motivo
+  }
+}
 
 const classifySideItem = (label = '') => {
   const normalized = normalizeLabel(label)
@@ -270,13 +359,19 @@ export const createMonthlyExportModel = (orders = [], dates = []) => {
   const companies = {}
   const days = {}
   const dinnerRows = []
+  const dinnerDetails = []
+  const manualReviewOrders = []
+  const unclassifiedItems = []
+  const unclassifiedResponses = []
   const validations = {
     orderRows: orders.length,
     totalItems: 0,
     multiRationOrders: 0,
     dinnerOrders: 0,
+    dinnerDishesIdentified: 0,
     deletedOrdersIncluded: 0,
     unclassifiedItems: 0,
+    unclassifiedResponses: 0,
     selectionSum: 0
   }
   const totals = {
@@ -288,7 +383,8 @@ export const createMonthlyExportModel = (orders = [], dates = []) => {
     menusPrincipalesAlmuerzo: 0,
     opciones: createOptionCounts(),
     totalOpciones: 0,
-    sideBuckets: createSideBuckets()
+    sideBuckets: createSideBuckets(),
+    mealBuckets: createMealBuckets()
   }
 
   const ensureGroup = (map, key, label) => {
@@ -302,7 +398,8 @@ export const createMonthlyExportModel = (orders = [], dates = []) => {
         menusPrincipalesAlmuerzo: 0,
         opciones: createOptionCounts(),
         totalOpciones: 0,
-        sideBuckets: createSideBuckets()
+        sideBuckets: createSideBuckets(),
+        mealBuckets: createMealBuckets()
       }
     }
     return map[key]
@@ -328,6 +425,14 @@ export const createMonthlyExportModel = (orders = [], dates = []) => {
     if (service === 'dinner') {
       validations.dinnerOrders += 1
       dinnerRows.push(order)
+      const dinnerDish = identifyDinnerDish(order)
+      if (dinnerDish.identified) {
+        validations.dinnerDishesIdentified += 1
+      } else {
+        const review = createManualReview(order, dinnerDish.reason)
+        manualReviewOrders.push(review)
+      }
+      dinnerDetails.push({ order, dinnerDish })
     }
     if (String(order?.status || '').toLowerCase() === 'deleted') validations.deletedOrdersIncluded += 1
 
@@ -348,6 +453,7 @@ export const createMonthlyExportModel = (orders = [], dates = []) => {
         const qty = Number(item?.quantity) || 1
         if (!name) {
           validations.unclassifiedItems += qty
+          unclassifiedItems.push(createManualReview(order, `Item sin nombre (cantidad ${qty}).`))
           return
         }
         const optionKey = getOptionKey(name)
@@ -372,19 +478,48 @@ export const createMonthlyExportModel = (orders = [], dates = []) => {
           addResponseValues(resp, value => {
             addBucketItem(value, totals.sideBuckets, 'guarnicion')
             groups.forEach(group => addBucketItem(value, group.sideBuckets, 'guarnicion'))
+            addMealBucketItem(value, totals.mealBuckets, service, 'guarnicion')
+            groups.forEach(group => addMealBucketItem(value, group.mealBuckets, service, 'guarnicion'))
           })
         }
         if (isBeverageQuestion(resp)) {
           addResponseValues(resp, value => {
-            addBucketItem(value, totals.sideBuckets, 'bebida')
-            groups.forEach(group => addBucketItem(value, group.sideBuckets, 'bebida'))
+            addMealBucketItem(value, totals.mealBuckets, service, 'bebida')
+            groups.forEach(group => addMealBucketItem(value, group.mealBuckets, service, 'bebida'))
           })
         }
         if (isDessertQuestion(resp)) {
           addResponseValues(resp, value => {
-            addBucketItem(value, totals.sideBuckets, 'postre')
-            groups.forEach(group => addBucketItem(value, group.sideBuckets, 'postre'))
+            addMealBucketItem(value, totals.mealBuckets, service, 'postre')
+            groups.forEach(group => addMealBucketItem(value, group.mealBuckets, service, 'postre'))
           })
+        }
+        const hasValues = getResponseValues(resp).length > 0
+        if (hasValues && !isSideQuestion(resp) && !isBeverageQuestion(resp) && !isDessertQuestion(resp)) {
+          validations.unclassifiedResponses += 1
+          unclassifiedResponses.push(createManualReview(order, `Respuesta no clasificada: ${toDisplayString(resp?.title || resp?.label || resp?.question || resp?.name) || 'Sin título'}.`))
+        }
+      })
+    }
+
+    if (service === 'dinner') {
+      normalized.normalizedCustomResponses.forEach(resp => {
+        if (isBeverageQuestion(resp)) {
+          addResponseValues(resp, value => {
+            addMealBucketItem(value, totals.mealBuckets, service, 'bebida')
+            groups.forEach(group => addMealBucketItem(value, group.mealBuckets, service, 'bebida'))
+          })
+        }
+        if (isDessertQuestion(resp)) {
+          addResponseValues(resp, value => {
+            addMealBucketItem(value, totals.mealBuckets, service, 'postre')
+            groups.forEach(group => addMealBucketItem(value, group.mealBuckets, service, 'postre'))
+          })
+        }
+        const hasValues = getResponseValues(resp).length > 0
+        if (hasValues && !isBeverageQuestion(resp) && !isDessertQuestion(resp) && !isDinnerQuestion(resp)) {
+          validations.unclassifiedResponses += 1
+          unclassifiedResponses.push(createManualReview(order, `Respuesta de cena no clasificada: ${toDisplayString(resp?.title || resp?.label || resp?.question || resp?.name) || 'Sin título'}.`))
         }
       })
     }
@@ -395,6 +530,24 @@ export const createMonthlyExportModel = (orders = [], dates = []) => {
     companies: Object.values(companies).sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' })),
     days: Object.values(days).sort((a, b) => a.label.localeCompare(b.label)),
     dinnerRows,
+    dinnerDetails: dinnerDetails.sort((a, b) => {
+      const aOrder = a.order || {}
+      const bOrder = b.order || {}
+      const aKey = [
+        (aOrder.delivery_date || '').slice(0, 10),
+        aOrder.location || 'Sin ubicación',
+        aOrder.customer_name || aOrder.user_name || 'Sin nombre'
+      ].join('|')
+      const bKey = [
+        (bOrder.delivery_date || '').slice(0, 10),
+        bOrder.location || 'Sin ubicación',
+        bOrder.customer_name || bOrder.user_name || 'Sin nombre'
+      ].join('|')
+      return aKey.localeCompare(bKey, 'es', { sensitivity: 'base' })
+    }),
+    manualReviewOrders,
+    unclassifiedItems,
+    unclassifiedResponses,
     validations: {
       ...validations,
       rowsVsRationsDifference: validations.totalItems - validations.orderRows,
@@ -456,6 +609,7 @@ export const buildSummaryRows = (metricsData, empresasOverride) => {
 }
 
 const bucketsTotal = (buckets, key) => buckets?.[key] || 0
+const mealBucketsTotal = (mealBuckets, meal, key) => bucketsTotal(mealBuckets?.[meal], key)
 
 export const buildCompanyRowsFromModel = (model) => {
   return (model?.companies || []).map(company => ({
@@ -471,10 +625,14 @@ export const buildCompanyRowsFromModel = (model) => {
     'OPCIÓN 4': company.opciones['OPCIÓN 4'] || 0,
     'OPCIÓN 5': company.opciones['OPCIÓN 5'] || 0,
     'OPCIÓN 6': company.opciones['OPCIÓN 6'] || 0,
-    'Total opciones': company.totalOpciones,
+    'Total opciones de almuerzo': company.totalOpciones,
     'Guarniciones reales': bucketsTotal(company.sideBuckets, 'totalGuarniciones'),
-    Bebidas: bucketsTotal(company.sideBuckets, 'totalBebidas'),
-    Postres: bucketsTotal(company.sideBuckets, 'totalPostres')
+    'Bebidas de almuerzo': mealBucketsTotal(company.mealBuckets, 'lunch', 'totalBebidas'),
+    'Bebidas de cena': mealBucketsTotal(company.mealBuckets, 'dinner', 'totalBebidas'),
+    'Bebidas totales': mealBucketsTotal(company.mealBuckets, 'total', 'totalBebidas'),
+    'Postres de almuerzo': mealBucketsTotal(company.mealBuckets, 'lunch', 'totalPostres'),
+    'Postres de cena': mealBucketsTotal(company.mealBuckets, 'dinner', 'totalPostres'),
+    'Postres totales': mealBucketsTotal(company.mealBuckets, 'total', 'totalPostres')
   }))
 }
 
@@ -492,10 +650,14 @@ export const buildDailyRowsFromModel = (model) => {
     'OPCIÓN 4': day.opciones['OPCIÓN 4'] || 0,
     'OPCIÓN 5': day.opciones['OPCIÓN 5'] || 0,
     'OPCIÓN 6': day.opciones['OPCIÓN 6'] || 0,
-    'Total opciones': day.totalOpciones,
+    'Total opciones de almuerzo': day.totalOpciones,
     'Guarniciones reales': bucketsTotal(day.sideBuckets, 'totalGuarniciones'),
-    Bebidas: bucketsTotal(day.sideBuckets, 'totalBebidas'),
-    Postres: bucketsTotal(day.sideBuckets, 'totalPostres')
+    'Bebidas de almuerzo': mealBucketsTotal(day.mealBuckets, 'lunch', 'totalBebidas'),
+    'Bebidas de cena': mealBucketsTotal(day.mealBuckets, 'dinner', 'totalBebidas'),
+    'Bebidas totales': mealBucketsTotal(day.mealBuckets, 'total', 'totalBebidas'),
+    'Postres de almuerzo': mealBucketsTotal(day.mealBuckets, 'lunch', 'totalPostres'),
+    'Postres de cena': mealBucketsTotal(day.mealBuckets, 'dinner', 'totalPostres'),
+    'Postres totales': mealBucketsTotal(day.mealBuckets, 'total', 'totalPostres')
   }))
 
   rows.push({
@@ -511,10 +673,14 @@ export const buildDailyRowsFromModel = (model) => {
     'OPCIÓN 4': model?.totals?.opciones?.['OPCIÓN 4'] || 0,
     'OPCIÓN 5': model?.totals?.opciones?.['OPCIÓN 5'] || 0,
     'OPCIÓN 6': model?.totals?.opciones?.['OPCIÓN 6'] || 0,
-    'Total opciones': model?.totals?.totalOpciones || 0,
+    'Total opciones de almuerzo': model?.totals?.totalOpciones || 0,
     'Guarniciones reales': bucketsTotal(model?.totals?.sideBuckets, 'totalGuarniciones'),
-    Bebidas: bucketsTotal(model?.totals?.sideBuckets, 'totalBebidas'),
-    Postres: bucketsTotal(model?.totals?.sideBuckets, 'totalPostres')
+    'Bebidas de almuerzo': mealBucketsTotal(model?.totals?.mealBuckets, 'lunch', 'totalBebidas'),
+    'Bebidas de cena': mealBucketsTotal(model?.totals?.mealBuckets, 'dinner', 'totalBebidas'),
+    'Bebidas totales': mealBucketsTotal(model?.totals?.mealBuckets, 'total', 'totalBebidas'),
+    'Postres de almuerzo': mealBucketsTotal(model?.totals?.mealBuckets, 'lunch', 'totalPostres'),
+    'Postres de cena': mealBucketsTotal(model?.totals?.mealBuckets, 'dinner', 'totalPostres'),
+    'Postres totales': mealBucketsTotal(model?.totals?.mealBuckets, 'total', 'totalPostres')
   })
 
   return rows
