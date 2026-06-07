@@ -62,7 +62,7 @@ export const useMonthlyMetrics = ({ supabase, db, pushLog }) => {
     setError(null)
     try {
       pushLogRef.current?.('fetch-start', currentRange)
-      const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location'
+      const columns = 'id,status,delivery_date,created_at,total_items,items,custom_responses,location,service,customer_name,customer_email,customer_phone,comments'
       pushLogRef.current?.('query-params', { start: currentRange.start, end: currentRange.end })
 
       const deliveryOrders = await fetchAllOrders(
@@ -244,4 +244,3 @@ export const useMonthlyMetrics = ({ supabase, db, pushLog }) => {
     fetchMetrics
   }
 }
-
