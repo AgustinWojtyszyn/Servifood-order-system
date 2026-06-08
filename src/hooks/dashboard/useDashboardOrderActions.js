@@ -7,6 +7,7 @@ export const useDashboardOrderActions = ({
   calculateStats,
   navigate,
   db,
+  isAdmin = false,
   isOrderEditable,
   EDIT_WINDOW_MINUTES,
   confirmAction,
@@ -139,7 +140,7 @@ export const useDashboardOrderActions = ({
 
   const handleDeleteOrder = useCallback((order) => {
     if (!isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)) {
-      showToast(`Solo puedes eliminar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+      showToast(`Solo puedes cancelar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
       return
     }
 
@@ -150,21 +151,43 @@ export const useDashboardOrderActions = ({
     if (!deleteConfirmOrder) return
     setDeleteSubmitting(true)
     try {
-      const { error } = await db.deleteOrder(deleteConfirmOrder.id)
+      const editableSince = new Date(Date.now() - EDIT_WINDOW_MINUTES * 60 * 1000).toISOString()
+      const result = isAdmin
+        ? await db.deleteOrder(deleteConfirmOrder.id)
+        : await db.cancelOwnPendingOrder({
+            orderId: deleteConfirmOrder.id,
+            userId: deleteConfirmOrder.user_id,
+            editableSince
+          })
+      const { data, error } = result
       if (error) {
-        showToast('Error al eliminar el pedido: ' + error.message, 'error')
+        showToast(`Error al ${isAdmin ? 'eliminar' : 'cancelar'} el pedido: ${error.message}`, 'error')
         return
       }
-      showToast('Pedido eliminado exitosamente')
-      fetchOrders() // Recargar pedidos
+      if (!isAdmin && (!Array.isArray(data) || data.length === 0)) {
+        showToast(`No se pudo cancelar el pedido. Verificá que siga pendiente y dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`, 'error')
+        return
+      }
+      showToast(isAdmin ? 'Pedido eliminado exitosamente' : 'Pedido cancelado exitosamente')
+      if (!isAdmin) {
+        setOrders((prev) => {
+          if (!Array.isArray(prev)) return prev
+          const next = prev.map((order) =>
+            order?.id === deleteConfirmOrder.id ? { ...order, status: 'archived', displayStatus: 'archived' } : order
+          )
+          calculateStats(next)
+          return next
+        })
+      }
+      fetchOrders()
       setDeleteConfirmOrder(null)
     } catch (err) {
       console.error('Error:', err)
-      showToast('Error al eliminar el pedido', 'error')
+      showToast(`Error al ${isAdmin ? 'eliminar' : 'cancelar'} el pedido`, 'error')
     } finally {
       setDeleteSubmitting(false)
     }
-  }, [db, deleteConfirmOrder, fetchOrders, showToast])
+  }, [EDIT_WINDOW_MINUTES, calculateStats, db, deleteConfirmOrder, fetchOrders, isAdmin, setOrders, showToast])
 
   const closeDeleteConfirm = useCallback(() => {
     if (deleteSubmitting) return
@@ -189,4 +212,3 @@ export const useDashboardOrderActions = ({
     handleViewOrder
   }
 }
-

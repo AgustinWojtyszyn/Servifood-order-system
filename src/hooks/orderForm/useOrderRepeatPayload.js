@@ -60,10 +60,20 @@ export const useOrderRepeatPayload = ({
     repeatAppliedRef.current = true
   }, [
     locationState,
+    menuItems,
+    dinnerMenuItems,
     menuItemsLength,
     dinnerMenuItemsLength,
     dinnerEnabled,
     dinnerMenuEnabled,
-    locations
+    locations,
+    setSelectedItems,
+    setSelectedItemsDinner,
+    setCustomResponses,
+    setCustomResponsesDinner,
+    setDinnerSpecialChoice,
+    setSelectedTurns,
+    setMode,
+    setFormData
   ])
 }

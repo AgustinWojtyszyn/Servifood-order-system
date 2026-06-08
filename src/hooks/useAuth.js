@@ -7,57 +7,10 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
 
-  const logRoleDebug = (...args) => {
+  const logRoleDebug = useCallback((...args) => {
     if (import.meta.env.DEV) {
       console.log('[Auth][role-debug]', ...args)
     }
-  }
-
-  // Cargar usuario inicial
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const { session, error } = await authService.getSession()
-
-        if (error) {
-          if (import.meta.env.DEV) {
-            console.error('[Auth] getSession error', error)
-          }
-          throw error
-        }
-
-        if (import.meta.env.DEV) {
-          console.log('[Auth] initial session', session ? 'found' : 'none')
-        }
-
-        if (session?.user) {
-          await loadUserData(session.user)
-        } else {
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error)
-        setLoading(false)
-      }
-    }
-
-    initializeAuth()
-
-    // Listener para cambios de autenticación
-    const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
-      if (import.meta.env.DEV) {
-        console.log('[Auth] onAuthStateChange', event, session ? 'has session' : 'no session')
-      }
-      if (event === 'SIGNED_IN' && session?.user) {
-        await loadUserData(session.user)
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-        setIsAdmin(false)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
   }, [])
 
   const loadUserData = useCallback(async (authUser) => {
@@ -110,7 +63,54 @@ export const useAuth = () => {
       }
       setLoading(false)
     }
-  }, [])
+  }, [logRoleDebug])
+
+  // Cargar usuario inicial
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const { session, error } = await authService.getSession()
+
+        if (error) {
+          if (import.meta.env.DEV) {
+            console.error('[Auth] getSession error', error)
+          }
+          throw error
+        }
+
+        if (import.meta.env.DEV) {
+          console.log('[Auth] initial session', session ? 'found' : 'none')
+        }
+
+        if (session?.user) {
+          await loadUserData(session.user)
+        } else {
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        setLoading(false)
+      }
+    }
+
+    initializeAuth()
+
+    // Listener para cambios de autenticación
+    const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+      if (import.meta.env.DEV) {
+        console.log('[Auth] onAuthStateChange', event, session ? 'has session' : 'no session')
+      }
+      if (event === 'SIGNED_IN' && session?.user) {
+        await loadUserData(session.user)
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setIsAdmin(false)
+        setLoading(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [loadUserData])
 
   const signIn = useCallback(async (email, password, rememberMe = false) => {
     setLoading(true)

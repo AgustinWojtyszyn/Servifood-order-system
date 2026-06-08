@@ -1,7 +1,14 @@
 import { X } from 'lucide-react'
 
-const DeleteConfirmModal = ({ order, onConfirm, onClose, submitting }) => {
+const DeleteConfirmModal = ({ order, onConfirm, onClose, submitting, mode = 'delete' }) => {
   if (!order) return null
+  const isCancel = mode === 'cancel'
+  const title = isCancel ? 'Cancelar pedido' : 'Eliminar pedido'
+  const message = isCancel
+    ? '¿Estás seguro de que querés cancelar este pedido? Quedará archivado para conservar el historial.'
+    : '¿Estás seguro de que quieres eliminar este pedido? Esta acción no se puede deshacer.'
+  const submitLabel = isCancel ? 'Cancelar pedido' : 'Eliminar pedido'
+  const submittingLabel = isCancel ? 'Cancelando...' : 'Eliminando...'
 
   return (
     <div
@@ -15,9 +22,9 @@ const DeleteConfirmModal = ({ order, onConfirm, onClose, submitting }) => {
         <div className="p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-xl font-bold">Eliminar pedido</h3>
+              <h3 className="text-xl font-bold">{title}</h3>
               <p className="text-sm text-white/90 mt-1">
-                ¿Estás seguro de que quieres eliminar este pedido? Esta acción no se puede deshacer.
+                {message}
               </p>
             </div>
             <button
@@ -53,7 +60,7 @@ const DeleteConfirmModal = ({ order, onConfirm, onClose, submitting }) => {
             className="px-4 py-2 text-sm font-semibold rounded-lg border border-white/40 bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={submitting}
           >
-            {submitting ? 'Eliminando...' : 'Eliminar pedido'}
+            {submitting ? submittingLabel : submitLabel}
           </button>
         </div>
       </div>

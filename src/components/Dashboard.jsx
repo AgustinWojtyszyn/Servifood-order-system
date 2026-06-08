@@ -82,6 +82,7 @@ const Dashboard = ({ user, loading }) => {
     calculateStats,
     navigate,
     db,
+    isAdmin,
     isOrderEditable,
     EDIT_WINDOW_MINUTES,
     confirmAction,
@@ -214,6 +215,7 @@ const Dashboard = ({ user, loading }) => {
         canEditOrder={(order) => isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)}
         onEditOrder={handleEditOrder}
         onDeleteOrder={handleDeleteOrder}
+        deleteActionLabel={isAdmin ? 'Eliminar' : 'Cancelar pedido'}
         onOpenChangeCompany={openChangeCompanyFlow}
         canOpenChangeCompany={canOpenChangeCompany}
         changeCompanyHint={changeCompanyHint}
@@ -239,6 +241,7 @@ const Dashboard = ({ user, loading }) => {
         getStatusBadgeClass={getStatusBadgeClass}
         onEditOrder={handleEditOrder}
         onDeleteOrder={handleDeleteOrder}
+        deleteActionLabel={isAdmin ? 'Eliminar' : 'Cancelar pedido'}
         canEditOrder={(order) => isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)}
       />
 
@@ -268,6 +271,7 @@ const Dashboard = ({ user, loading }) => {
           onConfirm={confirmDeleteOrder}
           onClose={closeDeleteConfirm}
           submitting={deleteSubmitting}
+          mode={isAdmin ? 'delete' : 'cancel'}
         />
       )}
 

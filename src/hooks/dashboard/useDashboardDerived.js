@@ -18,7 +18,7 @@ export const useDashboardDerived = ({ orders } = {}) => {
 
   const pendingOrder = sortedOrders.find((order) => (order.displayStatus || order.status) === 'pending')
 
-  const headerOrder = pendingOrder || sortedOrders[0] || null
+  const headerOrder = pendingOrder || null
   const headerStatus = headerOrder ? formatHeaderStatus(headerOrder.displayStatus || headerOrder.status) : 'Sin pedido'
   const headerSummary = headerOrder ? buildItemsSummary(headerOrder.items) : 'Sin pedido activo'
 

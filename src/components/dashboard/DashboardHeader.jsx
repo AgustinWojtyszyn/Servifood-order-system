@@ -14,6 +14,7 @@ const DashboardHeader = ({
   canEditOrder,
   onEditOrder,
   onDeleteOrder,
+  deleteActionLabel = 'Eliminar',
   onOpenChangeCompany,
   canOpenChangeCompany,
   changeCompanyHint
@@ -135,7 +136,7 @@ const DashboardHeader = ({
                   }`}
                 >
                   <Trash2 className="h-4 w-4" />
-                  Eliminar
+                  {deleteActionLabel}
                 </button>
               </>
             )}

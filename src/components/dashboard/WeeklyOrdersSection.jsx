@@ -10,6 +10,7 @@ const WeeklyOrdersSection = ({
   getStatusBadgeClass,
   onEditOrder,
   onDeleteOrder,
+  deleteActionLabel = 'Eliminar',
   canEditOrder
 }) => {
   return (
@@ -52,10 +53,10 @@ const WeeklyOrdersSection = ({
                         type="button"
                         onClick={() => onDeleteOrder && onDeleteOrder(order)}
                         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
-                        title="Eliminar pedido"
+                        title={deleteActionLabel}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        Eliminar
+                        {deleteActionLabel}
                       </button>
                     </>
                   )}

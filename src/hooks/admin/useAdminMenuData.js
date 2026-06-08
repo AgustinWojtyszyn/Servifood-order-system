@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { db } from '../../supabaseClient'
 import { sortMenuItems } from '../../utils/admin/adminCalculations'
 import { addDaysToISO, getTodayISOInTimeZone } from '../../utils/dateUtils'
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const EMPTY_SELECTED_DATES = []
 
 const normalizeISODate = (value) => {
   if (!value || typeof value !== 'string') return null
@@ -41,13 +42,13 @@ const useAdminMenuData = ({
   editingMenuByDate,
   draftMenuItemsByDate,
   setDraftItemsForDate,
-  initialSelectedDates = [],
+  initialSelectedDates = EMPTY_SELECTED_DATES,
   userId,
   weekBaseDate
 }) => {
   const storageKey = userId ? `admin_menu_selected_dates:${userId}` : 'admin_menu_selected_dates'
 
-  const readStoredSelectedDates = () => {
+  const readStoredSelectedDates = useCallback(() => {
     if (typeof window === 'undefined') return initialSelectedDates
     try {
       const stored = localStorage.getItem(storageKey)
@@ -71,7 +72,7 @@ const useAdminMenuData = ({
       .filter(isWithinRetention)
       .sort()
     return normalizedInitial
-  }
+  }, [initialSelectedDates, storageKey])
 
   const [selectedDates, setSelectedDates] = useState(() => readStoredSelectedDates())
   const [menuItemsByDate, setMenuItemsByDate] = useState({})
@@ -230,7 +231,7 @@ const useAdminMenuData = ({
   useEffect(() => {
     const next = readStoredSelectedDates()
     setSelectedDates(next)
-  }, [storageKey])
+  }, [readStoredSelectedDates, storageKey])
 
   return {
     selectedDates,

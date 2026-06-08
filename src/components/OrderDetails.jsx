@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, db } from '../supabaseClient'
+import { useAuthContext } from '../contexts/AuthContext'
 import { COMPANY_LIST } from '../constants/companyConfig'
 import RequireUser from './RequireUser'
 import { isOrderEditable } from '../utils'
@@ -74,6 +75,7 @@ const statusMeta = {
 const OrderDetails = ({ user, loading }) => {
   const { orderId } = useParams()
   const navigate = useNavigate()
+  const { isAdmin } = useAuthContext()
   const [order, setOrder] = useState(null)
   const [localLoading, setLocalLoading] = useState(true)
   const [error, setError] = useState('')
@@ -139,6 +141,7 @@ const OrderDetails = ({ user, loading }) => {
   const canEditOrder = order?.created_at
     ? isOrderEditable(order.created_at, EDIT_WINDOW_MINUTES)
     : false
+  const canModifyPendingOrder = canEditOrder && status === 'pending'
 
   const handleRepeatOrder = () => {
     if (!order) return
@@ -167,27 +170,45 @@ const OrderDetails = ({ user, loading }) => {
 
   const handleDeleteOrder = async () => {
     if (!order || deleteSubmitting) return
-    if (!canEditOrder) {
-      notifyInfo(`Solo puedes eliminar tu pedido dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+    if (!canModifyPendingOrder) {
+      notifyInfo(`Solo puedes cancelar tu pedido pendiente dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
       return
     }
     const confirmed = await confirmAction({
-      title: 'Eliminar pedido',
-      message: 'Esta acción elimina el pedido por completo.',
-      confirmText: 'Eliminar'
+      title: isAdmin ? 'Eliminar pedido' : 'Cancelar pedido',
+      message: isAdmin
+        ? 'Esta acción elimina el pedido por completo.'
+        : 'El pedido quedará archivado para conservar el historial.',
+      confirmText: isAdmin ? 'Eliminar' : 'Cancelar pedido'
     })
     if (!confirmed) return
     setDeleteSubmitting(true)
     try {
-      const { error: deleteError } = await db.deleteOrder(order.id)
+      const editableSince = new Date(Date.now() - EDIT_WINDOW_MINUTES * 60 * 1000).toISOString()
+      const result = isAdmin
+        ? await db.deleteOrder(order.id)
+        : await db.cancelOwnPendingOrder({
+            orderId: order.id,
+            userId: user.id,
+            editableSince
+          })
+      const { data, error: deleteError } = result
       if (deleteError) {
-        notifyError('Error al eliminar el pedido: ' + deleteError.message)
+        notifyError(`Error al ${isAdmin ? 'eliminar' : 'cancelar'} el pedido: ${deleteError.message}`)
         return
       }
-      notifySuccess('Pedido eliminado.')
-      navigate('/dashboard', { replace: true })
+      if (!isAdmin && (!Array.isArray(data) || data.length === 0)) {
+        notifyError(`No se pudo cancelar el pedido. Verificá que siga pendiente y dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
+        return
+      }
+      notifySuccess(isAdmin ? 'Pedido eliminado.' : 'Pedido cancelado.')
+      if (isAdmin) {
+        navigate('/dashboard', { replace: true })
+      } else {
+        setOrder((prev) => prev ? { ...prev, status: 'archived' } : prev)
+      }
     } catch (_err) {
-      notifyError('Error al eliminar el pedido')
+      notifyError(`Error al ${isAdmin ? 'eliminar' : 'cancelar'} el pedido`)
     } finally {
       setDeleteSubmitting(false)
     }
@@ -269,18 +290,18 @@ const OrderDetails = ({ user, loading }) => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">Edición del pedido</h3>
-                  <p className="text-sm text-gray-600 font-semibold">Edita o elimina dentro del tiempo permitido.</p>
+                  <p className="text-sm text-gray-600 font-semibold">Edita o cancela dentro del tiempo permitido.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={handleEditOrder}
                     className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-colors ${
-                      canEditOrder
+                      canModifyPendingOrder
                         ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
                         : 'bg-emerald-50 text-emerald-300 border-emerald-100 cursor-not-allowed'
                     }`}
-                    disabled={!canEditOrder}
+                    disabled={!canModifyPendingOrder}
                   >
                     <Edit className="h-4 w-4" />
                     Editar
@@ -289,14 +310,14 @@ const OrderDetails = ({ user, loading }) => {
                     type="button"
                     onClick={handleDeleteOrder}
                     className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-colors ${
-                      canEditOrder && !deleteSubmitting
+                      canModifyPendingOrder && !deleteSubmitting
                         ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
                         : 'bg-red-50 text-red-300 border-red-100 cursor-not-allowed'
                     }`}
-                    disabled={!canEditOrder || deleteSubmitting}
+                    disabled={!canModifyPendingOrder || deleteSubmitting}
                   >
                     <Trash2 className="h-4 w-4" />
-                    {deleteSubmitting ? 'Eliminando...' : 'Eliminar'}
+                    {deleteSubmitting ? (isAdmin ? 'Eliminando...' : 'Cancelando...') : (isAdmin ? 'Eliminar' : 'Cancelar pedido')}
                   </button>
                   <button
                     type="button"

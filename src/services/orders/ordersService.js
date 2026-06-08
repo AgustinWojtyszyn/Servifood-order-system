@@ -122,6 +122,23 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
       return { data, error }
     },
 
+    cancelOwnPendingOrder: async ({ orderId, userId, editableSince }) => {
+      invalidateCache()
+      let query = supabase
+        .from('orders')
+        .update({ status: 'archived', updated_at: new Date().toISOString() })
+        .eq('id', orderId)
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+
+      if (editableSince) {
+        query = query.gte('created_at', editableSince)
+      }
+
+      const { data, error } = await query.select('id, status')
+      return { data, error }
+    },
+
     deleteOrder: async (orderId) => {
       invalidateCache()
       const { data, error } = await supabase

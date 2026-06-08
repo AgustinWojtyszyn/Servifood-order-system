@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
 import { usersService } from '../services/users'
@@ -18,14 +18,14 @@ const Layout = ({ children, user, loading }) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [externalLocks, setExternalLocks] = useState(0)
   const navigate = useNavigate()
-  // Helpers de diagnóstico siempre disponibles bajo window.__logScrollMetrics y __logScrollContainers.
-  const _isScrollDebug = (() => {
+  // Helpers de diagnóstico disponibles solo en dev o con flag explícito.
+  const _isScrollDebug = useMemo(() => {
     if (typeof import.meta === 'undefined') return false
     const envFlag = import.meta?.env?.VITE_SCROLL_DEBUG === '1'
     const isDev = import.meta?.env?.DEV
     const urlFlag = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('scrollDebug') === '1'
     return envFlag || isDev || urlFlag
-  })()
+  }, [])
   const registerExternalLock = useCallback(() => {
     setExternalLocks((count) => count + 1)
     return () => setExternalLocks((count) => Math.max(0, count - 1))
@@ -37,6 +37,8 @@ const Layout = ({ children, user, loading }) => {
 
   // Herramienta de diagnóstico (dev) para identificar contenedores que generan barras de scroll internas.
   useEffect(() => {
+    if (!_isScrollDebug) return
+
     const logScrollContainers = () => {
       const candidates = Array.from(document.querySelectorAll('*')).filter((el) => {
         const style = window.getComputedStyle(el)
@@ -54,34 +56,33 @@ const Layout = ({ children, user, loading }) => {
         delete window.__logScrollContainers
       }
     }
-  }, [])
+  }, [_isScrollDebug])
 
   // Métricas de scroll para diagnosticar doble scroll en dev.
   useEffect(() => {
+    if (!_isScrollDebug) return
+
+    let currentMetrics = null
+    const getScrollMetrics = () => currentMetrics
     const logMetrics = () => {
-      const metrics = {
+      currentMetrics = {
         innerHeight: window.innerHeight,
         docScrollHeight: document.documentElement?.scrollHeight,
         bodyScrollHeight: document.body?.scrollHeight
       }
-      window.__logScrollMetrics = () => metrics
+      window.__logScrollMetrics = getScrollMetrics
     }
     logMetrics()
     window.addEventListener('resize', logMetrics)
     return () => {
       window.removeEventListener('resize', logMetrics)
-      if (window.__logScrollMetrics === logMetrics) {
+      if (window.__logScrollMetrics === getScrollMetrics) {
         delete window.__logScrollMetrics
       }
     }
-  }, [])
+  }, [_isScrollDebug])
 
-  useEffect(() => {
-    if (!user?.id) return
-    checkUserRole()
-  }, [user])
-
-  const checkUserRole = async () => {
+  const checkUserRole = useCallback(async () => {
     if (!user?.id) {
       setIsAdmin(false)
       return
@@ -116,7 +117,12 @@ const Layout = ({ children, user, loading }) => {
       const roleValue = user?.user_metadata?.role
       setIsAdmin(roleValue === 'admin')
     }
-  }
+  }, [user?.app_metadata?.role, user?.id, user?.role, user?.user_metadata?.role])
+
+  useEffect(() => {
+    if (!user?.id) return
+    checkUserRole()
+  }, [checkUserRole, user?.id])
 
   const handleLogout = async () => {
     const result = await auth.signOut()
