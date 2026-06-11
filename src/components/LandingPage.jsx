@@ -1,229 +1,196 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom';
+import { Clock, FileText, CheckCircle, Shield, Check } from 'react-feather';
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png';
 
-import { ArrowRight } from 'react-feather';
-import timerIcon from '../assets/timer icon.png';
-import expertiseIcon from '../assets/expertise icon.png';
-import cyberSecurityIcon from '../assets/cyber-security icon.png';
-import settingsIcon from '../assets/setting-lines icon.png';
-
-const features = [
+const benefits = [
   {
-    icon: <img src={timerIcon} alt="Rapidez" className="h-12 w-12 mx-auto" />,
-    title: "Rápido",
-    description: "Gestión de pedidos en segundos.",
+    icon: Clock,
+    title: "Pedí en segundos",
+    description: "Completá tu pedido diario de forma ágil y sin complicaciones.",
   },
   {
-    icon: <img src={expertiseIcon} alt="Profesional" className="h-12 w-12 mx-auto" />,
-    title: "Profesional",
-    description: "Solución para empresas y eventos.",
+    icon: FileText,
+    title: "Consultá tus pedidos",
+    description: "Revisá el historial y el estado de tus selecciones rápidamente.",
   },
   {
-    icon: <img src={cyberSecurityIcon} alt="Seguro" className="h-12 w-12 mx-auto" />,
-    title: "Seguro",
-    description: "Tus datos protegidos y privados.",
+    icon: CheckCircle,
+    title: "Gestión organizada",
+    description: "Todo en un solo lugar, con una interfaz clara y estructurada.",
   },
   {
-    icon: <img src={settingsIcon} alt="Flexible" className="h-12 w-12 mx-auto" />,
-    title: "Flexible",
-    description: "Personaliza tu experiencia.",
+    icon: Shield,
+    title: "Acceso seguro",
+    description: "Ingresá de manera confiable con tu cuenta personal.",
   },
 ];
 
 export default function LandingPage() {
-  const [showIntro, setShowIntro] = useState(false)
-
-  // Mostrar intro en cada carga/recarga de la página
-  useEffect(() => {
-    setShowIntro(true)
-  }, [])
-
-  useEffect(() => {
-    if (!showIntro) return
-
-    // Bloquear scroll mientras dura la animación
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    const timer = setTimeout(() => {
-      setShowIntro(false)
-    }, 1400) // ~1.4s
-
-    return () => {
-      clearTimeout(timer)
-      document.body.style.overflow = previousOverflow
-    }
-  }, [showIntro])
-
   return (
-    <div className="flex flex-col min-h-dvh w-full min-w-0 overflow-x-hidden bg-linear-to-br from-[#1a237e] via-[#283593] to-[#303f9f]">
-
-      {/* Intro cinematográfica */}
-      {showIntro && (
-        <div className="intro-overlay">
+    <div className="flex flex-col min-h-screen bg-[#1a237e] font-sans selection:bg-[#fb8c00] selection:text-white">
+      {/* HEADER */}
+      <header className="container mx-auto px-6 py-6 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2">
           <img
             src={servifoodLogo}
             alt="ServiFood Catering Logo"
-            className="intro-logo"
-            onError={e => {
+            className="h-10 w-auto object-contain"
+            onError={(e) => {
               e.target.onerror = null;
-              e.target.src = 'https://via.placeholder.com/200?text=ServiFood';
+              e.target.src = 'https://via.placeholder.com/150?text=ServiFood';
             }}
           />
-        </div>
-      )}
-
-      {/* Estilos locales para la animación */}
-      <style>{`
-        .intro-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 9999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #1a237e, #283593, #303f9f);
-          overflow: hidden;
-          pointer-events: all;
-          animation: introFade 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-
-        .intro-logo {
-          width: clamp(240px, 34vh, 360px);
-          height: clamp(240px, 34vh, 360px);
-          object-fit: contain;
-          border-radius: 20px;
-          box-shadow: 0 25px 80px rgba(0,0,0,0.35);
-          will-change: transform, opacity;
-          image-rendering: auto;
-          -webkit-transform: translateZ(0);
-          transform: translateZ(0);
-          animation: logoZoom 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-
-        @keyframes logoZoom {
-          0%   { transform: scale(0.85); opacity: 0; }
-          55%  { transform: scale(1.02); opacity: 1; }
-          80%  { transform: scale(1.08); opacity: 1; }
-          100% { transform: scale(1.12); opacity: 0; }
-        }
-
-        @keyframes introFade {
-          0%   { opacity: 1; }
-          80%  { opacity: 1; }
-          100% { opacity: 0; }
-        }
-      `}</style>
-
-      {/* HEADER */}
-      <div className="flex flex-col items-center justify-center pt-8 pb-2">
-        <img
-          src={servifoodLogo}
-          alt="ServiFood Catering Logo"
-          className="block"
-          style={{ width: "220px", height: "220px", objectFit: "contain" }}
-          onError={e => {
-            e.target.onerror = null;
-            e.target.src = 'https://via.placeholder.com/150?text=Logo+no+disponible';
-          }}
-        />
-
-        <h1 className="mt-4 text-4xl sm:text-5xl font-extrabold text-white text-center tracking-wide">
-          SERVIFOOD CATERING
-        </h1>
-
-        <div className="flex gap-2 mt-4">
-          <Link
-            to="/login"
-            className="px-4 py-2 text-white font-bold rounded-xl bg-[#283593] hover:bg-[#3949ab] transition-colors"
-          >
-            Iniciar Sesión
-          </Link>
-
+        </Link>
+        <div className="flex items-center gap-4">
           <Link
             to="/register"
-            className="px-4 py-2 text-white font-bold rounded-xl bg-[#fb8c00] hover:bg-[#f57c00] transition-colors"
+            className="hidden sm:inline-block text-white/90 hover:text-white font-medium transition-colors"
           >
             Registrarse
           </Link>
-        </div>
-      </div>
-
-      {/* FEATURES */}
-      <div className="py-8">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">
-              💡 ¿Por qué ServiFood?
-            </h2>
-            <p className="text-lg text-white/90">La mejor plataforma para gestionar tus pedidos</p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="p-6 rounded-2xl backdrop-blur-sm text-center border
-                           hover:scale-105 transition shadow-lg"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  borderColor: "rgba(255,255,255,0.2)",
-                }}
-              >
-                <div
-                  className="p-4 rounded-xl mx-auto mb-3"
-                  style={{
-                    background: "#fb8c00",
-                  }}
-                >
-                  {feature.icon}
-                </div>
-
-                <h3 className="text-xl font-bold text-white">{feature.title}</h3>
-                <p className="text-white/90">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="py-6">
-        <div className="container mx-auto px-4">
-          <div
-            className="rounded-3xl p-6 sm:p-8 text-center shadow-xl"
-            style={{
-              background: "#fb8c00",
-            }}
+          <Link
+            to="/login"
+            className="px-5 py-2.5 bg-[#fb8c00] hover:bg-[#f57c00] text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95"
           >
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
-              🚀 ¿Listo para comenzar?
-            </h2>
-
-            <p className="text-lg text-white/95 mb-6">
-              Únete a ServiFood y lleva tu gestión al siguiente nivel
-            </p>
-
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-2 px-8 py-3 bg-white font-bold text-lg rounded-xl shadow-md hover:shadow-xl hover:scale-105 transition"
-              style={{ color: "#fb8c00" }}
-            >
-              ✨ Crear Cuenta Gratis
-              <ArrowRight className="h-6 w-6" />
-            </Link>
-          </div>
+            Iniciar sesión
+          </Link>
         </div>
-      </div>
+      </header>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 flex flex-col">
+        {/* HERO SECTION */}
+        <section className="container mx-auto px-6 py-12 lg:py-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Column: Copy */}
+            <div className="text-center lg:text-left space-y-6">
+              <span className="inline-block px-3 py-1 bg-white/10 text-white/90 text-sm font-bold tracking-wider rounded-full uppercase border border-white/20">
+                Gestión de Pedidos
+              </span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
+                Tus pedidos diarios, <br className="hidden lg:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 to-[#fb8c00]">
+                  simples y organizados
+                </span>
+              </h1>
+              <p className="text-lg text-white/80 max-w-xl mx-auto lg:mx-0">
+                Ingresá al portal de ServiFood para elegir tus comidas diarias en segundos y mantener un registro ordenado de todas tus selecciones.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-2">
+                <Link
+                  to="/login"
+                  className="w-full sm:w-auto px-8 py-3.5 bg-[#fb8c00] hover:bg-[#f57c00] text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-orange-500/20 active:scale-95 text-center"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  to="/register"
+                  className="w-full sm:w-auto px-8 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-lg rounded-xl transition-all border border-white/20 text-center backdrop-blur-sm"
+                >
+                  Crear una cuenta
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column: Visual Mockup */}
+            <div className="relative w-full max-w-sm mx-auto lg:ml-auto lg:mr-0 perspective-1000">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-transparent blur-3xl -z-10 rounded-full" />
+              <div className="bg-white rounded-2xl p-6 shadow-2xl border border-gray-100 transform transition-transform hover:-translate-y-1 hover:shadow-3xl duration-300">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
+                  <h3 className="font-bold text-gray-800">Menú del Día</h3>
+                  <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">
+                    Hoy
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {/* Selected Option */}
+                  <div className="flex items-center p-3 rounded-xl border-2 border-[#fb8c00] bg-orange-50 cursor-default">
+                    <div className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-[#fb8c00] text-white">
+                      <Check size={12} strokeWidth={3} />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-bold text-gray-900">Pollo al verdeo con papas</p>
+                      <p className="text-xs text-gray-600 font-medium mt-0.5">Menú Principal</p>
+                    </div>
+                  </div>
+                  {/* Unselected Option */}
+                  <div className="flex items-center p-3 rounded-xl border border-gray-200 bg-white cursor-default opacity-60">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-300" />
+                    <div className="ml-3">
+                      <p className="text-sm font-semibold text-gray-700">Tarta de verdura</p>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">Opción Vegetariana</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6">
+                  <div className="w-full py-3 bg-[#1a237e] text-white text-sm font-bold rounded-xl text-center opacity-90 cursor-default">
+                    Confirmar Selección
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* BENEFITS SECTION */}
+        <section className="container mx-auto px-6 py-12">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {benefits.map((benefit, index) => {
+              const Icon = benefit.icon;
+              return (
+                <div
+                  key={index}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors"
+                >
+                  <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 text-[#fb8c00]">
+                    <Icon size={24} strokeWidth={2} />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{benefit.title}</h3>
+                  <p className="text-sm text-white/70 leading-relaxed">
+                    {benefit.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* BOTTOM CTA */}
+        <section className="container mx-auto px-6 py-12 mb-8">
+          <div className="bg-[#283593] border border-[#3949ab] rounded-3xl p-8 sm:p-12 text-center shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+            <div className="relative z-10">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-4">
+                ¿Listo para realizar tu próximo pedido?
+              </h2>
+              <p className="text-white/80 max-w-xl mx-auto mb-8 text-lg">
+                Ingresá a tu cuenta y gestioná tus pedidos de forma rápida y sencilla.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link
+                  to="/login"
+                  className="w-full sm:w-auto px-8 py-3.5 bg-[#fb8c00] hover:bg-[#f57c00] text-white font-bold text-lg rounded-xl transition-all shadow-md active:scale-95"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  to="/register"
+                  className="w-full sm:w-auto px-8 py-3.5 text-white/90 hover:text-white font-semibold text-lg transition-colors"
+                >
+                  Registrarse
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
 
       {/* FOOTER */}
-      <footer className="py-4 text-center">
-        <p className="text-white/90">
-          © 2025 ServiFood Catering. Todos los derechos reservados.
+      <footer className="border-t border-white/10 py-6 text-center mt-auto">
+        <p className="text-sm text-white/50 font-medium">
+          © {new Date().getFullYear()} ServiFood. Todos los derechos reservados.
         </p>
       </footer>
-
     </div>
   );
 }
