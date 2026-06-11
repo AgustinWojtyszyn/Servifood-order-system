@@ -28,29 +28,71 @@ const benefits = [
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#1a237e] font-sans selection:bg-[#fb8c00] selection:text-white">
+      <style>{`
+        .landing-navbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem 1.5rem;
+          max-width: 1280px;
+          margin: 0 auto;
+          width: 100%;
+        }
+        .landing-header-logo {
+          display: block;
+          object-fit: contain;
+          flex-shrink: 0;
+          width: 82px;
+          height: auto;
+        }
+        @media (min-width: 768px) {
+          .landing-header-logo {
+            width: 110px;
+          }
+          .landing-navbar {
+            padding: 1.5rem 2rem;
+          }
+        }
+        .landing-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .landing-hero {
+          padding-top: 2rem;
+          padding-bottom: 3rem;
+        }
+        @media (min-width: 1024px) {
+          .landing-hero {
+            padding-top: 3rem;
+            padding-bottom: 5rem;
+          }
+        }
+      `}</style>
+
       {/* HEADER */}
-      <header className="container mx-auto px-6 py-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+      <header className="landing-navbar">
+        <Link to="/" style={{ flexShrink: 0, display: 'flex' }}>
           <img
             src={servifoodLogo}
             alt="ServiFood Catering Logo"
-            className="h-10 w-auto object-contain"
+            className="landing-header-logo"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = 'https://via.placeholder.com/150?text=ServiFood';
             }}
           />
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="landing-header-actions">
           <Link
             to="/register"
-            className="hidden sm:inline-block text-white/90 hover:text-white font-medium transition-colors"
+            className="text-white/90 hover:text-white font-medium transition-colors text-sm sm:text-base whitespace-nowrap"
           >
             Registrarse
           </Link>
           <Link
             to="/login"
-            className="px-5 py-2.5 bg-[#fb8c00] hover:bg-[#f57c00] text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95"
+            className="px-4 py-2 sm:px-5 sm:py-2.5 bg-[#fb8c00] hover:bg-[#f57c00] text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 text-sm sm:text-base whitespace-nowrap"
           >
             Iniciar sesión
           </Link>
@@ -60,7 +102,7 @@ export default function LandingPage() {
       {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col">
         {/* HERO SECTION */}
-        <section className="container mx-auto px-6 py-12 lg:py-20">
+        <section className="container mx-auto px-6 landing-hero">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Column: Copy */}
             <div className="text-center lg:text-left space-y-6">
