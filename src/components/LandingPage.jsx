@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Clock, FileText, CheckCircle, Shield, Check } from 'react-feather';
-import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png';
+import headerLogo from '../assets/servifood-logo-header.png';
 
 const benefits = [
   {
@@ -29,52 +29,52 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#1a237e] font-sans selection:bg-[#fb8c00] selection:text-white">
       <style>{`
-        .landing-navbar {
+        .landing-logo-wrapper {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 1rem 1.5rem;
-          max-width: 1280px;
-          margin: 0 auto;
-          width: 100%;
+          width: 96px;
         }
         .landing-header-logo {
           display: block;
+          width: 100%;
+          height: auto;
           object-fit: contain;
           flex-shrink: 0;
-          width: 82px;
-          height: auto;
         }
         @media (min-width: 768px) {
-          .landing-header-logo {
-            width: 110px;
-          }
-          .landing-navbar {
-            padding: 1.5rem 2rem;
+          .landing-logo-wrapper {
+            width: 118px;
           }
         }
-        .landing-header-actions {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
+        @media (min-width: 1024px) {
+          .landing-logo-wrapper {
+            width: 135px;
+          }
         }
+        
         .landing-hero {
-          padding-top: 2rem;
-          padding-bottom: 3rem;
+          padding-top: 28px;
+          padding-bottom: 48px;
+        }
+        @media (min-width: 768px) {
+          .landing-hero {
+            padding-top: 36px;
+            padding-bottom: 64px;
+          }
         }
         @media (min-width: 1024px) {
           .landing-hero {
-            padding-top: 3rem;
-            padding-bottom: 5rem;
+            padding-top: 48px;
+            padding-bottom: 80px;
           }
         }
       `}</style>
 
       {/* HEADER */}
-      <header className="landing-navbar">
-        <Link to="/" style={{ flexShrink: 0, display: 'flex' }}>
+      <header className="container mx-auto px-6 py-4 md:py-6 flex items-center justify-between relative z-10">
+        <Link to="/" className="landing-logo-wrapper" style={{ flexShrink: 0 }}>
           <img
-            src={servifoodLogo}
+            src={headerLogo}
             alt="ServiFood Catering Logo"
             className="landing-header-logo"
             onError={(e) => {
@@ -83,7 +83,7 @@ export default function LandingPage() {
             }}
           />
         </Link>
-        <div className="landing-header-actions">
+        <div className="flex items-center gap-4">
           <Link
             to="/register"
             className="text-white/90 hover:text-white font-medium transition-colors text-sm sm:text-base whitespace-nowrap"
