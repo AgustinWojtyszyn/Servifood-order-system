@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { authService } from '../services/auth'
 import { usersService } from '../services/users'
 
@@ -23,8 +23,11 @@ const withTimeout = (promise, timeoutMs, createError) => {
 export const useAuth = () => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [permissionLoading, setPermissionLoading] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [permissionError, setPermissionError] = useState(null)
+  const roleRequestIdRef = useRef(0)
+  const mountedRef = useRef(true)
 
   const logRoleDebug = useCallback((...args) => {
     if (import.meta.env.DEV) {
@@ -32,10 +35,17 @@ export const useAuth = () => {
     }
   }, [])
 
-  const loadUserData = useCallback(async (authUser) => {
+  const validateUserRole = useCallback(async (authUser) => {
+    const requestId = roleRequestIdRef.current + 1
+    roleRequestIdRef.current = requestId
+    if (!mountedRef.current) return
+    setPermissionLoading(true)
+    setPermissionError(null)
+    setIsAdmin(false)
+
     try {
       if (import.meta.env.DEV) {
-        console.log('[Auth] loadUserData start', authUser?.id)
+        console.log('[Auth] validateUserRole start', authUser?.id)
       }
       let roleFromDb = null
       let roleError = null
@@ -68,6 +78,8 @@ export const useAuth = () => {
         user_metadata: authUser?.user_metadata
       })
 
+      if (!mountedRef.current || roleRequestIdRef.current !== requestId) return
+
       setUser((prev) => (prev ? { ...prev, ...authUser, role: normalizedRole } : { ...authUser, role: normalizedRole }))
       setIsAdmin(isAdminRole)
       setPermissionError(roleError)
@@ -77,20 +89,25 @@ export const useAuth = () => {
         permissionError: roleError
       })
     } catch (error) {
-      console.error('Error loading user data:', error)
+      console.error('Error validating user role:', error)
+      if (!mountedRef.current || roleRequestIdRef.current !== requestId) return
       setUser((prev) => prev || authUser)
       setIsAdmin(false)
       setPermissionError(error)
     } finally {
-      if (import.meta.env.DEV) {
-        console.log('[Auth] loadUserData done')
+      if (mountedRef.current && roleRequestIdRef.current === requestId) {
+        setPermissionLoading(false)
       }
-      setLoading(false)
+      if (import.meta.env.DEV) {
+        console.log('[Auth] validateUserRole done')
+      }
     }
   }, [logRoleDebug])
 
   // Cargar usuario inicial
   useEffect(() => {
+    mountedRef.current = true
+
     const initializeAuth = async () => {
       try {
         const { session, error } = await authService.getSession()
@@ -107,18 +124,24 @@ export const useAuth = () => {
         }
 
         if (session?.user) {
-          await loadUserData(session.user)
+          setUser(session.user)
+          setLoading(false)
+          validateUserRole(session.user)
         } else {
+          roleRequestIdRef.current += 1
           setUser(null)
           setIsAdmin(false)
           setPermissionError(null)
+          setPermissionLoading(false)
           setLoading(false)
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
+        roleRequestIdRef.current += 1
         setUser(null)
         setIsAdmin(false)
         setPermissionError(error)
+        setPermissionLoading(false)
         setLoading(false)
       }
     }
@@ -131,22 +154,30 @@ export const useAuth = () => {
         console.log('[Auth] onAuthStateChange', event, session ? 'has session' : 'no session')
       }
       if (event === 'SIGNED_IN' && session?.user) {
-        await loadUserData(session.user)
+        setUser(session.user)
+        setLoading(false)
+        validateUserRole(session.user)
       } else if (event === 'SIGNED_OUT') {
+        roleRequestIdRef.current += 1
         setUser(null)
         setIsAdmin(false)
         setPermissionError(null)
+        setPermissionLoading(false)
         setLoading(false)
       }
     })
 
-    return () => subscription.unsubscribe()
-  }, [loadUserData])
+    return () => {
+      mountedRef.current = false
+      roleRequestIdRef.current += 1
+      subscription.unsubscribe()
+    }
+  }, [validateUserRole])
 
-  const signIn = useCallback(async (email, password, rememberMe = false) => {
+  const signIn = useCallback(async (email, password) => {
     setLoading(true)
     try {
-      const result = await authService.signIn(email, password, rememberMe)
+      const result = await authService.signIn(email, password)
 
       if (result.error) {
         setLoading(false)
@@ -242,25 +273,27 @@ export const useAuth = () => {
 
       // Recargar datos del usuario si es necesario
       if (result.data?.user) {
-        await loadUserData(result.data.user)
+        setUser(result.data.user)
+        validateUserRole(result.data.user)
       }
 
       return result
     } catch (error) {
       return { data: null, error }
     }
-  }, [loadUserData])
+  }, [validateUserRole])
 
   useEffect(() => {
     if (import.meta.env.DEV) {
-      console.log('[Auth] state', { user, loading, isAdmin, permissionError })
+      console.log('[Auth] state', { user, loading, permissionLoading, isAdmin, permissionError })
     }
-  }, [user, loading, isAdmin, permissionError])
+  }, [user, loading, permissionLoading, isAdmin, permissionError])
 
   return {
     // Estado
     user,
     loading,
+    permissionLoading,
     isAdmin,
     permissionError,
     isAuthenticated: !!user,

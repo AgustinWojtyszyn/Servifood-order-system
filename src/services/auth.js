@@ -36,7 +36,7 @@ class AuthService {
   }
 
   // Inicio de sesión con validación
-  async signIn(email, password, rememberMe = false) {
+  async signIn(email, password) {
     try {
       if (!validateEmail(email)) {
         throw new Error('Correo electrónico inválido')
@@ -51,8 +51,7 @@ class AuthService {
           email: email.toLowerCase().trim(),
           password,
           options: {
-            persistSession: true,
-            ...(rememberMe && { storageOptions: { type: 'local' } })
+            persistSession: true
           }
         }),
         'signIn'

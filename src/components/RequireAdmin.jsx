@@ -64,12 +64,13 @@ const AccessDeniedScreen = ({ variant = 'denied' }) => {
 }
 
 export default function RequireAdmin({ children }) {
-  const { user, loading, isAdmin, permissionError } = useAuthContext()
+  const { user, loading, permissionLoading, isAdmin, permissionError } = useAuthContext()
   const location = useLocation()
   const [validationTimedOut, setValidationTimedOut] = useState(false)
+  const isValidating = loading || permissionLoading
 
   useEffect(() => {
-    if (!loading) {
+    if (!isValidating) {
       setValidationTimedOut(false)
       return undefined
     }
@@ -79,9 +80,9 @@ export default function RequireAdmin({ children }) {
     }, PERMISSION_VALIDATION_TIMEOUT_MS)
 
     return () => window.clearTimeout(timeoutId)
-  }, [loading])
+  }, [isValidating])
 
-  if (loading) {
+  if (isValidating) {
     if (validationTimedOut) {
       return <AccessDeniedScreen variant="validation-error" />
     }

@@ -7,8 +7,7 @@ import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    rememberMe: false
+    password: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -34,7 +33,7 @@ const Login = () => {
     setError('')
 
     try {
-      const { data, error } = await auth.signIn(formData.email, formData.password, formData.rememberMe)
+      const { data, error } = await auth.signIn(formData.email, formData.password)
 
       if (error) {
         // Mensajes de error más específicos
@@ -178,20 +177,7 @@ const Login = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="rememberMe"
-                  name="rememberMe"
-                  type="checkbox"
-                  checked={formData.rememberMe}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
-                />
-                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700 font-medium cursor-pointer">
-                  Mantener sesión iniciada
-                </label>
-              </div>
+            <div className="flex items-center justify-end">
               <Link to="/forgot-password" className="text-sm font-semibold hover:underline" style={{color: '#ffa726'}}>
                 ¿Olvidaste tu contraseña?
               </Link>
