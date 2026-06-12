@@ -1,0 +1,172 @@
+AUDITORIA PROTECCION CENTRALIZADA DE RUTAS ADMIN - SERVIFOOD
+
+1. VEREDICTO GENERAL
+
+Correctamente aplicado.
+
+La proteccion centralizada esta funcionando a nivel de diseno de codigo: las rutas administrativas quedan detras de RequireAdmin y los componentes protegidos no se montan antes de validar sesion y rol.
+
+No encontre rutas administrativas claras sin guard en App.jsx.
+
+Limitacion: no ejecute pruebas reales en navegador con usuarios Supabase normal/admin; eso requiere sesion real.
+
+2. ARCHIVOS MODIFICADOS
+
+git status --short y git diff estan limpios ahora, asi que no hay cambios pendientes sin commitear que auditar como diff.
+
+Archivos donde quedo implementado el cambio:
+
+- src/components/RequireAdmin.jsx
+- src/App.jsx
+- src/hooks/useAuth.js
+- src/components/Layout.jsx
+
+No hay modificaciones accidentales detectables en migraciones, SQL, RLS, RPCs ni logica de negocio en el estado actual del arbol.
+
+3. RUTAS PROTEGIDAS CORRECTAMENTE
+
+Protegidas con RequireAdmin:
+
+- /cafeteria
+- /cafeteria/new
+- /cafeteria/order
+- /cafeteria/confirm
+- /admin
+- /daily-orders
+- /monthly-panel
+- /auditoria
+- /tendencias
+- /excel-analysis
+
+4. RUTAS FALTANTES O MAL PROTEGIDAS
+
+No encontre rutas administrativas claras sin proteccion en App.jsx.
+
+Las rutas normales siguen sin RequireAdmin, como corresponde:
+
+- /dashboard
+- /order
+- /order/:companySlug
+- /edit-order
+- /profile
+- /orders/:orderId
+
+5. EVIDENCIA POR ARCHIVO Y LINEAS
+
+RequireAdmin:
+
+- Valida loading antes de renderizar hijos: src/components/RequireAdmin.jsx:37
+- Redirige no autenticados a login: src/components/RequireAdmin.jsx:41
+- Bloquea no-admin y muestra aviso: src/components/RequireAdmin.jsx:46
+- Mensaje user friendly: src/components/RequireAdmin.jsx:19
+
+Rol confiable:
+
+- useAuth consulta usersService.getUserById(authUser.id): src/hooks/useAuth.js:23
+- isAdmin sale de roleFromDb === 'admin': src/hooks/useAuth.js:34
+- No usa user_metadata.role ni app_metadata.role para autorizar.
+
+Navegacion:
+
+- Layout usa isAdmin desde contexto: src/components/Layout.jsx:19
+- Links admin solo se agregan si isAdmin: src/components/Layout.jsx:106
+
+Rutas:
+
+- /cafeteria: src/App.jsx:216
+- /cafeteria/new: src/App.jsx:219
+- /cafeteria/order: src/App.jsx:222
+- /cafeteria/confirm: src/App.jsx:225
+- /admin: src/App.jsx:234
+- /daily-orders: src/App.jsx:237
+- /monthly-panel: src/App.jsx:240
+- /auditoria: src/App.jsx:246
+- /tendencias: src/App.jsx:249
+- /excel-analysis: src/App.jsx:252
+
+6. POSIBLES REQUESTS O HOOKS EJECUTADOS ANTES DE AUTORIZAR
+
+No detecte montaje anticipado de componentes administrativos protegidos.
+
+Aunque el JSX de rutas contiene <RequireAdmin><Layout>...</Layout></RequireAdmin>, React no ejecuta los componentes hijos si RequireAdmin retorna loader/redirect antes de renderizarlos.
+
+Por lo tanto:
+
+- AdminPanel no monta useAdminPanelController.
+- DailyOrders no monta useDailyOrdersData.
+- MonthlyPanel no monta useMonthlyMetrics.
+- AuditLogs no monta useAuditLogsData.
+- Cafeteria* no monta useCafeteriaPendingOrder.
+- ExcelAnalysis no monta su UI/request.
+
+Observacion menor: App.jsx importa AdminPanel estaticamente, por lo que el modulo entra al bundle, pero no se ejecutan hooks ni requests por eso.
+
+7. RESULTADO DEL FLUJO USUARIO NORMAL
+
+Por revision estatica:
+
+- Puede iniciar sesion: flujo auth intacto.
+- Puede entrar a /dashboard: no esta protegido por admin.
+- Puede usar /order, /order/:companySlug, /edit-order, /orders/:orderId, /profile.
+- No ve enlaces admin porque Layout solo los agrega con isAdmin.
+- Si escribe rutas admin manualmente, RequireAdmin redirige a /dashboard con aviso.
+- No deberia ver parcialmente pantallas admin porque el guard esta por fuera de Layout y del componente protegido.
+
+Requiere validacion manual en navegador con usuario comun.
+
+8. RESULTADO DEL FLUJO ADMIN
+
+Por revision estatica:
+
+- Puede entrar a todas las rutas protegidas si public.users.role === 'admin'.
+- Refresh directo deberia funcionar porque App espera loading, useAuth resuelve rol desde DB, y recien entonces RequireAdmin renderiza hijos.
+- No hay loop: no-admin va a /dashboard, que no esta protegido por admin.
+- Menu admin se mantiene si isAdmin del contexto es true.
+
+Requiere validacion manual con usuario admin real.
+
+9. RESULTADO DE LINT Y BUILD
+
+npm run lint:
+
+- OK
+- 0 errores
+- 8 warnings existentes
+
+Warnings de lint:
+
+- Fast Refresh en DonutChartPro.jsx, AuthContext.jsx, HelpCenterProvider.jsx, OverlayLockContext.jsx.
+- Hook deps en useMonthlyCompanyFilter.js.
+- Hook callback deps en useOrders.js.
+
+npm run build:
+
+- OK
+
+Warnings de build:
+
+- Browserslist/caniuse-lite desactualizado.
+- supabaseClient.js importado dinamica y estaticamente.
+- Chunk principal mayor a 1000 kB.
+
+No aparecieron errores de imports rotos ni rutas inaccesibles en build.
+
+10. CAMBIOS ACCIDENTALES FUERA DEL ALCANCE
+
+No detectados.
+
+git status --short, git diff --stat y git diff --check no muestran cambios pendientes.
+
+11. CORRECCIONES NECESARIAS POR PRIORIDAD
+
+P1:
+
+Validar manualmente con usuario comun/admin real en navegador. Es la unica confirmacion que falta.
+
+P2:
+
+Considerar remover el withAdmin interno de AuditLogs mas adelante o actualizarlo al mismo patron confiable. Hoy no rompe porque queda detras de RequireAdmin, y sirve como segunda barrera.
+
+P2:
+
+Revisar el cache de usersService.getUserById; si un admin es degradado durante la sesion, podria requerir refresh/session reload para reflejar el cambio inmediatamente. No es un fallo de rutas para sesion normal, pero conviene validarlo.
