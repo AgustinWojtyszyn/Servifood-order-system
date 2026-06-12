@@ -18,11 +18,9 @@ export const useAuth = () => {
       if (import.meta.env.DEV) {
         console.log('[Auth] loadUserData start', authUser?.id)
       }
-      // Usar directamente los datos del usuario de Supabase sin consultar tabla users
-      const roleFromMetadata = authUser?.user_metadata?.role || authUser?.app_metadata?.role || authUser?.role
       let roleFromDb = null
 
-      if (roleFromMetadata !== 'admin' && authUser?.id) {
+      if (authUser?.id) {
         try {
           const { data } = await usersService.getUserById(authUser.id)
           roleFromDb = data?.role || null
@@ -33,15 +31,12 @@ export const useAuth = () => {
         }
       }
 
-      const normalizedRole = roleFromMetadata === 'admin'
-        ? 'admin'
-        : (roleFromDb || roleFromMetadata || null)
+      const normalizedRole = roleFromDb || null
       const isAdminRole = normalizedRole === 'admin'
 
       logRoleDebug('raw user metadata', {
         id: authUser?.id,
         email: authUser?.email,
-        roleFromMetadata,
         roleFromDb,
         app_metadata: authUser?.app_metadata,
         user_metadata: authUser?.user_metadata

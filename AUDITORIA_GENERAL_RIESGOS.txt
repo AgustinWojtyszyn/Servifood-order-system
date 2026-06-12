@@ -1,0 +1,199 @@
+AUDITORIA GENERAL DE APLICACION - SERVIFOOD
+Fecha: 2026-06-12
+Alcance: revision estatica del codigo, configuracion, migraciones Supabase y pruebas locales basicas.
+Limite solicitado: menos de 500 lineas.
+
+RESUMEN EJECUTIVO
+La aplicacion esta razonablemente estructurada para un frontend React/Vite con Supabase, RLS y RPCs para operaciones sensibles.
+El build de frontend compila, pero el servidor Express no arranca por dependencias faltantes.
+El principal riesgo de seguridad esta en la gestion de roles: hay rutas admin protegidas solo parcialmente por UI y el trigger local de alta copia el role desde user metadata.
+La base tiene RLS, pero algunas politicas y permisos son amplios y requieren endurecimiento.
+Tambien hay riesgos de consistencia por coexistencia de servicios duplicados de pedidos/usuarios.
+
+PRUEBAS EJECUTADAS
+1. npm run lint
+   Resultado: OK, sin errores. Quedan 8 warnings.
+2. npm run build
+   Resultado: OK. Hay advertencias de chunk grande e import dinamico inefectivo.
+3. npm ls body-parser multer xlsx --depth=0
+   Resultado: no aparecen como dependencias directas.
+4. node --input-type=module -e "await import('./server.js')"
+   Resultado: falla con ERR_MODULE_NOT_FOUND para multer.
+
+HALLAZGOS CRITICOS
+1. El servidor Express no arranca en el estado actual.
+   Evidencia: server.js:12 importa multer y server.js:13 importa xlsx, pero package.json no los declara.
+   Impacto: cualquier deploy que use server.js para servir dist o /api/upload-excel falla al iniciar.
+   Prueba: import de server.js devuelve ERR_MODULE_NOT_FOUND: Cannot find package 'multer'.
+   Recomendacion: agregar multer y xlsx a dependencies o eliminar/reemplazar el endpoint si no se usa.
+
+2. Riesgo de escalamiento de rol desde metadata de registro.
+   Evidencia: supabase/migrations/20250101000000_local_base_schema.sql:47 usa new.raw_user_meta_data->>'role'.
+   Evidencia: la misma funcion actualiza role en conflicto en lineas 51-55.
+   Impacto: si un cliente logra registrarse con metadata role=admin, la tabla public.users puede recibir rol admin.
+   Matiz: Register.jsx solo envia full_name, pero la API de registro puede invocarse fuera del frontend.
+   Recomendacion: en handle_new_user asignar siempre role='user' y mover altas admin a una funcion server-side controlada.
+
+3. La ruta /admin no esta envuelta por withAdmin en App.jsx.
+   Evidencia: src/App.jsx:240-242 renderiza AdminPanel para cualquier usuario autenticado.
+   Impacto: si AdminPanel falla en su check interno o muestra datos antes de validar, hay exposicion UX/datos.
+   Matiz: RLS reduce el impacto backend, pero la proteccion de ruta debe ser explicita y consistente.
+   Recomendacion: crear AdminPanelWithAdmin = withAdmin(AdminPanel) y usarlo en /admin.
+
+4. RLS de usuarios permite select de todos los perfiles a cualquier autenticado.
+   Evidencia: supabase/migrations/20250101000000_local_base_schema.sql:473-476 users_select_auth using (true).
+   Evidencia: usersService.getUsers consulta id, email, full_name, role, created_at.
+   Impacto: usuarios comunes podrian enumerar emails, nombres y roles si llaman la API directamente.
+   Recomendacion: policy select para auth.uid() = id o public.is_admin(); crear RPC admin para listados.
+
+HALLAZGOS ALTOS
+5. La UI confia en metadata para determinar admin antes de consultar DB.
+   Evidencia: src/hooks/useAuth.js:22-39 acepta role desde user_metadata/app_metadata y si es admin no consulta DB.
+   Impacto: si user_metadata queda contaminada o no esta gobernada, puede habilitar vistas admin en cliente.
+   Matiz: RLS usa public.is_admin(), por lo que DB deberia bloquear escrituras sensibles.
+   Recomendacion: derivar isAdmin solo desde DB/RPC confiable; usar app_metadata solo si lo setea backend.
+
+6. Edge function toggle-dinner exige service role como bearer token.
+   Evidencia: supabase/functions/toggle-dinner/index.ts:15-20 compara Authorization contra SUPABASE_SERVICE_ROLE_KEY.
+   Impacto: fomenta exponer la service key a clientes operativos o scripts; si se filtra, compromete todo Supabase.
+   Adicional: consulta .from('auth.users') en lineas 30-34, patron fragil para Supabase/PostgREST.
+   Recomendacion: autenticar usuario normal, verificar admin con adminClient y nunca pedir service role al caller.
+
+7. Endpoint /api/upload-excel guarda datos parseados del archivo sin validacion de columnas ni autorizacion admin.
+   Evidencia: server.js:112-148 solo exige JWT, no rol admin.
+   Impacto: cualquier usuario autenticado podria subir archivos y poblar analysis_history si RLS/backend lo permite.
+   Recomendacion: verificar rol admin en server antes de procesar y definir schema estricto de columnas.
+
+8. RLS de audit_logs permite insert a cualquier autenticado.
+   Evidencia: supabase/migrations/20250101000000_local_base_schema.sql:714-717 with check (true).
+   Impacto: un usuario autenticado puede insertar eventos falsos o contaminar auditoria.
+   Recomendacion: mover auditoria sensible a RPC security definer que derive actor desde auth.uid().
+
+9. Existen servicios duplicados para pedidos y usuarios.
+   Evidencia: src/services/orders.js y src/services/orders/ordersService.js implementan operaciones similares.
+   Evidencia: src/services/users.js y src/services/users/usersService.js tambien conviven.
+   Impacto: reglas de negocio divergentes, bugs dificiles y caminos que no usan la RPC mas segura.
+   Recomendacion: consolidar un unico servicio por dominio y deprecar el otro con migracion controlada.
+
+10. Algunas rutas sensibles solo requieren usuario autenticado en App.jsx.
+    Evidencia: /daily-orders, /monthly-panel, /auditoria y /excel-analysis en src/App.jsx:243-259 no usan withAdmin.
+    Impacto: depende de checks internos y RLS; puede haber parpadeos, errores o exposicion parcial.
+    Recomendacion: proteger rutas admin desde router y mantener checks internos como defensa secundaria.
+
+HALLAZGOS MEDIOS
+11. deleteUser no elimina el usuario de Supabase Auth.
+    Evidencia: src/services/users/usersService.js:109-115 comenta que solo elimina public.users.
+    Impacto: cuenta auth puede quedar activa o inconsistente segun cascadas/RLS.
+    Recomendacion: mover baja de usuarios a Edge Function admin con service role y transaccion logica.
+
+12. Admin puede borrar pedidos archivados permanentemente desde cliente.
+    Evidencia: useAdminCleanupActions llama db.deleteArchivedOrders().
+    Impacto: perdida irreversible de historial operativo.
+    Recomendacion: preferir soft delete, export previo obligatorio o retencion por fecha.
+
+13. Restricciones de estado inconsistentes con codigo que menciona cancelled.
+    Evidencia: migracion 20260608130000 limita status a pending/archived.
+    Evidencia: codigo frontend aun tiene mensajes y ramas para cancelled.
+    Impacto: errores al intentar usar estados no permitidos o confusion operativa.
+    Recomendacion: decidir contrato final de estados y alinear types, UI, servicios y constraint SQL.
+
+14. CSP permite style-src 'unsafe-inline'.
+    Evidencia: server.js:54.
+    Impacto: si aparece XSS, los estilos inline facilitan ciertos abusos visuales; no es el vector principal.
+    Recomendacion: migrar estilos inline criticos a CSS/clases y endurecer CSP gradualmente.
+
+15. Rate limit global alto y compartido.
+    Evidencia: server.js configura max 1000 requests / 15 min.
+    Impacto: insuficiente para endpoints de login/upload si el servidor Express queda publico.
+    Recomendacion: limites especificos por endpoint, mas estricto para upload y autenticacion.
+
+16. Upload Excel no verifica MIME/extension antes de parsear.
+    Evidencia: server.js procesa req.file.buffer directamente con XLSX.read.
+    Impacto: consumo de CPU/memoria o errores por archivos no esperados, aunque limite a 10MB.
+    Recomendacion: validar mimetype, extension, numero de filas/columnas y tiempo maximo de procesamiento.
+
+17. Build de frontend genera chunk inicial muy grande.
+    Evidencia: npm run build reporta dist/assets/index...js de 1,392.47 kB, gzip 392.99 kB.
+    Impacto: peor carga inicial y experiencia movil.
+    Recomendacion: separar vendors y modulos pesados con manualChunks/imports lazy reales.
+
+18. Import dinamico de supabaseClient no logra separar chunk.
+    Evidencia: Vite advierte que supabaseClient.js se importa dinamica y estaticamente.
+    Impacto: el intento de optimizacion no tiene efecto y mantiene codigo en bundle principal.
+    Recomendacion: separar cliente base, servicios pesados y helpers para evitar imports cruzados.
+
+19. Assets de imagen grandes en dist.
+    Evidencia: build muestra imagenes de 2.3 MB a 2.7 MB para flyers.
+    Impacto: costo de red alto si se cargan en pantallas frecuentes.
+    Recomendacion: generar versiones WebP/AVIF responsivas y lazy loading.
+
+20. Warnings de React Fast Refresh y hooks.
+    Evidencia: npm run lint reporta 8 warnings.
+    Impacto: no rompe produccion, pero puede ocultar problemas de hot reload y dependencias de hooks.
+    Recomendacion: mover exports no-component a archivos separados y corregir dependencias useMemo/useCallback.
+
+HALLAZGOS BAJOS / MANTENIBILIDAD
+21. package.json incluye deno como dependency de runtime Node.
+    Impacto: aumenta instalacion y superficie sin claro uso en frontend/Express.
+    Recomendacion: moverlo a tooling si realmente hace falta o eliminarlo.
+
+22. server.js usa cluster por cantidad total de CPUs sin configuracion.
+    Impacto: en hosting pequeno puede sobreconsumir memoria.
+    Recomendacion: permitir WEB_CONCURRENCY o desactivar cluster en PaaS que ya escala procesos.
+
+23. logs de diagnostico pueden revelar prefijos/configuracion si se activan en produccion.
+    Evidencia: src/services/supabase.js imprime URL y prefijo de key con VITE_LOG_SUPABASE_ENV=true.
+    Impacto: bajo, anon key no es secreto, pero reduce higiene de logs.
+    Recomendacion: limitar a staging o remover en produccion.
+
+24. Health endpoint escribe audit_logs en cada probe.
+    Evidencia: server.js registra health_probe en audit_logs.
+    Impacto: crecimiento de tabla y ruido de auditoria.
+    Recomendacion: mandar health metrics a app_metrics o muestrear.
+
+25. Falta evidencia de tests unitarios/integracion automatizados.
+    Evidencia: package.json no define script test unitario.
+    Impacto: regresiones en reglas de negocio de pedidos, horarios y roles.
+    Recomendacion: agregar tests para order validation, RLS/RPC y flujos auth/admin.
+
+FORTALEZAS OBSERVADAS
+1. Supabase RLS esta habilitado en tablas centrales.
+2. Operaciones sensibles de pedidos tienen RPCs con security definer y validaciones de auth.uid().
+3. create_order_idempotent maneja idempotencia y conflicto por usuario.
+4. El build frontend compila exitosamente.
+5. Hay scripts de carga, reportes y documentacion operativa.
+6. La app centraliza cliente Supabase para evitar multiples GoTrueClient.
+7. Hay headers de seguridad razonables en server.js.
+
+PRIORIDAD DE REMEDIACION
+P0 - Corregir server.js: instalar/declarar multer y xlsx o quitar endpoint; validar arranque real del deploy.
+P0 - Cambiar handle_new_user para no aceptar role desde raw_user_meta_data.
+P1 - Proteger rutas admin desde App.jsx con withAdmin o componente RequireAdmin.
+P1 - Endurecer RLS de users y audit_logs.
+P1 - Rehacer toggle-dinner para no requerir service role al consumidor.
+P2 - Consolidar servicios duplicados de orders/users.
+P2 - Alinear estados pending/archived/cancelled en DB y frontend.
+P2 - Reducir bundle principal e imagenes grandes.
+P3 - Resolver warnings de lint y agregar tests automatizados.
+
+CHECKLIST TECNICO RECOMENDADO
+1. npm install multer xlsx, o remover imports/endpoint si no se usa.
+2. Ejecutar node server.js en ambiente local con dist existente.
+3. Modificar trigger handle_new_user: role siempre 'user'.
+4. Crear RPC/Edge Function para promover admins con auditoria.
+5. Cambiar policy users_select_auth a owner-or-admin.
+6. Cambiar audit_logs_insert_auth por RPC log_audit controlada.
+7. En App.jsx envolver /admin, /daily-orders, /monthly-panel, /auditoria, /tendencias y /excel-analysis con guard admin.
+8. Revisar AdminPanel para que no consulte datos antes de confirmar rol.
+9. Migrar toggle-dinner al patron de admin-change-email.
+10. Agregar tests de RLS con usuarios user/admin.
+11. Unificar src/services/orders.js con src/services/orders/ordersService.js.
+12. Unificar src/services/users.js con src/services/users/usersService.js.
+13. Definir si cancelled existe o no existe en el dominio.
+14. Optimizar imagenes grandes a WebP/AVIF.
+15. Configurar manualChunks para vendors grandes.
+
+CONCLUSION
+El sistema tiene una base razonable, pero no deberia considerarse listo para produccion sin corregir el arranque del servidor y el riesgo de roles desde metadata.
+La seguridad real descansa en Supabase RLS/RPC, lo cual es correcto, pero hay que cerrar politicas amplias y hacer que el router refleje los permisos.
+Despues de los P0/P1, los mayores beneficios vienen de consolidar servicios duplicados y agregar tests de reglas de negocio y permisos.

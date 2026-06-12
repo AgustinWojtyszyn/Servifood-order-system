@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
-import { usersService } from '../services/users'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList, BarChart3 } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import cafeteriaLogo from '../assets/food-delivery (1).png'
@@ -9,14 +8,15 @@ import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
 import RequireUser from './RequireUser'
+import { useAuthContext } from '../contexts/AuthContext'
 import { useScrollLock } from '../hooks/useScrollLock'
 import { OverlayLockProvider } from '../contexts/OverlayLockContext'
 const Layout = ({ children, user, loading }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [tutorialOpen, setTutorialOpen] = useState(false)
   const [adminTutorialOpen, setAdminTutorialOpen] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
   const [externalLocks, setExternalLocks] = useState(0)
+  const { isAdmin } = useAuthContext()
   const navigate = useNavigate()
   // Helpers de diagnóstico disponibles solo en dev o con flag explícito.
   const _isScrollDebug = useMemo(() => {
@@ -81,48 +81,6 @@ const Layout = ({ children, user, loading }) => {
       }
     }
   }, [_isScrollDebug])
-
-  const checkUserRole = useCallback(async () => {
-    if (!user?.id) {
-      setIsAdmin(false)
-      return
-    }
-    const roleFromMetadata = user?.user_metadata?.role || user?.app_metadata?.role || user?.role
-    if (roleFromMetadata === 'admin') {
-      setIsAdmin(true)
-      return
-    }
-    try {
-      const { data, error } = await usersService.getUserById(user?.id)
-      if (!error && data) {
-        const roleValue = data?.role || user?.user_metadata?.role
-
-        if (import.meta.env.DEV) {
-          console.log('[Layout][role-debug] users fetched', {
-            roleValue,
-            userMetaRole: user?.user_metadata?.role,
-            flags: {
-              isAdmin: roleValue === 'admin'
-            }
-          })
-        }
-
-        setIsAdmin(roleValue === 'admin')
-      } else if (error && import.meta.env.DEV) {
-        console.warn('[Layout][role-debug] error fetching users', error)
-      }
-    } catch (_err) {
-      console.error('Error checking user role:', _err)
-      // Fallback a user_metadata si falla la consulta
-      const roleValue = user?.user_metadata?.role
-      setIsAdmin(roleValue === 'admin')
-    }
-  }, [user?.app_metadata?.role, user?.id, user?.role, user?.user_metadata?.role])
-
-  useEffect(() => {
-    if (!user?.id) return
-    checkUserRole()
-  }, [checkUserRole, user?.id])
 
   const handleLogout = async () => {
     const result = await auth.signOut()
