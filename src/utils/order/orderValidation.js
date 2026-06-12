@@ -23,7 +23,8 @@ const validateOrderSubmission = ({
   calculateTotal,
   _calculateTotalDinner,
   companyConfig,
-  isOutsideWindow
+  isOutsideWindow,
+  selectedDinnerDate
 }) => {
   if (!user?.id) {
     return { error: 'No se pudo validar el usuario. Intenta nuevamente.' }
@@ -173,6 +174,10 @@ const validateOrderSubmission = ({
   }
 
   const deliveryDate = getTomorrowISOInTimeZone()
+  const deliveryDates = {
+    lunch: deliveryDate,
+    dinner: selectedDinnerDate || deliveryDate
+  }
 
   const turnosSeleccionados = Object.entries(selectedTurns)
     .filter(([, val]) => val)
@@ -201,6 +206,7 @@ const validateOrderSubmission = ({
     email: formData.email || user?.email || '',
     phone: formData.phone || '',
     deliveryDate,
+    deliveryDates,
     turnos: turnosSeleccionados,
     lunchSelected,
     dinnerSelected,
@@ -224,6 +230,7 @@ const validateOrderSubmission = ({
       customResponsesArray,
       customResponsesDinnerArray,
       deliveryDate,
+      deliveryDates,
       turnosSeleccionados,
       lunchSelected,
       dinnerSelected,

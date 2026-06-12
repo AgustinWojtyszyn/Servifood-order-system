@@ -28,7 +28,8 @@ const useOrderSubmit = ({
   setSelectedTurns,
   setSuccess,
   navigate,
-  rawCompanySlug
+  rawCompanySlug,
+  selectedDinnerDate
 }) => {
   const [submitting, setSubmitting] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -67,7 +68,8 @@ const useOrderSubmit = ({
       calculateTotal,
       calculateTotalDinner,
       companyConfig,
-      isOutsideWindow
+      isOutsideWindow,
+      selectedDinnerDate
     })
 
     if (validation.error) {
@@ -84,6 +86,7 @@ const useOrderSubmit = ({
       customResponsesArray,
       customResponsesDinnerArray,
       deliveryDate,
+      deliveryDates,
       turnosSeleccionados,
       confirmationData
     } = validation.data
@@ -108,6 +111,7 @@ const useOrderSubmit = ({
         user,
         formData,
         deliveryDate,
+        deliveryDates,
         calculateTotal,
         calculateTotalDinner
       })
@@ -138,7 +142,7 @@ const useOrderSubmit = ({
         })
       }, 2000)
     } catch (_err) {
-      setError('Error al crear el pedido: ' + (_err?.message || JSON.stringify(_err)))
+      setError('No pudimos crear el pedido. Intentá nuevamente.')
     } finally {
       submitLockRef.current = false
       setSubmitting(false)

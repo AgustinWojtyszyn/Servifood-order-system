@@ -304,7 +304,8 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     setSelectedTurns,
     setSuccess,
     navigate,
-    rawCompanySlug
+    rawCompanySlug,
+    selectedDinnerDate
   })
 
   const toggleLunchTurn = useCallback(() => {

@@ -25,6 +25,7 @@ const submitOrders = async ({
   user,
   formData,
   deliveryDate,
+  deliveryDates,
   calculateTotal,
   calculateTotalDinner
 }) => {
@@ -44,7 +45,9 @@ const submitOrders = async ({
 
   for (const service of turnosSeleccionados) {
     const isDinner = service === 'dinner'
-    if (hasActiveOrderForDelivery(existingOrders || [], deliveryDate, service)) {
+    const serviceDeliveryDate = deliveryDates?.[service] || deliveryDate
+
+    if (hasActiveOrderForDelivery(existingOrders || [], serviceDeliveryDate, service)) {
       return {
         ok: false,
         errorMessage: DUPLICATE_ORDER_MESSAGE,
@@ -79,7 +82,7 @@ const submitOrders = async ({
       service,
       user,
       formData,
-      deliveryDate,
+      deliveryDate: serviceDeliveryDate,
       itemsForService,
       responsesForService,
       dinnerOverrideChoice: overrideChoice,
@@ -133,7 +136,7 @@ const submitOrders = async ({
       }
       return {
         ok: false,
-        errorMessage: 'Error al crear el pedido: ' + msg,
+        errorMessage: 'No pudimos crear el pedido. Intentá nuevamente.',
         forceLunchOnly: false
       }
     }
