@@ -2,6 +2,24 @@ import { useState, useEffect, useCallback } from 'react'
 import { authService } from '../services/auth'
 import { usersService } from '../services/users'
 
+const ROLE_VALIDATION_TIMEOUT_MS = 7000
+
+const createPermissionTimeoutError = () => new Error('No pudimos validar tus permisos a tiempo.')
+
+const withTimeout = (promise, timeoutMs, createError) => {
+  let timeoutId
+
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(createError())
+    }, timeoutMs)
+  })
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    window.clearTimeout(timeoutId)
+  })
+}
+
 export const useAuth = () => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -24,7 +42,11 @@ export const useAuth = () => {
 
       if (authUser?.id) {
         try {
-          const { data, error } = await usersService.getUserById(authUser.id)
+          const { data, error } = await withTimeout(
+            usersService.getUserById(authUser.id),
+            ROLE_VALIDATION_TIMEOUT_MS,
+            createPermissionTimeoutError
+          )
           roleError = error || null
           roleFromDb = data?.role || null
         } catch (err) {

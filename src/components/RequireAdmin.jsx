@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuthContext } from '../contexts/AuthContext'
 import serviFoodLogo from '../assets/servifood_logo_white_text_HQ.png'
+
+const PERMISSION_VALIDATION_TIMEOUT_MS = 7000
 
 const AdminLoader = () => (
   <div
@@ -63,8 +66,26 @@ const AccessDeniedScreen = ({ variant = 'denied' }) => {
 export default function RequireAdmin({ children }) {
   const { user, loading, isAdmin, permissionError } = useAuthContext()
   const location = useLocation()
+  const [validationTimedOut, setValidationTimedOut] = useState(false)
+
+  useEffect(() => {
+    if (!loading) {
+      setValidationTimedOut(false)
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setValidationTimedOut(true)
+    }, PERMISSION_VALIDATION_TIMEOUT_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [loading])
 
   if (loading) {
+    if (validationTimedOut) {
+      return <AccessDeniedScreen variant="validation-error" />
+    }
+
     return <AdminLoader />
   }
 
