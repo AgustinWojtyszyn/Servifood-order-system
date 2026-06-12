@@ -53,7 +53,7 @@ const AccessDeniedScreen = ({ variant = 'denied' }) => {
           <Link
             to="/dashboard"
             replace
-            className="mt-7 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-primary-800 shadow-lg shadow-black/15 transition hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-900 sm:w-auto"
+            className="mt-7 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-black/15 transition hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-900 sm:w-auto"
           >
             Ir al dashboard
           </Link>
