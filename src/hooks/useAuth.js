@@ -6,6 +6,7 @@ export const useAuth = () => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [permissionError, setPermissionError] = useState(null)
 
   const logRoleDebug = useCallback((...args) => {
     if (import.meta.env.DEV) {
@@ -19,12 +20,15 @@ export const useAuth = () => {
         console.log('[Auth] loadUserData start', authUser?.id)
       }
       let roleFromDb = null
+      let roleError = null
 
       if (authUser?.id) {
         try {
-          const { data } = await usersService.getUserById(authUser.id)
+          const { data, error } = await usersService.getUserById(authUser.id)
+          roleError = error || null
           roleFromDb = data?.role || null
         } catch (err) {
+          roleError = err
           if (import.meta.env.DEV) {
             console.warn('[Auth][role-debug] error fetching role from db', err)
           }
@@ -44,14 +48,17 @@ export const useAuth = () => {
 
       setUser((prev) => (prev ? { ...prev, ...authUser, role: normalizedRole } : { ...authUser, role: normalizedRole }))
       setIsAdmin(isAdminRole)
+      setPermissionError(roleError)
 
       logRoleDebug('computed flags', {
-        isAdmin: isAdminRole
+        isAdmin: isAdminRole,
+        permissionError: roleError
       })
     } catch (error) {
       console.error('Error loading user data:', error)
       setUser((prev) => prev || authUser)
       setIsAdmin(false)
+      setPermissionError(error)
     } finally {
       if (import.meta.env.DEV) {
         console.log('[Auth] loadUserData done')
@@ -80,10 +87,16 @@ export const useAuth = () => {
         if (session?.user) {
           await loadUserData(session.user)
         } else {
+          setUser(null)
+          setIsAdmin(false)
+          setPermissionError(null)
           setLoading(false)
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
+        setUser(null)
+        setIsAdmin(false)
+        setPermissionError(error)
         setLoading(false)
       }
     }
@@ -100,6 +113,7 @@ export const useAuth = () => {
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
         setIsAdmin(false)
+        setPermissionError(null)
         setLoading(false)
       }
     })
@@ -217,15 +231,16 @@ export const useAuth = () => {
 
   useEffect(() => {
     if (import.meta.env.DEV) {
-      console.log('[Auth] state', { user, loading, isAdmin })
+      console.log('[Auth] state', { user, loading, isAdmin, permissionError })
     }
-  }, [user, loading, isAdmin])
+  }, [user, loading, isAdmin, permissionError])
 
   return {
     // Estado
     user,
     loading,
     isAdmin,
+    permissionError,
     isAuthenticated: !!user,
 
     // Acciones

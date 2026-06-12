@@ -35,6 +35,19 @@ const CafeteriaSuccessPage = lazy(() => import('./components/cafeteria/Cafeteria
 const TendenciasPage = lazy(() => import('./pages/TendenciasPage'))
 const ExcelAnalysis = lazy(() => import('./components/ExcelAnalysis'))
 
+const ADMIN_ROUTE_PATHS = [
+  '/cafeteria',
+  '/cafeteria/new',
+  '/cafeteria/order',
+  '/cafeteria/confirm',
+  '/admin',
+  '/daily-orders',
+  '/monthly-panel',
+  '/auditoria',
+  '/tendencias',
+  '/excel-analysis'
+]
+
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
   <div className="min-h-dvh flex items-center justify-center bg-linear-to-br from-primary-700 via-primary-800 to-primary-900">
@@ -47,11 +60,20 @@ const InternalLoader = () => (
 
 function App() {
   const { user, loading } = useAuthContext()
+  const isAdminPath = ADMIN_ROUTE_PATHS.includes(window.location.pathname)
 
   const ScreenMetricsListener = () => {
     useScreenMetrics()
     return null
   }
+
+  const renderAdminRoute = (content) => (
+    <RequireAdmin>
+      <Layout user={user} loading={loading}>
+        {content}
+      </Layout>
+    </RequireAdmin>
+  )
 
   useEffect(() => {
     if (!import.meta.env.DEV) return
@@ -178,7 +200,7 @@ function App() {
   }, [])
 
   return (
-    loading ? (
+    loading && !isAdminPath ? (
       <InternalLoader />
     ) : (
       <Router>
@@ -214,16 +236,16 @@ function App() {
               !loading && (user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/cafeteria" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><CafeteriaDashboardPage user={user} loading={loading} /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<CafeteriaDashboardPage user={user} loading={loading} />)
             } />
             <Route path="/cafeteria/new" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><CafeteriaNewOrderPage user={user} loading={loading} /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<CafeteriaNewOrderPage user={user} loading={loading} />)
             } />
             <Route path="/cafeteria/order" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><CafeteriaCurrentOrderPage user={user} loading={loading} /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<CafeteriaCurrentOrderPage user={user} loading={loading} />)
             } />
             <Route path="/cafeteria/confirm" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><CafeteriaSuccessPage user={user} loading={loading} /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<CafeteriaSuccessPage user={user} loading={loading} />)
             } />
             <Route path="/edit-order" element={
               !loading && (user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
@@ -232,25 +254,25 @@ function App() {
               !loading && (user ? <Layout user={user} loading={loading}><Profile user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/admin" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><AdminPanel loading={loading} /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<AdminPanel loading={loading} />)
             } />
             <Route path="/daily-orders" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><DailyOrders user={user} loading={loading} /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<DailyOrders user={user} loading={loading} />)
             } />
             <Route path="/monthly-panel" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><MonthlyPanel user={user} loading={loading} /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<MonthlyPanel user={user} loading={loading} />)
             } />
             <Route path="/orders/:orderId" element={
               !loading && (user ? <Layout user={user} loading={loading}><OrderDetails user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
             } />
             <Route path="/auditoria" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><AuditLogs user={user} loading={loading} /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<AuditLogs user={user} loading={loading} />)
             } />
             <Route path="/tendencias" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><TendenciasPage /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<TendenciasPage />)
             } />
             <Route path="/excel-analysis" element={
-              !loading && (user ? <RequireAdmin><Layout user={user} loading={loading}><ExcelAnalysis /></Layout></RequireAdmin> : <Navigate to="/login" />)
+              renderAdminRoute(<ExcelAnalysis />)
             } />
             {/* Redirección global para rutas inexistentes */}
             <Route
