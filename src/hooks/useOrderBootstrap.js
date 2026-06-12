@@ -22,6 +22,16 @@ const filterByMealScope = (options = [], meal) =>
     return scope === 'both' || scope === meal
   })
 
+const ACTIVE_ORDER_STATUSES = new Set(['pending'])
+
+const isActiveOrderForDelivery = (order, deliveryDate, service) => {
+  const orderService = (order?.service || 'lunch').toLowerCase()
+  const orderStatus = (order?.status || '').toLowerCase()
+  return order?.delivery_date === deliveryDate &&
+    orderService === service &&
+    ACTIVE_ORDER_STATUSES.has(orderStatus)
+}
+
 const useOrderBootstrap = ({
   user,
   rawCompanySlug,
@@ -193,22 +203,11 @@ const useOrderBootstrap = ({
     try {
       const { data, error } = await db.getOrders(user.id)
       if (!error && data) {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
+        const lunchDeliveryDate = getTomorrowISOInTimeZone()
+        const dinnerDeliveryDate = selectedDinnerDate || lunchDeliveryDate
 
-        const pendingLunch = data.some(order => {
-          const d = new Date(order.created_at)
-          d.setHours(0, 0, 0, 0)
-          const isToday = d.getTime() === today.getTime()
-          return isToday && (order.service || 'lunch') === 'lunch' && ['pending', 'preparing', 'ready'].includes(order.status)
-        })
-
-        const pendingDinner = data.some(order => {
-          const d = new Date(order.created_at)
-          d.setHours(0, 0, 0, 0)
-          const isToday = d.getTime() === today.getTime()
-          return isToday && (order.service || 'lunch') === 'dinner' && ['pending', 'preparing', 'ready'].includes(order.status)
-        })
+        const pendingLunch = data.some(order => isActiveOrderForDelivery(order, lunchDeliveryDate, 'lunch'))
+        const pendingDinner = data.some(order => isActiveOrderForDelivery(order, dinnerDeliveryDate, 'dinner'))
 
         setPendingLunch(pendingLunch)
         setPendingDinner(pendingDinner)
@@ -257,6 +256,7 @@ const useOrderBootstrap = ({
     setSuggestionMode,
     setSuggestionSummary,
     setSuggestionVisible,
+    selectedDinnerDate,
     user?.id
   ])
 

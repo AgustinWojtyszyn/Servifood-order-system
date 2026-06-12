@@ -34,10 +34,10 @@ const validateOrderSubmission = ({
   }
 
   if (pendingLunch && (!dinnerEnabled || !dinnerMenuEnabled || !selectedTurns.dinner)) {
-    return { error: 'Ya tienes un pedido de almuerzo pendiente. Espera hasta que se archive.' }
+    return { error: 'Ya tenés un pedido registrado para esta fecha y servicio.' }
   }
   if (selectedTurns.dinner && pendingDinner) {
-    return { error: 'Ya tienes un pedido de cena pendiente. Espera hasta que se archive.' }
+    return { error: 'Ya tenés un pedido registrado para esta fecha y servicio.' }
   }
 
   if (!formData.location) {

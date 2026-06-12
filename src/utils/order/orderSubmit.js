@@ -3,6 +3,18 @@ import { buildIdempotencyStorageKey, generateIdempotencyKey } from './orderIdemp
 import { buildOrderPayload } from './orderPayload'
 import { hasDinnerOverrideInResponses } from './orderBusinessRules'
 
+const ACTIVE_ORDER_STATUSES = new Set(['pending'])
+const DUPLICATE_ORDER_MESSAGE = 'Ya tenés un pedido registrado para esta fecha y servicio.'
+
+const hasActiveOrderForDelivery = (orders = [], deliveryDate, service) =>
+  orders.some(order => {
+    const orderService = (order?.service || 'lunch').toLowerCase()
+    const orderStatus = (order?.status || '').toLowerCase()
+    return order?.delivery_date === deliveryDate &&
+      orderService === service &&
+      ACTIVE_ORDER_STATUSES.has(orderStatus)
+  })
+
 const submitOrders = async ({
   turnosSeleccionados,
   selectedItemsList,
@@ -17,9 +29,29 @@ const submitOrders = async ({
   calculateTotalDinner
 }) => {
   const createdOrderIds = []
+  const { data: existingOrders, error: existingOrdersError } = await ordersService.getOrders(user.id, {
+    force: true,
+    limit: 200
+  })
+
+  if (existingOrdersError) {
+    return {
+      ok: false,
+      errorMessage: 'No pudimos validar si ya tenés un pedido para esta fecha. Intentá nuevamente.',
+      forceLunchOnly: false
+    }
+  }
 
   for (const service of turnosSeleccionados) {
     const isDinner = service === 'dinner'
+    if (hasActiveOrderForDelivery(existingOrders || [], deliveryDate, service)) {
+      return {
+        ok: false,
+        errorMessage: DUPLICATE_ORDER_MESSAGE,
+        forceLunchOnly: false
+      }
+    }
+
     const overrideChoice = isDinner ? dinnerOverrideChoice : null
     const itemsForService = isDinner ? selectedItemsListDinner : selectedItemsList
     const responsesForService = isDinner ? customResponsesDinnerArray : customResponsesArray
@@ -78,6 +110,13 @@ const submitOrders = async ({
 
     if (error) {
       const msg = typeof error === 'string' ? error : (error.message || JSON.stringify(error))
+      if (msg.includes('duplicate_active_order') || msg.includes('orders_active_user_delivery_service_uniq')) {
+        return {
+          ok: false,
+          errorMessage: DUPLICATE_ORDER_MESSAGE,
+          forceLunchOnly: false
+        }
+      }
       if (msg.includes('dinner') || msg.toLowerCase().includes('service') || msg.includes('feature')) {
         return {
           ok: false,
