@@ -109,6 +109,13 @@ Incluye mejoras continuas en:
 - optimización del sistema
 - nuevas funcionalidades administrativas
 
+## Auditorías técnicas
+
+- [Auditoría completa de la app - 2026-06-19](./AUDITORIA_COMPLETA_APP_2026-06-19.txt)
+- [Auditoría general de riesgos](./AUDITORIA_GENERAL_RIESGOS.txt)
+- [Auditoría de protección de rutas admin](./AUDITORIA_PROTECCION_RUTAS_ADMIN.txt)
+- [Auditoría quirúrgica de pedidos ServiFood](./AUDITORIA_QUIRURGICA_SERVIFOOD_ORDERS.txt)
+
 ---
 
 ## Vista del sistema

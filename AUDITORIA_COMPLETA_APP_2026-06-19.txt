@@ -1,0 +1,242 @@
+AUDITORIA COMPLETA DE LA APP - FOOD ORDER APP
+Fecha: 2026-06-19
+Alcance: frontend React/Vite, servicios cliente, Supabase/RLS/migraciones, funciones Edge, deploy Render, runtime Node opcional y tooling.
+
+RESUMEN EJECUTIVO
+
+La app compila y el lint no tiene errores bloqueantes, pero hay riesgos importantes de arquitectura operativa, seguridad y mantenibilidad. El punto mas delicado es que existen dos runtimes conceptuales: el deploy actual sirve solo el frontend estatico, mientras que la app tiene una pantalla que llama a /api/upload-excel, endpoint que solo existe en server.js. En Render, segun render.yaml, ese endpoint no existe.
+
+Tambien hay duplicacion de servicios de pedidos/usuarios con reglas distintas, una dependencia fuerte en validaciones de frontend para reglas de negocio, deuda en tests automatizados y vulnerabilidades reportadas por npm audit. Las migraciones Supabase contienen buenos controles de RLS/RPC para pedidos, pero la superficie admin sigue requiriendo disciplina: muchas acciones destructivas estan disponibles desde el cliente y dependen de RLS/RPC para ser seguras.
+
+ESTADO DE VERIFICACION
+
+Comandos ejecutados:
+- npm run lint: pasa con 8 warnings.
+- npm run build: pasa; Vite advierte chunks grandes y mezcla de imports estaticos/dinamicos de src/supabaseClient.js.
+- npm audit --audit-level=moderate: falla por 26 vulnerabilidades, incluyendo 1 high en nodemailer.
+- npm ls multer xlsx serve --depth=0: no hay dependencias directas instaladas para esos paquetes.
+
+RIESGOS CRITICOS / ALTOS
+
+1. La pantalla de Analisis de Excel esta rota en el deploy actual.
+
+Evidencia:
+- src/components/ExcelAnalysis.jsx llama a fetch('/api/upload-excel').
+- server.js define POST /api/upload-excel.
+- render.yaml usa startCommand: npx serve -s dist -l ${PORT:-3000} --single.
+- docs/architecture/server-runtime-note.md confirma que server.js no forma parte del runtime actual.
+
+Impacto:
+En produccion con ese deploy, /api/upload-excel no se atiende por Express. Lo mas probable es recibir HTML del fallback SPA, 404 o una respuesta no JSON. La ruta /excel-analysis esta protegida por admin, pero funcionalmente no puede procesar archivos.
+
+Recomendacion:
+Elegir una sola estrategia:
+- Migrar el procesamiento Excel a Supabase Edge Function o servicio backend real.
+- O reactivar server.js como start command, declarando dependencias y auditando seguridad.
+- O retirar temporalmente /excel-analysis si no debe estar disponible.
+
+2. server.js no esta listo para reactivarse sin trabajo previo.
+
+Evidencia:
+- server.js importa express, body-parser, multer y xlsx.
+- package.json solo declara express-rate-limit, no declara express, body-parser, multer ni xlsx como dependencias directas.
+- npm ls multer xlsx serve --depth=0 devuelve empty.
+- server.js crea cliente Supabase con SUPABASE_SERVICE_ROLE_KEY o cae a SUPABASE_ANON_KEY.
+
+Impacto:
+Si se cambia Render para ejecutar server.js, puede fallar en arranque por dependencias no declaradas. Si arranca por dependencias transitivas, queda fragil. Ademas, el endpoint de Excel escribe en analysis_history usando el cliente backend; con service role puede saltarse RLS, por lo que la autorizacion debe estar explicitamente validada.
+
+Recomendacion:
+Antes de activar server.js:
+- Declarar dependencias directas necesarias.
+- Quitar fallback a claves VITE_* para backend.
+- Validar rol admin dentro de /api/upload-excel, no solo JWT.
+- Limitar tipo MIME y extension real del archivo.
+- Revisar cluster en Render: lanzar os.cpus().length workers puede sobrecargar memoria en planes chicos.
+
+3. npm audit reporta vulnerabilidades, incluyendo una high.
+
+Evidencia:
+- npm audit --audit-level=moderate reporta 26 vulnerabilidades.
+- High: nodemailer <=9.0.0.
+- Moderadas: OpenTelemetry via @unlighthouse, esbuild, js-yaml, uuid via exceljs.
+
+Impacto:
+La mas relevante es nodemailer si se usa para enviar correos con contenido/adjuntos controlables. Varias vulnerabilidades vienen de tooling dev/auditoria, pero igualmente contaminan el arbol de dependencias.
+
+Recomendacion:
+- Actualizar nodemailer a una version corregida y validar el script testing/scripts/sendDailyOrdersEmail.js.
+- Evaluar actualizar o aislar @unlighthouse/cli.
+- Correr npm audit fix sin --force primero; tratar los breaking changes en rama separada.
+
+4. Duplicacion de capas de servicios con reglas no identicas.
+
+Evidencia:
+- src/services/orders.js exporta ordersService con RPC create_order_idempotent, cache y reglas de edicion.
+- src/services/orders/ordersService.js se mezcla dentro de db en src/supabaseClient.js con metodos directos sobre orders.
+- src/services/users.js y src/services/users/usersService.js coexisten.
+- La app usa ambos estilos: hooks de pedido usan services/orders.js; dashboard/admin usan db desde supabaseClient.js.
+
+Impacto:
+Es facil que una pantalla aplique reglas distintas a otra. Ejemplos: cancelacion via RPC en unas rutas, update directo en otras; borrados masivos disponibles en db; validaciones de admin duplicadas entre UI, services y RLS.
+
+Recomendacion:
+Unificar una sola capa de acceso por dominio:
+- ordersService unico.
+- usersService unico.
+- db como fachada fina o eliminarla.
+- Toda operacion sensible debe pasar por RPC o Edge Function con validacion server-side.
+
+RIESGOS MEDIOS
+
+5. Reglas de negocio importantes viven en frontend.
+
+Evidencia:
+- src/utils/order/orderValidation.js valida horario, seleccion de turnos, guarniciones, cena, duplicados pendientes.
+- docs/TIME-RESTRICTION-SETUP.md indica que la restriccion horaria real esta en frontend.
+- Supabase si protege duplicados activos mediante indice/RPC, pero no todas las reglas del formulario estan en DB.
+
+Impacto:
+Un usuario con token valido puede intentar insertar datos fuera del flujo UI. RLS/RPC mitigan parte del riesgo, pero reglas como horario, opciones visibles o restricciones por compania deberian estar reforzadas server-side si son obligatorias para el negocio.
+
+Recomendacion:
+Mover reglas obligatorias a RPC/trigger/Edge Function:
+- Ventana horaria.
+- Habilitacion de cena por usuario.
+- Validez de opciones custom por fecha/compania/servicio.
+- Restricciones de una cena por persona y menu vs opcion especial.
+
+6. Politica users_select_auth demasiado amplia.
+
+Evidencia:
+- supabase/migrations/20250101000000_local_base_schema.sql crea policy users_select_auth using (true).
+
+Impacto:
+Cualquier usuario autenticado puede leer usuarios si consulta la tabla users. La app selecciona campos limitados en algunos servicios, pero RLS no limita columnas. Si hay datos personales o futuros campos sensibles, quedan expuestos a usuarios autenticados.
+
+Recomendacion:
+Separar lectura propia y lectura admin:
+- Usuarios normales: select solo su perfil, o vista publica minima.
+- Admin: select global.
+- Evitar exponer email/listados globales a cualquier autenticado.
+
+7. Edge Function toggle-dinner tiene problemas de implementacion y seguridad operativa.
+
+Evidencia:
+- supabase/functions/toggle-dinner/index.ts exige que el bearer token sea literalmente el service role key.
+- Consulta .from('auth.users'), que no es una tabla public normal.
+- No maneja CORS/OPTIONS como admin-change-email.
+
+Impacto:
+No es una funcion adecuada para ser llamada desde frontend. Si se usa manualmente, obliga a transportar service role como bearer. Tambien puede fallar por acceso a auth.users dependiendo del cliente y entorno.
+
+Recomendacion:
+Si se necesita mantenerla:
+- Convertirla a funcion admin autenticada como admin-change-email.
+- Buscar usuarios con Admin API o tabla public.users.
+- No usar service role como credencial enviada por clientes.
+
+8. Acciones destructivas admin dependen de RLS y no siempre usan RPC especializada.
+
+Evidencia:
+- src/services/orders/ordersService.js expone deleteAllOrders, deleteArchivedOrders, deleteAllPendingOrders.
+- hooks admin usan archiveAllPendingOrders y deleteArchivedOrders.
+- RLS define orders_delete_admin, por lo que la seguridad depende de is_admin().
+
+Impacto:
+No es necesariamente una vulnerabilidad si RLS esta bien desplegado, pero la combinacion "cliente + delete directo" es de mayor riesgo operativo: un bug UI o llamada manual puede borrar mas de lo esperado.
+
+Recomendacion:
+Mover acciones destructivas a RPCs admin-only con:
+- parametros explicitos,
+- dry-run/count previo,
+- auditoria obligatoria,
+- confirmacion de request_id,
+- soft delete cuando sea posible.
+
+9. Falta suite automatizada de tests de negocio.
+
+Evidencia:
+- No hay scripts test unitarios/integracion en package.json.
+- La busqueda encontro scripts de carga y reportes, no tests de componentes/RPC.
+
+Impacto:
+La app tiene reglas complejas de pedidos, cenas, duplicados, empresas y RLS. Sin tests, cada cambio tiene alto riesgo de regresion silenciosa.
+
+Recomendacion:
+Agregar al menos:
+- Tests unitarios para orderValidation, orderPayload, orderSubmit y reglas de guarniciones/cena.
+- Tests de integracion contra Supabase local para create_order_idempotent, cancel_own_pending_order y RLS basica.
+- Tests e2e minimos: login, crear pedido, duplicado bloqueado, admin archiva.
+
+10. Performance: bundle inicial grande y assets pesados.
+
+Evidencia:
+- build genera dist/assets/index-*.js de 1,397.71 kB minificado, 394.96 kB gzip.
+- Vite advierte chunks mayores a 1000 kB.
+- Assets de flyers pesan entre 2.3 MB y 2.7 MB.
+- Vite advierte que src/supabaseClient.js se importa dinamica y estaticamente, por lo que no se separa en chunk.
+
+Impacto:
+Carga inicial mas lenta, especialmente en mobile. La mezcla de imports reduce el beneficio de lazy loading.
+
+Recomendacion:
+- Revisar imports de supabaseClient y separar servicios pesados por rutas admin.
+- Convertir assets grandes a WebP/AVIF y servir tamanos responsive.
+- Considerar lazy loading real de librerias pesadas como exceljs si se usan en frontend.
+- Revisar manualChunks: el chunk index sigue demasiado grande.
+
+RIESGOS BAJOS / DEUDA
+
+11. Lint con warnings.
+
+Evidencia:
+- 8 warnings: react-refresh/only-export-components, exhaustive-deps en useMonthlyCompanyFilter y useOrders.
+
+Impacto:
+No bloquea build, pero puede ocultar bugs de hooks y afecta HMR.
+
+Recomendacion:
+Corregir exhaustive-deps primero. Separar context/hocs/helpers exportados de componentes si se quiere limpiar Fast Refresh.
+
+12. Cache local y sessionStorage usados para decisiones UX.
+
+Evidencia:
+- localStorage guarda lastCompany, dinner_menu_enabled, seleccion de cena, cooldown de forgot password.
+- sessionStorage guarda idempotency keys.
+
+Impacto:
+Correcto para UX, pero no debe considerarse fuente de verdad. dinner_menu_enabled local puede divergir de DB.
+
+Recomendacion:
+Mantener storage solo como preferencia UI. Forzar validacion server-side para disponibilidad de cena/menu.
+
+FORTALEZAS OBSERVADAS
+
+- Rutas admin en React usan RequireAdmin y validan rol desde tabla users.
+- Migraciones recientes endurecen pedidos: RLS activa, RPC create_order_idempotent, indice unico de pedido activo por usuario/fecha/servicio, cancelacion propia segura.
+- Hay auditoria para varios cambios admin.
+- Build productivo elimina console.log y debugger.
+- Hay documentacion tecnica util en docs/architecture y docs/audits.
+- CSP, headers y cache estan pensados en server.js, aunque ese runtime no este activo.
+
+PLAN DE REMEDIACION SUGERIDO
+
+Prioridad 1:
+- Decidir destino de /excel-analysis: Edge Function/backend real o retirar ruta.
+- Resolver npm audit, empezando por nodemailer.
+- No activar server.js sin declaracion de dependencias, autorizacion admin y variables backend correctas.
+
+Prioridad 2:
+- Unificar services/orders y services/users.
+- Convertir deletes/bulk admin a RPCs auditadas.
+- Ajustar RLS de users para no exponer todos los perfiles a cualquier autenticado.
+
+Prioridad 3:
+- Mover reglas obligatorias de pedidos a DB/RPC.
+- Agregar tests unitarios y Supabase local para reglas core.
+- Reducir bundle inicial y optimizar imagenes pesadas.
+
+RESULTADO FINAL
+
+La app esta en un estado funcional para build frontend, pero no esta cerrada como sistema robusto. El riesgo principal no es un error de sintaxis sino la divergencia entre lo que el frontend ofrece y lo que el runtime desplegado realmente sirve, sumado a servicios duplicados y falta de tests. La base Supabase muestra avances buenos en seguridad de pedidos; conviene capitalizar eso llevando mas reglas criticas al backend y simplificando las capas cliente.

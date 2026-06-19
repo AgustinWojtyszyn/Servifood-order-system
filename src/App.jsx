@@ -33,7 +33,13 @@ const CafeteriaNewOrderPage = lazy(() => import('./components/cafeteria/Cafeteri
 const CafeteriaCurrentOrderPage = lazy(() => import('./components/cafeteria/CafeteriaCurrentOrderPage'))
 const CafeteriaSuccessPage = lazy(() => import('./components/cafeteria/CafeteriaSuccessPage'))
 const TendenciasPage = lazy(() => import('./pages/TendenciasPage'))
-const ExcelAnalysis = lazy(() => import('./components/ExcelAnalysis'))
+
+// Excel Analysis queda deshabilitado por defecto mientras Render sirve solo el
+// frontend estatico. Reactivar unicamente al migrarlo a Edge Function/backend real.
+const ENABLE_EXCEL_ANALYSIS = import.meta.env.DEV && import.meta.env.VITE_ENABLE_EXCEL_ANALYSIS === 'true'
+const ExcelAnalysis = ENABLE_EXCEL_ANALYSIS
+  ? lazy(() => import('./components/ExcelAnalysis'))
+  : null
 
 const ADMIN_ROUTE_PATHS = [
   '/cafeteria',
@@ -55,6 +61,23 @@ const InternalLoader = () => (
       <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
       <p className="text-white text-base font-medium">Cargando...</p>
     </div>
+  </div>
+)
+
+const ExcelAnalysisDisabled = () => (
+  <div className="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center px-4 py-10">
+    <section className="w-full rounded-lg border border-white/20 bg-white p-6 text-slate-900 shadow-xl sm:p-8">
+      <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary-700">
+        Funcion temporalmente deshabilitada
+      </p>
+      <h1 className="mt-3 text-2xl font-bold sm:text-3xl">
+        Analisis de Excel no disponible
+      </h1>
+      <p className="mt-4 text-base leading-7 text-slate-700">
+        Esta herramienta depende de un endpoint backend que no forma parte del deploy actual.
+        Se debe migrar a una Supabase Edge Function o a un backend real antes de volver a habilitarla.
+      </p>
+    </section>
   </div>
 )
 
@@ -272,7 +295,7 @@ function App() {
               renderAdminRoute(<TendenciasPage />)
             } />
             <Route path="/excel-analysis" element={
-              renderAdminRoute(<ExcelAnalysis />)
+              renderAdminRoute(ENABLE_EXCEL_ANALYSIS ? <ExcelAnalysis /> : <ExcelAnalysisDisabled />)
             } />
             {/* Redirección global para rutas inexistentes */}
             <Route
