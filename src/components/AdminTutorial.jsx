@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { X, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
-import { useOverlayLock } from '../contexts/OverlayLockContext'
+import { useOverlayLock } from '../contexts/overlayLockContext'
 import { ADMIN_TUTORIAL_STEPS } from './adminTutorial/adminTutorialSteps'
 
 const AdminTutorial = ({ isOpen, onClose }) => {

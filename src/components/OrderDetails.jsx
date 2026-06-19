@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, db } from '../supabaseClient'
-import { useAuthContext } from '../contexts/AuthContext'
+import { useAuthContext } from '../contexts/authContextValue'
 import { COMPANY_LIST } from '../constants/companyConfig'
 import RequireUser from './RequireUser'
 import { isOrderEditable } from '../utils'

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { tryLogMetric } from '../services/supabase'
-import { useAuthContext } from '../contexts/AuthContext'
+import { useAuthContext } from '../contexts/authContextValue'
 
 export const useScreenMetrics = () => {
   const location = useLocation()

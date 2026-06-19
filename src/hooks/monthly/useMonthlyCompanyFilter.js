@@ -60,7 +60,7 @@ export const useMonthlyCompanyFilter = ({
     return { ...dailyData, ...recalculated }
   }, [dailyData, ordersByDayForView, isEmpresaAll])
 
-  const empresasAll = metrics?.empresas || []
+  const empresasAll = useMemo(() => metrics?.empresas || [], [metrics?.empresas])
   const empresasOptions = useMemo(() => {
     const names = empresasAll.map(e => e.empresa || 'Sin ubicación')
     const unique = Array.from(new Set(names))
@@ -110,4 +110,3 @@ export const useMonthlyCompanyFilter = ({
     totalsForView
   }
 }
-

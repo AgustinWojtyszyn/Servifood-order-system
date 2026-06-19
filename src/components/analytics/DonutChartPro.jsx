@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { shouldUseDonut } from './donutChartRules'
 
 const defaultColors = [
   '#2563eb', // blue
@@ -21,12 +22,6 @@ const buildSlices = (items, maxSlices = 6) => {
   const otherCount = tail.reduce((sum, item) => sum + item.count, 0)
   const otherPercent = tail.reduce((sum, item) => sum + item.percent, 0)
   return [...head, { label: 'Otros', count: otherCount, percent: otherPercent }]
-}
-
-const shouldUseDonut = (items) => {
-  if (!items || items.length === 0) return false
-  if (items.length > 8) return false
-  return true
 }
 
 const polarToCartesian = (cx, cy, r, angle) => {
@@ -184,4 +179,3 @@ const DonutChartPro = ({
 }
 
 export default DonutChartPro
-export { shouldUseDonut }

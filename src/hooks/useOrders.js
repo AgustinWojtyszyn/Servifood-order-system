@@ -147,8 +147,8 @@ export const useOrders = (userId = null, options = {}) => {
   }, [userId])
 
   // Buscar pedidos con debounce
-  const searchOrders = useCallback(
-    debounce(async (searchTerm) => {
+  const searchOrders = useMemo(
+    () => debounce(async (searchTerm) => {
       if (!searchTerm.trim()) {
         await loadOrders(true)
         return

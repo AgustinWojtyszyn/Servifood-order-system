@@ -315,11 +315,13 @@ class OrdersService {
   // Eliminar pedidos archivados (admin)
   async deleteArchivedOrders() {
     try {
+      const requestId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
       const { data, error } = await supabaseService.withRetry(
-        () => supabase
-          .from('orders')
-          .delete()
-          .eq('status', ORDER_STATUS.ARCHIVED),
+        () => supabase.rpc('admin_delete_archived_orders', {
+          p_request_id: `orders-archived-delete-${requestId}`
+        }),
         'deleteArchivedOrders'
       )
 

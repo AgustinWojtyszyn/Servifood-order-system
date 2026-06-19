@@ -11,32 +11,38 @@ El deploy actual de Render sirve frontend estatico con `npx serve -s dist -l ${P
 - `/excel-analysis` ya no ejecuta el componente que llama a `/api/upload-excel` por defecto. La ruta muestra una pantalla de funcion temporalmente deshabilitada hasta migrar el procesamiento a Supabase Edge Function o backend real.
 - Se reforzo la nota tecnica de `server.js` para evitar reactivacion accidental en Render sin dependencias, seguridad y limites de upload.
 - `nodemailer` se actualizo a una version corregida para cerrar la vulnerabilidad high reportada por `npm audit`.
+- Los warnings de lint existentes se limpiaron separando exports auxiliares y estabilizando dependencias de hooks.
+- Los deletes bulk de pedidos archivados se movieron a RPC admin-only auditada con conteo retornado.
+- La policy amplia `users_select_auth` se reemplaza por lectura propia o admin en una migracion nueva.
+- `create_order_idempotent` suma validaciones server-side minimas para servicio, items, fecha, ventana horaria y cena habilitada.
+- Se agrego una suite minima de tests unitarios para payload, idempotencia, cena y guarniciones.
+- `esbuild` queda forzado por override a una version corregida para reducir el audit sin `--force`.
 
 ## Riesgos pendientes
 
-1. Unificar `services/orders` y `services/users`.
-   - Prioridad: alta.
-   - Motivo: hoy conviven fachadas distintas (`db` desde `supabaseClient.js` y servicios dedicados), lo que puede duplicar reglas y generar comportamientos divergentes.
-
-2. Mover deletes admin a RPC auditadas.
-   - Prioridad: alta.
-   - Motivo: acciones destructivas desde cliente dependen de RLS. Conviene centralizar en RPCs admin-only con auditoria, conteo previo y `request_id`.
-
-3. Revisar RLS `users_select_auth`.
-   - Prioridad: alta.
-   - Motivo: la policy permite `select` amplio a cualquier usuario autenticado. Debe separarse lectura propia, vista publica minima y lectura admin.
-
-4. Mover reglas obligatorias de negocio a DB/RPC.
+1. Unificar completamente `services/orders` y `services/users`.
    - Prioridad: media-alta.
-   - Motivo: horario, habilitacion de cena, opciones visibles y restricciones de servicio no deben depender solo del frontend.
+   - Motivo: en este fix se alinearon operaciones criticas de pedidos con RPCs, pero aun conviven fachadas (`db` desde `supabaseClient.js` y servicios dedicados) por compatibilidad con pantallas existentes.
 
-5. Agregar tests unitarios e integracion.
+2. Completar deletes admin restantes a RPC auditadas.
    - Prioridad: media.
-   - Motivo: faltan pruebas automatizadas para validacion de pedidos, payload, idempotencia, cancelacion y RLS basica con Supabase local.
+   - Motivo: el bulk delete de archivados ya usa RPC auditada. Quedan operaciones individuales o de otros dominios que pueden auditarse con el mismo patron.
+
+3. Verificar en staging la nueva RLS de usuarios.
+   - Prioridad: alta.
+   - Motivo: la migracion restringe lectura a perfil propio o admin. Debe validarse con usuarios reales antes de despliegue definitivo.
+
+4. Completar reglas obligatorias de negocio en DB/RPC.
+   - Prioridad: media-alta.
+   - Motivo: duplicado activo, servicio, horario y cena habilitada quedan cubiertos en `create_order_idempotent`. Falta validar server-side opciones visibles por fecha/compania/servicio sin redisenar el flujo.
+
+5. Agregar tests de integracion.
+   - Prioridad: media.
+   - Motivo: ya hay tests unitarios minimos. Falta cubrir Supabase local para RLS, RPC de creacion, cancelacion y deletes auditados.
 
 6. Optimizar bundle y assets.
    - Prioridad: media.
-   - Motivo: el build advierte chunk inicial grande y assets pesados. Impacta carga inicial, especialmente en mobile.
+   - Motivo: el build advierte chunk inicial grande y assets pesados. No se convirtieron imagenes porque el entorno no tiene `cwebp`, `magick` ni `convert`.
 
 ## Prioridad sugerida
 

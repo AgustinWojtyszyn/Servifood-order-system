@@ -8,7 +8,7 @@ import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
 import RequireUser from './RequireUser'
-import { useAuthContext } from '../contexts/AuthContext'
+import { useAuthContext } from '../contexts/authContextValue'
 import { useScrollLock } from '../hooks/useScrollLock'
 import { OverlayLockProvider } from '../contexts/OverlayLockContext'
 const Layout = ({ children, user, loading }) => {

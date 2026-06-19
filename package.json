@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:analyze": "vite build --mode production && npx vite-bundle-visualizer",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview",
     "test:load": "node testing/load/test-load.js",
     "test:light": "node testing/load/test-load.js 10 5",
@@ -56,6 +57,10 @@
     "supabase": "^2.95.0",
     "tailwindcss": "^4.1.17",
     "terser": "^5.44.1",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }

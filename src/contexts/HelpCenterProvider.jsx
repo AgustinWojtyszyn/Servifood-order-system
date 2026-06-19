@@ -1,8 +1,7 @@
-import { createContext, useContext, useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { SUPPORT_PHONE, TUTORIAL_URL, MANUAL_ORDER_TEXT } from '../utils/helpConstants'
 import { matchIntent, getResponseForIntent, getErrorResponse } from '../utils/helpRules'
-
-const HelpCenterContext = createContext(null)
+import { HelpCenterContext } from './helpCenterContext'
 
 export const HelpCenterProvider = ({ children }) => {
   const [lastResponse, setLastResponse] = useState(null)
@@ -36,10 +35,4 @@ export const HelpCenterProvider = ({ children }) => {
       {children}
     </HelpCenterContext.Provider>
   )
-}
-
-export const useHelpCenterContext = () => {
-  const ctx = useContext(HelpCenterContext)
-  if (!ctx) throw new Error('useHelpCenterContext debe usarse dentro de HelpCenterProvider')
-  return ctx
 }

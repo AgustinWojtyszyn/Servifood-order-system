@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { X, ChevronLeft, ChevronRight, BookOpen, CheckCircle } from 'lucide-react'
-import { useOverlayLock } from '../contexts/OverlayLockContext'
+import { useOverlayLock } from '../contexts/overlayLockContext'
 import { TUTORIAL_STEPS } from './tutorial/tutorialSteps'
 
 const Tutorial = ({ isOpen, onClose }) => {

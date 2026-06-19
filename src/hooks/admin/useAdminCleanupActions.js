@@ -61,15 +61,16 @@ const useAdminCleanupActions = ({
     setDeletingOrders(true)
 
     try {
-      const { error } = await db.deleteArchivedOrders()
+      const { data: deletedCount, error } = await db.deleteArchivedOrders()
 
       if (error) {
         console.error('Error deleting archived orders:', error)
         notifyError(`Error al eliminar los pedidos: ${error.message}`)
       } else {
+        const affected = Number.isFinite(deletedCount) ? deletedCount : archivedOrdersCount
         notifySuccess(
-          archivedOrdersCount > 0
-            ? `Se eliminaron ${archivedOrdersCount} pedidos archivados. Se liberó espacio en la base de datos.`
+          affected > 0
+            ? `Se eliminaron ${affected} pedidos archivados. Se liberó espacio en la base de datos.`
             : 'No había pedidos archivados para eliminar.'
         )
         clearArchivedOrdersCount()

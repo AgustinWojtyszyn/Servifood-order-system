@@ -19,6 +19,13 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
     return today.toISOString()
   }
 
+  const createRequestId = (prefix) => {
+    const random = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    return `${prefix}-${random}`
+  }
+
   return {
     archiveAllPendingOrders,
 
@@ -54,19 +61,24 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
     },
 
     deleteAllOrders: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000') // Eliminar todos
+      invalidateCache()
+      const { data, error } = await supabase.rpc('admin_delete_all_orders', {
+        p_request_id: createRequestId('orders-all-delete')
+      })
       return { data, error }
     },
 
     createOrder: async (orderData) => {
       invalidateCache()
-      const { data, error } = await supabase
-        .from('orders')
-        .insert([orderData])
-        .select()
+      const idempotencyKey = orderData?.idempotency_key || createRequestId('order-create')
+      const { data, error } = await supabase.rpc('create_order_idempotent', {
+        p_user_id: orderData?.user_id,
+        p_idempotency_key: idempotencyKey,
+        p_payload: {
+          ...orderData,
+          idempotency_key: idempotencyKey
+        }
+      })
       return { data, error }
     },
 
@@ -122,20 +134,11 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
       return { data, error }
     },
 
-    cancelOwnPendingOrder: async ({ orderId, userId, editableSince }) => {
+    cancelOwnPendingOrder: async ({ orderId }) => {
       invalidateCache()
-      let query = supabase
-        .from('orders')
-        .update({ status: 'archived', updated_at: new Date().toISOString() })
-        .eq('id', orderId)
-        .eq('user_id', userId)
-        .eq('status', 'pending')
-
-      if (editableSince) {
-        query = query.gte('created_at', editableSince)
-      }
-
-      const { data, error } = await query.select('id, status')
+      const { data, error } = await supabase.rpc('cancel_own_pending_order', {
+        order_id: orderId
+      })
       return { data, error }
     },
 
@@ -150,10 +153,9 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
 
     deleteArchivedOrders: async () => {
       invalidateCache()
-      const { data, error } = await supabase
-        .from('orders')
-        .delete()
-        .eq('status', 'archived')
+      const { data, error } = await supabase.rpc('admin_delete_archived_orders', {
+        p_request_id: createRequestId('orders-archived-delete')
+      })
       return { data, error }
     },
 

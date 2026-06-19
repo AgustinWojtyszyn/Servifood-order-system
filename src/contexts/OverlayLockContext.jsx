@@ -1,6 +1,4 @@
-import { createContext, useContext, useEffect } from 'react'
-
-const OverlayLockContext = createContext(null)
+import { OverlayLockContext } from './overlayLockContext'
 
 export const OverlayLockProvider = ({ registerLock, children }) => {
   return (
@@ -8,15 +6,4 @@ export const OverlayLockProvider = ({ registerLock, children }) => {
       {children}
     </OverlayLockContext.Provider>
   )
-}
-
-// Permite a componentes hijos sumar/quitar bloqueos de scroll sin tocar el body directamente.
-export const useOverlayLock = (isLocked) => {
-  const registerLock = useContext(OverlayLockContext)
-
-  useEffect(() => {
-    if (!isLocked || typeof registerLock !== 'function') return
-    const unregister = registerLock()
-    return () => unregister?.()
-  }, [isLocked, registerLock])
 }

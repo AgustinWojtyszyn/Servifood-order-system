@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { useAuthContext } from './contexts/AuthContext'
+import { useAuthContext } from './contexts/authContextValue'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import SplashScreen from './components/SplashScreen'
 import './App.css'

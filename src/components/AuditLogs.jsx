@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { formatDate, getTimeAgo, truncate } from '../utils'
-import { withAdmin } from '../contexts/AuthContext'
+import { withAdmin } from '../contexts/authHocs'
 import {
   buildAuditExportRows,
   buildDailyAuditSummary,

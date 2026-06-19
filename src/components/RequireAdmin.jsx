@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
-import { useAuthContext } from '../contexts/AuthContext'
+import { useAuthContext } from '../contexts/authContextValue'
 import serviFoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 
 const PERMISSION_VALIDATION_TIMEOUT_MS = 7000

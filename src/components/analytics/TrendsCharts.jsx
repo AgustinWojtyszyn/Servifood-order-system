@@ -1,4 +1,5 @@
-import DonutChartPro, { shouldUseDonut } from './DonutChartPro'
+import DonutChartPro from './DonutChartPro'
+import { shouldUseDonut } from './donutChartRules'
 const formatPercent = (value) => `${value.toFixed(1)}%`
 
 const BarRow = ({ label, count, percent, max, accent }) => {
