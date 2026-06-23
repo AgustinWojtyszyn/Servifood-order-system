@@ -116,6 +116,68 @@ Incluye mejoras continuas en:
 - [Auditoría de protección de rutas admin](./AUDITORIA_PROTECCION_RUTAS_ADMIN.txt)
 - [Auditoría quirúrgica de pedidos ServiFood](./AUDITORIA_QUIRURGICA_SERVIFOOD_ORDERS.txt)
 
+## Reporte diario por email
+
+La función Supabase Edge `daily-orders-report` envía el Excel `.xlsx` y el resumen diario de pedidos pendientes. Es server-side, usa `SUPABASE_SERVICE_ROLE_KEY` solo dentro de la función, exige el header `x-cron-secret` y registra idempotencia en `daily_report_runs`.
+
+Variables requeridas en Supabase Edge:
+
+```bash
+DAILY_REPORT_RECIPIENTS=sarmientoclaudia985@gmail.com,agustinwojtyszyn99@gmail.com
+MAIL_FROM="ServiFood Pedidos <reportes@tu-dominio.com>"
+EMAIL_PROVIDER_API_KEY=...
+CRON_SECRET=...
+SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+El proveedor implementado es Resend vía `EMAIL_PROVIDER_API_KEY`. No configurar secretos ni service role en el frontend.
+
+La ejecución real debe programarse todos los días a las `01:05 UTC`, que equivale a `22:05 ART` en Argentina. A esa hora la fecha objetivo default es `delivery_date = día siguiente` en `America/Argentina/Buenos_Aires`.
+
+Cron recomendado:
+
+```text
+5 1 * * *
+```
+
+Payload soportado:
+
+```json
+{
+  "mode": "send",
+  "reportDate": "2026-06-23",
+  "force": false,
+  "allowEmpty": true,
+  "sendTo": "email-opcional-solo-pruebas@example.com"
+}
+```
+
+Ejemplos de prueba:
+
+```bash
+curl -X POST "$FUNCTION_URL" \
+  -H "Content-Type: application/json" \
+  -H "x-cron-secret: $CRON_SECRET" \
+  -d '{"mode":"dryRun","reportDate":"2026-06-23"}'
+```
+
+```bash
+curl -X POST "$FUNCTION_URL" \
+  -H "Content-Type: application/json" \
+  -H "x-cron-secret: $CRON_SECRET" \
+  -d '{"mode":"testEmail","sendTo":"agustinwojtyszyn99@gmail.com"}'
+```
+
+```bash
+curl -X POST "$FUNCTION_URL" \
+  -H "Content-Type: application/json" \
+  -H "x-cron-secret: $CRON_SECRET" \
+  -d '{"mode":"send","reportDate":"2026-06-23","force":true,"allowEmpty":true}'
+```
+
+`mode=dryRun` no envía email ni registra envío exitoso. `mode=testEmail` usa pedidos mock internos, marca el asunto/cuerpo/Excel como prueba y por defecto solo envía a `agustinwojtyszyn99@gmail.com`. `mode=send` consulta `orders_with_person_key` con `status = 'pending'` y `delivery_date = reportDate`, genera el Excel y respeta idempotencia; solo reenvía si `force=true`.
+
 ---
 
 ## Vista del sistema

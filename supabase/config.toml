@@ -378,6 +378,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+[functions.daily-orders-report]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/daily-orders-report/index.ts"
+
 [analytics]
 enabled = true
 port = 54327

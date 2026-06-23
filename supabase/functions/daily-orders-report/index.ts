@@ -1,0 +1,432 @@
+/// <reference lib="deno.window" />
+/// <reference lib="deno.ns" />
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0'
+import ExcelJS from 'npm:exceljs@4.4.0'
+import {
+  DAILY_REPORT_TEST_TYPE,
+  DAILY_REPORT_TYPE,
+  DailyReportPayload,
+  buildDailySummary,
+  buildEmailHtml,
+  buildEmailText,
+  createMockOrders,
+  formatDateEs,
+  getCustomResponsesText,
+  getCustomSide,
+  getDefaultReportDate,
+  getEmailSubject,
+  getMenuOptionText,
+  getOrderTotalItems,
+  getRecipientsForMode,
+  getServiceLabel,
+  isAuthorized,
+  isValidISODate,
+  normalizeOrder,
+  parseRecipients,
+  shouldSkipExistingRun
+} from '../_shared/daily_report.ts'
+
+const jsonHeaders = {
+  'Content-Type': 'application/json'
+}
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+const cronSecret = Deno.env.get('CRON_SECRET') || ''
+const mailFrom = Deno.env.get('MAIL_FROM') || ''
+const resendApiKey = Deno.env.get('EMAIL_PROVIDER_API_KEY') || Deno.env.get('RESEND_API_KEY') || ''
+const configuredRecipients = parseRecipients(Deno.env.get('DAILY_REPORT_RECIPIENTS') || '')
+
+const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+})
+
+const toResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: jsonHeaders })
+
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  const bytes = new Uint8Array(buffer)
+  const chunkSize = 0x8000
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+  }
+  return btoa(binary)
+}
+
+const safeError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error || 'Error desconocido')
+  return message.slice(0, 500)
+}
+
+const getMenuNames = (order: ReturnType<typeof normalizeOrder>) =>
+  order.items
+    .map((item) => String(item.name || item.title || item.menu || '').trim())
+    .filter(Boolean)
+    .join('; ') || 'Sin menú'
+
+const getOptionNames = (order: ReturnType<typeof normalizeOrder>) =>
+  order.items
+    .map((item) => String(item.option || item.selected_option || item.choice || '').trim())
+    .filter(Boolean)
+    .join('; ') || getMenuOptionText(order)
+
+const addHeaderStyle = (worksheet: ExcelJS.Worksheet) => {
+  worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  worksheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF14532D' }
+  }
+  worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }
+  worksheet.views = [{ state: 'frozen', ySplit: 1 }]
+  worksheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: worksheet.columnCount }
+  }
+}
+
+const buildWorkbook = async ({
+  orders,
+  reportDate,
+  isTest
+}: {
+  orders: ReturnType<typeof normalizeOrder>[]
+  reportDate: string
+  isTest: boolean
+}) => {
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'ServiFood Pedidos'
+  workbook.created = new Date()
+
+  const details = workbook.addWorksheet('Pedidos Detallados')
+  details.columns = [
+    { header: 'Cliente', key: 'cliente', width: 24 },
+    { header: 'Email', key: 'email', width: 30 },
+    { header: 'Teléfono', key: 'telefono', width: 18 },
+    { header: 'Ubicación / empresa', key: 'ubicacion', width: 28 },
+    { header: 'Fecha de entrega', key: 'fechaEntrega', width: 18 },
+    { header: 'Turno / servicio', key: 'turno', width: 16 },
+    { header: 'Menú elegido', key: 'menu', width: 36 },
+    { header: 'Opción elegida', key: 'opcion', width: 36 },
+    { header: 'Cantidad', key: 'cantidad', width: 12 },
+    { header: 'Guarniciones', key: 'guarniciones', width: 24 },
+    { header: 'Respuestas personalizadas', key: 'respuestas', width: 42 },
+    { header: 'Comentarios', key: 'comentarios', width: 36 },
+    { header: 'Estado', key: 'estado', width: 14 },
+    { header: 'Total de ítems', key: 'totalItems', width: 14 }
+  ]
+
+  if (isTest) {
+    details.addRow({
+      cliente: 'PRUEBA - NO USAR PARA PRODUCCIÓN',
+      email: '',
+      telefono: '',
+      ubicacion: '',
+      fechaEntrega: formatDateEs(reportDate),
+      turno: '',
+      menu: '',
+      opcion: '',
+      cantidad: '',
+      guarniciones: '',
+      respuestas: '',
+      comentarios: '',
+      estado: '',
+      totalItems: ''
+    })
+  }
+
+  orders.forEach((order) => {
+    details.addRow({
+      cliente: order.customer_name || order.user_name || 'Sin nombre',
+      email: order.customer_email || order.user_email || 'Sin email',
+      telefono: order.customer_phone || 'Sin teléfono',
+      ubicacion: order.location || order.company_name || order.company || 'Sin ubicación / empresa',
+      fechaEntrega: formatDateEs(String(order.delivery_date || reportDate)),
+      turno: getServiceLabel(order.service),
+      menu: getMenuNames(order),
+      opcion: getOptionNames(order),
+      cantidad: getOrderTotalItems(order),
+      guarniciones: getCustomSide(order) || 'Sin guarnición',
+      respuestas: getCustomResponsesText(order),
+      comentarios: order.comments || 'Sin comentarios',
+      estado: order.status === 'pending' ? 'Pendiente' : String(order.status || 'Sin estado'),
+      totalItems: getOrderTotalItems(order)
+    })
+  })
+  addHeaderStyle(details)
+  details.eachRow((row) => {
+    row.alignment = { vertical: 'top', wrapText: true }
+  })
+
+  const summary = buildDailySummary(orders, reportDate)
+  const stats = workbook.addWorksheet('Resumen')
+  stats.columns = [
+    { header: 'Concepto', key: 'concepto', width: 36 },
+    { header: 'Valor', key: 'valor', width: 48 }
+  ]
+  stats.addRows([
+    { concepto: 'Fecha de entrega reportada', valor: summary.displayDate },
+    { concepto: 'Total de pedidos', valor: summary.totalOrders },
+    { concepto: 'Total de ítems', valor: summary.totalItems },
+    { concepto: '', valor: '' },
+    { concepto: 'Totales por ubicación / empresa', valor: '' },
+    ...summary.byLocation.map((row) => ({
+      concepto: row.label,
+      valor: `${row.orders} pedidos, ${row.items} ítems`
+    })),
+    { concepto: '', valor: '' },
+    { concepto: 'Totales por menú / opción', valor: '' },
+    ...summary.byMenuOption.map((row) => ({ concepto: row.label, valor: row.quantity })),
+    { concepto: '', valor: '' },
+    { concepto: 'Avisos', valor: summary.warnings.length ? summary.warnings.join(' | ') : 'Sin avisos' }
+  ])
+  addHeaderStyle(stats)
+  stats.eachRow((row) => {
+    row.alignment = { vertical: 'top', wrapText: true }
+  })
+
+  return workbook.xlsx.writeBuffer()
+}
+
+const sendEmail = async ({
+  to,
+  subject,
+  html,
+  text,
+  filename,
+  attachment
+}: {
+  to: string[]
+  subject: string
+  html: string
+  text: string
+  filename: string
+  attachment: ArrayBuffer
+}) => {
+  if (!resendApiKey) throw new Error('EMAIL_PROVIDER_API_KEY o RESEND_API_KEY no está configurado')
+  if (!mailFrom) throw new Error('MAIL_FROM no está configurado')
+  if (!to.length) throw new Error('No hay destinatarios configurados')
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: mailFrom,
+      to,
+      subject,
+      html,
+      text,
+      attachments: [{
+        filename,
+        content: arrayBufferToBase64(attachment)
+      }]
+    })
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(`Resend respondió ${response.status}: ${body.slice(0, 300)}`)
+  }
+
+  return response.json()
+}
+
+const fetchOrders = async (reportDate: string) => {
+  const { data, error } = await supabase
+    .from('orders_with_person_key')
+    .select('*')
+    .eq('status', 'pending')
+    .eq('delivery_date', reportDate)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return (Array.isArray(data) ? data : []).map((order) => normalizeOrder(order))
+}
+
+const getExistingRun = async (reportDate: string, reportType = DAILY_REPORT_TYPE) => {
+  const { data, error } = await supabase
+    .from('daily_report_runs')
+    .select('id,status,sent_at')
+    .eq('report_date', reportDate)
+    .eq('report_type', reportType)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+const upsertRun = async ({
+  reportDate,
+  reportType,
+  status,
+  ordersCount,
+  recipients,
+  error
+}: {
+  reportDate: string
+  reportType: string
+  status: string
+  ordersCount: number
+  recipients: string[]
+  error?: string | null
+}) => {
+  const payload = {
+    report_date: reportDate,
+    report_type: reportType,
+    status,
+    orders_count: ordersCount,
+    recipients,
+    sent_at: status === 'sent' || status === 'sent_empty' ? new Date().toISOString() : null,
+    error: error || null
+  }
+  const { error: upsertError } = await supabase
+    .from('daily_report_runs')
+    .upsert(payload, { onConflict: 'report_date,report_type' })
+
+  if (upsertError) throw upsertError
+}
+
+Deno.serve(async (req: Request) => {
+  let currentPayload: DailyReportPayload = {}
+  if (req.method !== 'POST') return toResponse({ error: 'Method not allowed' }, 405)
+  if (!isAuthorized(req.headers, cronSecret)) return toResponse({ error: 'Unauthorized' }, 401)
+
+  try {
+    const payload = await req.json().catch(() => ({})) as DailyReportPayload
+    currentPayload = payload
+    const mode = payload.mode || 'send'
+    if (!['send', 'dryRun', 'testEmail'].includes(mode)) {
+      return toResponse({ error: 'mode inválido' }, 400)
+    }
+
+    const reportDate = isValidISODate(payload.reportDate)
+      ? payload.reportDate
+      : getDefaultReportDate()
+    const allowEmpty = payload.allowEmpty !== false
+    const isTest = mode === 'testEmail'
+    const recipients = getRecipientsForMode({
+      mode,
+      configuredRecipients,
+      sendTo: payload.sendTo
+    })
+
+    console.log('[daily-orders-report] inicio', {
+      mode,
+      reportDate,
+      recipients,
+      force: Boolean(payload.force)
+    })
+
+    const orders = isTest ? createMockOrders(reportDate) : await fetchOrders(reportDate)
+    const summary = buildDailySummary(orders, reportDate)
+    const filename = `${isTest ? 'PRUEBA_' : ''}pedidos_servifood_${reportDate}.xlsx`
+    const wouldAttachExcel = orders.length > 0 || allowEmpty || isTest
+
+    if (mode === 'dryRun') {
+      return toResponse({
+        ok: true,
+        mode,
+        reportDate,
+        ordersCount: summary.totalOrders,
+        itemsCount: summary.totalItems,
+        resumen: summary,
+        destinatariosConfigurados: recipients,
+        adjuntariaExcel: wouldAttachExcel,
+        warnings: summary.warnings
+      })
+    }
+
+    if (mode === 'send' && orders.length === 0 && !allowEmpty) {
+      return toResponse({
+        ok: true,
+        skipped: true,
+        reason: 'No hay pedidos y allowEmpty=false',
+        reportDate,
+        ordersCount: 0
+      })
+    }
+
+    const reportType = isTest ? DAILY_REPORT_TEST_TYPE : DAILY_REPORT_TYPE
+    if (mode === 'send') {
+      const existingRun = await getExistingRun(reportDate, reportType)
+      if (shouldSkipExistingRun({ existingStatus: existingRun?.status, force: payload.force })) {
+        return toResponse({
+          ok: true,
+          skipped: true,
+          reason: `Reporte ya procesado con status ${existingRun?.status}`,
+          reportDate,
+          status: existingRun?.status
+        })
+      }
+      await upsertRun({
+        reportDate,
+        reportType,
+        status: 'running',
+        ordersCount: summary.totalOrders,
+        recipients
+      })
+    }
+
+    const workbookBuffer = await buildWorkbook({ orders, reportDate, isTest })
+    const emailResult = await sendEmail({
+      to: recipients,
+      subject: getEmailSubject(reportDate, isTest),
+      html: buildEmailHtml(summary, isTest),
+      text: buildEmailText(summary, isTest),
+      filename,
+      attachment: workbookBuffer
+    })
+
+    if (mode === 'send') {
+      await upsertRun({
+        reportDate,
+        reportType,
+        status: orders.length > 0 ? 'sent' : 'sent_empty',
+        ordersCount: summary.totalOrders,
+        recipients
+      })
+    }
+
+    console.log('[daily-orders-report] enviado', {
+      mode,
+      reportDate,
+      ordersCount: summary.totalOrders,
+      recipients
+    })
+
+    return toResponse({
+      ok: true,
+      mode,
+      reportDate,
+      ordersCount: summary.totalOrders,
+      itemsCount: summary.totalItems,
+      recipients,
+      filename,
+      emailResult
+    })
+  } catch (error) {
+    const message = safeError(error)
+    console.error('[daily-orders-report] error', message)
+    try {
+      const reportDate = isValidISODate(currentPayload.reportDate) ? currentPayload.reportDate : getDefaultReportDate()
+      if ((currentPayload.mode || 'send') === 'send') {
+        await upsertRun({
+          reportDate,
+          reportType: DAILY_REPORT_TYPE,
+          status: 'failed',
+          ordersCount: 0,
+          recipients: configuredRecipients,
+          error: message
+        })
+      }
+    } catch {
+      // Best-effort failure logging only.
+    }
+    return toResponse({ ok: false, error: message }, 500)
+  }
+})
