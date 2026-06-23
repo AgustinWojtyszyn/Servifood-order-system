@@ -133,12 +133,12 @@ SUPABASE_SERVICE_ROLE_KEY=...
 
 El proveedor implementado es Resend vía `EMAIL_PROVIDER_API_KEY`. No configurar secretos ni service role en el frontend.
 
-La ejecución real debe programarse todos los días a las `01:05 UTC`, que equivale a `22:05 ART` en Argentina. A esa hora la fecha objetivo default es `delivery_date = día siguiente` en `America/Argentina/Buenos_Aires`.
+La ejecución real debe programarse todos los días a las `01:10 UTC`, que equivale a `22:10 ART` en Argentina. A esa hora la fecha objetivo default es `delivery_date = día siguiente` en `America/Argentina/Buenos_Aires`.
 
 Cron recomendado:
 
 ```text
-5 1 * * *
+10 1 * * *
 ```
 
 Payload soportado:

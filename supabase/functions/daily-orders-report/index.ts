@@ -260,6 +260,73 @@ const getExistingRun = async (reportDate: string, reportType = DAILY_REPORT_TYPE
   return data
 }
 
+const acquireRunLock = async ({
+  reportDate,
+  reportType,
+  ordersCount,
+  recipients,
+  force
+}: {
+  reportDate: string
+  reportType: string
+  ordersCount: number
+  recipients: string[]
+  force?: boolean
+}) => {
+  if (force) {
+    await upsertRun({
+      reportDate,
+      reportType,
+      status: 'running',
+      ordersCount,
+      recipients
+    })
+    return { acquired: true, existingRun: null }
+  }
+
+  const { error } = await supabase
+    .from('daily_report_runs')
+    .insert({
+      report_date: reportDate,
+      report_type: reportType,
+      status: 'running',
+      orders_count: ordersCount,
+      recipients,
+      sent_at: null,
+      error: null
+    })
+
+  if (!error) return { acquired: true, existingRun: null }
+
+  if (error.code === '23505') {
+    const existingRun = await getExistingRun(reportDate, reportType)
+    if (existingRun?.status === 'failed') {
+      const { data: retriedRun, error: retryError } = await supabase
+        .from('daily_report_runs')
+        .update({
+          status: 'running',
+          orders_count: ordersCount,
+          recipients,
+          sent_at: null,
+          error: null
+        })
+        .eq('report_date', reportDate)
+        .eq('report_type', reportType)
+        .eq('status', 'failed')
+        .select('id,status,sent_at')
+        .maybeSingle()
+
+      if (retryError) throw retryError
+      if (retriedRun) return { acquired: true, existingRun: null }
+
+      return { acquired: false, existingRun: await getExistingRun(reportDate, reportType) }
+    }
+    return { acquired: false, existingRun }
+  }
+
+  throw error
+}
+
 const upsertRun = async ({
   reportDate,
   reportType,
@@ -353,8 +420,14 @@ Deno.serve(async (req: Request) => {
 
     const reportType = isTest ? DAILY_REPORT_TEST_TYPE : DAILY_REPORT_TYPE
     if (mode === 'send') {
-      const existingRun = await getExistingRun(reportDate, reportType)
-      if (shouldSkipExistingRun({ existingStatus: existingRun?.status, force: payload.force })) {
+      const { acquired, existingRun } = await acquireRunLock({
+        reportDate,
+        reportType,
+        ordersCount: summary.totalOrders,
+        recipients,
+        force: payload.force
+      })
+      if (!acquired && shouldSkipExistingRun({ existingStatus: existingRun?.status, force: payload.force })) {
         return toResponse({
           ok: true,
           skipped: true,
@@ -363,13 +436,6 @@ Deno.serve(async (req: Request) => {
           status: existingRun?.status
         })
       }
-      await upsertRun({
-        reportDate,
-        reportType,
-        status: 'running',
-        ordersCount: summary.totalOrders,
-        recipients
-      })
     }
 
     const workbookBuffer = await buildWorkbook({ orders, reportDate, isTest })

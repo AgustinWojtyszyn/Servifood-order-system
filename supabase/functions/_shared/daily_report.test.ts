@@ -12,9 +12,9 @@ import {
 
 describe('daily report helpers', () => {
   it('calcula por defecto el día siguiente en America/Argentina/Buenos_Aires', () => {
-    const runAt2205Art = new Date('2026-06-23T01:05:00.000Z')
+    const runAt2210Art = new Date('2026-06-23T01:10:00.000Z')
 
-    expect(getDefaultReportDate(runAt2205Art)).toBe('2026-06-23')
+    expect(getDefaultReportDate(runAt2210Art)).toBe('2026-06-23')
   })
 
   it('genera resumen con pedidos, ítems, ubicaciones, menú/opción, comentarios y warnings', () => {
