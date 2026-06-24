@@ -37,6 +37,7 @@ const cronSecret = Deno.env.get('CRON_SECRET') || ''
 const mailFrom = Deno.env.get('MAIL_FROM') || ''
 const resendApiKey = Deno.env.get('EMAIL_PROVIDER_API_KEY') || Deno.env.get('RESEND_API_KEY') || ''
 const configuredRecipients = parseRecipients(Deno.env.get('DAILY_REPORT_RECIPIENTS') || '')
+const serviFoodLogoUrl = Deno.env.get('SERVIFOOD_LOGO_URL') || ''
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -385,7 +386,7 @@ Deno.serve(async (req: Request) => {
     console.log('[daily-orders-report] inicio', {
       mode,
       reportDate,
-      recipients,
+      recipientsCount: recipients.length,
       force: Boolean(payload.force)
     })
 
@@ -442,7 +443,7 @@ Deno.serve(async (req: Request) => {
     const emailResult = await sendEmail({
       to: recipients,
       subject: getEmailSubject(reportDate, isTest),
-      html: buildEmailHtml(summary, isTest),
+      html: buildEmailHtml(summary, isTest, { logoUrl: serviFoodLogoUrl }),
       text: buildEmailText(summary, isTest),
       filename,
       attachment: workbookBuffer
@@ -462,7 +463,7 @@ Deno.serve(async (req: Request) => {
       mode,
       reportDate,
       ordersCount: summary.totalOrders,
-      recipients
+      recipientsCount: recipients.length
     })
 
     return toResponse({

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildDailySummary,
+  buildEmailHtml,
   buildEmailText,
   createMockOrders,
   getDefaultReportDate,
@@ -57,6 +58,44 @@ describe('daily report helpers', () => {
     expect(summary.totalOrders).toBe(0)
     expect(summary.emptyMessage).toBe('No hay pedidos pendientes para la fecha de entrega 23/06/2026.')
     expect(text).toContain('No hay pedidos pendientes')
+  })
+
+  it('deduplica comentarios exactos y escapa contenido dinámico en el HTML', () => {
+    const orders = [
+      normalizeOrder({
+        id: '1',
+        customer_name: '<Ana>',
+        customer_email: 'ana@example.com',
+        location: 'Planta <Norte>',
+        delivery_date: '2026-06-23',
+        status: 'pending',
+        total_items: 1,
+        items: [{ name: 'Menú <script>', option: 'Pollo', quantity: 1 }],
+        comments: '<b>Sin sal</b>'
+      }),
+      normalizeOrder({
+        id: '2',
+        customer_name: '<Ana>',
+        customer_email: 'ana@example.com',
+        location: 'Planta <Norte>',
+        delivery_date: '2026-06-23',
+        status: 'pending',
+        total_items: 1,
+        items: [{ name: 'Menú <script>', option: 'Pollo', quantity: 1 }],
+        comments: '<b>Sin sal</b>'
+      })
+    ]
+
+    const summary = buildDailySummary(orders, '2026-06-23')
+    const html = buildEmailHtml(summary, false, { logoUrl: 'https://example.com/logo.png' })
+
+    expect(summary.comments).toEqual(['<Ana>: <b>Sin sal</b> (x2)'])
+    expect(html).toContain('alt="ServiFood Catering"')
+    expect(html).toContain('&lt;Ana&gt;')
+    expect(html).toContain('&lt;b&gt;Sin sal&lt;/b&gt;')
+    expect(html).toContain('Planta &lt;Norte&gt;')
+    expect(html).not.toContain('<Ana>')
+    expect(html).not.toContain('<b>Sin sal</b>')
   })
 
   it('dryRun puede reutilizar resumen sin necesitar envío de email', () => {

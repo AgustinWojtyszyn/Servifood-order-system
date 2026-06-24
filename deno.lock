@@ -1,0 +1,50 @@
+{
+  "version": "5",
+  "remote": {
+    "https://esm.sh/@supabase/supabase-js@2.80.0": "7e8c0e7bf0b1f0f781300b3cf4f13334846075d2afc9b7f236a7ffb698b53886"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@eslint/js@^9.36.0",
+        "npm:@supabase/supabase-js@^2.80.0",
+        "npm:@tailwindcss/line-clamp@~0.4.4",
+        "npm:@tailwindcss/postcss@^4.1.17",
+        "npm:@unlighthouse/cli@~0.17.9",
+        "npm:@vitejs/plugin-react@^5.0.4",
+        "npm:autoprefixer@^10.4.21",
+        "npm:baseline-browser-mapping@^2.9.19",
+        "npm:clsx@^2.1.1",
+        "npm:compression@^1.8.1",
+        "npm:deno@^2.6.8",
+        "npm:dompurify@^3.3.0",
+        "npm:dotenv@^17.2.3",
+        "npm:eslint-plugin-react-hooks@^5.2.0",
+        "npm:eslint-plugin-react-refresh@~0.4.22",
+        "npm:eslint@^9.36.0",
+        "npm:exceljs@^4.4.0",
+        "npm:express-rate-limit@^8.2.1",
+        "npm:framer-motion@^12.23.24",
+        "npm:globals@^16.4.0",
+        "npm:lucide-react@0.553",
+        "npm:nodemailer@^9.0.1",
+        "npm:postcss@^8.5.6",
+        "npm:react-datepicker@9",
+        "npm:react-dom@^19.1.1",
+        "npm:react-error-boundary@6",
+        "npm:react-feather@^2.0.10",
+        "npm:react-hook-form@^7.66.0",
+        "npm:react-router-dom@^7.9.5",
+        "npm:react@^19.1.1",
+        "npm:supabase@^2.107.0",
+        "npm:tailwind-merge@^3.4.0",
+        "npm:tailwindcss@^4.1.17",
+        "npm:terser@^5.44.1",
+        "npm:vite@^7.1.7",
+        "npm:vitest@^4.1.9",
+        "npm:zod@^4.1.12",
+        "npm:zustand@^5.0.8"
+      ]
+    }
+  }
+}

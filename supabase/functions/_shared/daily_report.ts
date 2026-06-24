@@ -44,6 +44,7 @@ export type DailySummary = {
   byLocation: Array<{ label: string; orders: number; items: number }>
   byMenuOption: Array<{ label: string; quantity: number }>
   comments: Array<string>
+  commentRows: Array<{ customer: string; comment: string; count: number }>
   warnings: Array<string>
   emptyMessage?: string
 }
@@ -174,7 +175,7 @@ export const getOrderTotalItems = (order: NormalizedOrder) => {
 export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string): DailySummary => {
   const byLocation = new Map<string, { orders: number; items: number }>()
   const byMenuOption = new Map<string, number>()
-  const comments: string[] = []
+  const commentsByCustomerAndText = new Map<string, { customer: string; comment: string; count: number }>()
   const warnings: string[] = []
   let totalItems = 0
 
@@ -201,8 +202,15 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
     }
 
     if (String(order.comments || '').trim()) {
-      const customer = order.customer_name || order.user_name || `Pedido ${index + 1}`
-      comments.push(`${customer}: ${String(order.comments).trim()}`)
+      const customer = String(order.customer_name || order.user_name || `Pedido ${index + 1}`).trim()
+      const comment = String(order.comments).trim()
+      const key = `${customer}\u0000${comment}`
+      const existing = commentsByCustomerAndText.get(key)
+      commentsByCustomerAndText.set(key, {
+        customer,
+        comment,
+        count: (existing?.count || 0) + 1
+      })
     }
 
     const missing = []
@@ -216,6 +224,10 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
   })
 
   const displayDate = formatDateEs(reportDate)
+  const commentRows = [...commentsByCustomerAndText.values()].sort((a, b) =>
+    a.customer.localeCompare(b.customer) || a.comment.localeCompare(b.comment)
+  )
+
   return {
     reportDate,
     displayDate,
@@ -227,7 +239,8 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
     byMenuOption: [...byMenuOption.entries()]
       .map(([label, quantity]) => ({ label, quantity }))
       .sort((a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label)),
-    comments,
+    comments: commentRows.map((row) => `${row.customer}: ${row.comment}${row.count > 1 ? ` (x${row.count})` : ''}`),
+    commentRows,
     warnings,
     emptyMessage: orders.length === 0
       ? `No hay pedidos pendientes para la fecha de entrega ${displayDate}.`
@@ -243,31 +256,156 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
 
-const renderList = (items: string[], empty: string) =>
-  items.length > 0
-    ? `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
-    : `<p>${escapeHtml(empty)}</p>`
+const isSafeHttpsUrl = (value?: string | null) => Boolean(value && /^https:\/\/[^\s<>"']+$/i.test(value))
 
-export const buildEmailHtml = (summary: DailySummary, isTest = false) => `
-  <div style="font-family:Arial,sans-serif;color:#111827;line-height:1.45">
-    ${isTest ? '<p style="font-weight:700;color:#b91c1c">PRUEBA - NO USAR PARA PRODUCCIÓN</p>' : ''}
-    <h1>Reporte diario de pedidos ServiFood</h1>
-    <p><strong>Fecha de entrega reportada:</strong> ${escapeHtml(summary.displayDate)}</p>
-    ${summary.emptyMessage ? `<p><strong>${escapeHtml(summary.emptyMessage)}</strong></p>` : ''}
-    <p><strong>Total de pedidos:</strong> ${summary.totalOrders}</p>
-    <p><strong>Total de ítems:</strong> ${summary.totalItems}</p>
-    <h2>Totales por ubicación / empresa</h2>
-    ${summary.byLocation.length > 0
-      ? `<ul>${summary.byLocation.map((row) => `<li>${escapeHtml(row.label)}: ${row.orders} pedidos, ${row.items} ítems</li>`).join('')}</ul>`
-      : '<p>Sin ubicaciones para listar.</p>'}
-    <h2>Totales por menú / opción</h2>
-    ${summary.byMenuOption.length > 0
-      ? `<ul>${summary.byMenuOption.map((row) => `<li>${escapeHtml(row.label)}: ${row.quantity}</li>`).join('')}</ul>`
-      : '<p>Sin menús/opciones para listar.</p>'}
-    <h2>Comentarios destacados</h2>
-    ${renderList(summary.comments, 'No hay comentarios destacados.')}
-    <h2>Avisos</h2>
-    ${renderList(summary.warnings, 'No se detectaron datos incompletos o inconsistentes.')}
+const cellStyle = 'padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;'
+const headerCellStyle = 'padding:10px 12px;background:#eef2ff;border-bottom:1px solid #dbe4ff;font-size:12px;line-height:16px;color:#374151;text-transform:uppercase;font-weight:700;text-align:left;'
+
+const renderLogo = (logoUrl?: string | null) =>
+  isSafeHttpsUrl(logoUrl)
+    ? `<img src="${escapeHtml(logoUrl)}" width="180" alt="ServiFood Catering" style="display:block;max-width:180px;width:180px;height:auto;border:0;outline:none;text-decoration:none;">`
+    : '<div style="font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:30px;font-weight:700;color:#075985;">ServiFood Catering</div>'
+
+const renderLocationRows = (summary: DailySummary) => {
+  if (!summary.byLocation.length) {
+    return `<tr><td colspan="3" style="${cellStyle}color:#6b7280;">Sin ubicaciones para listar.</td></tr>`
+  }
+
+  const rows = summary.byLocation.map((row) => `
+    <tr>
+      <td style="${cellStyle}">${escapeHtml(row.label)}</td>
+      <td align="right" style="${cellStyle}text-align:right;">${row.orders}</td>
+      <td align="right" style="${cellStyle}text-align:right;">${row.items}</td>
+    </tr>
+  `).join('')
+
+  return `${rows}
+    <tr>
+      <td style="${cellStyle}font-weight:700;background:#f9fafb;">Total general</td>
+      <td align="right" style="${cellStyle}font-weight:700;text-align:right;background:#f9fafb;">${summary.totalOrders}</td>
+      <td align="right" style="${cellStyle}font-weight:700;text-align:right;background:#f9fafb;">${summary.totalItems}</td>
+    </tr>`
+}
+
+const renderMenuOptionRows = (summary: DailySummary) =>
+  summary.byMenuOption.length
+    ? summary.byMenuOption.map((row) => `
+      <tr>
+        <td style="${cellStyle}">${escapeHtml(row.label)}</td>
+        <td align="right" style="${cellStyle}text-align:right;">${row.quantity}</td>
+      </tr>
+    `).join('')
+    : `<tr><td colspan="2" style="${cellStyle}color:#6b7280;">Sin menús/opciones para listar.</td></tr>`
+
+const renderCommentRows = (summary: DailySummary) =>
+  summary.commentRows.length
+    ? summary.commentRows.map((row) => `
+      <tr>
+        <td style="${cellStyle}">${escapeHtml(row.customer)}${row.count > 1 ? ` <span style="color:#6b7280;">(x${row.count})</span>` : ''}</td>
+        <td style="${cellStyle}">${escapeHtml(row.comment)}</td>
+      </tr>
+    `).join('')
+    : `<tr><td colspan="2" style="${cellStyle}color:#6b7280;">No hay comentarios destacados.</td></tr>`
+
+const renderWarnings = (summary: DailySummary) =>
+  summary.warnings.length
+    ? `<ul style="margin:0;padding:0 0 0 20px;">${summary.warnings.map((warning) => `<li style="margin:0 0 6px 0;">⚠️ ${escapeHtml(warning)}</li>`).join('')}</ul>`
+    : '✅ No se detectaron datos incompletos o inconsistentes.'
+
+export const buildEmailHtml = (
+  summary: DailySummary,
+  isTest = false,
+  options: { logoUrl?: string | null } = {}
+) => `
+  <div style="margin:0;padding:0;background:#f5f7fb;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f5f7fb;border-collapse:collapse;">
+      <tr>
+        <td align="center" style="padding:28px 12px;">
+          <table role="presentation" width="680" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:680px;background:#ffffff;border-collapse:collapse;border:1px solid #e5e7eb;">
+            <tr>
+              <td style="padding:28px 28px 18px 28px;background:#ffffff;">
+                ${renderLogo(options.logoUrl)}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 22px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                ${isTest ? '<div style="margin:0 0 14px 0;padding:10px 12px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:13px;font-weight:700;">PRUEBA - NO USAR PARA PRODUCCIÓN</div>' : ''}
+                <h1 style="margin:0 0 8px 0;font-size:24px;line-height:32px;font-weight:700;color:#111827;">Reporte diario de pedidos ServiFood</h1>
+                <p style="margin:0;font-size:15px;line-height:22px;color:#4b5563;">Fecha de entrega reportada: <strong style="color:#111827;">${escapeHtml(summary.displayDate)}</strong></p>
+                ${summary.emptyMessage ? `<p style="margin:14px 0 0 0;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#374151;"><strong>${escapeHtml(summary.emptyMessage)}</strong></p>` : ''}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 24px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Resumen general</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;">
+                  <tr>
+                    <td style="padding:12px;background:#f9fafb;border-right:1px solid #e5e7eb;width:33.33%;">
+                      <div style="font-size:12px;line-height:16px;color:#6b7280;text-transform:uppercase;font-weight:700;">Total de pedidos</div>
+                      <div style="font-size:24px;line-height:30px;color:#111827;font-weight:700;">${summary.totalOrders}</div>
+                    </td>
+                    <td style="padding:12px;background:#f9fafb;border-right:1px solid #e5e7eb;width:33.33%;">
+                      <div style="font-size:12px;line-height:16px;color:#6b7280;text-transform:uppercase;font-weight:700;">Total de ítems</div>
+                      <div style="font-size:24px;line-height:30px;color:#111827;font-weight:700;">${summary.totalItems}</div>
+                    </td>
+                    <td style="padding:12px;background:#f9fafb;width:33.33%;">
+                      <div style="font-size:12px;line-height:16px;color:#6b7280;text-transform:uppercase;font-weight:700;">Estado del reporte</div>
+                      <div style="font-size:15px;line-height:22px;color:#111827;font-weight:700;">${summary.warnings.length ? 'Con avisos' : 'Completo'}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 24px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Totales por ubicación / empresa</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;">
+                  <tr>
+                    <th align="left" style="${headerCellStyle}">Ubicación / empresa</th>
+                    <th align="right" style="${headerCellStyle}text-align:right;">Pedidos</th>
+                    <th align="right" style="${headerCellStyle}text-align:right;">Ítems</th>
+                  </tr>
+                  ${renderLocationRows(summary)}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 24px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Totales por menú / opción</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;">
+                  <tr>
+                    <th align="left" style="${headerCellStyle}">Menú / opción</th>
+                    <th align="right" style="${headerCellStyle}text-align:right;">Cantidad</th>
+                  </tr>
+                  ${renderMenuOptionRows(summary)}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 24px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Comentarios destacados</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;">
+                  <tr>
+                    <th align="left" style="${headerCellStyle}">Cliente</th>
+                    <th align="left" style="${headerCellStyle}">Comentario</th>
+                  </tr>
+                  ${renderCommentRows(summary)}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 28px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Avisos</h2>
+                <div style="padding:12px;background:#f9fafb;border:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#374151;">
+                  ${renderWarnings(summary)}
+                </div>
+                <p style="margin:18px 0 0 0;font-size:14px;line-height:20px;color:#4b5563;">Se adjunta el Excel con el detalle completo de pedidos.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </div>
 `
 
@@ -289,7 +427,8 @@ export const buildEmailText = (summary: DailySummary, isTest = false) => [
   'Comentarios destacados:',
   ...(summary.comments.length ? summary.comments.map((item) => `- ${item}`) : ['- No hay comentarios destacados.']),
   'Avisos:',
-  ...(summary.warnings.length ? summary.warnings.map((item) => `- ${item}`) : ['- No se detectaron datos incompletos o inconsistentes.'])
+  ...(summary.warnings.length ? summary.warnings.map((item) => `- ${item}`) : ['- No se detectaron datos incompletos o inconsistentes.']),
+  'Se adjunta el Excel con el detalle completo de pedidos.'
 ].filter(Boolean).join('\n')
 
 export const getRecipientsForMode = ({

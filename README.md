@@ -126,12 +126,13 @@ Variables requeridas en Supabase Edge:
 DAILY_REPORT_RECIPIENTS=sarmientoclaudia985@gmail.com,agustinwojtyszyn99@gmail.com
 MAIL_FROM="ServiFood Pedidos <reportes@tu-dominio.com>"
 EMAIL_PROVIDER_API_KEY=...
+SERVIFOOD_LOGO_URL=https://url-publica/logo-servifood.png
 CRON_SECRET=...
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-El proveedor implementado es Resend vía `EMAIL_PROVIDER_API_KEY`. No configurar secretos ni service role en el frontend.
+El proveedor implementado es Resend vía `EMAIL_PROVIDER_API_KEY`. No configurar secretos ni service role en el frontend. `SERVIFOOD_LOGO_URL` es opcional y debe apuntar a una URL pública HTTPS del logo, por ejemplo Supabase Storage público o un asset público del frontend deployado; si no está configurado, el email muestra el texto `ServiFood Catering`.
 
 La ejecución real debe programarse todos los días a las `01:10 UTC`, que equivale a `22:10 ART` en Argentina. A esa hora la fecha objetivo default es `delivery_date = día siguiente` en `America/Argentina/Buenos_Aires`.
 
