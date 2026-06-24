@@ -258,7 +258,8 @@ const escapeHtml = (value: unknown) =>
 
 const cellStyle = 'padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;'
 const headerCellStyle = 'padding:10px 12px;background:#eef2ff;border-bottom:1px solid #dbe4ff;font-size:12px;line-height:16px;color:#374151;text-transform:uppercase;font-weight:700;text-align:left;'
-const logoHeaderStyle = 'padding:24px 20px;background:#0f5b99;text-align:center;'
+const SERVIFOOD_LOGO_BLUE = '#2E3168'
+const logoHeaderStyle = `padding:24px 20px;background:${SERVIFOOD_LOGO_BLUE};text-align:center;`
 
 const renderLogoHeader = (logoUrl?: string | null) => {
   const src = String(logoUrl || '').trim()
@@ -324,7 +325,7 @@ export const buildEmailHtml = (
         <td align="center" style="padding:28px 12px;">
           <table role="presentation" width="680" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:680px;background:#ffffff;border-collapse:collapse;border:1px solid #e5e7eb;">
             <tr>
-              <td style="padding:0;background:#0f5b99;">
+              <td bgcolor="${SERVIFOOD_LOGO_BLUE}" style="padding:0;background:${SERVIFOOD_LOGO_BLUE};">
                 ${renderLogoHeader(options.logoUrl)}
               </td>
             </tr>
