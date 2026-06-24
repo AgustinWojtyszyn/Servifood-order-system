@@ -103,17 +103,27 @@ describe('daily orders export model', () => {
       }
     ], 'pending')
 
-    expect(text).toContain('REPORTE DE PEDIDOS SERVIFOOD')
-    expect(text).toContain('Fecha de entrega: 25/06/2026')
-    expect(text).toContain('- Genneia: 1 pedido / 3 ítems')
+    expect(text).toContain('*REPORTE DE PEDIDOS SERVIFOOD*')
+    expect(text).toContain('*Fecha de entrega:* 25/06/2026')
+    expect(text).toContain('*Estado:* Pendientes')
+    expect(text).toContain('*Total de pedidos:* 2')
+    expect(text).toContain('*Total de ítems:* 6')
+    expect(text).toContain('*TOTALES POR UBICACIÓN*')
+    expect(text).toContain('*TOTALES POR MENÚ*')
     expect(text).toContain('*TOTALES POR SERVICIO*')
-    expect(text).toContain('- Almuerzo: 1 pedido')
-    expect(text).toContain('- Cena: 1 pedido')
-    expect(text).toContain('- 1 pedido tiene comentarios.')
-    expect(text).toContain('- 2 pedidos incluyen bebida.')
-    expect(text).toContain('- 1 pedido incluye guarnición.')
+    expect(text).toContain('*OBSERVACIONES*')
+    expect(text).toContain('*AVISOS*')
+    expect(text).toContain('* Genneia: 1 pedido / 3 ítems')
+    expect(text).toContain('* Almuerzo: 1 pedido')
+    expect(text).toContain('* Cena: 1 pedido')
+    expect(text).toContain('* 1 pedido tiene comentarios.')
+    expect(text).toContain('* 2 pedidos incluyen bebida.')
+    expect(text).toContain('* 1 pedido incluye guarnición.')
     expect(text).toContain('✓ No se detectaron datos incompletos o inconsistentes.')
     expect(text).toContain('El detalle completo de clientes, opciones, bebidas, guarniciones y comentarios está en el Excel exportado.')
+    expect(text).toContain('\n\n*TOTALES POR UBICACIÓN*\n')
+    expect(text).not.toContain('Total de 2 pedidos')
+    expect(text).not.toContain('Total de 6 ítems:')
     expect(text).not.toContain('Ana Cliente')
     expect(text).not.toContain('Bruno Cliente')
     expect(text).not.toContain('ana@example.com')
@@ -137,8 +147,30 @@ describe('daily orders export model', () => {
 
     const text = formatDailyOrdersForWhatsApp(orders, 'pending')
 
-    expect(text).toContain('+ 1 opciones más en el Excel')
+    expect(text).toContain('+ 1 opciones más en el Excel.')
     expect(text).not.toContain('Cliente 1')
+  })
+
+  it('corrige formato de totales para muchos pedidos en WhatsApp', () => {
+    const orders = Array.from({ length: 19 }, (_, index) => ({
+      ...baseOrder,
+      id: `bulk-${index}`,
+      customer_name: `Cliente Bulk ${index}`,
+      customer_email: `bulk${index}@example.com`,
+      customer_phone: `26155599${index}`,
+      items: [{ name: 'Menú principal - FILETE DE MERLUZA A LA ROMANA CON PURE MIXTO', quantity: 1 }],
+      total_items: 1,
+      comments: ''
+    }))
+
+    const text = formatDailyOrdersForWhatsApp(orders, 'pending')
+
+    expect(text).toContain('*Total de pedidos:* 19')
+    expect(text).toContain('*Total de ítems:* 19')
+    expect(text).not.toContain('Total de 19 pedidos')
+    expect(text).not.toContain('bulk1@example.com')
+    expect(text).not.toContain('261555991')
+    expect(text).not.toContain('Cliente Bulk')
   })
 
   it('reporta inconsistencias por datos faltantes y cantidades inválidas', () => {

@@ -282,42 +282,42 @@ export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pend
   const sideCount = countRowsWithValue(summary.rows, 'guarnicion')
   const lines = [
     '*REPORTE DE PEDIDOS SERVIFOOD*',
-    `Fecha de entrega: ${summary.deliveryDate || 'Sin fecha'}`,
-    `Estado: ${summary.exportedStatus}`,
+    `*Fecha de entrega:* ${summary.deliveryDate || 'Sin fecha'}`,
+    `*Estado:* ${summary.exportedStatus}`,
     '',
-    `Total de ${plural(summary.totalOrders, 'pedido', 'pedidos')}: ${summary.totalOrders}`,
-    `Total de ${plural(summary.totalItems, 'ítem', 'ítems')}: ${summary.totalItems}`,
+    `*Total de pedidos:* ${summary.totalOrders}`,
+    `*Total de ítems:* ${summary.totalItems}`,
     '',
     '*TOTALES POR UBICACIÓN*'
   ]
 
   if (summary.byLocation.length) {
     summary.byLocation.forEach((row) => {
-      lines.push(`- ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')} / ${plural(row.items, 'ítem', 'ítems')}`)
+      lines.push(`* ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')} / ${plural(row.items, 'ítem', 'ítems')}`)
     })
   } else {
-    lines.push('- Sin pedidos')
+    lines.push('* Sin pedidos')
   }
 
   lines.push('', '*TOTALES POR MENÚ*')
   if (topMenus.length) {
-    topMenus.forEach((row) => lines.push(`- ${row.label}: ${row.quantity}`))
-    if (remainingMenus > 0) lines.push(`- + ${remainingMenus} opciones más en el Excel`)
+    topMenus.forEach((row) => lines.push(`* ${row.label}: ${row.quantity}`))
+    if (remainingMenus > 0) lines.push(`* + ${remainingMenus} opciones más en el Excel.`)
   } else {
-    lines.push('- Sin menús')
+    lines.push('* Sin menús')
   }
 
   lines.push('', '*TOTALES POR SERVICIO*')
   if (summary.byService.length) {
-    summary.byService.forEach((row) => lines.push(`- ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')}`))
+    summary.byService.forEach((row) => lines.push(`* ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')}`))
   } else {
-    lines.push('- Sin servicios')
+    lines.push('* Sin servicios')
   }
 
   lines.push('', '*OBSERVACIONES*')
-  lines.push(`- ${plural(summary.commentsCount, 'pedido tiene', 'pedidos tienen')} comentarios.`)
-  lines.push(`- ${plural(beverageCount, 'pedido incluye', 'pedidos incluyen')} bebida.`)
-  lines.push(`- ${plural(sideCount, 'pedido incluye', 'pedidos incluyen')} guarnición.`)
+  lines.push(`* ${plural(summary.commentsCount, 'pedido tiene', 'pedidos tienen')} comentarios.`)
+  lines.push(`* ${plural(beverageCount, 'pedido incluye', 'pedidos incluyen')} bebida.`)
+  lines.push(`* ${plural(sideCount, 'pedido incluye', 'pedidos incluyen')} guarnición.`)
 
   lines.push('', '*AVISOS*')
   if (summary.inconsistencies.length) {
