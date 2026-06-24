@@ -6,7 +6,7 @@ const DEFAULT_TEST_RECIPIENT = 'agustinwojtyszyn99@gmail.com'
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
-export type DailyReportMode = 'send' | 'dryRun' | 'testEmail'
+export type DailyReportMode = 'send' | 'dryRun' | 'testEmail' | 'testEmailReal'
 
 export type DailyReportPayload = {
   mode?: DailyReportMode
@@ -14,6 +14,7 @@ export type DailyReportPayload = {
   force?: boolean
   allowEmpty?: boolean
   sendTo?: string
+  useRealData?: boolean
 }
 
 export type NormalizedOrder = {
@@ -100,7 +101,7 @@ export const formatDateEs = (isoDate: string) => {
 
 export const getEmailSubject = (reportDate: string, isTest = false) =>
   isTest
-    ? 'PRUEBA - Reporte diario de pedidos - ServiFood'
+    ? `PRUEBA - Reporte diario de pedidos ServiFood - ${formatDateEs(reportDate)}`
     : `Reporte diario de pedidos - ServiFood - ${formatDateEs(reportDate)}`
 
 const safeArray = (value: unknown): Array<Record<string, unknown>> => {
@@ -436,17 +437,35 @@ export const buildEmailText = (summary: DailySummary, isTest = false) => [
 export const getRecipientsForMode = ({
   mode,
   configuredRecipients,
+  configuredTestRecipients,
   sendTo
 }: {
   mode: DailyReportMode
   configuredRecipients: string[]
+  configuredTestRecipients?: string[]
   sendTo?: string
 }) => {
-  if (mode === 'testEmail') {
-    return sendTo ? parseRecipients(sendTo) : [DEFAULT_TEST_RECIPIENT]
+  if (isTestEmailMode(mode)) {
+    if (sendTo) return parseRecipients(sendTo).slice(0, 1)
+    return configuredTestRecipients?.length ? configuredTestRecipients.slice(0, 1) : [DEFAULT_TEST_RECIPIENT]
   }
   return configuredRecipients
 }
+
+export const isTestEmailMode = (mode: DailyReportMode) =>
+  mode === 'testEmail' || mode === 'testEmailReal'
+
+export const usesMockOrdersForMode = (mode: DailyReportMode, useRealData = false) =>
+  mode === 'testEmail' && !useRealData
+
+export const usesRealOrdersForMode = (mode: DailyReportMode, useRealData = false) =>
+  mode === 'send' || mode === 'dryRun' || mode === 'testEmailReal' || (mode === 'testEmail' && useRealData)
+
+export const shouldWriteDailyReportRun = (mode: DailyReportMode) =>
+  mode === 'send'
+
+export const shouldArchiveOrdersForMode = (mode: DailyReportMode) =>
+  mode === 'send'
 
 export const isAuthorized = (headers: Headers, expectedSecret?: string | null) => {
   const secret = expectedSecret || ''

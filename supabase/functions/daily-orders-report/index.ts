@@ -21,10 +21,14 @@ import {
   getRecipientsForMode,
   getServiceLabel,
   isAuthorized,
+  isTestEmailMode,
   isValidISODate,
   normalizeOrder,
   parseRecipients,
-  shouldSkipExistingRun
+  shouldSkipExistingRun,
+  shouldWriteDailyReportRun,
+  usesMockOrdersForMode,
+  usesRealOrdersForMode
 } from '../_shared/daily_report.ts'
 
 const jsonHeaders = {
@@ -37,6 +41,7 @@ const cronSecret = Deno.env.get('CRON_SECRET') || ''
 const mailFrom = Deno.env.get('MAIL_FROM') || ''
 const resendApiKey = Deno.env.get('EMAIL_PROVIDER_API_KEY') || Deno.env.get('RESEND_API_KEY') || ''
 const configuredRecipients = parseRecipients(Deno.env.get('DAILY_REPORT_RECIPIENTS') || '')
+const configuredTestRecipients = parseRecipients(Deno.env.get('TEST_REPORT_RECIPIENT') || '')
 const serviFoodLogoUrl = (Deno.env.get('SERVIFOOD_LOGO_URL') || '').trim()
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -249,6 +254,31 @@ const fetchOrders = async (reportDate: string) => {
   return (Array.isArray(data) ? data : []).map((order) => normalizeOrder(order))
 }
 
+const fetchOrdersForRealTestEmail = async (reportDate: string) => {
+  const query = (filterDeleted = true) => {
+    let builder = supabase
+      .from('orders')
+      .select('*')
+      .eq('status', 'pending')
+      .eq('delivery_date', reportDate)
+
+    if (filterDeleted) builder = builder.is('deleted_at', null)
+
+    return builder.order('created_at', { ascending: true })
+  }
+
+  const { data, error } = await query()
+
+  if (!error) return (Array.isArray(data) ? data : []).map((order) => normalizeOrder(order))
+
+  const missingDeletedAtColumn = String(error.message || '').toLowerCase().includes('deleted_at')
+  if (!missingDeletedAtColumn) throw error
+
+  const { data: retryData, error: retryError } = await query(false)
+  if (retryError) throw retryError
+  return (Array.isArray(retryData) ? retryData : []).map((order) => normalizeOrder(order))
+}
+
 const getExistingRun = async (reportDate: string, reportType = DAILY_REPORT_TYPE) => {
   const { data, error } = await supabase
     .from('daily_report_runs')
@@ -368,7 +398,7 @@ Deno.serve(async (req: Request) => {
     const payload = await req.json().catch(() => ({})) as DailyReportPayload
     currentPayload = payload
     const mode = payload.mode || 'send'
-    if (!['send', 'dryRun', 'testEmail'].includes(mode)) {
+    if (!['send', 'dryRun', 'testEmail', 'testEmailReal'].includes(mode)) {
       return toResponse({ error: 'mode inválido' }, 400)
     }
 
@@ -376,12 +406,15 @@ Deno.serve(async (req: Request) => {
       ? payload.reportDate
       : getDefaultReportDate()
     const allowEmpty = payload.allowEmpty !== false
-    const isTest = mode === 'testEmail'
+    const isTest = isTestEmailMode(mode)
     const recipients = getRecipientsForMode({
       mode,
       configuredRecipients,
+      configuredTestRecipients,
       sendTo: payload.sendTo
     })
+    const shouldUseMocks = usesMockOrdersForMode(mode, Boolean(payload.useRealData))
+    const shouldUseRealOrders = usesRealOrdersForMode(mode, Boolean(payload.useRealData))
 
     console.log('[daily-orders-report] inicio', {
       mode,
@@ -391,7 +424,11 @@ Deno.serve(async (req: Request) => {
       force: Boolean(payload.force)
     })
 
-    const orders = isTest ? createMockOrders(reportDate) : await fetchOrders(reportDate)
+    const orders = shouldUseMocks
+      ? createMockOrders(reportDate)
+      : shouldUseRealOrders && isTest
+        ? await fetchOrdersForRealTestEmail(reportDate)
+        : await fetchOrders(reportDate)
     const summary = buildDailySummary(orders, reportDate)
     const filename = `${isTest ? 'PRUEBA_' : ''}pedidos_servifood_${reportDate}.xlsx`
     const wouldAttachExcel = orders.length > 0 || allowEmpty || isTest
@@ -421,7 +458,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const reportType = isTest ? DAILY_REPORT_TEST_TYPE : DAILY_REPORT_TYPE
-    if (mode === 'send') {
+    if (shouldWriteDailyReportRun(mode)) {
       const { acquired, existingRun } = await acquireRunLock({
         reportDate,
         reportType,
@@ -450,7 +487,7 @@ Deno.serve(async (req: Request) => {
       attachment: workbookBuffer
     })
 
-    if (mode === 'send') {
+    if (shouldWriteDailyReportRun(mode)) {
       await upsertRun({
         reportDate,
         reportType,
@@ -483,7 +520,7 @@ Deno.serve(async (req: Request) => {
     console.error('[daily-orders-report] error', message)
     try {
       const reportDate = isValidISODate(currentPayload.reportDate) ? currentPayload.reportDate : getDefaultReportDate()
-      if ((currentPayload.mode || 'send') === 'send') {
+      if (shouldWriteDailyReportRun(currentPayload.mode || 'send')) {
         await upsertRun({
           reportDate,
           reportType: DAILY_REPORT_TYPE,

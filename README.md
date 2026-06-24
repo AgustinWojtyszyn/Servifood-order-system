@@ -127,6 +127,7 @@ DAILY_REPORT_RECIPIENTS=sarmientoclaudia985@gmail.com,agustinwojtyszyn99@gmail.c
 MAIL_FROM="ServiFood Pedidos <reportes@tu-dominio.com>"
 EMAIL_PROVIDER_API_KEY=...
 SERVIFOOD_LOGO_URL=https://url-publica/logo-servifood.png
+TEST_REPORT_RECIPIENT=agustinwojtyszyn99@gmail.com
 CRON_SECRET=...
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
@@ -174,10 +175,17 @@ curl -X POST "$FUNCTION_URL" \
 curl -X POST "$FUNCTION_URL" \
   -H "Content-Type: application/json" \
   -H "x-cron-secret: $CRON_SECRET" \
+  -d '{"mode":"testEmailReal","reportDate":"2026-06-25"}'
+```
+
+```bash
+curl -X POST "$FUNCTION_URL" \
+  -H "Content-Type: application/json" \
+  -H "x-cron-secret: $CRON_SECRET" \
   -d '{"mode":"send","reportDate":"2026-06-23","force":true,"allowEmpty":true}'
 ```
 
-`mode=dryRun` no envía email ni registra envío exitoso. `mode=testEmail` usa pedidos mock internos, marca el asunto/cuerpo/Excel como prueba y por defecto solo envía a `agustinwojtyszyn99@gmail.com`. `mode=send` consulta `orders_with_person_key` con `status = 'pending'` y `delivery_date = reportDate`, genera el Excel y respeta idempotencia; solo reenvía si `force=true`.
+`mode=dryRun` no envía email ni registra envío exitoso. `mode=testEmail` usa pedidos mock internos, marca el asunto/cuerpo/Excel como prueba y por defecto solo envía a `TEST_REPORT_RECIPIENT` o `agustinwojtyszyn99@gmail.com`. `mode=testEmailReal` consulta pedidos reales pendientes para `delivery_date = reportDate`, envía solo al destinatario de prueba y no escribe `daily_report_runs` ni archiva pedidos. `mode=send` consulta `orders_with_person_key` con `status = 'pending'` y `delivery_date = reportDate`, genera el Excel y respeta idempotencia; solo reenvía si `force=true`.
 
 ---
 

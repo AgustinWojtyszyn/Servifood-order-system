@@ -5,10 +5,15 @@ import {
   buildEmailText,
   createMockOrders,
   getDefaultReportDate,
+  getEmailSubject,
   getRecipientsForMode,
   isAuthorized,
   normalizeOrder,
-  shouldSkipExistingRun
+  shouldArchiveOrdersForMode,
+  shouldSkipExistingRun,
+  shouldWriteDailyReportRun,
+  usesMockOrdersForMode,
+  usesRealOrdersForMode
 } from './daily_report'
 
 describe('daily report helpers', () => {
@@ -136,6 +141,41 @@ describe('daily report helpers', () => {
     })
 
     expect(recipients).toEqual(['sarmientoclaudia985@gmail.com'])
+  })
+
+  it('testEmailReal usa pedidos reales y no mocks', () => {
+    expect(usesRealOrdersForMode('testEmailReal')).toBe(true)
+    expect(usesMockOrdersForMode('testEmailReal')).toBe(false)
+    expect(usesRealOrdersForMode('testEmail', true)).toBe(true)
+    expect(usesMockOrdersForMode('testEmail', true)).toBe(false)
+    expect(usesMockOrdersForMode('testEmail')).toBe(true)
+  })
+
+  it('testEmailReal no archiva pedidos ni escribe daily_report_runs', () => {
+    expect(shouldArchiveOrdersForMode('testEmailReal')).toBe(false)
+    expect(shouldWriteDailyReportRun('testEmailReal')).toBe(false)
+    expect(shouldArchiveOrdersForMode('send')).toBe(true)
+    expect(shouldWriteDailyReportRun('send')).toBe(true)
+  })
+
+  it('testEmailReal envía solo a destinatario de prueba', () => {
+    const recipients = getRecipientsForMode({
+      mode: 'testEmailReal',
+      configuredRecipients: ['produccion1@example.com', 'produccion2@example.com'],
+      configuredTestRecipients: ['test@example.com', 'otro-test@example.com']
+    })
+
+    expect(recipients).toEqual(['test@example.com'])
+  })
+
+  it('testEmailReal usa fallback de destinatario de prueba y asunto con fecha', () => {
+    const recipients = getRecipientsForMode({
+      mode: 'testEmailReal',
+      configuredRecipients: ['produccion@example.com']
+    })
+
+    expect(recipients).toEqual(['agustinwojtyszyn99@gmail.com'])
+    expect(getEmailSubject('2026-06-25', true)).toBe('PRUEBA - Reporte diario de pedidos ServiFood - 25/06/2026')
   })
 
   it('send evita duplicados salvo force', () => {
