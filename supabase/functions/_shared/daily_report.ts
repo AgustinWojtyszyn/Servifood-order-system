@@ -256,15 +256,15 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
 
-const isSafeHttpsUrl = (value?: string | null) => Boolean(value && /^https:\/\/[^\s<>"']+$/i.test(value))
-
 const cellStyle = 'padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;'
 const headerCellStyle = 'padding:10px 12px;background:#eef2ff;border-bottom:1px solid #dbe4ff;font-size:12px;line-height:16px;color:#374151;text-transform:uppercase;font-weight:700;text-align:left;'
 
-const renderLogo = (logoUrl?: string | null) =>
-  isSafeHttpsUrl(logoUrl)
-    ? `<img src="${escapeHtml(logoUrl)}" width="180" alt="ServiFood Catering" style="display:block;max-width:180px;width:180px;height:auto;border:0;outline:none;text-decoration:none;">`
+const renderLogo = (logoUrl?: string | null) => {
+  const src = String(logoUrl || '').trim()
+  return src
+    ? `<img src="${escapeHtml(src)}" width="180" alt="ServiFood Catering" style="display:block;margin:0 auto;max-width:180px;width:180px;height:auto;border:0;outline:none;text-decoration:none;">`
     : '<div style="font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:30px;font-weight:700;color:#075985;">ServiFood Catering</div>'
+}
 
 const renderLocationRows = (summary: DailySummary) => {
   if (!summary.byLocation.length) {
