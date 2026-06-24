@@ -86,13 +86,15 @@ describe('daily orders export model', () => {
     expect(buildDailyOrdersExcelFileName(summary)).toBe('Pedidos_ServiFood_2026-06-25_pending.xlsx')
   })
 
-  it('genera WhatsApp agrupado por ubicación con comentarios y avisos', () => {
+  it('genera WhatsApp como resumen operativo sin datos personales ni detalle individual', () => {
     const text = formatDailyOrdersForWhatsApp([
       baseOrder,
       {
         ...baseOrder,
         id: 'order-2',
         customer_name: 'Bruno Cliente',
+        customer_email: 'bruno@example.com',
+        customer_phone: '2615551234',
         location: 'La Laja',
         service: 'dinner',
         items: [{ name: 'Opción 2 - Cena veggie', quantity: 1 }],
@@ -103,13 +105,40 @@ describe('daily orders export model', () => {
 
     expect(text).toContain('REPORTE DE PEDIDOS SERVIFOOD')
     expect(text).toContain('Fecha de entrega: 25/06/2026')
-    expect(text).toContain('- Genneia: 1 pedidos / 3 ítems')
-    expect(text).toContain('GENNEIA')
-    expect(text).toContain('Ana Cliente - Almuerzo')
-    expect(text).toContain('Guarnición: Puré')
-    expect(text).toContain('Bebida: Coca cola')
-    expect(text).toContain('- Ana Cliente: Sin sal')
-    expect(text).toContain('✅ No se detectaron datos incompletos o inconsistentes.')
+    expect(text).toContain('- Genneia: 1 pedido / 3 ítems')
+    expect(text).toContain('*TOTALES POR SERVICIO*')
+    expect(text).toContain('- Almuerzo: 1 pedido')
+    expect(text).toContain('- Cena: 1 pedido')
+    expect(text).toContain('- 1 pedido tiene comentarios.')
+    expect(text).toContain('- 2 pedidos incluyen bebida.')
+    expect(text).toContain('- 1 pedido incluye guarnición.')
+    expect(text).toContain('✓ No se detectaron datos incompletos o inconsistentes.')
+    expect(text).toContain('El detalle completo de clientes, opciones, bebidas, guarniciones y comentarios está en el Excel exportado.')
+    expect(text).not.toContain('Ana Cliente')
+    expect(text).not.toContain('Bruno Cliente')
+    expect(text).not.toContain('ana@example.com')
+    expect(text).not.toContain('bruno@example.com')
+    expect(text).not.toContain('2615551234')
+    expect(text).not.toContain('Sin sal')
+    expect(text).not.toContain('DETALLE POR UBICACIÓN')
+    expect(text).not.toContain('COMENTARIOS DESTACADOS')
+  })
+
+  it('limita WhatsApp a top 10 menús y deriva el resto al Excel', () => {
+    const orders = Array.from({ length: 11 }, (_, index) => ({
+      ...baseOrder,
+      id: `order-${index}`,
+      customer_name: `Cliente ${index}`,
+      customer_email: `cliente${index}@example.com`,
+      items: [{ name: `Opción ${index + 1}`, quantity: 1 }],
+      total_items: 1,
+      comments: ''
+    }))
+
+    const text = formatDailyOrdersForWhatsApp(orders, 'pending')
+
+    expect(text).toContain('+ 1 opciones más en el Excel')
+    expect(text).not.toContain('Cliente 1')
   })
 
   it('reporta inconsistencias por datos faltantes y cantidades inválidas', () => {

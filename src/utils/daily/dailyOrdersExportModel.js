@@ -261,76 +261,74 @@ export const buildDailyOrdersExcelFileName = (summary) => {
   return `Pedidos_ServiFood_${date}_${summary.exportedStatusSlug}.xlsx`
 }
 
-const uniqueCommentRows = (rows) => {
-  const seen = new Set()
-  return rows.filter((row) => {
-    const key = `${row.cliente}\u0000${row.comentarios}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
+const plural = (count, singular, pluralText) => `${count} ${count === 1 ? singular : pluralText}`
+
+const countRowsWithValue = (rows, key) => rows.filter((row) => normalizeText(row[key])).length
+
+const formatIssueCounts = (inconsistencies) => {
+  const counts = new Map()
+  inconsistencies.forEach((row) => {
+    const issue = normalizeText(row.problema) || 'Dato incompleto'
+    counts.set(issue, (counts.get(issue) || 0) + 1)
   })
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 }
 
 export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pending') => {
   const summary = buildDailyOrdersSummary(orders, selectedStatus)
+  const topMenus = summary.byMenu.slice(0, 10)
+  const remainingMenus = Math.max(summary.byMenu.length - topMenus.length, 0)
+  const beverageCount = countRowsWithValue(summary.rows, 'bebida')
+  const sideCount = countRowsWithValue(summary.rows, 'guarnicion')
   const lines = [
-    'REPORTE DE PEDIDOS SERVIFOOD',
+    '*REPORTE DE PEDIDOS SERVIFOOD*',
     `Fecha de entrega: ${summary.deliveryDate || 'Sin fecha'}`,
     `Estado: ${summary.exportedStatus}`,
-    `Total de pedidos: ${summary.totalOrders}`,
-    `Total de ítems: ${summary.totalItems}`,
     '',
-    'TOTALES POR UBICACIÓN'
+    `Total de ${plural(summary.totalOrders, 'pedido', 'pedidos')}: ${summary.totalOrders}`,
+    `Total de ${plural(summary.totalItems, 'ítem', 'ítems')}: ${summary.totalItems}`,
+    '',
+    '*TOTALES POR UBICACIÓN*'
   ]
 
   if (summary.byLocation.length) {
-    summary.byLocation.forEach((row) => lines.push(`- ${row.label}: ${row.orders} pedidos / ${row.items} ítems`))
+    summary.byLocation.forEach((row) => {
+      lines.push(`- ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')} / ${plural(row.items, 'ítem', 'ítems')}`)
+    })
   } else {
     lines.push('- Sin pedidos')
   }
 
-  lines.push('', 'TOTALES POR MENÚ')
-  if (summary.byMenu.length) {
-    summary.byMenu.forEach((row) => lines.push(`- ${row.label}: ${row.quantity}`))
+  lines.push('', '*TOTALES POR MENÚ*')
+  if (topMenus.length) {
+    topMenus.forEach((row) => lines.push(`- ${row.label}: ${row.quantity}`))
+    if (remainingMenus > 0) lines.push(`- + ${remainingMenus} opciones más en el Excel`)
   } else {
     lines.push('- Sin menús')
   }
 
-  lines.push('', 'DETALLE POR UBICACIÓN')
-  const grouped = new Map()
-  summary.rows.forEach((row) => {
-    const current = grouped.get(row.ubicacion) || []
-    current.push(row)
-    grouped.set(row.ubicacion, current)
-  })
-
-  ;[...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([location, rows]) => {
-    lines.push('', location.toUpperCase())
-    rows
-      .sort((a, b) => a.servicio.localeCompare(b.servicio) || a.horaPedido.localeCompare(b.horaPedido))
-      .forEach((row, index) => {
-        lines.push(`${index + 1}. ${row.cliente} - ${row.servicio}`)
-        lines.push(`   ${row.menuOpcion}`)
-        if (row.guarnicion) lines.push(`   Guarnición: ${row.guarnicion}`)
-        if (row.bebida) lines.push(`   Bebida: ${row.bebida}`)
-        if (row.comentarios) lines.push(`   Comentario: ${row.comentarios}`)
-      })
-  })
-
-  lines.push('', 'COMENTARIOS DESTACADOS')
-  const comments = uniqueCommentRows(summary.comments)
-  if (comments.length) {
-    comments.forEach((row) => lines.push(`- ${row.cliente}: ${row.comentarios}`))
+  lines.push('', '*TOTALES POR SERVICIO*')
+  if (summary.byService.length) {
+    summary.byService.forEach((row) => lines.push(`- ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')}`))
   } else {
-    lines.push('- Sin comentarios destacados')
+    lines.push('- Sin servicios')
   }
 
-  lines.push('', 'AVISOS')
+  lines.push('', '*OBSERVACIONES*')
+  lines.push(`- ${plural(summary.commentsCount, 'pedido tiene', 'pedidos tienen')} comentarios.`)
+  lines.push(`- ${plural(beverageCount, 'pedido incluye', 'pedidos incluyen')} bebida.`)
+  lines.push(`- ${plural(sideCount, 'pedido incluye', 'pedidos incluyen')} guarnición.`)
+
+  lines.push('', '*AVISOS*')
   if (summary.inconsistencies.length) {
-    summary.inconsistencies.forEach((row) => lines.push(`⚠️ ${row.pedido}: ${row.problema}`))
+    formatIssueCounts(summary.inconsistencies).forEach(([issue, count]) => {
+      lines.push(`⚠️ ${issue}: ${plural(count, 'pedido', 'pedidos')}`)
+    })
   } else {
-    lines.push('✅ No se detectaron datos incompletos o inconsistentes.')
+    lines.push('✓ No se detectaron datos incompletos o inconsistentes.')
   }
+
+  lines.push('', 'El detalle completo de clientes, opciones, bebidas, guarniciones y comentarios está en el Excel exportado.')
 
   return lines.join('\n')
 }
