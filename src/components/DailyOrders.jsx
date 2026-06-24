@@ -74,7 +74,7 @@ const DailyOrders = ({ user, loading }) => {
   }
 
   const shareViaWhatsApp = () => {
-    shareDailyOrdersWhatsApp(sortedOrders)
+    shareDailyOrdersWhatsApp(sortedOrders, selectedStatus)
   }
 
   const operationalSummary = useMemo(

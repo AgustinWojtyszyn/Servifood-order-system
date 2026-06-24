@@ -1,30 +1,182 @@
 import ExcelJS from 'exceljs'
+import { downloadWorkbook, filterOrdersByCompany } from './dailyOrderCalculations'
 import {
-  downloadWorkbook,
-  filterOrdersByCompany,
-  getCustomSideFromResponses,
-  getDinnerOverrideSelection,
-  getOtherCustomResponses
-} from './dailyOrderCalculations'
-import {
-  formatDate,
-  formatTime,
-  getStatusText,
-  getTomorrowDate,
-  normalizeDishName
-} from './dailyOrderFormatters'
+  buildDailyOrdersExcelFileName,
+  buildDailyOrdersSummary
+} from './dailyOrdersExportModel'
 import { notifyError, notifyInfo, notifySuccess } from '../notice'
+
+const HEADER_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } }
+const HEADER_FONT = { bold: true, color: { argb: 'FFFFFFFF' } }
+const SUMMARY_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } }
+
+const applyHeaderStyle = (worksheet) => {
+  const header = worksheet.getRow(1)
+  header.font = HEADER_FONT
+  header.fill = HEADER_FILL
+  header.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+  worksheet.views = [{ state: 'frozen', ySplit: 1 }]
+
+  if (worksheet.columnCount > 0) {
+    worksheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: 1, column: worksheet.columnCount }
+    }
+  }
+}
+
+const autoFitColumns = (worksheet, minWidth = 12, maxWidth = 48) => {
+  worksheet.columns.forEach((column) => {
+    let max = String(column.header || '').length
+    column.eachCell({ includeEmpty: true }, (cell) => {
+      const value = cell.value == null ? '' : String(cell.value)
+      max = Math.max(max, value.length)
+    })
+    column.width = Math.min(Math.max(max + 2, minWidth), maxWidth)
+  })
+}
+
+const addSectionRow = (worksheet, label) => {
+  const row = worksheet.addRow({ Concepto: label, Valor: '' })
+  row.font = { bold: true, color: { argb: 'FF111827' } }
+  row.fill = SUMMARY_FILL
+}
+
+const buildDetailedRows = (summary) => summary.rows.map((row) => ({
+  'Fecha Pedido': row.fechaPedido,
+  'Hora Pedido': row.horaPedido,
+  Cliente: row.cliente,
+  Email: row.email || 'Sin email',
+  'Teléfono': row.telefono || 'Sin teléfono',
+  'Ubicación / Empresa': row.ubicacion,
+  'Fecha Entrega': row.fechaEntrega,
+  'Servicio / Turno': row.servicio,
+  'Menú / Opción': row.menuOpcion,
+  'Guarnición': row.guarnicion || '',
+  Bebida: row.bebida || '',
+  Cantidad: row.cantidad,
+  'Total Items': row.totalItems,
+  Comentarios: row.comentarios || '',
+  'Opciones Adicionales': row.opcionesAdicionales || '',
+  Estado: row.estado
+}))
+
+const addSummarySheet = (workbook, summary) => {
+  const worksheet = workbook.addWorksheet('Resumen')
+  worksheet.columns = [
+    { header: 'Concepto', key: 'Concepto' },
+    { header: 'Valor', key: 'Valor' }
+  ]
+
+  worksheet.addRows([
+    { Concepto: 'Fecha de entrega', Valor: summary.deliveryDate || 'Sin fecha' },
+    { Concepto: 'Estado exportado', Valor: summary.exportedStatus },
+    { Concepto: 'Total de pedidos', Valor: summary.totalOrders },
+    { Concepto: 'Total de ítems', Valor: summary.totalItems },
+    { Concepto: 'Cantidad de pedidos con comentarios', Valor: summary.commentsCount }
+  ])
+
+  addSectionRow(worksheet, 'Totales por ubicación / empresa')
+  summary.byLocation.forEach((row) => {
+    worksheet.addRow({ Concepto: row.label, Valor: `${row.orders} pedidos / ${row.items} ítems` })
+  })
+
+  addSectionRow(worksheet, 'Totales por menú / opción')
+  summary.byMenu.forEach((row) => {
+    worksheet.addRow({ Concepto: row.label, Valor: row.quantity })
+  })
+
+  addSectionRow(worksheet, 'Totales por servicio / turno')
+  summary.byService.forEach((row) => {
+    worksheet.addRow({ Concepto: row.label, Valor: `${row.orders} pedidos / ${row.items} ítems` })
+  })
+
+  applyHeaderStyle(worksheet)
+  autoFitColumns(worksheet)
+}
+
+const addDetailsSheet = (workbook, summary) => {
+  const worksheet = workbook.addWorksheet('Pedidos Detallados')
+  const rows = buildDetailedRows(summary)
+  worksheet.columns = Object.keys(rows[0] || {
+    'Fecha Pedido': '',
+    'Hora Pedido': '',
+    Cliente: '',
+    Email: '',
+    'Teléfono': '',
+    'Ubicación / Empresa': '',
+    'Fecha Entrega': '',
+    'Servicio / Turno': '',
+    'Menú / Opción': '',
+    'Guarnición': '',
+    Bebida: '',
+    Cantidad: '',
+    'Total Items': '',
+    Comentarios: '',
+    'Opciones Adicionales': '',
+    Estado: ''
+  }).map((key) => ({ header: key, key }))
+  worksheet.addRows(rows)
+  applyHeaderStyle(worksheet)
+  worksheet.eachRow((row) => {
+    row.alignment = { vertical: 'top', wrapText: true }
+  })
+  autoFitColumns(worksheet)
+}
+
+const addCommentsSheet = (workbook, summary) => {
+  const worksheet = workbook.addWorksheet('Comentarios')
+  worksheet.columns = [
+    { header: 'Cliente', key: 'Cliente' },
+    { header: 'Ubicación / Empresa', key: 'Ubicación / Empresa' },
+    { header: 'Servicio / Turno', key: 'Servicio / Turno' },
+    { header: 'Menú / Opción', key: 'Menú / Opción' },
+    { header: 'Comentario', key: 'Comentario' }
+  ]
+  worksheet.addRows(summary.comments.map((row) => ({
+    Cliente: row.cliente,
+    'Ubicación / Empresa': row.ubicacion,
+    'Servicio / Turno': row.servicio,
+    'Menú / Opción': row.menuOpcion,
+    Comentario: row.comentarios
+  })))
+  applyHeaderStyle(worksheet)
+  autoFitColumns(worksheet)
+}
+
+const addInconsistenciesSheet = (workbook, summary) => {
+  const worksheet = workbook.addWorksheet('Inconsistencias')
+  worksheet.columns = [
+    { header: 'Pedido', key: 'Pedido' },
+    { header: 'Ubicación / Empresa', key: 'Ubicación / Empresa' },
+    { header: 'Problema', key: 'Problema' }
+  ]
+
+  if (summary.inconsistencies.length) {
+    worksheet.addRows(summary.inconsistencies.map((row) => ({
+      Pedido: row.pedido,
+      'Ubicación / Empresa': row.ubicacion,
+      Problema: row.problema
+    })))
+  } else {
+    worksheet.addRow({
+      Pedido: 'No se detectaron datos incompletos o inconsistentes.',
+      'Ubicación / Empresa': '',
+      Problema: ''
+    })
+  }
+
+  applyHeaderStyle(worksheet)
+  autoFitColumns(worksheet)
+}
 
 export async function exportDailyOrdersExcel({
   sortedOrders,
   exportCompany,
-  selectedLocation,
-  selectedStatus,
-  stats
+  selectedStatus
 }) {
   const filteredOrders = filterOrdersByCompany(sortedOrders, exportCompany)
 
-  // Dedupe defensivo por id para evitar filas duplicadas por inconsistencias en origen.
   const ordersById = new Map()
   const ordersWithoutId = []
   let duplicateCount = 0
@@ -32,11 +184,6 @@ export async function exportDailyOrdersExcel({
   filteredOrders.forEach((order) => {
     if (!order || !order.id) {
       ordersWithoutId.push(order)
-      console.warn('[exportDailyOrdersExcel] Pedido sin id detectado; se exportará sin deduplicación por id.', {
-        created_at: order?.created_at,
-        customer_email: order?.customer_email,
-        location: order?.location
-      })
       return
     }
 
@@ -48,10 +195,6 @@ export async function exportDailyOrdersExcel({
     ordersById.set(order.id, order)
   })
 
-  if (duplicateCount > 0) {
-    console.warn(`[exportDailyOrdersExcel] Se removieron ${duplicateCount} pedidos duplicados por id antes de exportar.`)
-  }
-
   const ordersToExport = [...ordersById.values(), ...ordersWithoutId]
 
   if (ordersToExport.length === 0) {
@@ -60,119 +203,21 @@ export async function exportDailyOrdersExcel({
   }
 
   try {
-    const excelData = ordersToExport.map(order => {
-      const overrideChoice = getDinnerOverrideSelection(order)
-      let menuItems = []
-      if (overrideChoice && (order.location || '').toLowerCase().includes('genneia')) {
-        menuItems.push(`Cena: ${overrideChoice}`)
-      } else if (Array.isArray(order.items)) {
-        const principal = order.items.filter(
-          item => item && item.name && item.name.toLowerCase().includes('menú principal')
-        )
-        const others = order.items.filter(
-          item => item && item.name && !item.name.toLowerCase().includes('menú principal')
-        )
+    const summary = buildDailyOrdersSummary(ordersToExport, selectedStatus)
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = 'ServiFood'
+    workbook.created = new Date()
 
-        if (principal.length > 0) {
-          const totalPrincipal = principal.reduce((sum, item) => sum + (item.quantity || 1), 0)
-          menuItems.push(`Plato Principal: ${totalPrincipal}`)
-        }
+    addSummarySheet(workbook, summary)
+    addDetailsSheet(workbook, summary)
+    addCommentsSheet(workbook, summary)
+    addInconsistenciesSheet(workbook, summary)
 
-        others.forEach(item => {
-          menuItems.push(`${normalizeDishName(item.name)} (x${item.quantity || 1})`)
-        })
-      }
+    const fileName = buildDailyOrdersExcelFileName(summary)
+    await downloadWorkbook(workbook, fileName)
 
-      const customSide = getCustomSideFromResponses(order.custom_responses || [])
-      if (customSide) {
-        menuItems.push(`🔸 Guarnición: ${customSide}`)
-      }
-
-      const items = menuItems.join('; ') || 'Sin items'
-
-      const otherResponses = getOtherCustomResponses(order.custom_responses || [])
-      const customResponses = otherResponses
-        .map(r => {
-          const response = Array.isArray(r.response) ? r.response.join(', ') : r.response
-          return `${r.title}: ${response}`
-        }).join(' | ') || 'Sin opciones'
-
-      return {
-        'Fecha Pedido': formatDate(order.created_at),
-        'Hora Pedido': formatTime(order.created_at),
-        'Usuario': order.user_name || 'Sin nombre',
-        'Email': order.customer_email || order.user_email || 'Sin email',
-        'Teléfono': order.customer_phone || 'Sin teléfono',
-        'Ubicación': order.location || 'Sin ubicación',
-        'Fecha Entrega': getTomorrowDate(),
-        'Platillos': items,
-        'Guarnición': customSide || 'Sin guarnición',
-        'Cantidad Items': order.total_items || 0,
-        'Estado': getStatusText(order.status),
-        'Turno': (order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo',
-        'Comentarios': order.comments || 'Sin comentarios',
-        'Opciones Adicionales': customResponses,
-        'Cliente': order.customer_name || order.user_name || 'Sin nombre'
-      }
-    })
-
-    const statsData = [
-      { Concepto: 'Total de Pedidos', Valor: stats.total },
-      { Concepto: 'Pedidos Archivados', Valor: stats.archived },
-      { Concepto: 'Pedidos Pendientes', Valor: stats.pending },
-      { Concepto: 'Total de Items', Valor: stats.totalItems },
-      { Concepto: '', Valor: '' },
-      { Concepto: 'PEDIDOS POR UBICACIÓN', Valor: '' },
-    ]
-
-    Object.entries(stats.byLocation).forEach(([location, count]) => {
-      statsData.push({ Concepto: location, Valor: count })
-    })
-
-    statsData.push({ Concepto: '', Valor: '' })
-    statsData.push({ Concepto: 'PEDIDOS POR PLATILLO', Valor: '' })
-
-    Object.entries(stats.byDish).forEach(([dish, count]) => {
-      statsData.push({ Concepto: dish, Valor: count })
-    })
-
-    const wb = new ExcelJS.Workbook()
-    const ws1 = wb.addWorksheet('Pedidos Detallados')
-    ws1.columns = [
-      { header: 'Fecha Pedido', key: 'Fecha Pedido', width: 12 },
-      { header: 'Hora Pedido', key: 'Hora Pedido', width: 10 },
-      { header: 'Usuario', key: 'Usuario', width: 20 },
-      { header: 'Email', key: 'Email', width: 25 },
-      { header: 'Teléfono', key: 'Teléfono', width: 15 },
-      { header: 'Ubicación', key: 'Ubicación', width: 15 },
-      { header: 'Fecha Entrega', key: 'Fecha Entrega', width: 25 },
-      { header: 'Platillos', key: 'Platillos', width: 40 },
-      { header: 'Guarnición', key: 'Guarnición', width: 18 },
-      { header: 'Cantidad Items', key: 'Cantidad Items', width: 14 },
-      { header: 'Estado', key: 'Estado', width: 14 },
-      { header: 'Turno', key: 'Turno', width: 12 },
-      { header: 'Comentarios', key: 'Comentarios', width: 30 },
-      { header: 'Opciones Adicionales', key: 'Opciones Adicionales', width: 40 },
-      { header: 'Cliente', key: 'Cliente', width: 20 }
-    ]
-    ws1.addRows(excelData)
-
-    const ws2 = wb.addWorksheet('Estadísticas')
-    ws2.columns = [
-      { header: 'Concepto', key: 'Concepto', width: 30 },
-      { header: 'Valor', key: 'Valor', width: 15 }
-    ]
-    ws2.addRows(statsData)
-
-    const today = new Date().toISOString().split('T')[0]
-    const locationFilter = selectedLocation !== 'all' ? `_${selectedLocation.replace(/\s+/g, '_')}` : ''
-    const statusFilter = selectedStatus !== 'all' ? `_${selectedStatus}` : ''
-    const companyFilter = exportCompany !== 'all' ? `_empresa_${exportCompany.replace(/\s+/g, '_')}` : ''
-    const fileName = `Pedidos_ServiFood_${today}${locationFilter}${statusFilter}${companyFilter}.xlsx`
-
-    await downloadWorkbook(wb, fileName)
-
-    notifySuccess(`✓ ${ordersToExport.length} pedidos exportados correctamente a ${fileName}`)
+    const duplicateText = duplicateCount > 0 ? ` Se omitieron ${duplicateCount} duplicados.` : ''
+    notifySuccess(`✓ ${ordersToExport.length} pedidos exportados correctamente a ${fileName}.${duplicateText}`)
   } catch (error) {
     console.error('Error al exportar:', error)
     notifyError('Error al exportar el archivo. Por favor, inténtalo de nuevo.')

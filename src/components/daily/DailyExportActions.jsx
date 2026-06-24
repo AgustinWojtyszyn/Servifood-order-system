@@ -55,7 +55,7 @@ const DailyExportActions = ({
         className="inline-flex w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
       >
         <img src={whatsappLogo} alt="" className="mr-2 h-5 w-5" aria-hidden="true" />
-        Enviar resumen por WhatsApp
+        Copiar y abrir WhatsApp
       </button>
     </div>
 
