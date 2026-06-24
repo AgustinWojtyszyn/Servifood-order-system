@@ -258,12 +258,13 @@ const escapeHtml = (value: unknown) =>
 
 const cellStyle = 'padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;'
 const headerCellStyle = 'padding:10px 12px;background:#eef2ff;border-bottom:1px solid #dbe4ff;font-size:12px;line-height:16px;color:#374151;text-transform:uppercase;font-weight:700;text-align:left;'
+const logoHeaderStyle = 'padding:24px 20px;background:#0f5b99;text-align:center;'
 
-const renderLogo = (logoUrl?: string | null) => {
+const renderLogoHeader = (logoUrl?: string | null) => {
   const src = String(logoUrl || '').trim()
   return src
-    ? `<img src="${escapeHtml(src)}" width="180" alt="ServiFood Catering" style="display:block;margin:0 auto;max-width:180px;width:180px;height:auto;border:0;outline:none;text-decoration:none;">`
-    : '<div style="font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:30px;font-weight:700;color:#075985;">ServiFood Catering</div>'
+    ? `<div style="${logoHeaderStyle}"><img src="${escapeHtml(src)}" width="180" alt="ServiFood Catering" style="display:block;margin:0 auto;max-width:180px;width:180px;height:auto;border:0;outline:none;text-decoration:none;"></div>`
+    : `<div style="${logoHeaderStyle}"><div style="font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:30px;font-weight:700;color:#ffffff;text-align:center;">ServiFood Catering</div></div>`
 }
 
 const renderLocationRows = (summary: DailySummary) => {
@@ -323,12 +324,12 @@ export const buildEmailHtml = (
         <td align="center" style="padding:28px 12px;">
           <table role="presentation" width="680" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:680px;background:#ffffff;border-collapse:collapse;border:1px solid #e5e7eb;">
             <tr>
-              <td style="padding:28px 28px 18px 28px;background:#ffffff;">
-                ${renderLogo(options.logoUrl)}
+              <td style="padding:0;background:#0f5b99;">
+                ${renderLogoHeader(options.logoUrl)}
               </td>
             </tr>
             <tr>
-              <td style="padding:0 28px 22px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+              <td style="padding:24px 28px 22px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
                 ${isTest ? '<div style="margin:0 0 14px 0;padding:10px 12px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:13px;font-weight:700;">PRUEBA - NO USAR PARA PRODUCCIÓN</div>' : ''}
                 <h1 style="margin:0 0 8px 0;font-size:24px;line-height:32px;font-weight:700;color:#111827;">Reporte diario de pedidos ServiFood</h1>
                 <p style="margin:0;font-size:15px;line-height:22px;color:#4b5563;">Fecha de entrega reportada: <strong style="color:#111827;">${escapeHtml(summary.displayDate)}</strong></p>

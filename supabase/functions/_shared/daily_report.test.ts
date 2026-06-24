@@ -90,6 +90,7 @@ describe('daily report helpers', () => {
     const html = buildEmailHtml(summary, false, { logoUrl: 'https://example.com/logo.png?name="brand"' })
 
     expect(summary.comments).toEqual(['<Ana>: <b>Sin sal</b> (x2)'])
+    expect(html).toContain('background:#0f5b99')
     expect(html).toContain('src="https://example.com/logo.png?name=&quot;brand&quot;"')
     expect(html).toContain('alt="ServiFood Catering"')
     expect(html).toContain('display:block;margin:0 auto;max-width:180px;width:180px;height:auto;')
@@ -98,6 +99,15 @@ describe('daily report helpers', () => {
     expect(html).toContain('Planta &lt;Norte&gt;')
     expect(html).not.toContain('<Ana>')
     expect(html).not.toContain('<b>Sin sal</b>')
+  })
+
+  it('mantiene fallback textual del logo dentro del header azul', () => {
+    const summary = buildDailySummary([], '2026-06-23')
+    const html = buildEmailHtml(summary, false, { logoUrl: '' })
+
+    expect(html).toContain('background:#0f5b99')
+    expect(html).toContain('color:#ffffff;text-align:center;">ServiFood Catering</div>')
+    expect(html).not.toContain('<img src=')
   })
 
   it('dryRun puede reutilizar resumen sin necesitar envío de email', () => {
