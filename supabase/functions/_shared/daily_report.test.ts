@@ -4,6 +4,7 @@ import {
   buildEmailHtml,
   buildEmailText,
   createMockOrders,
+  getArchiveOrdersRpcCall,
   getDefaultReportDate,
   getEmailSubject,
   getRecipientsForMode,
@@ -69,6 +70,41 @@ describe('daily report helpers', () => {
     })
     expect(summary.comments).toEqual(['Ana: Sin sal'])
     expect(summary.warnings.some((warning) => warning.includes('Pedido 2'))).toBe(true)
+  })
+
+  it('no duplica menú de cena como adicional pero lo conserva en detalle por empresa', () => {
+    const summary = buildDailySummary([
+      normalizeOrder({
+        id: 'dinner-1',
+        customer_name: 'Ana Cliente',
+        customer_email: 'ana@example.com',
+        location: 'Genneia',
+        delivery_date: '2026-06-26',
+        status: 'pending',
+        total_items: 1,
+        items: [{ name: 'Cena: PASTEL DE PAPAS', quantity: 1 }],
+        custom_responses: [
+          { title: 'Menú de cena', response: 'PASTEL DE PAPAS' },
+          { title: 'Bebida', response: 'Coca cola' },
+          { title: 'Postre (solo Genneia)', response: 'Fruta' }
+        ],
+        comments: ''
+      })
+    ], '2026-06-26')
+    const html = buildEmailHtml(summary)
+    const text = buildEmailText(summary)
+
+    expect(summary.byLocationMenu[0].menus).toContainEqual({ label: 'Cena: PASTEL DE PAPAS', quantity: 1 })
+    expect(summary.additionalByLocation[0].items).toEqual([
+      { label: 'Coca cola', quantity: 1 },
+      { label: 'Postre (solo Genneia): Fruta', quantity: 1 }
+    ])
+    expect(html).toContain('Cena: PASTEL DE PAPAS')
+    expect(text).toContain('- Cena: PASTEL DE PAPAS: 1')
+    expect(html).toContain('Coca cola')
+    expect(html).toContain('Postre (solo Genneia): Fruta')
+    expect(html).not.toContain('Menú de cena: PASTEL DE PAPAS')
+    expect(text).not.toContain('Menú de cena: PASTEL DE PAPAS')
   })
 
   it('genera resumen y aviso cuando no hay pedidos', () => {
@@ -313,9 +349,21 @@ describe('daily report helpers', () => {
 
   it('testEmailReal no archiva pedidos ni escribe daily_report_runs', () => {
     expect(shouldArchiveOrdersForMode('testEmailReal')).toBe(false)
+    expect(shouldArchiveOrdersForMode('dryRun')).toBe(false)
+    expect(shouldArchiveOrdersForMode('testEmail')).toBe(false)
     expect(shouldWriteDailyReportRun('testEmailReal')).toBe(false)
     expect(shouldArchiveOrdersForMode('send')).toBe(true)
     expect(shouldWriteDailyReportRun('send')).toBe(true)
+  })
+
+  it('archivado de send usa RPC seguro por delivery_date y status pending', () => {
+    expect(getArchiveOrdersRpcCall('2026-06-26')).toEqual({
+      rpcName: 'archive_orders_bulk_by_delivery_date',
+      args: {
+        p_delivery_date: '2026-06-26',
+        p_statuses: ['pending']
+      }
+    })
   })
 
   it('testEmailReal envía solo a destinatario de prueba', () => {

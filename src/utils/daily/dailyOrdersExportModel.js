@@ -284,6 +284,16 @@ const buildLocationCommentRows = (locationComments, byLocation) =>
     return bOrders - aOrders || a.label.localeCompare(b.label)
   })
 
+const isBaseMenuAdditionalLabel = (label = '') => {
+  const normalized = normalizeText(label).toLowerCase()
+  return normalized.startsWith('menú de cena:') ||
+    normalized.startsWith('menu de cena:') ||
+    normalized.startsWith('cena:') ||
+    normalized.startsWith('menú principal:') ||
+    normalized.startsWith('menu principal:') ||
+    normalized.startsWith('plato principal:')
+}
+
 const getAdditionalLabelsFromRow = (row) => {
   const labels = []
   if (row.guarnicion) labels.push(`Guarnición: ${row.guarnicion}`)
@@ -295,7 +305,7 @@ const getAdditionalLabelsFromRow = (row) => {
       .filter(Boolean)
       .forEach((label) => labels.push(label))
   }
-  return labels
+  return labels.filter((label) => !isBaseMenuAdditionalLabel(label))
 }
 
 const buildLocationAdditionalRows = (locationAdditional, byLocation) =>

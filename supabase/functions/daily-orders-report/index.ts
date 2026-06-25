@@ -12,6 +12,7 @@ import {
   buildEmailText,
   createMockOrders,
   formatDateEs,
+  getArchiveOrdersRpcCall,
   getCustomResponsesText,
   getCustomSide,
   getDefaultReportDate,
@@ -397,10 +398,8 @@ const upsertRun = async ({
 }
 
 const archiveReportedOrders = async (reportDate: string) => {
-  const { data, error } = await supabase.rpc('archive_orders_bulk_by_delivery_date', {
-    p_delivery_date: reportDate,
-    p_statuses: ['pending']
-  })
+  const { rpcName, args } = getArchiveOrdersRpcCall(reportDate)
+  const { data, error } = await supabase.rpc(rpcName, args)
 
   if (error) throw error
   return Array.isArray(data) ? data.length : 0

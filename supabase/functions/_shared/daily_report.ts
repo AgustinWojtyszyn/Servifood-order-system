@@ -195,12 +195,24 @@ const incrementMap = <T extends string>(map: Map<T, number>, key: T, amount = 1)
 const sortQuantityRows = (a: { label: string; quantity: number }, b: { label: string; quantity: number }) =>
   b.quantity - a.quantity || a.label.localeCompare(b.label)
 
+const isBaseMenuAdditionalTitle = (title = '') => {
+  const normalized = title.trim().toLowerCase()
+  return normalized === 'cena' ||
+    normalized === 'menú de cena' ||
+    normalized === 'menu de cena' ||
+    normalized === 'menú principal' ||
+    normalized === 'menu principal' ||
+    normalized === 'plato principal'
+}
+
 const getAdditionalLabels = (order: NormalizedOrder) => {
   const labels: string[] = []
 
   order.custom_responses.forEach((response) => {
     const title = String(response.title || response.label || '').trim()
     const lowerTitle = title.toLowerCase()
+    if (isBaseMenuAdditionalTitle(title)) return
+
     const value = normalizeValue(response.answer ?? response.response ?? response.value)
     const options = normalizeValue(response.options)
     const combined = [value, options].filter(Boolean).join(', ')
@@ -626,6 +638,14 @@ export const shouldWriteDailyReportRun = (mode: DailyReportMode) =>
 
 export const shouldArchiveOrdersForMode = (mode: DailyReportMode) =>
   mode === 'send'
+
+export const getArchiveOrdersRpcCall = (reportDate: string) => ({
+  rpcName: 'archive_orders_bulk_by_delivery_date',
+  args: {
+    p_delivery_date: reportDate,
+    p_statuses: ['pending']
+  }
+})
 
 export const isAuthorized = (headers: Headers, expectedSecret?: string | null) => {
   const secret = expectedSecret || ''

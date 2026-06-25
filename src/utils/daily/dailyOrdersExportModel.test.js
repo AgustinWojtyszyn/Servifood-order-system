@@ -248,6 +248,27 @@ describe('daily orders export model', () => {
     expect(text).not.toContain('Cliente 1')
   })
 
+  it('no duplica menú de cena como adicional en WhatsApp manual', () => {
+    const text = formatDailyOrdersForWhatsApp([{
+      ...baseOrder,
+      id: 'dinner-1',
+      location: 'Genneia',
+      items: [{ name: 'Cena: PASTEL DE PAPAS', quantity: 1 }],
+      custom_responses: [
+        { title: 'Menú de cena', response: 'PASTEL DE PAPAS' },
+        { title: 'Bebida', response: 'Coca cola' },
+        { title: 'Postre (solo Genneia)', response: 'Fruta' }
+      ],
+      total_items: 1,
+      comments: ''
+    }], 'pending')
+
+    expect(text).toContain('- Cena: PASTEL DE PAPAS: 1')
+    expect(text).toContain('- Coca cola')
+    expect(text).toContain('- Postre (solo Genneia): Fruta')
+    expect(text).not.toContain('Menú de cena: PASTEL DE PAPAS')
+  })
+
   it('corrige formato de totales para muchos pedidos en WhatsApp', () => {
     const orders = Array.from({ length: 19 }, (_, index) => ({
       ...baseOrder,
