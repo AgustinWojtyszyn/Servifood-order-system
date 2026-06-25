@@ -1,0 +1,258 @@
+Auditoria P0/P1 - ServiFood
+Fecha: 2026-06-24
+
+Alcance
+-------
+- App: food-order-app / servifoodapp.site
+- Pagina critica: /daily-orders
+- Edge Function critica: supabase/functions/daily-orders-report
+- DB critica: orders, users, daily_report_runs
+- Estados principales: pending y archived
+- Fecha operativa: delivery_date
+- Exportaciones criticas: WhatsApp y Excel
+- Email automatico critico: reporte diario con Excel adjunto
+
+Resultado general
+-----------------
+No se encontraron P0 de borrado fisico, pero si se encontro un P0 operativo y varios P1.
+No recomendaria cerrar produccion sin corregir al menos el archivado por fecha operativa.
+
+P0 Critico
+----------
+
+1. Archivado manual masivo archiva pedidos pendientes de cualquier fecha
+
+Archivos:
+- src/hooks/useDailyOrdersData.js, linea aproximada 160
+- src/services/orders/ordersService.js, linea aproximada 6
+- supabase/migrations/20260226_archive_orders_bulk.sql, linea aproximada 25
+
+Riesgo real:
+Desde /daily-orders, el boton de "archivar todos" muestra pedidos de la fecha operativa,
+pero el RPC actual hace:
+
+UPDATE public.orders
+SET status = 'archived'
+WHERE status = ANY(statuses)
+
+Eso archiva todos los pending de la base, incluyendo pedidos futuros o de otras fechas.
+
+Como reproducir:
+1. Crear un pedido pending para delivery_date = 2026-06-25.
+2. Crear otro pending para delivery_date = 2026-06-26.
+3. Entrar a /daily-orders el 24/06/2026.
+4. Ejecutar "Archivar todos".
+5. Ambos pedidos quedan archived.
+
+Fix recomendado:
+Hacer el archivado masivo acotado por delivery_date, no global.
+Idealmente agregar o cambiar el RPC admin a algo como:
+
+archive_orders_bulk_by_delivery_date(p_delivery_date date, statuses text[])
+
+Luego, desde /daily-orders, pasar la fecha operativa.
+
+Requiere SQL:
+Si.
+
+P1 Alto
+-------
+
+1. mode: send registra el reporte pero no archiva pedidos
+
+Archivos:
+- supabase/functions/daily-orders-report/index.ts, linea aproximada 480
+- supabase/functions/_shared/daily_report.ts, linea aproximada 467
+
+Riesgo real:
+El helper indica que send debe archivar, y el test lo espera conceptualmente, pero index.ts
+no ejecuta ningun update ni RPC de archivado despues de enviar el email.
+
+El cron puede mandar el reporte, registrar daily_report_runs como sent y dejar todos los
+pedidos como pending.
+
+Como reproducir:
+1. Ejecutar la Edge Function con mode: send para una fecha con pedidos pending.
+2. Verificar daily_report_runs: queda sent.
+3. Verificar orders: los pedidos siguen pending.
+
+Fix recomendado:
+Despues de enviar el email correctamente, archivar solo:
+
+status = 'pending'
+delivery_date = reportDate
+
+Conviene reutilizar el mismo RPC acotado por fecha del P0.
+
+Requiere SQL:
+Si se implementa por RPC. No estrictamente si la Edge Function usa service role para update directo.
+
+2. Un run en estado running puede bloquear reportes futuros de esa fecha
+
+Archivos:
+- supabase/functions/daily-orders-report/index.ts, linea aproximada 318
+- supabase/functions/_shared/daily_report.ts, linea aproximada 475
+- supabase/migrations/20260623090500_daily_report_runs.sql, linea aproximada 1
+
+Riesgo real:
+Si la funcion muere despues de insertar daily_report_runs.status = 'running' y antes del catch
+o del upsert a failed, el proximo cron salta el envio porque running se considera procesado.
+
+Eso puede dejar un dia sin reporte automatico.
+
+Como reproducir:
+1. Forzar interrupcion despues de insertar el lock running.
+2. Volver a ejecutar mode: send.
+3. La funcion responde skipped con status running.
+
+Fix recomendado:
+Tratar running viejo como stale lock. Por ejemplo, si created_at es anterior a 30 minutos,
+permitir reintento o marcar failed.
+
+Requiere SQL:
+Probablemente no, porque daily_report_runs ya tiene created_at.
+
+3. /daily-orders considera pendiente cualquier estado distinto de archived
+
+Archivos:
+- src/hooks/useDailyOrdersFilters.js, linea aproximada 39
+- src/components/DailyOrders.jsx, linea aproximada 85
+
+Riesgo real:
+Si existe un pedido cancelled para la fecha operativa, aparece y se exporta como pendiente
+en /daily-orders, WhatsApp y Excel, porque el filtro usa:
+
+order.status !== 'archived'
+
+Como reproducir:
+1. Crear un pedido cancelled con delivery_date operativo.
+2. Abrir /daily-orders con filtro Pendientes.
+3. El pedido aparece en el resumen/exportacion.
+
+Fix recomendado:
+Para el filtro pending, usar estrictamente:
+
+order.status === 'pending'
+
+Requiere SQL:
+No.
+
+P2 Medio / Deuda incidental
+---------------------------
+
+1. La Edge Function devuelve recipients completos en respuestas HTTP
+
+Archivos:
+- supabase/functions/daily-orders-report/index.ts, linea aproximada 436
+- supabase/functions/daily-orders-report/index.ts, linea aproximada 508
+
+Riesgo:
+No se loguean destinatarios completos, pero las respuestas de dryRun/send devuelven recipients.
+Quien tenga x-cron-secret podria enumerarlos.
+
+Fix recomendado:
+Responder recipientsCount en lugar de recipients.
+
+Requiere SQL:
+No.
+
+2. Helpers antiguos usan created_at para "dias anteriores"
+
+Archivo:
+- src/services/orders/ordersService.js, linea aproximada 42
+
+Riesgo:
+No parece parte critica directa de /daily-orders, pero si esas acciones siguen expuestas,
+pueden mezclar criterio de fecha de pedido con fecha operativa.
+
+Fix recomendado:
+Migrar esas operaciones a delivery_date si siguen en uso.
+
+Requiere SQL:
+No necesariamente.
+
+Confirmaciones
+--------------
+
+1. WhatsApp no incluye clientes, emails ni telefonos.
+Archivo:
+- src/utils/daily/dailyOrdersExportModel.js, linea aproximada 277
+
+El mensaje usa resumen operativo: ubicacion, menu, servicio, observaciones agregadas y avisos.
+
+2. Excel si incluye detalle completo.
+Archivo:
+- src/utils/daily/exportDailyOrdersExcel.js, linea aproximada 45
+
+Incluye cliente, email, telefono, ubicacion, fecha de entrega, servicio, menu/opcion,
+guarnicion, bebida, cantidad, comentarios, opciones adicionales y estado.
+
+3. testEmailReal no escribe daily_report_runs ni deberia archivar.
+Archivo:
+- supabase/functions/_shared/daily_report.ts, linea aproximada 464
+
+shouldWriteDailyReportRun('testEmailReal') devuelve false.
+shouldArchiveOrdersForMode('testEmailReal') devuelve false.
+
+4. testEmailReal envia solo a destinatario de prueba.
+Archivo:
+- supabase/functions/_shared/daily_report.ts, linea aproximada 437
+
+Usa sendTo si viene en body, o TEST_REPORT_RECIPIENT, o fallback.
+No usa DAILY_REPORT_RECIPIENTS.
+
+5. La fecha critica usa delivery_date.
+
+/daily-orders filtra por delivery_date operativo.
+La Edge Function consulta pedidos por delivery_date = reportDate.
+created_at se usa para ordenamiento/hora del pedido, no como fecha operativa principal.
+
+6. deleted_at
+
+No se encontro deleted_at en migraciones de orders.
+testEmailReal intenta filtrar deleted_at si existe y reintenta sin ese filtro si la columna no existe.
+Produccion consulta orders_with_person_key sin filtro deleted_at explicito.
+
+7. Logs de secrets y recipients
+
+No se observaron logs de secrets.
+No se observaron logs de destinatarios completos.
+La Edge Function loguea recipientsCount y logoUrlConfigured.
+Pero si devuelve recipients completos en la respuesta HTTP.
+
+Checks ejecutados
+-----------------
+
+1. npm test
+Resultado: paso.
+Resumen: 5 archivos de test, 32 tests.
+
+2. npm run lint
+Resultado: paso.
+
+3. npx deno check supabase/functions/daily-orders-report/index.ts
+Resultado: paso.
+
+4. npm run build
+Resultado: paso.
+Warnings:
+- chunk grande despues de minificacion.
+- import dinamico y estatico mixto de src/supabaseClient.js.
+No rompen el build.
+
+Estado para produccion
+----------------------
+
+No lo marcaria apto para cierre de dia sin corregir el archivado date-scoped.
+
+Fix unico recomendado
+---------------------
+
+Crear un archivado por delivery_date y usarlo en:
+
+1. /daily-orders para "archivar todos".
+2. mode: send de supabase/functions/daily-orders-report.
+
+Ese cambio corrige el P0 de archivado global y el P1 de falta de archivado automatico
+con una misma decision tecnica.
+

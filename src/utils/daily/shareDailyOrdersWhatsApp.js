@@ -9,6 +9,14 @@ const copyToClipboard = async (message) => {
   return false
 }
 
+export const normalizeWhatsAppLineBreaks = (message = '') =>
+  String(message).replace(/\r?\n/g, '\r\n')
+
+export const buildWhatsAppShareUrl = (message) => {
+  const normalizedMessage = normalizeWhatsAppLineBreaks(message)
+  return `https://wa.me/?text=${encodeURIComponent(normalizedMessage)}`
+}
+
 export function shareDailyOrdersWhatsApp(sortedOrders, selectedStatus = 'pending') {
   if (!Array.isArray(sortedOrders) || sortedOrders.length === 0) {
     notifyInfo('No hay pedidos para compartir')
@@ -26,8 +34,7 @@ export function shareDailyOrdersWhatsApp(sortedOrders, selectedStatus = 'pending
         notifyInfo('No se pudo copiar automáticamente. Se abrirá WhatsApp con el texto preparado.')
       })
 
-    const encodedMessage = encodeURIComponent(message)
-    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`
+    const whatsappUrl = buildWhatsAppShareUrl(message)
     window.open(whatsappUrl, '_blank')
   } catch (error) {
     console.error('Error al compartir:', error)

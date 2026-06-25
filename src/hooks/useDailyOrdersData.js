@@ -69,14 +69,14 @@ export const useDailyOrdersData = (user) => {
           const personId = order.person_key || (order.user_id ? String(order.user_id) : null)
           const person = personId ? personById.get(personId) : null
           const emails = Array.isArray(person?.emails) ? person.emails.filter(Boolean) : []
-          let userName = 'Usuario'
+          const orderEmail = order.customer_email || order.user_email || ''
+          const orderName = order.customer_name || order.user_name || order.user_full_name || order.full_name || ''
+          let userName = orderName || (orderEmail ? orderEmail.split('@')[0] : '') || 'Usuario'
           if (person) {
             userName = (person.display_name !== undefined ? person.display_name : null)
               || (emails[0] ? emails[0].split('@')[0] : null)
-              || (order.customer_name !== undefined ? order.customer_name : null)
+              || orderName
               || 'Usuario'
-          } else if (order.customer_name !== undefined) {
-            userName = order.customer_name
           }
 
           if (Array.isArray(order.items)) {
@@ -89,7 +89,7 @@ export const useDailyOrdersData = (user) => {
           return {
             ...order,
             user_name: userName,
-            user_email: (order.customer_email ? order.customer_email : (emails[0] ? emails[0] : ''))
+            user_email: orderEmail || emails[0] || ''
           }
         }) : []
 

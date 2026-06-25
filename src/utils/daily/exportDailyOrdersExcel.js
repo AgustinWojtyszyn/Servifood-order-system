@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import { downloadWorkbook, filterOrdersByCompany } from './dailyOrderCalculations'
 import {
+  buildDailyOrdersExcelDetailRows,
   buildDailyOrdersExcelFileName,
   buildDailyOrdersSummary
 } from './dailyOrdersExportModel'
@@ -42,25 +43,6 @@ const addSectionRow = (worksheet, label) => {
   row.fill = SUMMARY_FILL
 }
 
-const buildDetailedRows = (summary) => summary.rows.map((row) => ({
-  'Fecha Pedido': row.fechaPedido,
-  'Hora Pedido': row.horaPedido,
-  Cliente: row.cliente,
-  Email: row.email || 'Sin email',
-  'Teléfono': row.telefono || 'Sin teléfono',
-  'Ubicación / Empresa': row.ubicacion,
-  'Fecha Entrega': row.fechaEntrega,
-  'Servicio / Turno': row.servicio,
-  'Menú / Opción': row.menuOpcion,
-  'Guarnición': row.guarnicion || '',
-  Bebida: row.bebida || '',
-  Cantidad: row.cantidad,
-  'Total Items': row.totalItems,
-  Comentarios: row.comentarios || '',
-  'Opciones Adicionales': row.opcionesAdicionales || '',
-  Estado: row.estado
-}))
-
 const addSummarySheet = (workbook, summary) => {
   const worksheet = workbook.addWorksheet('Resumen')
   worksheet.columns = [
@@ -97,24 +79,22 @@ const addSummarySheet = (workbook, summary) => {
 
 const addDetailsSheet = (workbook, summary) => {
   const worksheet = workbook.addWorksheet('Pedidos Detallados')
-  const rows = buildDetailedRows(summary)
+  const rows = buildDailyOrdersExcelDetailRows(summary.rows.map((row) => row.original))
   worksheet.columns = Object.keys(rows[0] || {
-    'Fecha Pedido': '',
-    'Hora Pedido': '',
     Cliente: '',
     Email: '',
     'Teléfono': '',
-    'Ubicación / Empresa': '',
-    'Fecha Entrega': '',
-    'Servicio / Turno': '',
-    'Menú / Opción': '',
-    'Guarnición': '',
-    Bebida: '',
+    'Ubicación / empresa': '',
+    'Fecha de entrega': '',
+    'Turno / servicio': '',
+    'Menú elegido': '',
+    'Opción elegida': '',
     Cantidad: '',
-    'Total Items': '',
+    Guarniciones: '',
+    'Respuestas personalizadas': '',
     Comentarios: '',
-    'Opciones Adicionales': '',
-    Estado: ''
+    Estado: '',
+    'Total de ítems': ''
   }).map((key) => ({ header: key, key }))
   worksheet.addRows(rows)
   applyHeaderStyle(worksheet)

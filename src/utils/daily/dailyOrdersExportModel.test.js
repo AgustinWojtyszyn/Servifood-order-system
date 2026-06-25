@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildDailyOrdersExcelDetailRows,
   buildDailyOrdersExcelFileName,
   buildDailyOrdersSummary,
   extractCustomResponses,
@@ -86,6 +87,51 @@ describe('daily orders export model', () => {
     expect(buildDailyOrdersExcelFileName(summary)).toBe('Pedidos_ServiFood_2026-06-25_pending.xlsx')
   })
 
+  it('genera filas de Excel manual con las mismas columnas de detalle que el reporte automático', () => {
+    const rows = buildDailyOrdersExcelDetailRows([{
+      ...baseOrder,
+      customer_name: '',
+      user_name: '',
+      user_full_name: 'Nombre Desde Vista',
+      customer_email: '',
+      user_email: 'vista@example.com',
+      customer_phone: null
+    }])
+
+    expect(Object.keys(rows[0])).toEqual([
+      'Cliente',
+      'Email',
+      'Teléfono',
+      'Ubicación / empresa',
+      'Fecha de entrega',
+      'Turno / servicio',
+      'Menú elegido',
+      'Opción elegida',
+      'Cantidad',
+      'Guarniciones',
+      'Respuestas personalizadas',
+      'Comentarios',
+      'Estado',
+      'Total de ítems'
+    ])
+    expect(rows[0]).toMatchObject({
+      Cliente: 'Nombre Desde Vista',
+      Email: 'vista@example.com',
+      'Teléfono': 'Sin teléfono',
+      'Ubicación / empresa': 'Genneia',
+      'Fecha de entrega': '25/06/2026',
+      'Turno / servicio': 'Almuerzo',
+      'Menú elegido': 'Opción 1 - BIDE DEL DIA; Opción 4 - BIFE DEL DÍA CARNE',
+      'Opción elegida': 'Opción 1 - BIDE DEL DIA (x2); Opción 4 - BIFE DEL DÍA CARNE (x1)',
+      Cantidad: 3,
+      Guarniciones: 'Puré',
+      'Respuestas personalizadas': 'Bebida: Coca cola | Pan: Sin pan',
+      Comentarios: 'Sin sal',
+      Estado: 'Pendiente',
+      'Total de ítems': 3
+    })
+  })
+
   it('genera WhatsApp como resumen operativo sin datos personales ni detalle individual', () => {
     const text = formatDailyOrdersForWhatsApp([
       baseOrder,
@@ -122,6 +168,7 @@ describe('daily orders export model', () => {
     expect(text).toContain('✓ No se detectaron datos incompletos o inconsistentes.')
     expect(text).toContain('El detalle completo de clientes, opciones, bebidas, guarniciones y comentarios está en el Excel exportado.')
     expect(text).toContain('\n\n*TOTALES POR UBICACIÓN*\n\n- Genneia')
+    expect(text).toContain('*REPORTE DE PEDIDOS SERVIFOOD*\n\n*Fecha de entrega:*')
     expect(text.split('\n').length).toBeGreaterThan(20)
     expect(text).not.toContain('* Genneia')
     expect(text).not.toContain('* Almuerzo')

@@ -65,7 +65,7 @@ export const getOrderLocation = (order = {}) =>
   normalizeText(order.location || order.company_name || order.company || order.company_slug || order.target_company) || 'Sin ubicación'
 
 export const getOrderCustomer = (order = {}) =>
-  normalizeText(order.customer_name || order.user_name || order.name) || 'Sin cliente'
+  normalizeText(order.customer_name || order.user_name || order.user_full_name || order.full_name || order.name) || 'Sin cliente'
 
 export const getOrderEmail = (order = {}) =>
   normalizeText(order.customer_email || order.user_email || order.email)
@@ -169,6 +169,74 @@ export const buildOrderExportRow = (order = {}) => {
     items
   }
 }
+
+const getMenuNames = (items = []) =>
+  items
+    .map((item) => normalizeText(item.raw?.name || item.raw?.title || item.raw?.menu))
+    .filter(Boolean)
+    .join('; ') || 'Sin menú'
+
+const getMenuOptionText = (items = []) =>
+  items
+    .map((item) => item.label && item.label !== 'Sin menú / opción'
+      ? `${item.label} (x${item.quantity})`
+      : '')
+    .filter(Boolean)
+    .join('; ') || 'Sin menú/opción'
+
+const getOptionNames = (items = []) => {
+  const options = items
+    .map((item) => normalizeText(item.raw?.option || item.raw?.selected_option || item.raw?.choice))
+    .filter(Boolean)
+    .join('; ')
+  return options || getMenuOptionText(items)
+}
+
+const getCustomResponsesTextForExcel = (order = {}) => {
+  const { normalizedCustomResponses } = normalizeOrderForReadOnly(order)
+  const responses = toArray(normalizedCustomResponses)
+  const side = extractCustomResponses(order).side
+  const lines = responses
+    .filter((response) => !normalizeText(response.title || response.label).toLowerCase().includes('guarn'))
+    .map((response) => {
+      const title = normalizeText(response.title || response.label || 'Respuesta')
+      const answer = valueToText(response.answer ?? response.response ?? response.value)
+      const optionText = valueToText(response.options)
+      const value = [answer, optionText].filter(Boolean).join(', ')
+      return value ? `${title}: ${value}` : ''
+    })
+    .filter(Boolean)
+
+  return lines.join(' | ') || (side ? 'Sin otras respuestas' : 'Sin respuestas')
+}
+
+export const buildDailyOrdersExcelDetailRow = (order = {}) => {
+  const items = extractOrderItems(order)
+  const custom = extractCustomResponses(order)
+  const deliveryDate = normalizeText(order.delivery_date || '').slice(0, 10)
+  const status = String(order.status || '').trim().toLowerCase()
+  const totalItems = getOrderTotalItems(order, items)
+
+  return {
+    Cliente: getOrderCustomer(order).replace(/^Sin cliente$/, 'Sin nombre'),
+    Email: getOrderEmail(order) || 'Sin email',
+    'Teléfono': getOrderPhone(order) || 'Sin teléfono',
+    'Ubicación / empresa': getOrderLocation(order).replace(/^Sin ubicación$/, 'Sin ubicación / empresa'),
+    'Fecha de entrega': formatDateOnly(deliveryDate),
+    'Turno / servicio': getOrderServiceLabel(order),
+    'Menú elegido': getMenuNames(items),
+    'Opción elegida': getOptionNames(items),
+    Cantidad: totalItems,
+    Guarniciones: custom.side || 'Sin guarnición',
+    'Respuestas personalizadas': getCustomResponsesTextForExcel(order),
+    Comentarios: normalizeText(order.comments) || 'Sin comentarios',
+    Estado: status === 'pending' ? 'Pendiente' : getStatusText(order.status),
+    'Total de ítems': totalItems
+  }
+}
+
+export const buildDailyOrdersExcelDetailRows = (orders = []) =>
+  orders.map(buildDailyOrdersExcelDetailRow)
 
 const incrementCounter = (map, key, amount = 1) => {
   const safeKey = normalizeText(key) || 'Sin dato'
