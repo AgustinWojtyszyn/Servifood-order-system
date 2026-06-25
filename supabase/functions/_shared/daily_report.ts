@@ -44,8 +44,10 @@ export type DailySummary = {
   totalItems: number
   byLocation: Array<{ label: string; orders: number; items: number }>
   byMenuOption: Array<{ label: string; quantity: number }>
+  byLocationMenu: Array<{ label: string; orders: number; items: number; menus: Array<{ label: string; quantity: number }> }>
   comments: Array<string>
   commentRows: Array<{ customer: string; comment: string; count: number }>
+  commentsByLocation: Array<{ label: string; comments: Array<{ comment: string; count: number }> }>
   warnings: Array<string>
   emptyMessage?: string
 }
@@ -173,10 +175,31 @@ export const getOrderTotalItems = (order: NormalizedOrder) => {
   return order.items.reduce((sum, item) => sum + Number(item.quantity || item.qty || 1), 0)
 }
 
+const plural = (count: number, singular: string, pluralText: string) =>
+  `${count} ${count === 1 ? singular : pluralText}`
+
+const getLocationLabel = (order: NormalizedOrder) =>
+  String(order.location || order.company_name || order.company || 'Sin ubicación / empresa').trim() || 'Sin ubicación / empresa'
+
+const getMenuLabel = (item: Record<string, unknown>) => {
+  const name = String(item.name || item.title || item.menu || 'Sin menú').trim()
+  const option = String(item.option || item.selected_option || item.choice || '').trim()
+  return [name, option].filter(Boolean).join(' - ') || 'Sin menú/opción'
+}
+
+const incrementMap = <T extends string>(map: Map<T, number>, key: T, amount = 1) => {
+  map.set(key, (map.get(key) || 0) + amount)
+}
+
+const sortQuantityRows = (a: { label: string; quantity: number }, b: { label: string; quantity: number }) =>
+  b.quantity - a.quantity || a.label.localeCompare(b.label)
+
 export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string): DailySummary => {
   const byLocation = new Map<string, { orders: number; items: number }>()
   const byMenuOption = new Map<string, number>()
   const commentsByCustomerAndText = new Map<string, { customer: string; comment: string; count: number }>()
+  const menuByLocation = new Map<string, Map<string, number>>()
+  const commentsByLocationText = new Map<string, Map<string, number>>()
   const warnings: string[] = []
   let totalItems = 0
 
@@ -184,21 +207,25 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
     const items = getOrderTotalItems(order)
     totalItems += items
 
-    const location = String(order.location || order.company_name || order.company || 'Sin ubicación / empresa')
+    const location = getLocationLabel(order)
     const locationRow = byLocation.get(location) || { orders: 0, items: 0 }
     locationRow.orders += 1
     locationRow.items += items
     byLocation.set(location, locationRow)
 
+    if (!menuByLocation.has(location)) menuByLocation.set(location, new Map())
+    const scopedMenus = menuByLocation.get(location)!
+
     if (order.items.length === 0) {
-      byMenuOption.set('Sin menú/opción', (byMenuOption.get('Sin menú/opción') || 0) + Math.max(items, 1))
+      const quantity = Math.max(items, 1)
+      incrementMap(byMenuOption, 'Sin menú/opción', quantity)
+      incrementMap(scopedMenus, 'Sin menú/opción', quantity)
     } else {
       order.items.forEach((item) => {
-        const name = String(item.name || item.title || item.menu || 'Sin menú').trim()
-        const option = String(item.option || item.selected_option || item.choice || '').trim()
-        const label = [name, option].filter(Boolean).join(' - ')
+        const label = getMenuLabel(item)
         const quantity = Number(item.quantity || item.qty || 1)
-        byMenuOption.set(label, (byMenuOption.get(label) || 0) + (quantity || 1))
+        incrementMap(byMenuOption, label, quantity || 1)
+        incrementMap(scopedMenus, label, quantity || 1)
       })
     }
 
@@ -212,6 +239,9 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
         comment,
         count: (existing?.count || 0) + 1
       })
+
+      if (!commentsByLocationText.has(location)) commentsByLocationText.set(location, new Map())
+      incrementMap(commentsByLocationText.get(location)!, comment, 1)
     }
 
     const missing = []
@@ -228,20 +258,33 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
   const commentRows = [...commentsByCustomerAndText.values()].sort((a, b) =>
     a.customer.localeCompare(b.customer) || a.comment.localeCompare(b.comment)
   )
+  const sortedLocations = [...byLocation.entries()]
+    .map(([label, value]) => ({ label, ...value }))
+    .sort((a, b) => b.orders - a.orders || a.label.localeCompare(b.label))
 
   return {
     reportDate,
     displayDate,
     totalOrders: orders.length,
     totalItems,
-    byLocation: [...byLocation.entries()]
-      .map(([label, value]) => ({ label, ...value }))
-      .sort((a, b) => b.orders - a.orders || a.label.localeCompare(b.label)),
+    byLocation: sortedLocations,
     byMenuOption: [...byMenuOption.entries()]
       .map(([label, quantity]) => ({ label, quantity }))
-      .sort((a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label)),
+      .sort(sortQuantityRows),
+    byLocationMenu: sortedLocations.map((location) => ({
+      ...location,
+      menus: [...(menuByLocation.get(location.label) || new Map()).entries()]
+        .map(([label, quantity]) => ({ label, quantity }))
+        .sort(sortQuantityRows)
+    })),
     comments: commentRows.map((row) => `${row.customer}: ${row.comment}${row.count > 1 ? ` (x${row.count})` : ''}`),
     commentRows,
+    commentsByLocation: sortedLocations.map((location) => ({
+      label: location.label,
+      comments: [...(commentsByLocationText.get(location.label) || new Map()).entries()]
+        .map(([comment, count]) => ({ comment, count }))
+        .sort((a, b) => b.count - a.count || a.comment.localeCompare(b.comment))
+    })),
     warnings,
     emptyMessage: orders.length === 0
       ? `No hay pedidos pendientes para la fecha de entrega ${displayDate}.`
@@ -417,22 +460,47 @@ export const buildEmailText = (summary: DailySummary, isTest = false) => [
   'Reporte diario de pedidos ServiFood',
   `Fecha de entrega reportada: ${summary.displayDate}`,
   summary.emptyMessage || '',
+  '',
+  'Resumen general',
   `Total de pedidos: ${summary.totalOrders}`,
   `Total de ítems: ${summary.totalItems}`,
-  'Totales por ubicación / empresa:',
+  `Estado del reporte: ${summary.warnings.length ? 'Con avisos' : 'Completo'}`,
+  '',
+  'Totales por ubicación / empresa',
   ...(summary.byLocation.length
-    ? summary.byLocation.map((row) => `- ${row.label}: ${row.orders} pedidos, ${row.items} ítems`)
+    ? [
+        ...summary.byLocation.map((row) => `- ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')} / ${plural(row.items, 'ítem', 'ítems')}`),
+        `- Total general: ${plural(summary.totalOrders, 'pedido', 'pedidos')} / ${plural(summary.totalItems, 'ítem', 'ítems')}`
+      ]
     : ['- Sin ubicaciones para listar.']),
-  'Totales por menú / opción:',
-  ...(summary.byMenuOption.length
-    ? summary.byMenuOption.map((row) => `- ${row.label}: ${row.quantity}`)
-    : ['- Sin menús/opciones para listar.']),
-  'Comentarios destacados:',
-  ...(summary.comments.length ? summary.comments.map((item) => `- ${item}`) : ['- No hay comentarios destacados.']),
-  'Avisos:',
+  '',
+  'Detalle por ubicación / empresa',
+  ...(summary.byLocationMenu.length
+    ? summary.byLocationMenu.flatMap((location) => [
+        '',
+        location.label,
+        ...(location.menus.length
+          ? location.menus.map((row) => `- ${row.label}: ${row.quantity}`)
+          : ['- Sin menús/opciones para listar.']),
+        `- Subtotal ${location.label}: ${plural(location.items, 'ítem', 'ítems')}`
+      ])
+    : ['- Sin detalle por ubicación.']),
+  '',
+  'Comentarios / observaciones por empresa',
+  ...(summary.commentsByLocation.length
+    ? summary.commentsByLocation.flatMap((location) => [
+        '',
+        location.label,
+        ...(location.comments.length
+          ? location.comments.map((row) => `- ${row.comment}${row.count > 1 ? ` (x${row.count})` : ''}`)
+          : ['- Sin comentarios destacados.'])
+      ])
+    : ['- Sin comentarios destacados.']),
+  '',
+  'Avisos',
   ...(summary.warnings.length ? summary.warnings.map((item) => `- ${item}`) : ['- No se detectaron datos incompletos o inconsistentes.']),
   'Se adjunta el Excel con el detalle completo de pedidos.'
-].filter(Boolean).join('\n')
+].filter((line) => line !== null && line !== undefined).join('\n').replace(/\n{3,}/g, '\n\n')
 
 export const getRecipientsForMode = ({
   mode,

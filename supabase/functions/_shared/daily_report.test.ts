@@ -53,6 +53,16 @@ describe('daily report helpers', () => {
     expect(summary.totalItems).toBe(3)
     expect(summary.byLocation[0]).toEqual({ label: 'Planta Norte', orders: 1, items: 2 })
     expect(summary.byMenuOption).toContainEqual({ label: 'Menú principal - Pollo', quantity: 2 })
+    expect(summary.byLocationMenu).toContainEqual({
+      label: 'Planta Norte',
+      orders: 1,
+      items: 2,
+      menus: [{ label: 'Menú principal - Pollo', quantity: 2 }]
+    })
+    expect(summary.commentsByLocation).toContainEqual({
+      label: 'Planta Norte',
+      comments: [{ comment: 'Sin sal', count: 1 }]
+    })
     expect(summary.comments).toEqual(['Ana: Sin sal'])
     expect(summary.warnings.some((warning) => warning.includes('Pedido 2'))).toBe(true)
   })
@@ -106,6 +116,68 @@ describe('daily report helpers', () => {
     expect(html).toContain('Planta &lt;Norte&gt;')
     expect(html).not.toContain('<Ana>')
     expect(html).not.toContain('<b>Sin sal</b>')
+  })
+
+  it('genera texto automático con detalle por ubicación sin datos personales', () => {
+    const orders = [
+      normalizeOrder({
+        id: '1',
+        customer_name: 'Ana Cliente',
+        customer_email: 'ana@example.com',
+        customer_phone: '2615551234',
+        location: 'La Laja',
+        delivery_date: '2026-06-23',
+        status: 'pending',
+        total_items: 2,
+        items: [{ name: 'Opción 4', option: 'Bife', quantity: 2 }],
+        comments: 'Coca Zero'
+      }),
+      normalizeOrder({
+        id: '2',
+        customer_name: 'Bruno Cliente',
+        customer_email: 'bruno@example.com',
+        customer_phone: '2615555678',
+        location: 'La Laja',
+        delivery_date: '2026-06-23',
+        status: 'pending',
+        total_items: 1,
+        items: [{ name: 'Menú principal', option: 'Merluza', quantity: 1 }],
+        comments: 'Coca Zero'
+      }),
+      normalizeOrder({
+        id: '3',
+        customer_name: 'Carla Cliente',
+        customer_email: 'carla@example.com',
+        customer_phone: '2615559999',
+        location: 'Genneia',
+        delivery_date: '2026-06-23',
+        status: 'pending',
+        total_items: 3,
+        items: [{ name: 'Opción 1', option: 'Pan de carne', quantity: 3 }],
+        comments: ''
+      })
+    ]
+
+    const text = buildEmailText(buildDailySummary(orders, '2026-06-23'))
+
+    expect(text).toContain('Detalle por ubicación / empresa')
+    expect(text).toContain('La Laja')
+    expect(text).toContain('- Opción 4 - Bife: 2')
+    expect(text).toContain('- Menú principal - Merluza: 1')
+    expect(text).toContain('- Subtotal La Laja: 3 ítems')
+    expect(text).toContain('Genneia')
+    expect(text).toContain('- Opción 1 - Pan de carne: 3')
+    expect(text).toContain('Comentarios / observaciones por empresa')
+    expect(text).toContain('- Coca Zero (x2)')
+    expect(text).toContain('- Sin comentarios destacados.')
+    expect(text).not.toContain('Ana Cliente')
+    expect(text).not.toContain('Bruno Cliente')
+    expect(text).not.toContain('Carla Cliente')
+    expect(text).not.toContain('ana@example.com')
+    expect(text).not.toContain('bruno@example.com')
+    expect(text).not.toContain('carla@example.com')
+    expect(text).not.toContain('2615551234')
+    expect(text).not.toContain('2615555678')
   })
 
   it('mantiene fallback textual del logo dentro del header azul', () => {

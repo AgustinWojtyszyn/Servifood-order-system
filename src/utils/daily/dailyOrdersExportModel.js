@@ -251,6 +251,39 @@ const incrementLocation = (map, location, orders = 1, items = 0) => {
   map.set(safeLocation, current)
 }
 
+const sortByQuantityAndLabel = (a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label)
+
+const buildLocationMenuRows = (locationMenus, byLocation) =>
+  [...byLocation.keys()].map((location) => {
+    const menuRows = [...(locationMenus.get(location) || new Map()).entries()]
+      .map(([label, quantity]) => ({ label, quantity }))
+      .sort(sortByQuantityAndLabel)
+    const locationTotals = byLocation.get(location) || { orders: 0, items: 0 }
+
+    return {
+      label: location,
+      orders: locationTotals.orders,
+      items: locationTotals.items,
+      menus: menuRows
+    }
+  }).sort((a, b) => b.orders - a.orders || a.label.localeCompare(b.label))
+
+const buildLocationCommentRows = (locationComments, byLocation) =>
+  [...byLocation.keys()].map((location) => {
+    const comments = [...(locationComments.get(location) || new Map()).entries()]
+      .map(([comment, count]) => ({ comment, count }))
+      .sort((a, b) => b.count - a.count || a.comment.localeCompare(b.comment))
+
+    return {
+      label: location,
+      comments
+    }
+  }).sort((a, b) => {
+    const aOrders = byLocation.get(a.label)?.orders || 0
+    const bOrders = byLocation.get(b.label)?.orders || 0
+    return bOrders - aOrders || a.label.localeCompare(b.label)
+  })
+
 const buildInconsistencies = (orders) => {
   const rows = []
   orders.forEach((order, index) => {
@@ -287,6 +320,8 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
   const byLocation = new Map()
   const byMenu = new Map()
   const byService = new Map()
+  const locationMenus = new Map()
+  const locationComments = new Map()
   let totalItems = 0
   let commentsCount = 0
 
@@ -295,8 +330,23 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
     if (row.comentarios) commentsCount += 1
     incrementLocation(byLocation, row.ubicacion, 1, row.totalItems)
     incrementCounter(byService, row.servicio, row.totalItems)
-    row.items.forEach((item) => incrementCounter(byMenu, item.label, item.quantity))
-    if (row.items.length === 0) incrementCounter(byMenu, 'Sin menú / opción', 1)
+
+    if (!locationMenus.has(row.ubicacion)) locationMenus.set(row.ubicacion, new Map())
+    const scopedMenus = locationMenus.get(row.ubicacion)
+
+    row.items.forEach((item) => {
+      incrementCounter(byMenu, item.label, item.quantity)
+      incrementCounter(scopedMenus, item.label, item.quantity)
+    })
+    if (row.items.length === 0) {
+      incrementCounter(byMenu, 'Sin menú / opción', 1)
+      incrementCounter(scopedMenus, 'Sin menú / opción', 1)
+    }
+
+    if (row.comentarios) {
+      if (!locationComments.has(row.ubicacion)) locationComments.set(row.ubicacion, new Map())
+      incrementCounter(locationComments.get(row.ubicacion), row.comentarios, 1)
+    }
   })
 
   const deliveryDateISO = rows.find((row) => row.fechaEntregaISO)?.fechaEntregaISO || ''
@@ -312,7 +362,9 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
     byLocation: [...byLocation.entries()].map(([label, value]) => ({ label, ...value }))
       .sort((a, b) => b.orders - a.orders || a.label.localeCompare(b.label)),
     byMenu: [...byMenu.entries()].map(([label, quantity]) => ({ label, quantity }))
-      .sort((a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label)),
+      .sort(sortByQuantityAndLabel),
+    byLocationMenu: buildLocationMenuRows(locationMenus, byLocation),
+    commentsByLocation: buildLocationCommentRows(locationComments, byLocation),
     byService: [...byService.entries()].map(([label, items]) => ({
       label,
       orders: rows.filter((row) => row.servicio === label).length,
@@ -342,22 +394,25 @@ const formatIssueCounts = (inconsistencies) => {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 }
 
-export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pending') => {
+export const formatDailyOrdersOperationalText = (orders = [], selectedStatus = 'pending', options = {}) => {
   const summary = buildDailyOrdersSummary(orders, selectedStatus)
-  const topMenus = summary.byMenu.slice(0, 10)
-  const remainingMenus = Math.max(summary.byMenu.length - topMenus.length, 0)
+  const reportTitle = options.title || 'REPORTE DE PEDIDOS SERVIFOOD'
+  const dateLabel = options.dateLabel || 'Fecha de entrega'
   const beverageCount = countRowsWithValue(summary.rows, 'bebida')
   const sideCount = countRowsWithValue(summary.rows, 'guarnicion')
   const lines = [
-    '*REPORTE DE PEDIDOS SERVIFOOD*',
+    `*${reportTitle}*`,
     '',
-    `*Fecha de entrega:* ${summary.deliveryDate || 'Sin fecha'}`,
+    `*${dateLabel}:* ${summary.deliveryDate || 'Sin fecha'}`,
     `*Estado:* ${summary.exportedStatus}`,
+    '',
+    '*RESUMEN GENERAL*',
     '',
     `*Total de pedidos:* ${summary.totalOrders}`,
     `*Total de ítems:* ${summary.totalItems}`,
+    `*Estado del reporte:* ${summary.inconsistencies.length ? 'Con avisos' : 'Completo'}`,
     '',
-    '*TOTALES POR UBICACIÓN*',
+    '*TOTALES POR UBICACIÓN / EMPRESA*',
     ''
   ]
 
@@ -365,26 +420,44 @@ export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pend
     summary.byLocation.forEach((row) => {
       lines.push(`- ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')} / ${plural(row.items, 'ítem', 'ítems')}`)
     })
+    lines.push(`- Total general: ${plural(summary.totalOrders, 'pedido', 'pedidos')} / ${plural(summary.totalItems, 'ítem', 'ítems')}`)
   } else {
     lines.push('- Sin pedidos')
   }
 
-  lines.push('', '*TOTALES POR MENÚ*', '')
-  if (topMenus.length) {
-    topMenus.forEach((row) => lines.push(`- ${row.label}: ${row.quantity}`))
-    if (remainingMenus > 0) lines.push(`- + ${remainingMenus} opciones más en el Excel.`)
+  lines.push('', '*DETALLE POR UBICACIÓN / EMPRESA*', '')
+  if (summary.byLocationMenu.length) {
+    summary.byLocationMenu.forEach((location) => {
+      lines.push(`*${location.label}*`, '')
+      if (location.menus.length) {
+        location.menus.forEach((row) => lines.push(`- ${row.label}: ${row.quantity}`))
+      } else {
+        lines.push('- Sin menús/opciones para listar.')
+      }
+      lines.push(`- Subtotal ${location.label}: ${plural(location.items, 'ítem', 'ítems')}`, '')
+    })
   } else {
-    lines.push('- Sin menús')
+    lines.push('- Sin detalle por ubicación.', '')
   }
 
-  lines.push('', '*TOTALES POR SERVICIO*', '')
-  if (summary.byService.length) {
-    summary.byService.forEach((row) => lines.push(`- ${row.label}: ${plural(row.orders, 'pedido', 'pedidos')}`))
+  lines.push('*COMENTARIOS / OBSERVACIONES POR EMPRESA*', '')
+  if (summary.commentsByLocation.length) {
+    summary.commentsByLocation.forEach((location) => {
+      lines.push(`*${location.label}*`, '')
+      if (location.comments.length) {
+        location.comments.forEach((row) => {
+          lines.push(`- ${row.comment}${row.count > 1 ? ` (x${row.count})` : ''}`)
+        })
+      } else {
+        lines.push('- Sin comentarios destacados.')
+      }
+      lines.push('')
+    })
   } else {
-    lines.push('- Sin servicios')
+    lines.push('- Sin comentarios destacados.', '')
   }
 
-  lines.push('', '*OBSERVACIONES*', '')
+  lines.push('*OBSERVACIONES*', '')
   lines.push(`- ${plural(summary.commentsCount, 'pedido tiene', 'pedidos tienen')} comentarios.`)
   lines.push(`- ${plural(beverageCount, 'pedido incluye', 'pedidos incluyen')} bebida.`)
   lines.push(`- ${plural(sideCount, 'pedido incluye', 'pedidos incluyen')} guarnición.`)
@@ -400,5 +473,9 @@ export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pend
 
   lines.push('', 'El detalle completo de clientes, opciones, bebidas, guarniciones y comentarios está en el Excel exportado.')
 
-  return lines.join('\n')
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n')
+}
+
+export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pending') => {
+  return formatDailyOrdersOperationalText(orders, selectedStatus)
 }
