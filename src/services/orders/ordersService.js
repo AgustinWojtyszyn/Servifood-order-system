@@ -3,20 +3,16 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
     throw new Error('createOrdersService requires a supabase client')
   }
 
-  // Archivar todos los pedidos pendientes (de cualquier día)
-  const archiveAllPendingOrders = async () => {
-    const pendingLike = ['pending']
-    const { data, error } = await supabase.rpc('archive_orders_bulk', {
-      statuses: pendingLike
+  const archivePendingOrdersByDeliveryDate = async ({ deliveryDate, statuses = ['pending'] } = {}) => {
+    if (!deliveryDate) {
+      return { data: null, error: new Error('deliveryDate es requerido para archivar pedidos') }
+    }
+
+    const { data, error } = await supabase.rpc('archive_orders_bulk_by_delivery_date', {
+      p_delivery_date: deliveryDate,
+      p_statuses: statuses
     })
     return { data, error }
-  }
-
-  // Helpers para operaciones "por días anteriores"
-  const isoTodayStart = () => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return today.toISOString()
   }
 
   const createRequestId = (prefix) => {
@@ -27,14 +23,19 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
   }
 
   return {
-    archiveAllPendingOrders,
+    archivePendingOrdersByDeliveryDate,
+    archiveAllPendingOrders: archivePendingOrdersByDeliveryDate,
 
     // "Eliminar" pendientes: se cancelan para conservarlos en el histórico (panel mensual)
-    deleteAllPendingOrders: async () => {
+    deleteAllPendingOrders: async ({ deliveryDate } = {}) => {
+      if (!deliveryDate) {
+        return { data: null, error: new Error('deliveryDate es requerido para cancelar pedidos pendientes') }
+      }
       const { data, error } = await supabase
         .from('orders')
         .update({ status: 'cancelled', updated_at: new Date().toISOString() })
         .eq('status', 'pending')
+        .eq('delivery_date', deliveryDate)
         .select('id')
       return { data, error }
     },
@@ -43,9 +44,9 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
     completeAllOldPendingOrders: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .update({ status: 'archived' })
+        .update({ status: 'archived', archived_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('status', 'pending')
-        .lt('created_at', isoTodayStart())
+        .lt('delivery_date', new Date().toISOString().slice(0, 10))
       return { data, error }
     },
 
@@ -55,7 +56,7 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
         .from('orders')
         .update({ status: 'cancelled', updated_at: new Date().toISOString() })
         .eq('status', 'pending')
-        .lt('created_at', isoTodayStart())
+        .lt('delivery_date', new Date().toISOString().slice(0, 10))
         .select('id') // devuelve ids para confirmar que se actualizaron
       return { data, error }
     },

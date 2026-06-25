@@ -10,7 +10,7 @@ import DailyOrdersTable from './daily/DailyOrdersTable'
 import DailySummary from './daily/DailySummary'
 import DailyPrintStyles from './daily/DailyPrintStyles'
 import { useDailyOrdersData } from '../hooks/useDailyOrdersData'
-import { useDailyOrdersFilters } from '../hooks/useDailyOrdersFilters'
+import { matchesDailyOrderStatusFilter, useDailyOrdersFilters } from '../hooks/useDailyOrdersFilters'
 import {
   buildLocationCards,
   buildOperationalSummary,
@@ -83,11 +83,7 @@ const DailyOrders = ({ user, loading }) => {
   )
 
   const statusFilteredOrders = useMemo(() => {
-    if (selectedStatus === 'all') return allOrders
-    if (selectedStatus === 'archived') {
-      return allOrders.filter(order => order?.status === 'archived')
-    }
-    return allOrders.filter(order => order?.status !== 'archived')
+    return allOrders.filter(order => matchesDailyOrderStatusFilter(order, selectedStatus))
   }, [allOrders, selectedStatus])
 
   const statsForFilters = useMemo(

@@ -158,13 +158,17 @@ export const useDailyOrdersData = (user) => {
   }, [handleRefresh])
 
   const handleArchiveAllPending = useCallback(async () => {
+    const operationalDate = getTomorrowISOInTimeZone()
     const confirmed = await confirmAction({
       title: 'Archivar todos los pedidos pendientes',
-      message: 'Esta acción no se puede deshacer.',
+      message: `Se archivarán solo los pedidos pendientes con fecha de entrega ${operationalDate}. Esta acción no se puede deshacer.`,
       confirmText: 'Archivar todos'
     })
     if (confirmed) {
-      const { data, error } = await db.archiveAllPendingOrders()
+      const { data, error } = await db.archivePendingOrdersByDeliveryDate({
+        deliveryDate: operationalDate,
+        statuses: ['pending']
+      })
       if (!error) {
         const affected = Array.isArray(data) ? data.length : 0
         if (affected === 0) {
@@ -176,7 +180,9 @@ export const useDailyOrdersData = (user) => {
         setOrders((prev) => {
           if (!Array.isArray(prev)) return prev
           const next = prev.map((item) =>
-            item?.status === 'pending' ? { ...item, status: 'archived' } : item
+            item?.status === 'pending' && String(item?.delivery_date || '') === operationalDate
+              ? { ...item, status: 'archived' }
+              : item
           )
           setStats(calculateStats(next))
           return next

@@ -1,6 +1,14 @@
 import { useMemo } from 'react'
 import { getCustomSideFromResponses } from '../utils/daily/dailyOrderCalculations'
 
+export const matchesDailyOrderStatusFilter = (order, selectedStatus) => {
+  if (!order) return false
+  if (selectedStatus === 'all') return true
+  if (selectedStatus === 'archived') return order.status === 'archived'
+  if (selectedStatus === 'pending') return order.status === 'pending'
+  return false
+}
+
 export const useDailyOrdersFilters = ({
   orders,
   selectedLocation,
@@ -29,18 +37,9 @@ export const useDailyOrdersFilters = ({
       ? allOrders
       : allOrders.filter(order => order && order.location === selectedLocation)
 
-    const statusFilteredOrders = selectedStatus === 'all'
-      ? Array.isArray(filteredOrders) ? filteredOrders : []
-      : Array.isArray(filteredOrders) ? filteredOrders.filter(order => {
-        if (!order) return false
-        if (selectedStatus === 'archived') {
-          return order.status === 'archived'
-        }
-        if (selectedStatus === 'pending') {
-          return order.status !== 'archived'
-        }
-        return order.status !== 'archived'
-      }) : []
+    const statusFilteredOrders = Array.isArray(filteredOrders)
+      ? filteredOrders.filter(order => matchesDailyOrderStatusFilter(order, selectedStatus))
+      : []
 
     let dishFilteredOrders = selectedDish === 'all'
       ? Array.isArray(statusFilteredOrders) ? statusFilteredOrders : []

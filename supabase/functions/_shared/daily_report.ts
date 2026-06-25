@@ -474,13 +474,38 @@ export const isAuthorized = (headers: Headers, expectedSecret?: string | null) =
 
 export const shouldSkipExistingRun = ({
   existingStatus,
+  existingCreatedAt,
+  existingUpdatedAt,
+  now = new Date(),
   force
 }: {
   existingStatus?: string | null
+  existingCreatedAt?: string | null
+  existingUpdatedAt?: string | null
+  now?: Date
   force?: boolean
 }) => {
   if (force) return false
+  if (existingStatus === 'running' && isStaleRunningRun({ createdAt: existingCreatedAt, updatedAt: existingUpdatedAt }, now)) return false
   return existingStatus === 'sent' || existingStatus === 'sent_empty' || existingStatus === 'running'
+}
+
+export const isStaleRunningRun = ({
+  createdAt,
+  updatedAt
+}: {
+  createdAt?: string | null
+  updatedAt?: string | null
+},
+  now = new Date(),
+  staleAfterMinutes = 30
+) => {
+  const timestamps = [createdAt, updatedAt]
+    .filter(Boolean)
+    .map((value) => new Date(String(value)).getTime())
+    .filter((value) => !Number.isNaN(value))
+  if (!timestamps.length) return false
+  return timestamps.some((value) => now.getTime() - value > staleAfterMinutes * 60 * 1000)
 }
 
 export const createMockOrders = (reportDate: string): NormalizedOrder[] => [

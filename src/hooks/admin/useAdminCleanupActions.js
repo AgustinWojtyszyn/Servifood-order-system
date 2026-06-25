@@ -3,6 +3,7 @@ import { db } from '../../supabaseClient'
 import { Sound } from '../../utils/Sound'
 import { confirmAction } from '../../utils/confirm'
 import { notifyError, notifyInfo, notifySuccess } from '../../utils/notice'
+import { getTomorrowISOInTimeZone } from '../../utils/dateUtils'
 
 const useAdminCleanupActions = ({
   archivedOrdersCount,
@@ -14,10 +15,11 @@ const useAdminCleanupActions = ({
   const [deletingOrders, setDeletingOrders] = useState(false)
 
   const handleArchiveAllPendingOrders = async () => {
+    const operationalDate = getTomorrowISOInTimeZone()
     const msg =
-      'Este botón moverá TODOS los pedidos pendientes (de hoy y días anteriores) al estado "Archivado".\n\n' +
+      `Este botón moverá los pedidos pendientes con fecha de entrega ${operationalDate} al estado "Archivado".\n\n` +
       'Los pedidos archivados NO se eliminan, pero ya no aparecerán como pendientes ni podrán ser modificados.\n' +
-      'Esta acción es útil para limpiar la lista de pendientes y mantener el historial.\n\n' +
+      'Esta acción es útil para cerrar la fecha operativa y mantener el historial sin tocar pedidos de otras fechas.\n\n' +
       '¿Deseas archivar todos los pedidos pendientes ahora?'
     const confirmed = await confirmAction({
       title: 'Archivar pedidos pendientes',
@@ -27,7 +29,10 @@ const useAdminCleanupActions = ({
     if (!confirmed) return
     setArchivingPending(true)
     try {
-      const { data, error } = await db.archiveAllPendingOrders()
+      const { data, error } = await db.archivePendingOrdersByDeliveryDate({
+        deliveryDate: operationalDate,
+        statuses: ['pending']
+      })
       if (error) {
         notifyError(`Ocurrió un error al archivar los pedidos pendientes. ${error.message}`)
       } else {

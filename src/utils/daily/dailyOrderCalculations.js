@@ -334,7 +334,7 @@ export const calculateStats = (ordersData = []) => {
 
     if (order.status === 'archived') {
       archived++
-    } else {
+    } else if (order.status === 'pending') {
       pending++
     }
   })

@@ -21,6 +21,7 @@ import {
   getRecipientsForMode,
   getServiceLabel,
   isAuthorized,
+  isStaleRunningRun,
   isTestEmailMode,
   isValidISODate,
   normalizeOrder,
@@ -282,7 +283,7 @@ const fetchOrdersForRealTestEmail = async (reportDate: string) => {
 const getExistingRun = async (reportDate: string, reportType = DAILY_REPORT_TYPE) => {
   const { data, error } = await supabase
     .from('daily_report_runs')
-    .select('id,status,sent_at')
+    .select('id,status,sent_at,created_at,updated_at')
     .eq('report_date', reportDate)
     .eq('report_type', reportType)
     .maybeSingle()
@@ -331,7 +332,13 @@ const acquireRunLock = async ({
 
   if (error.code === '23505') {
     const existingRun = await getExistingRun(reportDate, reportType)
-    if (existingRun?.status === 'failed') {
+    const canRetryExistingRun = existingRun?.status === 'failed' ||
+      (existingRun?.status === 'running' && isStaleRunningRun({
+        createdAt: existingRun?.created_at,
+        updatedAt: existingRun?.updated_at
+      }))
+
+    if (canRetryExistingRun) {
       const { data: retriedRun, error: retryError } = await supabase
         .from('daily_report_runs')
         .update({
@@ -339,12 +346,12 @@ const acquireRunLock = async ({
           orders_count: ordersCount,
           recipients,
           sent_at: null,
-          error: null
+          error: existingRun?.status === 'running' ? 'Retry after stale running lock' : null
         })
         .eq('report_date', reportDate)
         .eq('report_type', reportType)
-        .eq('status', 'failed')
-        .select('id,status,sent_at')
+        .in('status', ['failed', 'running'])
+        .select('id,status,sent_at,created_at,updated_at')
         .maybeSingle()
 
       if (retryError) throw retryError
@@ -387,6 +394,16 @@ const upsertRun = async ({
     .upsert(payload, { onConflict: 'report_date,report_type' })
 
   if (upsertError) throw upsertError
+}
+
+const archiveReportedOrders = async (reportDate: string) => {
+  const { data, error } = await supabase.rpc('archive_orders_bulk_by_delivery_date', {
+    p_delivery_date: reportDate,
+    p_statuses: ['pending']
+  })
+
+  if (error) throw error
+  return Array.isArray(data) ? data.length : 0
 }
 
 Deno.serve(async (req: Request) => {
@@ -441,7 +458,7 @@ Deno.serve(async (req: Request) => {
         ordersCount: summary.totalOrders,
         itemsCount: summary.totalItems,
         resumen: summary,
-        destinatariosConfigurados: recipients,
+        recipientsCount: recipients.length,
         adjuntariaExcel: wouldAttachExcel,
         warnings: summary.warnings
       })
@@ -466,7 +483,12 @@ Deno.serve(async (req: Request) => {
         recipients,
         force: payload.force
       })
-      if (!acquired && shouldSkipExistingRun({ existingStatus: existingRun?.status, force: payload.force })) {
+      if (!acquired && shouldSkipExistingRun({
+        existingStatus: existingRun?.status,
+        existingCreatedAt: existingRun?.created_at,
+        existingUpdatedAt: existingRun?.updated_at,
+        force: payload.force
+      })) {
         return toResponse({
           ok: true,
           skipped: true,
@@ -487,6 +509,10 @@ Deno.serve(async (req: Request) => {
       attachment: workbookBuffer
     })
 
+    const archivedOrdersCount = shouldWriteDailyReportRun(mode)
+      ? await archiveReportedOrders(reportDate)
+      : 0
+
     if (shouldWriteDailyReportRun(mode)) {
       await upsertRun({
         reportDate,
@@ -501,6 +527,7 @@ Deno.serve(async (req: Request) => {
       mode,
       reportDate,
       ordersCount: summary.totalOrders,
+      archivedOrdersCount,
       recipientsCount: recipients.length,
       logoUrlConfigured: Boolean(serviFoodLogoUrl)
     })
@@ -511,7 +538,8 @@ Deno.serve(async (req: Request) => {
       reportDate,
       ordersCount: summary.totalOrders,
       itemsCount: summary.totalItems,
-      recipients,
+      recipientsCount: recipients.length,
+      archivedOrdersCount,
       filename,
       emailResult
     })
@@ -526,7 +554,7 @@ Deno.serve(async (req: Request) => {
           reportType: DAILY_REPORT_TYPE,
           status: 'failed',
           ordersCount: 0,
-          recipients: configuredRecipients,
+          recipients: [],
           error: message
         })
       }

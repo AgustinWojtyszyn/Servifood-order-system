@@ -22,6 +22,7 @@ dist-ssr
 # SQL scripts generados
 *.sql
 !supabase/migrations/20260619093000_admin_order_cleanup_and_order_guards.sql
+!supabase/migrations/20260625090000_archive_orders_by_delivery_date_and_report_locks.sql
 
 # Python
 __pycache__/

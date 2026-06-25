@@ -7,6 +7,7 @@ import {
   getDefaultReportDate,
   getEmailSubject,
   getRecipientsForMode,
+  isStaleRunningRun,
   isAuthorized,
   normalizeOrder,
   shouldArchiveOrdersForMode,
@@ -182,8 +183,24 @@ describe('daily report helpers', () => {
     expect(shouldSkipExistingRun({ existingStatus: 'sent', force: false })).toBe(true)
     expect(shouldSkipExistingRun({ existingStatus: 'sent_empty', force: false })).toBe(true)
     expect(shouldSkipExistingRun({ existingStatus: 'running', force: false })).toBe(true)
+    expect(shouldSkipExistingRun({
+      existingStatus: 'running',
+      existingCreatedAt: '2026-06-25T10:31:00.000Z',
+      existingUpdatedAt: '2026-06-25T10:00:00.000Z',
+      now: new Date('2026-06-25T10:31:00.000Z'),
+      force: false
+    })).toBe(false)
     expect(shouldSkipExistingRun({ existingStatus: 'failed', force: false })).toBe(false)
     expect(shouldSkipExistingRun({ existingStatus: 'sent', force: true })).toBe(false)
+  })
+
+  it('detecta locks running stale solo después de 30 minutos', () => {
+    const now = new Date('2026-06-25T10:31:00.000Z')
+
+    expect(isStaleRunningRun({ updatedAt: '2026-06-25T10:00:00.000Z' }, now)).toBe(true)
+    expect(isStaleRunningRun({ createdAt: '2026-06-25T10:00:00.000Z', updatedAt: '2026-06-25T10:30:00.000Z' }, now)).toBe(true)
+    expect(isStaleRunningRun({ updatedAt: '2026-06-25T10:05:00.000Z' }, now)).toBe(false)
+    expect(isStaleRunningRun({ updatedAt: null }, now)).toBe(false)
   })
 
   it('rechaza requests sin x-cron-secret correcto', () => {

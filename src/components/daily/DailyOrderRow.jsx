@@ -107,7 +107,7 @@ const DailyOrderRow = ({
         </div>
 
         <div className="flex items-center justify-between pt-1">
-          {order.status !== 'archived' ? (
+          {order.status === 'pending' ? (
             <button
               className="text-xs font-semibold text-primary-700 hover:text-primary-900"
               onClick={() => onArchiveOrder(order)}
@@ -212,7 +212,7 @@ const DailyOrderRow = ({
         </span>
       </td>
       <td className="border-b border-slate-200/70 px-4 py-5">
-        {order.status !== 'archived' ? (
+        {order.status === 'pending' ? (
           <button
             onClick={() => onArchiveOrder(order)}
             className="inline-flex items-center rounded-lg border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 hover:bg-primary-100"
