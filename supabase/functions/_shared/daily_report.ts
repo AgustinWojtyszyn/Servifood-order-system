@@ -45,6 +45,7 @@ export type DailySummary = {
   byLocation: Array<{ label: string; orders: number; items: number }>
   byMenuOption: Array<{ label: string; quantity: number }>
   byLocationMenu: Array<{ label: string; orders: number; items: number; menus: Array<{ label: string; quantity: number }> }>
+  additionalByLocation: Array<{ label: string; items: Array<{ label: string; quantity: number }> }>
   comments: Array<string>
   commentRows: Array<{ customer: string; comment: string; count: number }>
   commentsByLocation: Array<{ label: string; comments: Array<{ comment: string; count: number }> }>
@@ -194,12 +195,40 @@ const incrementMap = <T extends string>(map: Map<T, number>, key: T, amount = 1)
 const sortQuantityRows = (a: { label: string; quantity: number }, b: { label: string; quantity: number }) =>
   b.quantity - a.quantity || a.label.localeCompare(b.label)
 
+const getAdditionalLabels = (order: NormalizedOrder) => {
+  const labels: string[] = []
+
+  order.custom_responses.forEach((response) => {
+    const title = String(response.title || response.label || '').trim()
+    const lowerTitle = title.toLowerCase()
+    const value = normalizeValue(response.answer ?? response.response ?? response.value)
+    const options = normalizeValue(response.options)
+    const combined = [value, options].filter(Boolean).join(', ')
+    if (!combined) return
+
+    if (lowerTitle.includes('guarn')) {
+      labels.push(`Guarnición: ${combined}`)
+      return
+    }
+
+    if (lowerTitle.includes('bebida')) {
+      labels.push(combined)
+      return
+    }
+
+    labels.push(title ? `${title}: ${combined}` : combined)
+  })
+
+  return labels
+}
+
 export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string): DailySummary => {
   const byLocation = new Map<string, { orders: number; items: number }>()
   const byMenuOption = new Map<string, number>()
   const commentsByCustomerAndText = new Map<string, { customer: string; comment: string; count: number }>()
   const menuByLocation = new Map<string, Map<string, number>>()
   const commentsByLocationText = new Map<string, Map<string, number>>()
+  const additionalByLocationText = new Map<string, Map<string, number>>()
   const warnings: string[] = []
   let totalItems = 0
 
@@ -244,6 +273,13 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
       incrementMap(commentsByLocationText.get(location)!, comment, 1)
     }
 
+    const additionalLabels = getAdditionalLabels(order)
+    if (additionalLabels.length) {
+      if (!additionalByLocationText.has(location)) additionalByLocationText.set(location, new Map())
+      const scopedAdditional = additionalByLocationText.get(location)!
+      additionalLabels.forEach((label) => incrementMap(scopedAdditional, label, 1))
+    }
+
     const missing = []
     if (!order.customer_name && !order.user_name) missing.push('cliente')
     if (!order.customer_email && !order.user_email) missing.push('email')
@@ -274,6 +310,12 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
     byLocationMenu: sortedLocations.map((location) => ({
       ...location,
       menus: [...(menuByLocation.get(location.label) || new Map()).entries()]
+        .map(([label, quantity]) => ({ label, quantity }))
+        .sort(sortQuantityRows)
+    })),
+    additionalByLocation: sortedLocations.map((location) => ({
+      label: location.label,
+      items: [...(additionalByLocationText.get(location.label) || new Map()).entries()]
         .map(([label, quantity]) => ({ label, quantity }))
         .sort(sortQuantityRows)
     })),
@@ -333,25 +375,70 @@ const renderLocationRows = (summary: DailySummary) => {
     </tr>`
 }
 
-const renderMenuOptionRows = (summary: DailySummary) =>
-  summary.byMenuOption.length
-    ? summary.byMenuOption.map((row) => `
-      <tr>
-        <td style="${cellStyle}">${escapeHtml(row.label)}</td>
-        <td align="right" style="${cellStyle}text-align:right;">${row.quantity}</td>
-      </tr>
+const renderLocationMenuSections = (summary: DailySummary) =>
+  summary.byLocationMenu.length
+    ? summary.byLocationMenu.map((location) => `
+      <h3 style="margin:18px 0 8px 0;font-size:15px;line-height:22px;color:#111827;">${escapeHtml(location.label)}</h3>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;margin:0 0 12px 0;">
+        <tr>
+          <th align="left" style="${headerCellStyle}">Menú / opción</th>
+          <th align="right" style="${headerCellStyle}text-align:right;">Cantidad</th>
+        </tr>
+        ${location.menus.length
+          ? location.menus.map((row) => `
+            <tr>
+              <td style="${cellStyle}">${escapeHtml(row.label)}</td>
+              <td align="right" style="${cellStyle}text-align:right;">${row.quantity}</td>
+            </tr>
+          `).join('')
+          : `<tr><td colspan="2" style="${cellStyle}color:#6b7280;">Sin menús/opciones para listar.</td></tr>`}
+        <tr>
+          <td style="${cellStyle}font-weight:700;background:#f9fafb;">Subtotal ${escapeHtml(location.label)}</td>
+          <td align="right" style="${cellStyle}font-weight:700;text-align:right;background:#f9fafb;">${plural(location.items, 'ítem', 'ítems')}</td>
+        </tr>
+      </table>
     `).join('')
-    : `<tr><td colspan="2" style="${cellStyle}color:#6b7280;">Sin menús/opciones para listar.</td></tr>`
+    : `<div style="${cellStyle}color:#6b7280;border:1px solid #e5e7eb;">Sin detalle por ubicación.</div>`
 
-const renderCommentRows = (summary: DailySummary) =>
-  summary.commentRows.length
-    ? summary.commentRows.map((row) => `
-      <tr>
-        <td style="${cellStyle}">${escapeHtml(row.customer)}${row.count > 1 ? ` <span style="color:#6b7280;">(x${row.count})</span>` : ''}</td>
-        <td style="${cellStyle}">${escapeHtml(row.comment)}</td>
-      </tr>
+const renderLocationAdditionalSections = (summary: DailySummary) =>
+  summary.additionalByLocation.length
+    ? summary.additionalByLocation.map((location) => `
+      <h3 style="margin:18px 0 8px 0;font-size:15px;line-height:22px;color:#111827;">${escapeHtml(location.label)}</h3>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;margin:0 0 12px 0;">
+        <tr>
+          <th align="left" style="${headerCellStyle}">Guarnición / adicional</th>
+          <th align="right" style="${headerCellStyle}text-align:right;">Cantidad</th>
+        </tr>
+        ${location.items.length
+          ? location.items.map((row) => `
+            <tr>
+              <td style="${cellStyle}">${escapeHtml(row.label)}</td>
+              <td align="right" style="${cellStyle}text-align:right;">${row.quantity}</td>
+            </tr>
+          `).join('')
+          : `<tr><td colspan="2" style="${cellStyle}color:#6b7280;">Sin guarniciones/adicionales destacados.</td></tr>`}
+      </table>
     `).join('')
-    : `<tr><td colspan="2" style="${cellStyle}color:#6b7280;">No hay comentarios destacados.</td></tr>`
+    : `<div style="${cellStyle}color:#6b7280;border:1px solid #e5e7eb;">Sin guarniciones/adicionales destacados.</div>`
+
+const renderLocationCommentSections = (summary: DailySummary) =>
+  summary.commentsByLocation.length
+    ? summary.commentsByLocation.map((location) => `
+      <h3 style="margin:18px 0 8px 0;font-size:15px;line-height:22px;color:#111827;">${escapeHtml(location.label)}</h3>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;margin:0 0 12px 0;">
+        <tr>
+          <th align="left" style="${headerCellStyle}">Comentario / observación</th>
+        </tr>
+        ${location.comments.length
+          ? location.comments.map((row) => `
+            <tr>
+              <td style="${cellStyle}">${escapeHtml(row.comment)}${row.count > 1 ? ` <span style="color:#6b7280;">(x${row.count})</span>` : ''}</td>
+            </tr>
+          `).join('')
+          : `<tr><td style="${cellStyle}color:#6b7280;">Sin comentarios destacados.</td></tr>`}
+      </table>
+    `).join('')
+    : `<div style="${cellStyle}color:#6b7280;border:1px solid #e5e7eb;">Sin comentarios destacados.</div>`
 
 const renderWarnings = (summary: DailySummary) =>
   summary.warnings.length
@@ -417,26 +504,20 @@ export const buildEmailHtml = (
             </tr>
             <tr>
               <td style="padding:0 28px 24px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Totales por menú / opción</h2>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;">
-                  <tr>
-                    <th align="left" style="${headerCellStyle}">Menú / opción</th>
-                    <th align="right" style="${headerCellStyle}text-align:right;">Cantidad</th>
-                  </tr>
-                  ${renderMenuOptionRows(summary)}
-                </table>
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Detalle por ubicación / empresa</h2>
+                ${renderLocationMenuSections(summary)}
               </td>
             </tr>
             <tr>
               <td style="padding:0 28px 24px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Comentarios destacados</h2>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;">
-                  <tr>
-                    <th align="left" style="${headerCellStyle}">Cliente</th>
-                    <th align="left" style="${headerCellStyle}">Comentario</th>
-                  </tr>
-                  ${renderCommentRows(summary)}
-                </table>
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Guarniciones / adicionales por ubicación / empresa</h2>
+                ${renderLocationAdditionalSections(summary)}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 24px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Comentarios / observaciones por ubicación / empresa</h2>
+                ${renderLocationCommentSections(summary)}
               </td>
             </tr>
             <tr>
@@ -486,7 +567,18 @@ export const buildEmailText = (summary: DailySummary, isTest = false) => [
       ])
     : ['- Sin detalle por ubicación.']),
   '',
-  'Comentarios / observaciones por empresa',
+  'Guarniciones / adicionales por ubicación / empresa',
+  ...(summary.additionalByLocation.length
+    ? summary.additionalByLocation.flatMap((location) => [
+        '',
+        location.label,
+        ...(location.items.length
+          ? location.items.map((row) => `- ${row.label}${row.quantity > 1 ? ` (x${row.quantity})` : ''}`)
+          : ['- Sin guarniciones/adicionales destacados.'])
+      ])
+    : ['- Sin guarniciones/adicionales destacados.']),
+  '',
+  'Comentarios / observaciones por ubicación / empresa',
   ...(summary.commentsByLocation.length
     ? summary.commentsByLocation.flatMap((location) => [
         '',

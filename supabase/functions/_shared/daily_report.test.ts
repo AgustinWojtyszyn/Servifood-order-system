@@ -59,6 +59,10 @@ describe('daily report helpers', () => {
       items: 2,
       menus: [{ label: 'Menú principal - Pollo', quantity: 2 }]
     })
+    expect(summary.additionalByLocation).toContainEqual({
+      label: 'Planta Norte',
+      items: [{ label: 'Guarnición: Puré', quantity: 1 }]
+    })
     expect(summary.commentsByLocation).toContainEqual({
       label: 'Planta Norte',
       comments: [{ comment: 'Sin sal', count: 1 }]
@@ -76,7 +80,7 @@ describe('daily report helpers', () => {
     expect(text).toContain('No hay pedidos pendientes')
   })
 
-  it('deduplica comentarios exactos y escapa contenido dinámico en el HTML', () => {
+  it('deduplica comentarios exactos, escapa contenido dinámico y no muestra clientes en el HTML', () => {
     const orders = [
       normalizeOrder({
         id: '1',
@@ -111,9 +115,14 @@ describe('daily report helpers', () => {
     expect(html).toContain('src="https://example.com/logo.png?name=&quot;brand&quot;"')
     expect(html).toContain('alt="ServiFood Catering"')
     expect(html).toContain('display:block;margin:0 auto;max-width:180px;width:180px;height:auto;')
-    expect(html).toContain('&lt;Ana&gt;')
     expect(html).toContain('&lt;b&gt;Sin sal&lt;/b&gt;')
     expect(html).toContain('Planta &lt;Norte&gt;')
+    expect(html).toContain('Detalle por ubicación / empresa')
+    expect(html).toContain('Comentarios / observaciones por ubicación / empresa')
+    expect(html).not.toContain('Totales por menú / opción')
+    expect(html).not.toContain('Comentarios destacados')
+    expect(html).not.toContain('Cliente')
+    expect(html).not.toContain('&lt;Ana&gt;')
     expect(html).not.toContain('<Ana>')
     expect(html).not.toContain('<b>Sin sal</b>')
   })
@@ -130,6 +139,7 @@ describe('daily report helpers', () => {
         status: 'pending',
         total_items: 2,
         items: [{ name: 'Opción 4', option: 'Bife', quantity: 2 }],
+        custom_responses: [{ title: 'Bebida', response: 'Coca Zero' }],
         comments: 'Coca Zero'
       }),
       normalizeOrder({
@@ -142,6 +152,7 @@ describe('daily report helpers', () => {
         status: 'pending',
         total_items: 1,
         items: [{ name: 'Menú principal', option: 'Merluza', quantity: 1 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Puré' }],
         comments: 'Coca Zero'
       }),
       normalizeOrder({
@@ -167,9 +178,15 @@ describe('daily report helpers', () => {
     expect(text).toContain('- Subtotal La Laja: 3 ítems')
     expect(text).toContain('Genneia')
     expect(text).toContain('- Opción 1 - Pan de carne: 3')
-    expect(text).toContain('Comentarios / observaciones por empresa')
+    expect(text).toContain('Guarniciones / adicionales por ubicación / empresa')
+    expect(text).toContain('- Coca Zero')
+    expect(text).toContain('- Guarnición: Puré')
+    expect(text).toContain('- Sin guarniciones/adicionales destacados.')
+    expect(text).toContain('Comentarios / observaciones por ubicación / empresa')
     expect(text).toContain('- Coca Zero (x2)')
     expect(text).toContain('- Sin comentarios destacados.')
+    expect(text).not.toContain('Totales por menú / opción')
+    expect(text).not.toContain('Comentarios destacados')
     expect(text).not.toContain('Ana Cliente')
     expect(text).not.toContain('Bruno Cliente')
     expect(text).not.toContain('Carla Cliente')
@@ -178,6 +195,76 @@ describe('daily report helpers', () => {
     expect(text).not.toContain('carla@example.com')
     expect(text).not.toContain('2615551234')
     expect(text).not.toContain('2615555678')
+  })
+
+  it('renderiza el HTML automático con detalle por empresa, adicionales y sin ranking global', () => {
+    const summary = buildDailySummary([
+      normalizeOrder({
+        id: '1',
+        customer_name: 'Ana Cliente',
+        customer_email: 'ana@example.com',
+        customer_phone: '2615551234',
+        location: 'Genneia',
+        delivery_date: '2026-06-26',
+        status: 'pending',
+        total_items: 1,
+        items: [{ name: 'Cena', option: 'PASTEL DE PAPAS', quantity: 1 }],
+        custom_responses: [{ title: 'Bebida', response: 'Coca cola' }],
+        comments: 'Coca Zero almuerzo y cena por favor'
+      }),
+      normalizeOrder({
+        id: '2',
+        customer_name: 'Bruno Cliente',
+        customer_email: 'bruno@example.com',
+        customer_phone: '2615555678',
+        location: 'Padre Bueno',
+        delivery_date: '2026-06-26',
+        status: 'pending',
+        total_items: 1,
+        items: [{ name: 'Opción 4', option: 'BIFE DEL DIA POLLO', quantity: 1 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Puré' }],
+        comments: ''
+      }),
+      normalizeOrder({
+        id: '3',
+        customer_name: 'Carla Cliente',
+        customer_email: 'carla@example.com',
+        customer_phone: '2615559999',
+        location: 'La Laja',
+        delivery_date: '2026-06-26',
+        status: 'pending',
+        total_items: 1,
+        items: [{ name: 'Menú principal', option: 'PECHUGUITAS A LA CREMA CON PAPAS AL VERDEO', quantity: 1 }],
+        custom_responses: [],
+        comments: ''
+      })
+    ], '2026-06-26')
+
+    const html = buildEmailHtml(summary, true)
+
+    expect(html).toContain('PRUEBA - NO USAR PARA PRODUCCIÓN')
+    expect(html).toContain('Detalle por ubicación / empresa')
+    expect(html).toContain('Guarniciones / adicionales por ubicación / empresa')
+    expect(html).toContain('Comentarios / observaciones por ubicación / empresa')
+    expect(html).toContain('Genneia')
+    expect(html).toContain('Cena - PASTEL DE PAPAS')
+    expect(html).toContain('Padre Bueno')
+    expect(html).toContain('Opción 4 - BIFE DEL DIA POLLO')
+    expect(html).toContain('La Laja')
+    expect(html).toContain('Menú principal - PECHUGUITAS A LA CREMA CON PAPAS AL VERDEO')
+    expect(html).toContain('Coca cola')
+    expect(html).toContain('Guarnición: Puré')
+    expect(html).toContain('Sin guarniciones/adicionales destacados.')
+    expect(html).toContain('Coca Zero almuerzo y cena por favor')
+    expect(html).toContain('Sin comentarios destacados.')
+    expect(html).not.toContain('Totales por menú / opción')
+    expect(html).not.toContain('Comentarios destacados')
+    expect(html).not.toContain('Cliente')
+    expect(html).not.toContain('Ana Cliente')
+    expect(html).not.toContain('Bruno Cliente')
+    expect(html).not.toContain('Carla Cliente')
+    expect(html).not.toContain('ana@example.com')
+    expect(html).not.toContain('2615551234')
   })
 
   it('mantiene fallback textual del logo dentro del header azul', () => {

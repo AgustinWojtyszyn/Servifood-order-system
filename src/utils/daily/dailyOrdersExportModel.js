@@ -284,6 +284,36 @@ const buildLocationCommentRows = (locationComments, byLocation) =>
     return bOrders - aOrders || a.label.localeCompare(b.label)
   })
 
+const getAdditionalLabelsFromRow = (row) => {
+  const labels = []
+  if (row.guarnicion) labels.push(`Guarnición: ${row.guarnicion}`)
+  if (row.bebida) labels.push(row.bebida)
+  if (row.opcionesAdicionales) {
+    row.opcionesAdicionales
+      .split('|')
+      .map(normalizeText)
+      .filter(Boolean)
+      .forEach((label) => labels.push(label))
+  }
+  return labels
+}
+
+const buildLocationAdditionalRows = (locationAdditional, byLocation) =>
+  [...byLocation.keys()].map((location) => {
+    const items = [...(locationAdditional.get(location) || new Map()).entries()]
+      .map(([label, quantity]) => ({ label, quantity }))
+      .sort(sortByQuantityAndLabel)
+
+    return {
+      label: location,
+      items
+    }
+  }).sort((a, b) => {
+    const aOrders = byLocation.get(a.label)?.orders || 0
+    const bOrders = byLocation.get(b.label)?.orders || 0
+    return bOrders - aOrders || a.label.localeCompare(b.label)
+  })
+
 const buildInconsistencies = (orders) => {
   const rows = []
   orders.forEach((order, index) => {
@@ -322,6 +352,7 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
   const byService = new Map()
   const locationMenus = new Map()
   const locationComments = new Map()
+  const locationAdditional = new Map()
   let totalItems = 0
   let commentsCount = 0
 
@@ -347,6 +378,13 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
       if (!locationComments.has(row.ubicacion)) locationComments.set(row.ubicacion, new Map())
       incrementCounter(locationComments.get(row.ubicacion), row.comentarios, 1)
     }
+
+    const additionalLabels = getAdditionalLabelsFromRow(row)
+    if (additionalLabels.length) {
+      if (!locationAdditional.has(row.ubicacion)) locationAdditional.set(row.ubicacion, new Map())
+      const scopedAdditional = locationAdditional.get(row.ubicacion)
+      additionalLabels.forEach((label) => incrementCounter(scopedAdditional, label, 1))
+    }
   })
 
   const deliveryDateISO = rows.find((row) => row.fechaEntregaISO)?.fechaEntregaISO || ''
@@ -364,6 +402,7 @@ export const buildDailyOrdersSummary = (orders = [], selectedStatus = 'pending')
     byMenu: [...byMenu.entries()].map(([label, quantity]) => ({ label, quantity }))
       .sort(sortByQuantityAndLabel),
     byLocationMenu: buildLocationMenuRows(locationMenus, byLocation),
+    additionalByLocation: buildLocationAdditionalRows(locationAdditional, byLocation),
     commentsByLocation: buildLocationCommentRows(locationComments, byLocation),
     byService: [...byService.entries()].map(([label, items]) => ({
       label,
@@ -440,7 +479,24 @@ export const formatDailyOrdersOperationalText = (orders = [], selectedStatus = '
     lines.push('- Sin detalle por ubicación.', '')
   }
 
-  lines.push('*COMENTARIOS / OBSERVACIONES POR EMPRESA*', '')
+  lines.push('*GUARNICIONES / ADICIONALES POR UBICACIÓN / EMPRESA*', '')
+  if (summary.additionalByLocation.length) {
+    summary.additionalByLocation.forEach((location) => {
+      lines.push(`*${location.label}*`, '')
+      if (location.items.length) {
+        location.items.forEach((row) => {
+          lines.push(`- ${row.label}${row.quantity > 1 ? ` (x${row.quantity})` : ''}`)
+        })
+      } else {
+        lines.push('- Sin guarniciones/adicionales destacados.')
+      }
+      lines.push('')
+    })
+  } else {
+    lines.push('- Sin guarniciones/adicionales destacados.', '')
+  }
+
+  lines.push('*COMENTARIOS / OBSERVACIONES POR UBICACIÓN / EMPRESA*', '')
   if (summary.commentsByLocation.length) {
     summary.commentsByLocation.forEach((location) => {
       lines.push(`*${location.label}*`, '')

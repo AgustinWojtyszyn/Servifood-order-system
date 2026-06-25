@@ -87,6 +87,14 @@ describe('daily orders export model', () => {
         { label: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 }
       ]
     })
+    expect(summary.additionalByLocation).toContainEqual({
+      label: 'Genneia',
+      items: [
+        { label: 'Coca cola', quantity: 1 },
+        { label: 'Guarnición: Puré', quantity: 1 },
+        { label: 'Pan: Sin pan', quantity: 1 }
+      ]
+    })
     expect(summary.commentsByLocation).toContainEqual({
       label: 'Genneia',
       comments: [{ comment: 'Sin sal', count: 1 }]
@@ -181,7 +189,8 @@ describe('daily orders export model', () => {
     expect(text).toContain('*Total de ítems:* 10')
     expect(text).toContain('*TOTALES POR UBICACIÓN / EMPRESA*')
     expect(text).toContain('*DETALLE POR UBICACIÓN / EMPRESA*')
-    expect(text).toContain('*COMENTARIOS / OBSERVACIONES POR EMPRESA*')
+    expect(text).toContain('*GUARNICIONES / ADICIONALES POR UBICACIÓN / EMPRESA*')
+    expect(text).toContain('*COMENTARIOS / OBSERVACIONES POR UBICACIÓN / EMPRESA*')
     expect(text).toContain('*OBSERVACIONES*')
     expect(text).toContain('*AVISOS*')
     expect(text).toContain('- Genneia: 1 pedido / 3 ítems')
@@ -195,6 +204,10 @@ describe('daily orders export model', () => {
     expect(text).toContain('- Opción 1 - BIDE DEL DIA: 2')
     expect(text).toContain('- Opción 4 - BIFE DEL DÍA CARNE: 1')
     expect(text).toContain('- Subtotal Genneia: 3 ítems')
+    expect(text).toContain('- Coca cola')
+    expect(text).toContain('- Guarnición: Puré')
+    expect(text).toContain('- Pan: Sin pan')
+    expect(text).toContain('- Agua')
     expect(text).toContain('- Sin sal (x2)')
     expect(text).toContain('- 3 pedidos tienen comentarios.')
     expect(text).toContain('- 2 pedidos incluyen bebida.')
