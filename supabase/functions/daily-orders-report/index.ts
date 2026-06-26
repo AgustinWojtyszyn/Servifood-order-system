@@ -22,6 +22,7 @@ import {
   getRecipientsForMode,
   getServiceLabel,
   isAuthorized,
+  isRecentSuccessfulDailyReportRun,
   isStaleRunningRun,
   isTestEmailMode,
   isValidISODate,
@@ -414,7 +415,7 @@ Deno.serve(async (req: Request) => {
     const payload = await req.json().catch(() => ({})) as DailyReportPayload
     currentPayload = payload
     const mode = payload.mode || 'send'
-    if (!['send', 'dryRun', 'testEmail', 'testEmailReal'].includes(mode)) {
+    if (!['send', 'dryRun', 'testEmail', 'testEmailReal', 'archiveAfterSuccessfulReport'].includes(mode)) {
       return toResponse({ error: 'mode inválido' }, 400)
     }
 
@@ -439,6 +440,39 @@ Deno.serve(async (req: Request) => {
       logoUrlConfigured: Boolean(serviFoodLogoUrl),
       force: Boolean(payload.force)
     })
+
+    if (mode === 'archiveAfterSuccessfulReport') {
+      const existingRun = await getExistingRun(reportDate, DAILY_REPORT_TYPE)
+
+      if (!isRecentSuccessfulDailyReportRun(existingRun)) {
+        return toResponse({
+          ok: true,
+          mode,
+          skipped: true,
+          reason: 'report_not_sent',
+          reportDate,
+          reportStatus: existingRun?.status || null,
+          sentAt: existingRun?.sent_at || null,
+          archivedOrdersCount: 0
+        })
+      }
+
+      const archivedOrdersCount = await archiveReportedOrders(reportDate)
+
+      console.log('[daily-orders-report] archivado post reporte', {
+        mode,
+        reportDate,
+        archivedOrdersCount
+      })
+
+      return toResponse({
+        ok: true,
+        mode,
+        skipped: false,
+        reportDate,
+        archivedOrdersCount
+      })
+    }
 
     const orders = shouldUseMocks
       ? createMockOrders(reportDate)
@@ -508,10 +542,6 @@ Deno.serve(async (req: Request) => {
       attachment: workbookBuffer
     })
 
-    const archivedOrdersCount = shouldWriteDailyReportRun(mode)
-      ? await archiveReportedOrders(reportDate)
-      : 0
-
     if (shouldWriteDailyReportRun(mode)) {
       await upsertRun({
         reportDate,
@@ -526,7 +556,6 @@ Deno.serve(async (req: Request) => {
       mode,
       reportDate,
       ordersCount: summary.totalOrders,
-      archivedOrdersCount,
       recipientsCount: recipients.length,
       logoUrlConfigured: Boolean(serviFoodLogoUrl)
     })
@@ -538,7 +567,7 @@ Deno.serve(async (req: Request) => {
       ordersCount: summary.totalOrders,
       itemsCount: summary.totalItems,
       recipientsCount: recipients.length,
-      archivedOrdersCount,
+      archivedOrdersCount: 0,
       filename,
       emailResult
     })

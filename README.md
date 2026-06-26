@@ -143,6 +143,14 @@ Cron recomendado:
 10 1 * * *
 ```
 
+Cron de archivado condicional posterior al envío:
+
+```text
+15 1 * * *
+```
+
+Este segundo cron llama la misma Edge Function con `mode=archiveAfterSuccessfulReport`. No envía email ni genera Excel; solo archiva pedidos `pending` de `delivery_date = reportDate` si existe un `daily_report_runs` reciente con `report_type = daily_orders`, `status = sent` y `sent_at` informado.
+
 Payload soportado:
 
 ```json

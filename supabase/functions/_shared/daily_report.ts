@@ -6,7 +6,7 @@ const DEFAULT_TEST_RECIPIENT = 'agustinwojtyszyn99@gmail.com'
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
-export type DailyReportMode = 'send' | 'dryRun' | 'testEmail' | 'testEmailReal'
+export type DailyReportMode = 'send' | 'dryRun' | 'testEmail' | 'testEmailReal' | 'archiveAfterSuccessfulReport'
 
 export type DailyReportPayload = {
   mode?: DailyReportMode
@@ -637,7 +637,10 @@ export const shouldWriteDailyReportRun = (mode: DailyReportMode) =>
   mode === 'send'
 
 export const shouldArchiveOrdersForMode = (mode: DailyReportMode) =>
-  mode === 'send'
+  mode === 'archiveAfterSuccessfulReport'
+
+export const shouldSendEmailForMode = (mode: DailyReportMode) =>
+  mode === 'send' || mode === 'testEmail' || mode === 'testEmailReal'
 
 export const getArchiveOrdersRpcCall = (reportDate: string) => ({
   rpcName: 'archive_orders_bulk_by_delivery_date',
@@ -646,6 +649,27 @@ export const getArchiveOrdersRpcCall = (reportDate: string) => ({
     p_statuses: ['pending']
   }
 })
+
+export const isRecentSuccessfulDailyReportRun = (
+  run: { status?: string | null; sent_at?: string | null } | null | undefined,
+  now = new Date(),
+  maxAgeMinutes = 30
+) => {
+  if (run?.status !== 'sent' || !run.sent_at) return false
+
+  const sentAt = new Date(run.sent_at).getTime()
+  if (Number.isNaN(sentAt)) return false
+
+  const ageMs = now.getTime() - sentAt
+  return ageMs >= 0 && ageMs <= maxAgeMinutes * 60 * 1000
+}
+
+export const isOrderEligibleForReportArchive = (
+  order: { delivery_date?: string | null; status?: string | null },
+  reportDate: string
+) =>
+  String(order.delivery_date || '').slice(0, 10) === reportDate &&
+  order.status === 'pending'
 
 export const isAuthorized = (headers: Headers, expectedSecret?: string | null) => {
   const secret = expectedSecret || ''

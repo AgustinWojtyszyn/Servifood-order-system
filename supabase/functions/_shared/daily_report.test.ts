@@ -8,10 +8,13 @@ import {
   getDefaultReportDate,
   getEmailSubject,
   getRecipientsForMode,
+  isOrderEligibleForReportArchive,
+  isRecentSuccessfulDailyReportRun,
   isStaleRunningRun,
   isAuthorized,
   normalizeOrder,
   shouldArchiveOrdersForMode,
+  shouldSendEmailForMode,
   shouldSkipExistingRun,
   shouldWriteDailyReportRun,
   usesMockOrdersForMode,
@@ -347,16 +350,22 @@ describe('daily report helpers', () => {
     expect(usesMockOrdersForMode('testEmail')).toBe(true)
   })
 
-  it('testEmailReal no archiva pedidos ni escribe daily_report_runs', () => {
+  it('solo archiveAfterSuccessfulReport archiva y no envía email', () => {
     expect(shouldArchiveOrdersForMode('testEmailReal')).toBe(false)
     expect(shouldArchiveOrdersForMode('dryRun')).toBe(false)
     expect(shouldArchiveOrdersForMode('testEmail')).toBe(false)
+    expect(shouldArchiveOrdersForMode('send')).toBe(false)
+    expect(shouldArchiveOrdersForMode('archiveAfterSuccessfulReport')).toBe(true)
     expect(shouldWriteDailyReportRun('testEmailReal')).toBe(false)
-    expect(shouldArchiveOrdersForMode('send')).toBe(true)
     expect(shouldWriteDailyReportRun('send')).toBe(true)
+    expect(shouldWriteDailyReportRun('archiveAfterSuccessfulReport')).toBe(false)
+    expect(shouldSendEmailForMode('dryRun')).toBe(false)
+    expect(shouldSendEmailForMode('archiveAfterSuccessfulReport')).toBe(false)
+    expect(shouldSendEmailForMode('testEmail')).toBe(true)
+    expect(shouldSendEmailForMode('send')).toBe(true)
   })
 
-  it('archivado de send usa RPC seguro por delivery_date y status pending', () => {
+  it('archivado post reporte usa RPC seguro por delivery_date y status pending', () => {
     expect(getArchiveOrdersRpcCall('2026-06-26')).toEqual({
       rpcName: 'archive_orders_bulk_by_delivery_date',
       args: {
@@ -364,6 +373,76 @@ describe('daily report helpers', () => {
         p_statuses: ['pending']
       }
     })
+  })
+
+  it('archiveAfterSuccessfulReport no archiva si no existe daily_report_runs sent', () => {
+    const now = new Date('2026-06-26T01:15:00.000Z')
+
+    expect(isRecentSuccessfulDailyReportRun(null, now)).toBe(false)
+  })
+
+  it('archiveAfterSuccessfulReport no archiva si daily_report_runs está failed', () => {
+    const now = new Date('2026-06-26T01:15:00.000Z')
+
+    expect(isRecentSuccessfulDailyReportRun({
+      status: 'failed',
+      sent_at: '2026-06-26T01:10:00.000Z'
+    }, now)).toBe(false)
+  })
+
+  it('archiveAfterSuccessfulReport no archiva si sent_at es null', () => {
+    const now = new Date('2026-06-26T01:15:00.000Z')
+
+    expect(isRecentSuccessfulDailyReportRun({
+      status: 'sent',
+      sent_at: null
+    }, now)).toBe(false)
+  })
+
+  it('archiveAfterSuccessfulReport no archiva si sent_at es viejo', () => {
+    const now = new Date('2026-06-26T01:45:01.000Z')
+
+    expect(isRecentSuccessfulDailyReportRun({
+      status: 'sent',
+      sent_at: '2026-06-26T01:10:00.000Z'
+    }, now)).toBe(false)
+  })
+
+  it('archiveAfterSuccessfulReport permite archivar si daily_report_runs está sent reciente', () => {
+    const now = new Date('2026-06-26T01:15:00.000Z')
+
+    expect(isRecentSuccessfulDailyReportRun({
+      status: 'sent',
+      sent_at: '2026-06-26T01:10:00.000Z'
+    }, now)).toBe(true)
+  })
+
+  it('archiva solo pending de reportDate y no toca otra fecha ni archived existentes', () => {
+    const orders = [
+      { id: 'pending-report-date', delivery_date: '2026-06-26', status: 'pending' },
+      { id: 'pending-other-date', delivery_date: '2026-06-27', status: 'pending' },
+      { id: 'archived-report-date', delivery_date: '2026-06-26', status: 'archived' }
+    ]
+
+    expect(orders.filter((order) => isOrderEligibleForReportArchive(order, '2026-06-26')).map((order) => order.id))
+      .toEqual(['pending-report-date'])
+  })
+
+  it('archivado post reporte es idempotente si se ejecuta dos veces', () => {
+    const orders = [
+      { id: '1', delivery_date: '2026-06-26', status: 'pending' },
+      { id: '2', delivery_date: '2026-06-26', status: 'archived' }
+    ]
+    const firstRun = orders.filter((order) => isOrderEligibleForReportArchive(order, '2026-06-26'))
+    const afterFirstRun = orders.map((order) =>
+      isOrderEligibleForReportArchive(order, '2026-06-26')
+        ? { ...order, status: 'archived' }
+        : order
+    )
+    const secondRun = afterFirstRun.filter((order) => isOrderEligibleForReportArchive(order, '2026-06-26'))
+
+    expect(firstRun).toHaveLength(1)
+    expect(secondRun).toHaveLength(0)
   })
 
   it('testEmailReal envía solo a destinatario de prueba', () => {
