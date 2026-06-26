@@ -253,6 +253,185 @@ const incrementLocation = (map, location, orders = 1, items = 0) => {
 
 const sortByQuantityAndLabel = (a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label)
 
+const sortMenuWithSidesRows = (a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label)
+
+const getItemIdentityValues = (item = {}) => {
+  const raw = item.raw || item
+  return [
+    raw?.id,
+    raw?.item_id,
+    raw?.itemId,
+    raw?.menu_item_id,
+    raw?.menuItemId,
+    raw?.menu_id,
+    raw?.menuId,
+    raw?.slotIndex
+  ].map((value) => normalizeText(value)).filter(Boolean)
+}
+
+const getResponseItemIdentityValues = (response = {}) => [
+  response.item_id,
+  response.itemId,
+  response.menu_item_id,
+  response.menuItemId,
+  response.menu_id,
+  response.menuId,
+  response.item,
+  response.item_name,
+  response.itemName,
+  response.menu,
+  response.menu_name,
+  response.menuName,
+  response.slotIndex
+].map((value) => normalizeText(value)).filter(Boolean)
+
+const getItemOptionPrefix = (label = '') => {
+  const match = normalizeText(label).match(/^(opci[oó]n\s+\d+)\b/i)
+  return match ? match[1].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : ''
+}
+
+const isFullerMenuLabelForSameOption = (candidate = '', current = '') => {
+  const candidateText = normalizeText(candidate)
+  const currentText = normalizeText(current)
+  const candidatePrefix = getItemOptionPrefix(candidateText)
+  return Boolean(
+    candidatePrefix &&
+    candidatePrefix === getItemOptionPrefix(currentText) &&
+    candidateText.length > currentText.length
+  )
+}
+
+const getPreferredMenuLabel = (labels = [], fallback = 'Sin menú / opción') => {
+  const cleanLabels = labels.map(normalizeText).filter(Boolean)
+  if (!cleanLabels.length) return fallback
+  return cleanLabels.reduce((preferred, label) => {
+    if (isFullerMenuLabelForSameOption(label, preferred)) return label
+    if (!getItemOptionPrefix(label) && label.length > preferred.length && preferred === fallback) return label
+    return preferred
+  }, cleanLabels[0])
+}
+
+const getSideValuesFromOrder = (order = {}) => {
+  const { normalizedCustomResponses } = normalizeOrderForReadOnly(order)
+  return toArray(normalizedCustomResponses).flatMap((response) => {
+    const title = normalizeText(response.title || response.label || 'Opción')
+    if (!title.toLowerCase().includes('guarn')) return []
+
+    const answer = valueToText(response.answer ?? response.response ?? response.value)
+    const optionText = valueToText(response.options)
+    const combined = [answer, optionText].filter(Boolean).join(', ')
+    if (!combined) return []
+
+    return combined.split(',').map(normalizeText).filter(Boolean).map((label) => ({
+      label,
+      response,
+      identityValues: getResponseItemIdentityValues(response)
+    }))
+  })
+}
+
+const findItemForSide = (side, items = []) => {
+  if (!items.length) return null
+  const identityValues = side.identityValues || []
+  if (identityValues.length) {
+    const matched = items.find((item) => {
+      const itemValues = getItemIdentityValues(item)
+      return itemValues.some((value) => identityValues.includes(value)) ||
+        identityValues.some((value) => normalizeText(item.label).toLowerCase() === value.toLowerCase())
+    })
+    if (matched) return matched
+  }
+  return items[0]
+}
+
+const resolvePreferredMenuLabelsByLocation = (orders = []) => {
+  const labelsByLocationAndOption = new Map()
+
+  orders.forEach((order) => {
+    const location = getOrderLocation(order)
+    extractOrderItems(order).forEach((item) => {
+      const optionPrefix = getItemOptionPrefix(item.label)
+      if (!optionPrefix) return
+      const key = `${location}\u0000${optionPrefix}`
+      const current = labelsByLocationAndOption.get(key)
+      if (!current || isFullerMenuLabelForSameOption(item.label, current)) {
+        labelsByLocationAndOption.set(key, item.label)
+      }
+    })
+  })
+
+  return labelsByLocationAndOption
+}
+
+const resolveMenuLabelForWhatsApp = (item, location, preferredLabelsByLocationAndOption) => {
+  const optionPrefix = getItemOptionPrefix(item?.label)
+  if (!optionPrefix) return normalizeText(item?.label) || 'Sin menú / opción'
+  return preferredLabelsByLocationAndOption.get(`${location}\u0000${optionPrefix}`) || item.label
+}
+
+const buildWhatsAppLocationMenuSummary = (orders = []) => {
+  const byLocation = new Map()
+  const preferredLabelsByLocationAndOption = resolvePreferredMenuLabelsByLocation(orders)
+  let totalItems = 0
+
+  orders.forEach((order) => {
+    const location = getOrderLocation(order)
+    const items = extractOrderItems(order)
+    const orderItemsTotal = getOrderTotalItems(order, items)
+    totalItems += orderItemsTotal
+
+    if (!byLocation.has(location)) {
+      byLocation.set(location, { label: location, total: 0, menus: new Map() })
+    }
+
+    const locationRow = byLocation.get(location)
+    locationRow.total += orderItemsTotal
+
+    const ensureMenu = (label) => {
+      const safeLabel = normalizeText(label) || 'Sin menú / opción'
+      if (!locationRow.menus.has(safeLabel)) {
+        locationRow.menus.set(safeLabel, { label: safeLabel, quantity: 0, sides: new Map() })
+      }
+      return locationRow.menus.get(safeLabel)
+    }
+
+    if (items.length) {
+      items.forEach((item) => {
+        const label = resolveMenuLabelForWhatsApp(item, location, preferredLabelsByLocationAndOption)
+        ensureMenu(label).quantity += item.quantity
+      })
+    } else {
+      ensureMenu('Sin menú / opción').quantity += 1
+    }
+
+    getSideValuesFromOrder(order).forEach((side) => {
+      const item = findItemForSide(side, items)
+      const label = item
+        ? resolveMenuLabelForWhatsApp(item, location, preferredLabelsByLocationAndOption)
+        : getPreferredMenuLabel([...locationRow.menus.keys()])
+      const menuRow = ensureMenu(label)
+      menuRow.sides.set(side.label, (menuRow.sides.get(side.label) || 0) + 1)
+    })
+  })
+
+  return {
+    totalItems,
+    locations: [...byLocation.values()]
+      .map((location) => ({
+        ...location,
+        menus: [...location.menus.values()]
+          .map((menu) => ({
+            ...menu,
+            sides: [...menu.sides.entries()]
+              .map(([label, quantity]) => ({ label, quantity }))
+              .sort(sortMenuWithSidesRows)
+          }))
+          .sort(sortMenuWithSidesRows)
+      }))
+      .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label))
+  }
+}
+
 const buildLocationMenuRows = (locationMenus, byLocation) =>
   [...byLocation.keys()].map((location) => {
     const menuRows = [...(locationMenus.get(location) || new Map()).entries()]
@@ -543,5 +722,31 @@ export const formatDailyOrdersOperationalText = (orders = [], selectedStatus = '
 }
 
 export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pending') => {
-  return formatDailyOrdersOperationalText(orders, selectedStatus)
+  const summary = buildWhatsAppLocationMenuSummary(orders, selectedStatus)
+  const lines = ['📋 PEDIDOS SERVIFOOD', '']
+
+  if (!summary.locations.length) {
+    lines.push('Sin pedidos', '', '========================================', '', '✅ TOTAL GENERAL: 0 pedidos')
+    return lines.join('\n')
+  }
+
+  summary.locations.forEach((location, index) => {
+    if (index > 0) lines.push('========================================', '')
+
+    lines.push(location.label, '')
+
+    location.menus.forEach((menu) => {
+      lines.push(`${menu.label}: ${menu.quantity}`, '')
+      menu.sides.forEach((side) => {
+        lines.push(`* ${side.quantity} ${side.label}`)
+      })
+      if (menu.sides.length) lines.push('')
+    })
+
+    lines.push(`Total ${location.label}: ${location.total}`, '')
+  })
+
+  lines.push('========================================', '', `✅ TOTAL GENERAL: ${summary.totalItems} pedidos`)
+
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }

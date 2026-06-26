@@ -153,80 +153,43 @@ describe('daily orders export model', () => {
     })
   })
 
-  it('genera WhatsApp con detalle por empresa sin datos personales', () => {
+  it('genera WhatsApp agrupando guarniciones debajo de cada menú por empresa', () => {
     const text = formatDailyOrdersForWhatsApp([
-      baseOrder,
+      {
+        ...baseOrder,
+        id: 'order-1',
+        total_items: 5,
+        items: [{ name: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 5 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Puré' }],
+        comments: ''
+      },
       {
         ...baseOrder,
         id: 'order-2',
-        customer_name: 'Bruno Cliente',
-        customer_email: 'bruno@example.com',
-        customer_phone: '2615551234',
-        location: 'La Laja',
-        service: 'dinner',
-        items: [{ name: 'Opción 2 - Cena veggie', quantity: 1 }],
-        custom_responses: [{ title: 'Bebida', response: 'Agua' }],
-        comments: 'Sin sal'
+        total_items: 1,
+        items: [{ name: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Verduras' }],
+        comments: ''
       },
       {
         ...baseOrder,
         id: 'order-3',
-        customer_name: 'Carla Cliente',
-        customer_email: 'carla@example.com',
-        customer_phone: '2615559999',
-        location: 'La Laja',
-        items: [{ name: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 4 }],
+        total_items: 2,
+        items: [{ name: 'Opción 5 - ENSALADA DEL FOOD', quantity: 2 }],
         custom_responses: [],
-        total_items: 4,
-        comments: 'Sin sal'
+        comments: ''
       }
     ], 'pending')
 
-    expect(text).toContain('*REPORTE DE PEDIDOS SERVIFOOD*')
-    expect(text).toContain('*Fecha de entrega:* 25/06/2026')
-    expect(text).toContain('*Estado:* Pendientes')
-    expect(text).toContain('*Total de pedidos:* 3')
-    expect(text).toContain('*Total de ítems:* 10')
-    expect(text).toContain('*TOTALES POR UBICACIÓN / EMPRESA*')
-    expect(text).toContain('*DETALLE POR UBICACIÓN / EMPRESA*')
-    expect(text).toContain('*GUARNICIONES / ADICIONALES POR UBICACIÓN / EMPRESA*')
-    expect(text).toContain('*COMENTARIOS / OBSERVACIONES POR UBICACIÓN / EMPRESA*')
-    expect(text).toContain('*OBSERVACIONES*')
-    expect(text).toContain('*AVISOS*')
-    expect(text).toContain('- Genneia: 1 pedido / 3 ítems')
-    expect(text).toContain('- La Laja: 2 pedidos / 7 ítems')
-    expect(text).toContain('- Total general: 3 pedidos / 10 ítems')
-    expect(text).toContain('*La Laja*')
-    expect(text).toContain('- Opción 4 - BIFE DEL DÍA CARNE: 4')
-    expect(text).toContain('- Opción 2 - Cena veggie: 1')
-    expect(text).toContain('- Subtotal La Laja: 7 ítems')
-    expect(text).toContain('*Genneia*')
-    expect(text).toContain('- Opción 1 - BIDE DEL DIA: 2')
-    expect(text).toContain('- Opción 4 - BIFE DEL DÍA CARNE: 1')
-    expect(text).toContain('- Subtotal Genneia: 3 ítems')
-    expect(text).toContain('- Coca cola')
-    expect(text).toContain('- Guarnición: Puré')
-    expect(text).toContain('- Pan: Sin pan')
-    expect(text).toContain('- Agua')
-    expect(text).toContain('- Sin sal (x2)')
-    expect(text).toContain('- 3 pedidos tienen comentarios.')
-    expect(text).toContain('- 2 pedidos incluyen bebida.')
-    expect(text).toContain('- 1 pedido incluye guarnición.')
-    expect(text).toContain('✓ No se detectaron datos incompletos o inconsistentes.')
-    expect(text).toContain('El detalle completo de clientes, opciones, bebidas, guarniciones y comentarios está en el Excel exportado.')
-    expect(text).toContain('\n\n*TOTALES POR UBICACIÓN / EMPRESA*\n\n- La Laja')
-    expect(text).toContain('*REPORTE DE PEDIDOS SERVIFOOD*\n\n*Fecha de entrega:*')
-    expect(text.split('\n').length).toBeGreaterThan(20)
-    expect(text).not.toContain('* Genneia')
-    expect(text).not.toContain('Total de 3 pedidos')
-    expect(text).not.toContain('Total de 10 ítems:')
+    expect(text).toContain('📋 PEDIDOS SERVIFOOD')
+    expect(text).toContain('Genneia')
+    expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 6\n\n* 1 Puré\n* 1 Verduras')
+    expect(text).toContain('Opción 5 - ENSALADA DEL FOOD: 2')
+    expect(text).toContain('Total Genneia: 8')
+    expect(text).toContain('✅ TOTAL GENERAL: 8 pedidos')
     expect(text).not.toContain('Ana Cliente')
-    expect(text).not.toContain('Bruno Cliente')
-    expect(text).not.toContain('Carla Cliente')
     expect(text).not.toContain('ana@example.com')
-    expect(text).not.toContain('bruno@example.com')
-    expect(text).not.toContain('carla@example.com')
-    expect(text).not.toContain('2615551234')
+    expect(text).not.toContain('Guarnición:')
   })
 
   it('incluye todos los menús de WhatsApp dentro de su empresa', () => {
@@ -242,8 +205,8 @@ describe('daily orders export model', () => {
 
     const text = formatDailyOrdersForWhatsApp(orders, 'pending')
 
-    expect(text).toContain('*Genneia*')
-    expect(text).toContain('- Opción 11: 1')
+    expect(text).toContain('Genneia')
+    expect(text).toContain('Opción 11: 1')
     expect(text).not.toContain('opciones más en el Excel')
     expect(text).not.toContain('Cliente 1')
   })
@@ -263,9 +226,9 @@ describe('daily orders export model', () => {
       comments: ''
     }], 'pending')
 
-    expect(text).toContain('- Cena: PASTEL DE PAPAS: 1')
-    expect(text).toContain('- Coca cola')
-    expect(text).toContain('- Postre (solo Genneia): Fruta')
+    expect(text).toContain('Cena: PASTEL DE PAPAS: 1')
+    expect(text).not.toContain('Coca cola')
+    expect(text).not.toContain('Postre (solo Genneia): Fruta')
     expect(text).not.toContain('Menú de cena: PASTEL DE PAPAS')
   })
 
@@ -283,12 +246,64 @@ describe('daily orders export model', () => {
 
     const text = formatDailyOrdersForWhatsApp(orders, 'pending')
 
-    expect(text).toContain('*Total de pedidos:* 19')
-    expect(text).toContain('*Total de ítems:* 19')
+    expect(text).toContain('Total Genneia: 19')
+    expect(text).toContain('✅ TOTAL GENERAL: 19 pedidos')
     expect(text).not.toContain('Total de 19 pedidos')
     expect(text).not.toContain('bulk1@example.com')
     expect(text).not.toContain('261555991')
     expect(text).not.toContain('Cliente Bulk')
+  })
+
+  it('no mezcla la misma guarnición entre menús distintos', () => {
+    const text = formatDailyOrdersForWhatsApp([
+      {
+        ...baseOrder,
+        id: 'same-side-1',
+        items: [{ id: 'op4', name: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Papas fritas', itemId: 'op4' }],
+        total_items: 1,
+        comments: ''
+      },
+      {
+        ...baseOrder,
+        id: 'same-side-2',
+        items: [{ id: 'op5', name: 'Opción 5 - ENSALADA DEL FOOD', quantity: 1 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Papas fritas', itemId: 'op5' }],
+        total_items: 1,
+        comments: ''
+      }
+    ], 'pending')
+
+    expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 1\n\n* 1 Papas fritas')
+    expect(text).toContain('Opción 5 - ENSALADA DEL FOOD: 1\n\n* 1 Papas fritas')
+    expect(text).not.toContain('* 2 Papas fritas')
+    expect(text).toContain('✅ TOTAL GENERAL: 2 pedidos')
+  })
+
+  it('fusiona una opción corta bajo el nombre completo del menú disponible', () => {
+    const text = formatDailyOrdersForWhatsApp([
+      {
+        ...baseOrder,
+        id: 'full-menu',
+        items: [{ id: 'full-op4', name: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 }],
+        custom_responses: [],
+        total_items: 1,
+        comments: ''
+      },
+      {
+        ...baseOrder,
+        id: 'short-menu',
+        items: [{ id: 'short-op4', name: 'Opción 4', quantity: 1 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Papas fritas', itemId: 'short-op4' }],
+        total_items: 1,
+        comments: ''
+      }
+    ], 'pending')
+
+    expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 2\n\n* 1 Papas fritas')
+    expect(text).not.toContain('\nOpción 4: 1\n')
+    expect(text).toContain('Total Genneia: 2')
+    expect(text).toContain('✅ TOTAL GENERAL: 2 pedidos')
   })
 
   it('reporta inconsistencias por datos faltantes y cantidades inválidas', () => {
