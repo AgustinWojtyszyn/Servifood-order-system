@@ -102,6 +102,26 @@ describe('daily orders export model', () => {
     expect(summary.commentsCount).toBe(1)
   })
 
+  it('mantiene Genneia O&M como ubicación independiente en resúmenes y exportaciones', () => {
+    const order = {
+      ...baseOrder,
+      id: 'order-genneia-om',
+      location: 'Genneia O&M',
+      total_items: 1,
+      items: [{ name: 'Opción 1 - BIDE DEL DIA', quantity: 1 }],
+      custom_responses: []
+    }
+
+    const summary = buildDailyOrdersSummary([order], 'pending')
+    const rows = buildDailyOrdersExcelDetailRows([order])
+    const text = formatDailyOrdersForWhatsApp([order], 'pending')
+
+    expect(summary.byLocation).toContainEqual({ label: 'Genneia O&M', orders: 1, items: 1 })
+    expect(rows[0]['Ubicación / empresa']).toBe('Genneia O&M')
+    expect(text).toContain('Genneia O&M')
+    expect(text).toContain('Total Genneia O&M: 1')
+  })
+
   it('genera nombre de Excel con delivery_date y estado', () => {
     const summary = buildDailyOrdersSummary([baseOrder], 'pending')
 

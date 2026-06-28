@@ -52,6 +52,16 @@ export const COMPANY_CATALOG = {
     locations: ['Genneia'],
     customHint: 'Verás preguntas específicas y menú filtrado para Genneia.',
     optionsSourceSlug: 'genneia'
+  },
+  genneia_om: {
+    slug: 'genneia_om',
+    name: 'Genneia O&M',
+    description: 'Flujo dedicado para equipos que operan en Genneia O&M.',
+    accent: 'from-orange-500 to-orange-600',
+    badgeClass: 'bg-orange-100 text-orange-700',
+    locations: ['Genneia O&M'],
+    customHint: 'Configura opciones solo visibles para pedidos de Genneia O&M.',
+    optionsSourceSlug: 'genneia_om'
   }
 }
 
