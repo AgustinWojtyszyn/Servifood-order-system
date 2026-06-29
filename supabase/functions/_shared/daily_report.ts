@@ -3,6 +3,11 @@ export const DAILY_REPORT_TYPE = 'daily_orders'
 export const DAILY_REPORT_TEST_TYPE = 'daily_orders_test'
 
 const DEFAULT_TEST_RECIPIENT = 'agustinwojtyszyn99@gmail.com'
+const PERMANENT_REPORT_RECIPIENTS = [
+  'sarmientoclaudia985@gmail.com',
+  'agustinwojtyszyn99@gmail.com',
+  'servifoodrecepcion@gmail.com'
+]
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
@@ -44,7 +49,12 @@ export type DailySummary = {
   totalItems: number
   byLocation: Array<{ label: string; orders: number; items: number }>
   byMenuOption: Array<{ label: string; quantity: number }>
-  byLocationMenu: Array<{ label: string; orders: number; items: number; menus: Array<{ label: string; quantity: number }> }>
+  byLocationMenu: Array<{
+    label: string
+    orders: number
+    items: number
+    menus: Array<{ label: string; quantity: number; sides: Array<{ label: string; quantity: number }> }>
+  }>
   additionalByLocation: Array<{ label: string; items: Array<{ label: string; quantity: number }> }>
   comments: Array<string>
   commentRows: Array<{ customer: string; comment: string; count: number }>
@@ -58,6 +68,16 @@ export const parseRecipients = (raw = ''): string[] =>
     .split(',')
     .map((value) => value.replace(/^mailto:/i, '').trim())
     .filter(Boolean)
+
+const uniqueRecipients = (recipients: string[]) => {
+  const seen = new Set<string>()
+  return recipients.filter((recipient) => {
+    const key = recipient.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 
 export const isValidISODate = (value?: string): value is string =>
   Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
@@ -218,10 +238,7 @@ const getAdditionalLabels = (order: NormalizedOrder) => {
     const combined = [value, options].filter(Boolean).join(', ')
     if (!combined) return
 
-    if (lowerTitle.includes('guarn')) {
-      labels.push(`Guarnición: ${combined}`)
-      return
-    }
+    if (lowerTitle.includes('guarn')) return
 
     if (lowerTitle.includes('bebida')) {
       labels.push(combined)
@@ -239,6 +256,7 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
   const byMenuOption = new Map<string, number>()
   const commentsByCustomerAndText = new Map<string, { customer: string; comment: string; count: number }>()
   const menuByLocation = new Map<string, Map<string, number>>()
+  const sidesByLocationMenu = new Map<string, Map<string, Map<string, number>>>()
   const commentsByLocationText = new Map<string, Map<string, number>>()
   const additionalByLocationText = new Map<string, Map<string, number>>()
   const warnings: string[] = []
@@ -256,17 +274,28 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
 
     if (!menuByLocation.has(location)) menuByLocation.set(location, new Map())
     const scopedMenus = menuByLocation.get(location)!
+    if (!sidesByLocationMenu.has(location)) sidesByLocationMenu.set(location, new Map())
+    const scopedMenuSides = sidesByLocationMenu.get(location)!
+    const customSide = getCustomSide(order)
+
+    const incrementMenuSide = (menuLabel: string, quantity: number) => {
+      if (!customSide) return
+      if (!scopedMenuSides.has(menuLabel)) scopedMenuSides.set(menuLabel, new Map())
+      incrementMap(scopedMenuSides.get(menuLabel)!, customSide, quantity || 1)
+    }
 
     if (order.items.length === 0) {
       const quantity = Math.max(items, 1)
       incrementMap(byMenuOption, 'Sin menú/opción', quantity)
       incrementMap(scopedMenus, 'Sin menú/opción', quantity)
+      incrementMenuSide('Sin menú/opción', quantity)
     } else {
       order.items.forEach((item) => {
         const label = getMenuLabel(item)
         const quantity = Number(item.quantity || item.qty || 1)
         incrementMap(byMenuOption, label, quantity || 1)
         incrementMap(scopedMenus, label, quantity || 1)
+        incrementMenuSide(label, quantity || 1)
       })
     }
 
@@ -322,7 +351,13 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
     byLocationMenu: sortedLocations.map((location) => ({
       ...location,
       menus: [...(menuByLocation.get(location.label) || new Map()).entries()]
-        .map(([label, quantity]) => ({ label, quantity }))
+        .map(([label, quantity]) => ({
+          label,
+          quantity,
+          sides: [...(sidesByLocationMenu.get(location.label)?.get(label) || new Map()).entries()]
+            .map(([sideLabel, sideQuantity]) => ({ label: sideLabel, quantity: sideQuantity }))
+            .sort(sortQuantityRows)
+        }))
         .sort(sortQuantityRows)
     })),
     additionalByLocation: sortedLocations.map((location) => ({
@@ -399,7 +434,12 @@ const renderLocationMenuSections = (summary: DailySummary) =>
         ${location.menus.length
           ? location.menus.map((row) => `
             <tr>
-              <td style="${cellStyle}">${escapeHtml(row.label)}</td>
+              <td style="${cellStyle}">
+                <div>${escapeHtml(row.label)}</div>
+                ${row.sides.length
+                  ? `<div style="margin-top:6px;color:#4b5563;font-size:13px;line-height:18px;">${row.sides.map((side) => `Guarnición: ${escapeHtml(side.label)}${side.quantity > 1 ? ` (x${side.quantity})` : ''}`).join('<br>')}</div>`
+                  : ''}
+              </td>
               <td align="right" style="${cellStyle}text-align:right;">${row.quantity}</td>
             </tr>
           `).join('')
@@ -522,7 +562,7 @@ export const buildEmailHtml = (
             </tr>
             <tr>
               <td style="padding:0 28px 24px 28px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Guarniciones / adicionales por ubicación / empresa</h2>
+                <h2 style="margin:0 0 12px 0;font-size:18px;line-height:24px;color:#111827;">Adicionales por ubicación / empresa</h2>
                 ${renderLocationAdditionalSections(summary)}
               </td>
             </tr>
@@ -573,13 +613,16 @@ export const buildEmailText = (summary: DailySummary, isTest = false) => [
         '',
         location.label,
         ...(location.menus.length
-          ? location.menus.map((row) => `- ${row.label}: ${row.quantity}`)
+          ? location.menus.flatMap((row) => [
+              `- ${row.label}: ${row.quantity}`,
+              ...row.sides.map((side) => `  Guarnición: ${side.label}${side.quantity > 1 ? ` (x${side.quantity})` : ''}`)
+            ])
           : ['- Sin menús/opciones para listar.']),
         `- Subtotal ${location.label}: ${plural(location.items, 'ítem', 'ítems')}`
       ])
     : ['- Sin detalle por ubicación.']),
   '',
-  'Guarniciones / adicionales por ubicación / empresa',
+  'Adicionales por ubicación / empresa',
   ...(summary.additionalByLocation.length
     ? summary.additionalByLocation.flatMap((location) => [
         '',
@@ -621,7 +664,7 @@ export const getRecipientsForMode = ({
     if (sendTo) return parseRecipients(sendTo).slice(0, 1)
     return configuredTestRecipients?.length ? configuredTestRecipients.slice(0, 1) : [DEFAULT_TEST_RECIPIENT]
   }
-  return configuredRecipients
+  return uniqueRecipients([...configuredRecipients, ...PERMANENT_REPORT_RECIPIENTS])
 }
 
 export const isTestEmailMode = (mode: DailyReportMode) =>

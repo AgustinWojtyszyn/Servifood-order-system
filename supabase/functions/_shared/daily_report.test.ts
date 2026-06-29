@@ -61,11 +61,15 @@ describe('daily report helpers', () => {
       label: 'Planta Norte',
       orders: 1,
       items: 2,
-      menus: [{ label: 'Menú principal - Pollo', quantity: 2 }]
+      menus: [{
+        label: 'Menú principal - Pollo',
+        quantity: 2,
+        sides: [{ label: 'Puré', quantity: 2 }]
+      }]
     })
     expect(summary.additionalByLocation).toContainEqual({
       label: 'Planta Norte',
-      items: [{ label: 'Guarnición: Puré', quantity: 1 }]
+      items: []
     })
     expect(summary.commentsByLocation).toContainEqual({
       label: 'Planta Norte',
@@ -97,7 +101,11 @@ describe('daily report helpers', () => {
     const html = buildEmailHtml(summary)
     const text = buildEmailText(summary)
 
-    expect(summary.byLocationMenu[0].menus).toContainEqual({ label: 'Cena: PASTEL DE PAPAS', quantity: 1 })
+    expect(summary.byLocationMenu[0].menus).toContainEqual({
+      label: 'Cena: PASTEL DE PAPAS',
+      quantity: 1,
+      sides: []
+    })
     expect(summary.additionalByLocation[0].items).toEqual([
       { label: 'Coca cola', quantity: 1 },
       { label: 'Postre (solo Genneia): Fruta', quantity: 1 }
@@ -217,9 +225,9 @@ describe('daily report helpers', () => {
     expect(text).toContain('- Subtotal La Laja: 3 ítems')
     expect(text).toContain('Genneia')
     expect(text).toContain('- Opción 1 - Pan de carne: 3')
-    expect(text).toContain('Guarniciones / adicionales por ubicación / empresa')
+    expect(text).toContain('Adicionales por ubicación / empresa')
     expect(text).toContain('- Coca Zero')
-    expect(text).toContain('- Guarnición: Puré')
+    expect(text).toContain('Guarnición: Puré')
     expect(text).toContain('- Sin guarniciones/adicionales destacados.')
     expect(text).toContain('Comentarios / observaciones por ubicación / empresa')
     expect(text).toContain('- Coca Zero (x2)')
@@ -234,6 +242,66 @@ describe('daily report helpers', () => {
     expect(text).not.toContain('carla@example.com')
     expect(text).not.toContain('2615551234')
     expect(text).not.toContain('2615555678')
+  })
+
+  it('asocia guarniciones al menú correspondiente sin agruparlas globalmente', () => {
+    const summary = buildDailySummary([
+      normalizeOrder({
+        id: '1',
+        customer_name: 'Ana Cliente',
+        customer_email: 'ana@example.com',
+        location: 'La Laja',
+        delivery_date: '2026-06-23',
+        service: 'lunch',
+        status: 'pending',
+        items: [{ name: 'Menú principal', option: 'Pollo', quantity: 2 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Puré' }],
+        total_items: 2
+      }),
+      normalizeOrder({
+        id: '2',
+        customer_name: 'Bruno Cliente',
+        customer_email: 'bruno@example.com',
+        location: 'La Laja',
+        delivery_date: '2026-06-23',
+        service: 'dinner',
+        status: 'pending',
+        items: [{ name: 'Cena', option: 'Milanesa', quantity: 1 }],
+        custom_responses: [{ title: 'Guarnición', response: 'Puré' }],
+        total_items: 1
+      }),
+      normalizeOrder({
+        id: '3',
+        customer_name: 'Carla Cliente',
+        customer_email: 'carla@example.com',
+        location: 'La Laja',
+        delivery_date: '2026-06-23',
+        service: 'lunch',
+        status: 'pending',
+        items: [{ name: 'Menú principal', option: 'Pollo', quantity: 1 }],
+        custom_responses: [],
+        total_items: 1
+      })
+    ], '2026-06-23')
+    const text = buildEmailText(summary)
+
+    expect(summary.totalItems).toBe(4)
+    expect(summary.byLocationMenu[0].menus).toEqual([
+      {
+        label: 'Menú principal - Pollo',
+        quantity: 3,
+        sides: [{ label: 'Puré', quantity: 2 }]
+      },
+      {
+        label: 'Cena - Milanesa',
+        quantity: 1,
+        sides: [{ label: 'Puré', quantity: 1 }]
+      }
+    ])
+    expect(summary.additionalByLocation[0].items).toEqual([])
+    expect(text).toContain('- Menú principal - Pollo: 3\n  Guarnición: Puré (x2)')
+    expect(text).toContain('- Cena - Milanesa: 1\n  Guarnición: Puré')
+    expect(text).not.toContain('- Guarnición: Puré (x3)')
   })
 
   it('renderiza el HTML automático con detalle por empresa, adicionales y sin ranking global', () => {
@@ -283,7 +351,7 @@ describe('daily report helpers', () => {
 
     expect(html).toContain('PRUEBA - NO USAR PARA PRODUCCIÓN')
     expect(html).toContain('Detalle por ubicación / empresa')
-    expect(html).toContain('Guarniciones / adicionales por ubicación / empresa')
+    expect(html).toContain('Adicionales por ubicación / empresa')
     expect(html).toContain('Comentarios / observaciones por ubicación / empresa')
     expect(html).toContain('Genneia')
     expect(html).toContain('Cena - PASTEL DE PAPAS')
@@ -330,6 +398,19 @@ describe('daily report helpers', () => {
 
     expect(createMockOrders('2026-06-23')).toHaveLength(3)
     expect(recipients).toEqual(['agustinwojtyszyn99@gmail.com'])
+  })
+
+  it('send incluye siempre los tres destinatarios productivos sin duplicados', () => {
+    const recipients = getRecipientsForMode({
+      mode: 'send',
+      configuredRecipients: ['sarmientoclaudia985@gmail.com', 'agustinwojtyszyn99@gmail.com']
+    })
+
+    expect(recipients).toEqual([
+      'sarmientoclaudia985@gmail.com',
+      'agustinwojtyszyn99@gmail.com',
+      'servifoodrecepcion@gmail.com'
+    ])
   })
 
   it('testEmail respeta sendTo explícito', () => {
