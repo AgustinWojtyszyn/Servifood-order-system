@@ -44,7 +44,7 @@ describe('daily orders export model', () => {
   it('extrae bebida, guarnición y opciones adicionales', () => {
     const responses = extractCustomResponses(baseOrder)
 
-    expect(responses.side).toBe('Puré')
+    expect(responses.side).toBe('Puré (sin menú asociado)')
     expect(responses.beverage).toBe('Coca cola')
     expect(responses.additional).toBe('Pan: Sin pan')
   })
@@ -91,7 +91,7 @@ describe('daily orders export model', () => {
       label: 'Genneia',
       items: [
         { label: 'Coca cola', quantity: 1 },
-        { label: 'Guarnición: Puré', quantity: 1 },
+        { label: 'Guarnición: Puré (sin menú asociado)', quantity: 1 },
         { label: 'Pan: Sin pan', quantity: 1 }
       ]
     })
@@ -165,7 +165,7 @@ describe('daily orders export model', () => {
       'Menú elegido': 'Opción 1 - BIDE DEL DIA; Opción 4 - BIFE DEL DÍA CARNE',
       'Opción elegida': 'Opción 1 - BIDE DEL DIA (x2); Opción 4 - BIFE DEL DÍA CARNE (x1)',
       Cantidad: 3,
-      Guarniciones: 'Puré',
+      Guarniciones: 'Puré (sin menú asociado)',
       'Respuestas personalizadas': 'Bebida: Coca cola | Pan: Sin pan',
       Comentarios: 'Sin sal',
       Estado: 'Pendiente',
@@ -324,6 +324,24 @@ describe('daily orders export model', () => {
     expect(text).not.toContain('\nOpción 4: 1\n')
     expect(text).toContain('Total Genneia: 2')
     expect(text).toContain('✅ TOTAL GENERAL: 2 pedidos')
+  })
+
+  it('separa guarniciones sin metadata cuando hay múltiples menús', () => {
+    const text = formatDailyOrdersForWhatsApp([{
+      ...baseOrder,
+      id: 'unassigned-side',
+      items: [
+        { id: 'op4', name: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 },
+        { id: 'op5', name: 'Opción 5 - ENSALADA DEL FOOD', quantity: 1 }
+      ],
+      custom_responses: [{ title: 'Guarnición', response: 'Puré' }],
+      total_items: 2,
+      comments: ''
+    }], 'pending')
+
+    expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 1')
+    expect(text).toContain('Opción 5 - ENSALADA DEL FOOD: 1')
+    expect(text).toContain('Guarnición sin menú asociado\n\n* 1 Puré')
   })
 
   it('reporta inconsistencias por datos faltantes y cantidades inválidas', () => {

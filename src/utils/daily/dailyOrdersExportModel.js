@@ -1,5 +1,6 @@
 import { getStatusText } from './dailyOrderFormatters'
 import { isBeverage } from './dailyOrderCalculations'
+import { getSideAssociationsForOrder, getSideSummaryForOrder } from './dailyOrderSideAssociations'
 import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
 
 const EMPTY = ''
@@ -102,9 +103,9 @@ export const extractOrderItems = (order = {}) => {
 export const extractCustomResponses = (order = {}) => {
   const { normalizedCustomResponses } = normalizeOrderForReadOnly(order)
   const responses = toArray(normalizedCustomResponses)
-  const sideValues = []
   const beverageValues = []
   const additional = []
+  const sideSummary = getSideSummaryForOrder(order)
 
   responses.forEach((response) => {
     const title = normalizeText(response.title || response.label || 'Opción')
@@ -115,10 +116,7 @@ export const extractCustomResponses = (order = {}) => {
     const isSide = lowerTitle.includes('guarn')
     const isDrink = lowerTitle.includes('bebida') || isBeverage(combined)
 
-    if (isSide && combined) {
-      sideValues.push(combined)
-      return
-    }
+    if (isSide) return
 
     if (isDrink && combined) {
       beverageValues.push(combined)
@@ -129,7 +127,7 @@ export const extractCustomResponses = (order = {}) => {
   })
 
   return {
-    side: [...new Set(sideValues)].join(', '),
+    side: sideSummary.summaryText,
     beverage: [...new Set(beverageValues)].join(', '),
     additional: additional.join(' | ')
   }
@@ -255,36 +253,6 @@ const sortByQuantityAndLabel = (a, b) => b.quantity - a.quantity || a.label.loca
 
 const sortMenuWithSidesRows = (a, b) => b.quantity - a.quantity || a.label.localeCompare(b.label)
 
-const getItemIdentityValues = (item = {}) => {
-  const raw = item.raw || item
-  return [
-    raw?.id,
-    raw?.item_id,
-    raw?.itemId,
-    raw?.menu_item_id,
-    raw?.menuItemId,
-    raw?.menu_id,
-    raw?.menuId,
-    raw?.slotIndex
-  ].map((value) => normalizeText(value)).filter(Boolean)
-}
-
-const getResponseItemIdentityValues = (response = {}) => [
-  response.item_id,
-  response.itemId,
-  response.menu_item_id,
-  response.menuItemId,
-  response.menu_id,
-  response.menuId,
-  response.item,
-  response.item_name,
-  response.itemName,
-  response.menu,
-  response.menu_name,
-  response.menuName,
-  response.slotIndex
-].map((value) => normalizeText(value)).filter(Boolean)
-
 const getItemOptionPrefix = (label = '') => {
   const match = normalizeText(label).match(/^(opci[oó]n\s+\d+)\b/i)
   return match ? match[1].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : ''
@@ -299,49 +267,6 @@ const isFullerMenuLabelForSameOption = (candidate = '', current = '') => {
     candidatePrefix === getItemOptionPrefix(currentText) &&
     candidateText.length > currentText.length
   )
-}
-
-const getPreferredMenuLabel = (labels = [], fallback = 'Sin menú / opción') => {
-  const cleanLabels = labels.map(normalizeText).filter(Boolean)
-  if (!cleanLabels.length) return fallback
-  return cleanLabels.reduce((preferred, label) => {
-    if (isFullerMenuLabelForSameOption(label, preferred)) return label
-    if (!getItemOptionPrefix(label) && label.length > preferred.length && preferred === fallback) return label
-    return preferred
-  }, cleanLabels[0])
-}
-
-const getSideValuesFromOrder = (order = {}) => {
-  const { normalizedCustomResponses } = normalizeOrderForReadOnly(order)
-  return toArray(normalizedCustomResponses).flatMap((response) => {
-    const title = normalizeText(response.title || response.label || 'Opción')
-    if (!title.toLowerCase().includes('guarn')) return []
-
-    const answer = valueToText(response.answer ?? response.response ?? response.value)
-    const optionText = valueToText(response.options)
-    const combined = [answer, optionText].filter(Boolean).join(', ')
-    if (!combined) return []
-
-    return combined.split(',').map(normalizeText).filter(Boolean).map((label) => ({
-      label,
-      response,
-      identityValues: getResponseItemIdentityValues(response)
-    }))
-  })
-}
-
-const findItemForSide = (side, items = []) => {
-  if (!items.length) return null
-  const identityValues = side.identityValues || []
-  if (identityValues.length) {
-    const matched = items.find((item) => {
-      const itemValues = getItemIdentityValues(item)
-      return itemValues.some((value) => identityValues.includes(value)) ||
-        identityValues.some((value) => normalizeText(item.label).toLowerCase() === value.toLowerCase())
-    })
-    if (matched) return matched
-  }
-  return items[0]
 }
 
 const resolvePreferredMenuLabelsByLocation = (orders = []) => {
@@ -387,10 +312,15 @@ const buildWhatsAppLocationMenuSummary = (orders = []) => {
     const locationRow = byLocation.get(location)
     locationRow.total += orderItemsTotal
 
-    const ensureMenu = (label) => {
+    const ensureMenu = (label, options = {}) => {
       const safeLabel = normalizeText(label) || 'Sin menú / opción'
       if (!locationRow.menus.has(safeLabel)) {
-        locationRow.menus.set(safeLabel, { label: safeLabel, quantity: 0, sides: new Map() })
+        locationRow.menus.set(safeLabel, {
+          label: safeLabel,
+          quantity: 0,
+          sides: new Map(),
+          unassigned: Boolean(options.unassigned)
+        })
       }
       return locationRow.menus.get(safeLabel)
     }
@@ -404,12 +334,11 @@ const buildWhatsAppLocationMenuSummary = (orders = []) => {
       ensureMenu('Sin menú / opción').quantity += 1
     }
 
-    getSideValuesFromOrder(order).forEach((side) => {
-      const item = findItemForSide(side, items)
-      const label = item
-        ? resolveMenuLabelForWhatsApp(item, location, preferredLabelsByLocationAndOption)
-        : getPreferredMenuLabel([...locationRow.menus.keys()])
-      const menuRow = ensureMenu(label)
+    getSideAssociationsForOrder(order).forEach((side) => {
+      const label = side.item
+        ? resolveMenuLabelForWhatsApp(side.item, location, preferredLabelsByLocationAndOption)
+        : 'Guarnición sin menú asociado'
+      const menuRow = ensureMenu(label, { unassigned: !side.item })
       menuRow.sides.set(side.label, (menuRow.sides.get(side.label) || 0) + 1)
     })
   })
@@ -736,7 +665,7 @@ export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pend
     lines.push(location.label, '')
 
     location.menus.forEach((menu) => {
-      lines.push(`${menu.label}: ${menu.quantity}`, '')
+      lines.push(menu.unassigned ? menu.label : `${menu.label}: ${menu.quantity}`, '')
       menu.sides.forEach((side) => {
         lines.push(`* ${side.quantity} ${side.label}`)
       })

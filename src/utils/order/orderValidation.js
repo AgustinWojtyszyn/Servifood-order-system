@@ -1,6 +1,36 @@
 import { getTomorrowISOInTimeZone } from '../dateUtils'
 import { canChooseCustomSide } from './orderCustomSideRules'
 
+const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
+
+const hasValidResponse = (response) => {
+  if (!response) return false
+  if (Array.isArray(response) && response.length === 0) return false
+  if (typeof response === 'string' && response.trim() === '') return false
+  return true
+}
+
+const getSelectedItemName = (item = {}) =>
+  item.name || item.title || item.menu || item.label || item.option || item.selected_option || ''
+
+const withSideAssociationMetadata = ({ response, option, selectedItems, service }) => {
+  if (!isCustomSideOption(option)) return response
+  if (!Array.isArray(selectedItems) || selectedItems.length !== 1) return response
+
+  const [item] = selectedItems
+  const itemId = item?.id ?? item?.item_id ?? item?.itemId ?? item?.menu_item_id ?? item?.menuItemId
+  const itemName = getSelectedItemName(item)
+
+  return {
+    ...response,
+    item_id: itemId,
+    itemId,
+    slotIndex: item?.slotIndex ?? item?.item_slot_index ?? 0,
+    itemName,
+    service
+  }
+}
+
 const validateOrderSubmission = ({
   user,
   formData,
@@ -71,14 +101,6 @@ const validateOrderSubmission = ({
       ? selectedItemsList.every(item => canChooseCustomSide(item))
       : false
 
-    const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
-    const hasValidResponse = (response) => {
-      if (!response) return false
-      if (Array.isArray(response) && response.length === 0) return false
-      if (typeof response === 'string' && response.trim() === '') return false
-      return true
-    }
-
     if (!canChooseCustomSideForSelection) {
       const blockedCustomSide = (visibleLunchOptions || []).some(opt => {
         if (!isCustomSideOption(opt)) return false
@@ -108,10 +130,15 @@ const validateOrderSubmission = ({
         if (typeof response === 'string' && response.trim() === '') return false
         return true
       })
-      .map(opt => ({
-        id: opt.id,
-        title: opt.title,
-        response: customResponses[opt.id]
+      .map(opt => withSideAssociationMetadata({
+        option: opt,
+        selectedItems: selectedItemsList,
+        service: 'lunch',
+        response: {
+          id: opt.id,
+          title: opt.title,
+          response: customResponses[opt.id]
+        }
       }))
   }
 
@@ -128,13 +155,6 @@ const validateOrderSubmission = ({
       const canChooseCustomSideForDinner = selectedItemsListDinner.length > 0
         ? selectedItemsListDinner.every(item => canChooseCustomSide(item))
         : false
-      const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
-      const hasValidResponse = (response) => {
-        if (!response) return false
-        if (Array.isArray(response) && response.length === 0) return false
-        if (typeof response === 'string' && response.trim() === '') return false
-        return true
-      }
 
       if (isGenneia && !canChooseCustomSideForDinner) {
         const blockedCustomSide = (visibleDinnerOptions || []).some(opt => {
@@ -165,10 +185,15 @@ const validateOrderSubmission = ({
           if (typeof response === 'string' && response.trim() === '') return false
           return true
         })
-        .map(opt => ({
-          id: opt.id,
-          title: opt.title,
-          response: customResponsesDinner[opt.id]
+        .map(opt => withSideAssociationMetadata({
+          option: opt,
+          selectedItems: selectedItemsListDinner,
+          service: 'dinner',
+          response: {
+            id: opt.id,
+            title: opt.title,
+            response: customResponsesDinner[opt.id]
+          }
         }))
     }
   }

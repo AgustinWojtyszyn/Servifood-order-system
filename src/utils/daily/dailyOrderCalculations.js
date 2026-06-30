@@ -1,5 +1,6 @@
 import { BEVERAGE_KEYWORDS, DINNER_OVERRIDE_KEYWORDS } from './dailyOrderConstants'
 import { normalizeDishName } from './dailyOrderFormatters'
+import { getSideSummaryForOrder } from './dailyOrderSideAssociations'
 import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
 
 export const getCustomSideFromResponses = (responses = []) => {
@@ -122,7 +123,8 @@ export const buildOrderPreview = (order) => {
     others.forEach(i => items.push(`${normalizeDishName(i.name)} (x${i.quantity || 1})`))
   }
 
-  const customSide = getCustomSideFromResponses(normalizedCustomResponses || [])
+  const customSide = getSideSummaryForOrder(order).summaryText ||
+    getCustomSideFromResponses(normalizedCustomResponses || [])
   if (customSide) items.push(`Guarnición: ${customSide}`)
 
   const otherResponses = getOtherCustomResponses(normalizedCustomResponses || [])
@@ -188,10 +190,11 @@ export const buildOperationalSummary = (ordersList = []) => {
       })
     }
 
-    const side = getCustomSideFromResponses(normalizedCustomResponses || [])
-    if (side) {
+    const sideSummary = getSideSummaryForOrder(order)
+    sideSummary.associations.forEach((association) => {
+      const side = association.displayLabel
       sideCounts[side] = (sideCounts[side] || 0) + 1
-    }
+    })
 
     const customResponses = Array.isArray(normalizedCustomResponses) ? normalizedCustomResponses : []
     customResponses.forEach(resp => {
@@ -227,7 +230,7 @@ export const buildLocationCards = (ordersList = []) => {
 
   ;(ordersList || []).forEach(order => {
     if (!order) return
-    const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
+    const { normalizedItems } = normalizeOrderForReadOnly(order)
     const loc = order.location || 'Sin ubicación'
     if (!byLocation[loc]) {
       byLocation[loc] = { total: 0, dishCounts: {}, sideCounts: {} }
@@ -243,10 +246,11 @@ export const buildLocationCards = (ordersList = []) => {
       })
     }
 
-    const side = getCustomSideFromResponses(normalizedCustomResponses || [])
-    if (side) {
+    const sideSummary = getSideSummaryForOrder(order)
+    sideSummary.associations.forEach((association) => {
+      const side = association.displayLabel
       byLocation[loc].sideCounts[side] = (byLocation[loc].sideCounts[side] || 0) + 1
-    }
+    })
   })
 
   return Object.entries(byLocation)
@@ -289,10 +293,11 @@ export const buildPrintStats = (ordersList = []) => {
     byLocationTurn[loc][turn] += 1
     byLocationTurn[loc].total += 1
 
-    const side = getCustomSideFromResponses(customResponses)
-    if (side) {
+    const sideSummary = getSideSummaryForOrder(order)
+    sideSummary.associations.forEach((association) => {
+      const side = association.displayLabel
       sideCounts[side] = (sideCounts[side] || 0) + 1
-    }
+    })
 
     getOtherCustomResponses(customResponses).forEach(r => {
       const response = Array.isArray(r.response) ? r.response.join(', ') : r.response

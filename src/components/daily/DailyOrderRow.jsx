@@ -2,9 +2,9 @@ import { User } from 'lucide-react'
 import {
   buildOrderPreview,
   getBeverageLabel,
-  getCustomSideFromResponses,
   summarizeOrderItems
 } from '../../utils/daily/dailyOrderCalculations'
+import { getSideSummaryForOrder } from '../../utils/daily/dailyOrderSideAssociations'
 import {
   formatTime,
   getLocationBadgeColor,
@@ -21,7 +21,7 @@ const DailyOrderRow = ({
 }) => {
   if (variant === 'card') {
     const summary = summarizeOrderItems(order.items)
-    const customSide = getCustomSideFromResponses(order.custom_responses)
+    const customSide = getSideSummaryForOrder(order).summaryText
     const preview = buildOrderPreview(order)
 
     return (
@@ -129,7 +129,7 @@ const DailyOrderRow = ({
   }
 
   const summary = summarizeOrderItems(order.items)
-  const customSide = getCustomSideFromResponses(order.custom_responses)
+  const customSide = getSideSummaryForOrder(order).summaryText
 
   return (
     <tr
