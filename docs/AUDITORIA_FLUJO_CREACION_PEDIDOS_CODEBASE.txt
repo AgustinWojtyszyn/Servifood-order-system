@@ -1,0 +1,361 @@
+Auditoria del flujo principal de creacion de pedidos - ServiFood
+================================================================
+
+Fecha y entorno
+---------------
+Fecha de auditoria: 2026-06-30.
+Entorno: repo local /home/aggustin/.vscode/food-order-app en WSL2/Linux.
+Herramienta principal usada: codebase-memory-mcp.
+Proyecto MCP usado: home-aggustin-.vscode-food-order-app.
+
+Objetivo de la auditoria
+------------------------
+Auditar el flujo principal de la app para validar que una persona pueda crear un pedido correctamente, que los datos se validen antes de guardar, que el pedido quede persistido en Supabase de forma consistente y que luego pueda aparecer correctamente en /daily-orders.
+
+Esta auditoria es de lectura. No se modifico logica de negocio, componentes funcionales, Edge Functions, SQL/migraciones, package.json, package-lock.json, variables de entorno, Render, Supabase ni crons.
+
+Alcance
+-------
+Incluido:
+- Ruta/pantalla principal de creacion de pedido.
+- Componente OrderForm y controlador de flujo.
+- Seleccion de empresa/ubicacion.
+- Usuario asociado al pedido.
+- Seleccion de almuerzo/cena.
+- Seleccion de menu.
+- Seleccion y validacion de guarniciones/opciones personalizadas.
+- Calculo de delivery_date.
+- Validaciones previas al guardado.
+- Control de duplicados en UI/cliente y en RPC.
+- Insercion en Supabase via RPC create_order_idempotent.
+- Estado inicial pending.
+- Lectura posterior desde /daily-orders usando delivery_date.
+- Tablas/vistas/RPC directamente relacionadas: orders, orders_with_person_key, users, user_features, create_order_idempotent.
+
+Fuera de alcance:
+- Exportacion Excel/PDF/WhatsApp de /daily-orders.
+- Autoexportado y Edge Function daily-orders-report.
+- Panel mensual.
+- Auditoria completa de menu admin.
+- Auditoria completa de permisos/RLS.
+- Cafeteria.
+- Pruebas reales contra Supabase productivo.
+
+Nota de alcance: se leyeron 17 archivos. El pedido original sugeria 10 a 15; se amplio levemente porque delivery_date y ventana horaria eran puntos criticos y requirieron revisar dateUtils/orderRules ademas de los archivos directos del flujo.
+
+Uso de codebase-memory-mcp
+--------------------------
+Consultas realizadas al grafo:
+
+1. codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"order form create order pedido crear pedido","limit":15}'
+2. codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"create_order_idempotent orders insert pending delivery_date","limit":15}'
+3. codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"guarniciones side dishes menu order","limit":15}'
+4. codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"daily-orders ordersService delivery_date pending archived","limit":15}'
+
+Archivos detectados por el grafo y luego revisados:
+- src/components/OrderForm.jsx
+- src/hooks/orderForm/useOrderFlowController.js
+- src/hooks/useOrderSubmit.js
+- src/utils/order/orderSubmit.js
+- src/utils/order/orderPayload.js
+- src/utils/order/orderValidation.js
+- src/hooks/useOrderBootstrap.js
+- src/hooks/orderForm/useOrderCompany.js
+- src/hooks/orderForm/useCustomSideGuards.js
+- src/utils/order/orderCustomSideRules.js
+- src/services/orders/ordersService.js
+- supabase/migrations/20260619093000_admin_order_cleanup_and_order_guards.sql
+- src/hooks/useDailyOrdersData.js
+- src/components/DailyOrders.jsx
+- src/utils/order/orderFormHelpers.js
+- src/utils/dateUtils.js
+- src/constants/orderRules.js
+
+Funciones/componentes detectados:
+- OrderForm
+- useOrderFlowController
+- useOrderSubmit
+- validateOrderSubmission
+- submitOrders
+- buildOrderPayload
+- useOrderBootstrap
+- useOrderCompany
+- useCustomSideGuards
+- canChooseCustomSide
+- buildSelectedItemsList
+- ordersService.createOrder
+- ordersService.getOrders
+- ordersService.getOrdersWithPersonKey
+- create_order_idempotent
+- useDailyOrdersData
+- DailyOrders
+- getTomorrowISOInTimeZone
+
+Rutas/componentes detectados:
+- /order
+- /order/:companySlug
+- /daily-orders
+- OrderForm
+- DailyOrders
+
+Tablas/vistas/RPC detectadas:
+- orders
+- orders_with_person_key
+- users
+- user_features
+- create_order_idempotent
+
+Mapa de archivos involucrados
+-----------------------------
+src/components/OrderForm.jsx
+Pantalla principal del formulario. Renderiza datos personales, menu de almuerzo, opciones, selector de turnos, cena, comentarios, modal de confirmacion y boton de envio.
+
+src/hooks/orderForm/useOrderFlowController.js
+Orquestador del formulario. Conecta estado, empresa, carga inicial, menu, opciones, guarniciones, seleccion de almuerzo/cena, sugerencias y submit.
+
+src/hooks/useOrderSubmit.js
+Hook de envio. Ejecuta validateOrderSubmission, abre modal de confirmacion y llama submitOrders cuando el usuario confirma.
+
+src/utils/order/orderValidation.js
+Valida usuario, ventana horaria, duplicados pendientes conocidos, ubicacion, turnos, items, cena, guarniciones/opciones requeridas y arma delivery_date/deliveryDates.
+
+src/utils/order/orderSubmit.js
+Hace control de duplicados contra pedidos existentes del usuario, arma payloads por servicio y llama ordersService.createOrder. Traduce errores del RPC a mensajes de usuario.
+
+src/utils/order/orderPayload.js
+Construye orderData para Supabase: user_id, location, customer_name/email/phone, items, comments, delivery_date, status pending, total_items, custom_responses, idempotency_key y service.
+
+src/hooks/useOrderBootstrap.js
+Carga menu, opciones visibles, features del usuario, cena, pedido pendiente existente y sugerencias. Usa getTomorrowISOInTimeZone para menu y fecha operativa.
+
+src/hooks/orderForm/useOrderCompany.js
+Resuelve empresa activa desde ruta, querystring, localStorage o contexto de cambio de empresa. Expone companyConfig, companyOptionsSlug, isGenneia y locations.
+
+src/hooks/orderForm/useCustomSideGuards.js
+Limpia respuestas de guarnicion cuando la seleccion no permite guarnicion distinta.
+
+src/utils/order/orderCustomSideRules.js
+Define si un item puede elegir guarnicion distinta. Bloquea menu principal, ensaladas, opciones 5/6 y celiacos.
+
+src/utils/order/orderFormHelpers.js
+Construye lista ordenada de items seleccionados.
+
+src/services/orders/ordersService.js
+Servicio Supabase para pedidos. createOrder llama al RPC create_order_idempotent; getOrders y getOrdersWithPersonKey leen pedidos.
+
+supabase/migrations/20260619093000_admin_order_cleanup_and_order_guards.sql
+Define create_order_idempotent. Es el guard server-side principal para autenticacion, usuario, idempotencia, delivery_date, servicio, items, ventana horaria, cena habilitada, duplicados e insert en orders.
+
+src/hooks/useDailyOrdersData.js
+Carga /daily-orders. Valida admin, lee orders_with_person_key, filtra por delivery_date igual a fecha operativa y enriquece nombre/email.
+
+src/components/DailyOrders.jsx
+Pantalla admin de /daily-orders. Consume useDailyOrdersData, filtra, muestra resumen/tabla y permite exportar o archivar.
+
+src/utils/dateUtils.js
+Calcula hoy/manana por zona horaria y produce getTomorrowISOInTimeZone.
+
+src/constants/orderRules.js
+Define ORDER_TIMEZONE = America/Argentina/Buenos_Aires y ventana 09:00-22:00.
+
+Mapa de funciones/componentes involucrados
+-----------------------------------------
+OrderForm:
+Entrada visual del flujo. Deshabilita el boton si loading, submitting, no hay items o hasOrderToday.
+
+useOrderFlowController:
+Agrega todo el estado y handlers del pedido. Entrega al componente bloques form, lunch, dinner, turns, suggestions y submit.
+
+useOrderCompany:
+Determina empresa y ubicaciones disponibles. La ubicacion elegida queda luego como order.location.
+
+useOrderBootstrap:
+Carga menu de manana, opciones visibles por empresa/meal/date, feature dinner y pedidos pendientes para bloquear duplicados.
+
+validateOrderSubmission:
+Primera barrera fuerte en cliente. Verifica usuario, horario, ubicacion, turno, items, opciones requeridas, guarnicion permitida y exclusividad de cena.
+
+submitOrders:
+Segunda barrera en cliente. Consulta pedidos existentes del usuario, valida duplicado por user_id + delivery_date + service + status pending, arma payload e invoca Supabase.
+
+buildOrderPayload:
+Normaliza items y arma estructura final del pedido.
+
+ordersService.createOrder:
+Llama supabase.rpc('create_order_idempotent').
+
+create_order_idempotent:
+Guard server-side. Inserta en orders con status pending y delivery_date validado, o devuelve pedido existente para la misma idempotency_key.
+
+useDailyOrdersData:
+Lee orders_with_person_key y filtra por delivery_date de manana.
+
+DailyOrders:
+Muestra los pedidos operativos para admins y aplica filtros visuales.
+
+Flujo paso a paso
+-----------------
+1. Usuario abre /order o /order/:companySlug.
+2. App renderiza OrderForm dentro de RequireUser, por lo que requiere usuario autenticado.
+3. useOrderCompany resuelve empresa activa y ubicaciones posibles.
+4. useOrderBootstrap carga menu del dia operativo usando getTomorrowISOInTimeZone.
+5. useOrderBootstrap carga opciones personalizadas visibles para lunch/dinner segun empresa, meal y date.
+6. useOrderBootstrap carga features del usuario y habilita cena si corresponde.
+7. useOrderBootstrap revisa pedidos existentes del usuario y marca pendingLunch/pendingDinner/hasOrderToday si encuentra un pending para delivery_date + service.
+8. Usuario selecciona ubicacion.
+9. Usuario selecciona menu de almuerzo y, si aplica, cena.
+10. Usuario selecciona opciones/guarniciones. useCustomSideGuards elimina guarniciones no permitidas si el menu elegido no las admite.
+11. Usuario envia el formulario.
+12. useOrderSubmit llama validateOrderSubmission.
+13. validateOrderSubmission calcula deliveryDate = getTomorrowISOInTimeZone().
+14. validateOrderSubmission arma deliveryDates: lunch usa deliveryDate; dinner usa selectedDinnerDate o deliveryDate.
+15. Si la validacion pasa, se abre OrderConfirmModal.
+16. Al confirmar, submitOrders consulta pedidos existentes con ordersService.getOrders(user.id).
+17. submitOrders bloquea duplicado activo si ya hay pending para mismo delivery_date y service.
+18. buildOrderPayload arma orderData con user_id, location, items, custom_responses, delivery_date, status pending y service.
+19. ordersService.createOrder llama create_order_idempotent.
+20. create_order_idempotent valida autenticacion, user_id, idempotency_key, service, items, delivery_date no pasada, ventana 09-22, feature dinner y duplicado pending.
+21. create_order_idempotent inserta en orders con status = 'pending'.
+22. submitOrders devuelve createdOrderIds.
+23. useOrderSubmit muestra exito y navega a /dashboard.
+24. En /daily-orders, useDailyOrdersData lee orders_with_person_key y filtra por delivery_date igual a getTomorrowISOInTimeZone().
+25. El pedido aparece si su delivery_date coincide con la fecha operativa y el usuario admin tiene permisos para leerlo.
+
+Validaciones existentes
+-----------------------
+- Usuario requerido en cliente: validateOrderSubmission exige user.id.
+- Usuario requerido server-side: create_order_idempotent exige auth.uid().
+- user_id protegido server-side: p_user_id debe coincidir con auth.uid(), salvo admin.
+- Ventana horaria cliente: isOutsideWindow.
+- Ventana horaria server-side: hora Buenos Aires entre 09:00 y 22:00.
+- Ubicacion requerida en cliente.
+- Al menos un turno seleccionado.
+- Almuerzo requiere al menos un plato.
+- Cena requiere plato o opcion de cena.
+- Cena valida exclusividad entre menu y opcion especial.
+- Cena no permite mas de un menu por persona en submitOrders.
+- Opciones requeridas se validan antes de enviar.
+- Guarnicion distinta se bloquea si el item no la permite.
+- Duplicado en bootstrap: pendingLunch/pendingDinner por delivery_date + service + pending.
+- Duplicado antes de guardar: submitOrders revisa pedidos existentes por delivery_date + service + pending.
+- Duplicado server-side: create_order_idempotent revisa orders por user_id + delivery_date + service + status pending.
+- Idempotencia server-side por idempotency_key.
+- delivery_date se usa explicitamente para guardar.
+- /daily-orders filtra por delivery_date, no por created_at.
+- Estado inicial se setea en cliente y server como pending.
+
+Validaciones faltantes o dudosas
+--------------------------------
+1. Empresa no queda persistida como campo separado en el payload revisado.
+   buildOrderPayload guarda location, pero no company_slug/company_name. Si dos empresas comparten nombres de ubicacion o si se necesita auditoria por empresa, la consistencia depende del texto de location.
+
+2. El boton de OrderForm se deshabilita con hasOrderToday.
+   useOrderBootstrap define hasOrderToday como pendingLunch || pendingDinner. Esto puede bloquear todo el formulario aunque el usuario solo tenga pendiente uno de los servicios y quiera crear el otro. La validacion interna es mas granular, pero el boton usa un booleano global.
+
+3. selectedDinnerDate existe y puede diferir de deliveryDate.
+   /daily-orders filtra solo por getTomorrowISOInTimeZone. Si alguna UI o estado futuro permite cena con selectedDinnerDate distinto de manana, ese pedido podria no aparecer en /daily-orders del dia operativo esperado.
+
+4. El RPC valida items no vacios, pero no valida semanticamente que los items pertenezcan al menu del dia ni a la empresa.
+   El cliente carga menus correctos, pero server-side acepta el JSON de items mientras no este vacio.
+
+5. Relacion guarnicion-menu se valida por heuristica de slotIndex/texto.
+   canChooseCustomSide depende de slotIndex, texto de descripcion/nombre y opciones 5/6. Si cambia el modelo de menu, puede aceptar o bloquear guarniciones indebidamente.
+
+6. ordersService.getOrders recibe argumentos extra desde submitOrders, pero su firma solo usa userId.
+   No rompe el flujo, pero el parametro force/limit no tiene efecto y puede confundir futuras auditorias.
+
+7. checkTodayOrder usa created_at para sugerencias del pedido anterior.
+   No afecta el guardado ni /daily-orders, pero mezcla criterios: duplicados usan delivery_date; sugerencias usan created_at.
+
+Riesgos P0
+----------
+No se detectaron P0 evidentes en el alcance revisado.
+
+No se observo un camino claro de perdida de datos, fecha equivocada sistemica, duplicados graves no mitigados, pedidos que no puedan aparecer en /daily-orders si usan delivery_date de manana, ni mezcla directa de usuarios en la insercion. El RPC server-side cubre las garantias principales.
+
+Riesgos P1
+----------
+1. Posible bloqueo indebido por hasOrderToday global.
+   Si el usuario ya tiene cena pendiente pero no almuerzo, o viceversa, el boton puede impedir crear el otro servicio aunque las validaciones mas profundas esten preparadas para manejar servicios por separado.
+
+2. Empresa no persistida explicitamente.
+   El pedido guarda location, no company_slug/company_name en el payload revisado. Esto puede generar ambiguedad operativa si hay ubicaciones compartidas, cambios de nombre o reportes por empresa.
+
+3. Validacion server-side de items es estructural, no contra menu real.
+   create_order_idempotent valida array no vacio, pero no verifica que los items existan para delivery_date/empresa/servicio. La UI reduce el riesgo, pero no lo elimina.
+
+4. Edge case con selectedDinnerDate.
+   Si cena puede apuntar a fecha distinta de manana, /daily-orders no la mostrara en la pantalla que filtra solo por getTomorrowISOInTimeZone.
+
+5. Guarniciones dependen de reglas heuristicas.
+   La relacion guarnicion-menu puede romperse si cambia el orden/slotIndex o si los textos de menu cambian de forma no contemplada.
+
+Riesgos P2
+----------
+1. Parametros ignorados en ordersService.getOrders.
+   submitOrders llama getOrders(user.id, { force: true, limit: 200 }), pero el servicio no usa ese segundo argumento.
+
+2. Logica de duplicados en tres capas.
+   Hay checks en bootstrap, submitOrders y RPC. Es bueno para seguridad, pero aumenta complejidad y riesgo de mensajes/estados divergentes.
+
+3. Naming legacy/confuso.
+   Variables como hasOrderToday representan en realidad "hay pedido pendiente para fecha operativa/servicio", no necesariamente "hoy".
+
+4. Comentarios y nombres mezclan "today", "tomorrow", "operationalDate" y "deliveryDate".
+   La logica parece usar delivery_date correctamente, pero los nombres pueden inducir errores futuros.
+
+5. Sugerencias por created_at.
+   No es parte critica del guardado, pero convendria documentar por que sugerencias miran created_at y no delivery_date.
+
+Pruebas manuales recomendadas
+-----------------------------
+[ ] Crear pedido normal de almuerzo con usuario autenticado.
+[ ] Verificar en Supabase que orders.user_id coincide con auth user.
+[ ] Verificar que status inicial sea pending.
+[ ] Verificar que delivery_date sea manana en America/Argentina/Buenos_Aires.
+[ ] Verificar que created_at no sea usado para decidir aparicion en /daily-orders.
+[ ] Crear pedido con guarnicion permitida y revisar custom_responses.
+[ ] Intentar guarnicion distinta en menu principal/ensalada/opcion 5/6/celiaco y confirmar que se bloquea.
+[ ] Crear pedido sin guarnicion si la opcion no es requerida.
+[ ] Probar empresa distinta y verificar location guardada.
+[ ] Probar usuario distinto y verificar que no mezcla user_id/customer_email.
+[ ] Probar cena con usuario habilitado.
+[ ] Probar cena con usuario no habilitado y confirmar error server-side.
+[ ] Intentar duplicado mismo user_id + delivery_date + service + pending.
+[ ] Confirmar que el duplicado se bloquea en UI y tambien por RPC.
+[ ] Verificar que el pedido aparece en /daily-orders por delivery_date.
+[ ] Verificar que no aparece en una fecha incorrecta.
+[ ] Archivar un pedido y confirmar que deja de contar como pending duplicado.
+[ ] Probar escenario con pendingLunch pero sin pendingDinner, y viceversa, para validar si hasOrderToday bloquea indebidamente.
+
+Que NO conviene tocar
+---------------------
+- create_order_idempotent sin revisar permisos, RLS y constraints.
+- Calculo de getTomorrowISOInTimeZone y ORDER_TIMEZONE.
+- Ventana horaria 09:00-22:00.
+- Estructura de orders.items y custom_responses.
+- Logica de status pending/archived/cancelled.
+- Lectura de /daily-orders por orders_with_person_key.
+- Reglas de guarnicion en orderCustomSideRules.
+- useOrderBootstrap sin pruebas manuales de duplicados y cena.
+- ordersService.createOrder y RPC de idempotencia.
+- Migraciones SQL ya aplicadas.
+- Variables de entorno y configuracion de Supabase/Render/crons.
+
+Conclusion
+----------
+El flujo principal parece parcialmente solido a solido.
+
+La cadena critica esta bien cubierta: la UI calcula delivery_date, valida datos, arma payload consistente, usa idempotencia y delega la insercion final a un RPC con validaciones server-side. /daily-orders tambien filtra por delivery_date, lo cual alinea la creacion con la lectura operativa.
+
+No se detectaron P0 evidentes. Los riesgos principales son P1: persistencia explicita de empresa ausente, posible bloqueo global por hasOrderToday, validacion server-side de items no atada al menu real y edge cases de selectedDinnerDate.
+
+Proximos pasos recomendados
+---------------------------
+1. Auditar /daily-orders completo: filtros, conteos, status, exportCompany, availableSides y tabla.
+2. Auditar exportacion manual Excel/PDF/WhatsApp contra custom_responses y guarniciones.
+3. Auditar guarniciones con datos reales de menu y opciones personalizadas.
+4. Auditar empresas/ubicaciones y decidir si orders deberia persistir company_slug/company_name.
+5. Auditar autoexportado daily-orders-report para confirmar que usa la misma semantica de delivery_date.
+6. Auditar permisos/RLS de orders, orders_with_person_key, users y user_features.
+
