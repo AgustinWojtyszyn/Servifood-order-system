@@ -1,0 +1,415 @@
+Registro de instalacion y configuracion de codebase-memory-mcp
+Proyecto: ServiFood Pedidos
+Fecha: 2026-06-30
+
+Objetivo solicitado
+-------------------
+Instalar codebase-memory-mcp localmente, integrarlo con Codex CLI/MCP si estaba disponible, generar un mapa estructural del repo, documentar el uso en el proyecto y no alterar logica de negocio ni produccion.
+
+Sistema operativo detectado
+---------------------------
+El entorno detectado fue WSL2/Linux, no Windows nativo.
+
+Comandos de deteccion ejecutados:
+
+uname -a
+printf '%s\n' "$OSTYPE"
+pwd
+
+Resultado relevante:
+
+Linux Agustin 6.18.33.2-microsoft-standard-WSL2
+OSTYPE=linux-gnu
+Repo=/home/aggustin/.vscode/food-order-app
+
+Revision del instalador
+-----------------------
+Se descargaron localmente los instaladores oficiales antes de ejecutar nada:
+
+curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh -o /tmp/codebase-memory-mcp-install.sh
+curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.ps1 -o /tmp/codebase-memory-mcp-install.ps1
+
+Se reviso que existieran y se inspecciono su contenido con sed.
+
+El instalador Linux oficial soportaba:
+
+bash install.sh --ui
+
+La variante UI descarga:
+
+codebase-memory-mcp-ui-linux-amd64-portable.tar.gz
+
+Instalacion
+-----------
+Como el entorno era WSL2/Linux, se uso el instalador Linux oficial con variante UI:
+
+bash /tmp/codebase-memory-mcp-install.sh --ui
+
+Resultado:
+
+codebase-memory-mcp 0.8.1
+
+Binario instalado en:
+
+/home/aggustin/.local/bin/codebase-memory-mcp
+
+El instalador agrego /home/aggustin/.local/bin al PATH en ~/.zshrc, aunque la shell actual todavia requeria usar la ruta absoluta.
+
+Agentes detectados/configurados por el instalador:
+
+Codex CLI
+Gemini CLI
+VS Code
+
+Configuracion MCP/Codex creada o modificada
+-------------------------------------------
+Codex CLI:
+
+~/.codex/config.toml
+~/.codex/AGENTS.md
+
+Entrada MCP agregada en ~/.codex/config.toml:
+
+[mcp_servers.codebase-memory-mcp]
+command = "/home/aggustin/.local/bin/codebase-memory-mcp"
+
+Tambien se agrego un hook SessionStart con recordatorio para usar codebase-memory-mcp.
+
+VS Code:
+
+~/.config/Code/User/mcp.json
+
+Contenido relevante:
+
+{
+    "servers": {
+        "codebase-memory-mcp": {
+            "type": "stdio",
+            "command": "/home/aggustin/.local/bin/codebase-memory-mcp"
+        }
+    }
+}
+
+Verificacion de instalacion
+---------------------------
+Comandos ejecutados:
+
+/home/aggustin/.local/bin/codebase-memory-mcp --version
+/home/aggustin/.local/bin/codebase-memory-mcp --help
+/home/aggustin/.local/bin/codebase-memory-mcp config list
+
+Resultado:
+
+codebase-memory-mcp 0.8.1
+
+Configuracion inicial:
+
+auto_index = false
+auto_index_limit = 50000
+
+Auto-indexado
+-------------
+Se activo con:
+
+/home/aggustin/.local/bin/codebase-memory-mcp config set auto_index true
+
+Verificacion:
+
+/home/aggustin/.local/bin/codebase-memory-mcp config list
+
+Resultado:
+
+auto_index = true
+auto_index_limit = 50000
+
+Indexado del repositorio
+------------------------
+Antes de indexar, list_projects no mostraba proyectos:
+
+/home/aggustin/.local/bin/codebase-memory-mcp cli list_projects '{}'
+
+Luego se ejecuto:
+
+/home/aggustin/.local/bin/codebase-memory-mcp cli index_repository '{"repo_path":"/home/aggustin/.vscode/food-order-app"}'
+
+Resultado:
+
+project: home-aggustin-.vscode-food-order-app
+status: indexed
+nodes: 13339
+edges: 35132
+
+Verificacion posterior:
+
+/home/aggustin/.local/bin/codebase-memory-mcp cli list_projects '{}'
+/home/aggustin/.local/bin/codebase-memory-mcp cli index_status '{"project":"home-aggustin-.vscode-food-order-app"}'
+
+Resultado final:
+
+project: home-aggustin-.vscode-food-order-app
+nodes: 13339
+edges: 35132
+status: ready
+
+Nota: el primer indexado incluyo artefactos locales existentes de .unlighthouse. Esto no toca produccion, pero puede ensuciar el grafo. Quedo documentado para futuros reindexados.
+
+Prueba de UI
+------------
+Se levanto la UI con:
+
+/home/aggustin/.local/bin/codebase-memory-mcp --ui=true --port=9749
+
+Se probo con:
+
+curl -I --max-time 5 http://localhost:9749
+curl -fsS --max-time 5 http://localhost:9749 | head -40
+
+Resultado:
+
+HTTP/1.1 200 OK
+Pagina: Codebase Memory - Graph
+
+URL documentada:
+
+http://localhost:9749
+
+El proceso fue cerrado con Ctrl+C para no dejarlo colgado.
+
+Archivos creados o modificados en el repo
+-----------------------------------------
+Se modifico:
+
+.gitignore
+
+Se agregaron ignores para artefactos locales de codebase-memory-mcp:
+
+.codebase-memory/
+.codebase-memory-mcp/
+codebase-memory/
+codebase-memory-mcp/
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.graph
+*.graphml
+codebase-memory-mcp-*
+
+Se crearon:
+
+docs/CODEBASE_MEMORY_MCP.md
+docs/CODEBASE_MAP.md
+
+Contenido documentado en docs/CODEBASE_MEMORY_MCP.md:
+
+- Que es codebase-memory-mcp.
+- Para que se usa en este repo.
+- Como instalarlo.
+- Como verificarlo.
+- Como indexar el repo.
+- Como abrir la UI visual.
+- Como usarlo con Codex.
+- Que no debe tocar: produccion, Render, Supabase, Edge Functions, package.json, variables reales.
+
+Contenido documentado en docs/CODEBASE_MAP.md:
+
+- Stack principal.
+- Carpetas principales.
+- Rutas/pantallas importantes.
+- Flujo de creacion de pedidos.
+- Flujo de daily-orders.
+- Flujo de reporte automatico.
+- Flujo de archivado.
+- Servicios principales.
+- Edge Functions importantes.
+- Tablas Supabase criticas.
+- Zonas delicadas donde no conviene tocar sin revisar.
+- Archivos que Codex debe mirar primero para futuras tareas.
+
+Archivos que NO se modificaron
+------------------------------
+No se modifico:
+
+package.json
+package-lock.json
+Logica de pedidos
+Componentes funcionales
+Edge Functions
+SQL/migraciones
+Variables de entorno
+Configuracion de deploy
+Render
+Supabase
+Crons
+
+Verificaciones finales
+----------------------
+Se ejecuto:
+
+npm run lint
+npm run build
+git status --short
+git diff --stat
+
+Limpieza final posterior al primer indexado
+-------------------------------------------
+Se hizo una pasada final de cierre porque el primer indexado habia incluido artefactos locales de .unlighthouse.
+
+Cambios en .gitignore:
+
+- Se agrego .unlighthouse/ como artefacto local de auditoria/reporte.
+- Se mantuvieron los ignores locales de codebase-memory-mcp.
+- Se conservaron patrones para *.db, *.sqlite, *.sqlite3, *.graph y similares.
+- Se agrego un comentario aclarando que esos patrones son para archivos locales SQLite/cache/grafos generados por herramientas MCP o analisis local, no para logica de negocio ni datos productivos.
+
+Bloque relevante agregado/ajustado:
+
+# Local audit/report artifacts
+.unlighthouse/
+
+# codebase-memory-mcp local cache and graph artifacts
+.codebase-memory/
+.codebase-memory-mcp/
+codebase-memory/
+codebase-memory-mcp/
+
+# Local SQLite/cache/graph files generated by MCP tools or local analysis,
+# not application business logic or production data.
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.graph
+*.graphml
+codebase-memory-mcp-*
+
+Reindexado ejecutado:
+
+/home/aggustin/.local/bin/codebase-memory-mcp cli index_repository '{"repo_path":"/home/aggustin/.vscode/food-order-app"}'
+
+Resultado del reindexado:
+
+project: home-aggustin-.vscode-food-order-app
+status: indexed
+nodes: 13367
+edges: 35163
+
+Directorios excluidos reportados por el indexador:
+
+__pycache__
+.vscode
+.unlighthouse
+.venv
+dist
+node_modules
+.git
+supabase/.temp
+supabase/.branches
+testing/load/__pycache__
+test-locust/venv
+
+Verificacion de estado final del grafo:
+
+/home/aggustin/.local/bin/codebase-memory-mcp cli index_status '{"project":"home-aggustin-.vscode-food-order-app"}'
+
+Resultado:
+
+project: home-aggustin-.vscode-food-order-app
+nodes: 13367
+edges: 35163
+status: ready
+
+Consulta simple al grafo:
+
+/home/aggustin/.local/bin/codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"daily orders report","limit":10}'
+
+Resultado relevante:
+
+La consulta devolvio funciones de supabase/functions/daily-orders-report/index.ts, incluyendo fetchOrders, archiveReportedOrders, buildWorkbook, sendEmail, upsertRun y fetchOrdersForRealTestEmail.
+
+Confirmacion final:
+
+No se toco produccion.
+No se modifico logica funcional.
+No se modificaron componentes funcionales.
+No se modificaron Edge Functions.
+No se modificaron SQL/migraciones.
+No se modificaron variables de entorno.
+No se modificaron Render, Supabase ni crons.
+Los cambios quedaron limitados a documentacion y .gitignore.
+
+Resultado de lint:
+
+Paso sin errores.
+
+Resultado de build:
+
+Paso correctamente.
+
+Advertencias del build:
+
+- Browserslist/caniuse-lite esta desactualizado.
+- Vite aviso que src/supabaseClient.js se importa dinamica y estaticamente, por lo que no se mueve a otro chunk.
+- Algunos chunks superan 1000 kB despues de minificacion.
+
+Estas advertencias ya corresponden al build actual y no fueron causadas por cambios de logica.
+
+Estado Git final observado:
+
+ M .gitignore
+?? docs/CODEBASE_MAP.md
+?? docs/CODEBASE_MEMORY_MCP.md
+
+Despues de este registro, tambien se creo:
+
+?? docs/CODEBASE_MEMORY_MCP_REGISTRO.txt
+
+Resumen final
+-------------
+codebase-memory-mcp quedo instalado localmente.
+Codex CLI quedo configurado con MCP global.
+VS Code quedo configurado con MCP global.
+auto_index quedo activado.
+El repo quedo indexado y listo.
+La UI visual quedo disponible y probada en http://localhost:9749.
+No se altero logica de negocio ni produccion.
+
+Comandos exactos principales
+----------------------------
+uname -a
+printf '%s\n' "$OSTYPE"
+pwd
+rg --files -g '!*node_modules*' -g '!dist' -g '!build' | head -200
+git status --short
+sed -n '1,220p' package.json
+find . -maxdepth 3 \( -path './node_modules' -o -path './dist' -o -path './.git' \) -prune -o \( -name '.mcp.json' -o -path './.vscode/mcp.json' -o -path './.codex/config.toml' -o -path './.codex/AGENTS.md' -o -name 'AGENTS.md' -o -name '.gitignore' \) -print
+curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh -o /tmp/codebase-memory-mcp-install.sh
+ls -l /tmp/codebase-memory-mcp-install.sh
+sed -n '1,260p' /tmp/codebase-memory-mcp-install.sh
+curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.ps1 -o /tmp/codebase-memory-mcp-install.ps1
+ls -l /tmp/codebase-memory-mcp-install.ps1
+sed -n '1,220p' /tmp/codebase-memory-mcp-install.ps1
+command -v codebase-memory-mcp || true
+printf '%s\n' "$PATH"
+bash /tmp/codebase-memory-mcp-install.sh --ui
+/home/aggustin/.local/bin/codebase-memory-mcp --version
+/home/aggustin/.local/bin/codebase-memory-mcp --help
+sed -n '1,220p' "$HOME/.codex/config.toml"
+sed -n '1,220p' "$HOME/.codex/AGENTS.md"
+sed -n '1,220p' "$HOME/.config/Code/User/mcp.json"
+/home/aggustin/.local/bin/codebase-memory-mcp config list
+/home/aggustin/.local/bin/codebase-memory-mcp cli list_projects '{}'
+/home/aggustin/.local/bin/codebase-memory-mcp config set auto_index true
+/home/aggustin/.local/bin/codebase-memory-mcp cli index_repository '{"repo_path":"/home/aggustin/.vscode/food-order-app"}'
+/home/aggustin/.local/bin/codebase-memory-mcp cli index_status '{"project":"home-aggustin-.vscode-food-order-app"}'
+/home/aggustin/.local/bin/codebase-memory-mcp cli get_architecture '{"project":"home-aggustin-.vscode-food-order-app","aspects":["all"]}'
+/home/aggustin/.local/bin/codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"order","limit":10}'
+/home/aggustin/.local/bin/codebase-memory-mcp --ui=true --port=9749
+curl -I --max-time 5 http://localhost:9749
+curl -fsS --max-time 5 http://localhost:9749 | head -40
+npm run lint
+npm run build
+git status --short
+git diff --stat
