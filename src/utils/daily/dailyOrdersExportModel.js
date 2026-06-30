@@ -2,6 +2,7 @@ import { getStatusText } from './dailyOrderFormatters'
 import { isBeverage } from './dailyOrderCalculations'
 import { getSideAssociationsForOrder, getSideSummaryForOrder } from './dailyOrderSideAssociations'
 import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
+import { isValidCustomerName } from '../order/orderCustomerName'
 
 const EMPTY = ''
 
@@ -440,7 +441,9 @@ const buildInconsistencies = (orders) => {
     const normalized = normalizeOrderForReadOnly(order || {})
     const items = toArray(normalized.normalizedItems)
 
-    if (!normalizeText(order.customer_name || order.user_name || order.name)) issues.push('Sin cliente')
+    const rawCustomerName = normalizeText(order.customer_name || order.user_name || order.name)
+    if (!rawCustomerName) issues.push('Sin cliente')
+    else if (!isValidCustomerName(rawCustomerName)) issues.push('Cliente inválido')
     if (!getOrderEmail(order)) issues.push('Sin email')
     if (!normalizeText(order.location || order.company_name || order.company)) issues.push('Sin ubicación')
     if (items.length === 0) issues.push('Sin items')

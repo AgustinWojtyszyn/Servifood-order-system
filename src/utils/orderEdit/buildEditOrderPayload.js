@@ -1,3 +1,5 @@
+import { resolveCustomerName } from '../order/orderCustomerName'
+
 export const buildEditOrderPayload = ({
   formData,
   user,
@@ -29,11 +31,7 @@ export const buildEditOrderPayload = ({
       response: customResponses?.[option.id]
     }))
 
-  const userName =
-    user?.user_metadata?.full_name ||
-    formData?.name ||
-    user?.email?.split('@')?.[0] ||
-    'Usuario'
+  const userName = resolveCustomerName({ formData, user })
 
   const itemsPayload = (normalizedService === 'dinner' && hasDinnerOverrideChoice && (selectedItemsList || []).length === 0)
     ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1, isDinnerOverride: true }]

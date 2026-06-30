@@ -1,4 +1,5 @@
 import { getTomorrowISOInTimeZone } from '../dateUtils'
+import { resolveCustomerName } from './orderCustomerName'
 import { canChooseCustomSide } from './orderCustomSideRules'
 
 const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
@@ -74,6 +75,11 @@ const validateOrderSubmission = ({
 
   if (!formData.location) {
     return { error: 'Por favor selecciona un lugar de trabajo' }
+  }
+
+  const customerName = resolveCustomerName({ formData, user })
+  if (!customerName) {
+    return { error: 'No pudimos validar tu nombre. Completá tu nombre real en el perfil antes de enviar el pedido.' }
   }
 
   const lunchSelected = selectedTurns.lunch
@@ -236,7 +242,7 @@ const validateOrderSubmission = ({
   const confirmationData = {
     company: companyConfig?.name || '',
     location: formData.location,
-    name: formData.name || user?.user_metadata?.full_name || user?.email || '',
+    name: customerName,
     email: formData.email || user?.email || '',
     phone: formData.phone || '',
     deliveryDate,

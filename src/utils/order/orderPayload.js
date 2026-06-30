@@ -1,4 +1,5 @@
 import { buildOrderItemLabel } from './orderFormatters'
+import { resolveCustomerName } from './orderCustomerName'
 import { computePayloadSignature } from './orderIdempotency'
 
 const buildOrderPayload = ({
@@ -37,7 +38,7 @@ const buildOrderPayload = ({
   const orderData = {
     user_id: user.id,
     location: formData.location,
-    customer_name: formData.name || user?.user_metadata?.full_name || user?.email || '',
+    customer_name: resolveCustomerName({ formData, user }),
     customer_email: formData.email || user?.email,
     customer_phone: formData.phone,
     items: normalizedItemsToSend.map(item => ({

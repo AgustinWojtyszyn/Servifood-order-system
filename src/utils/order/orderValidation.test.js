@@ -52,6 +52,45 @@ describe('order validation', () => {
     expect(result.error).toBe('Solo podés seleccionar 1 menú por persona.')
   })
 
+  it('uses a valid profile name when form name is numeric', () => {
+    const result = validateOrderSubmission(baseArgs({
+      formData: {
+        location: 'Genneia',
+        name: '125',
+        email: '',
+        phone: '',
+        comments: ''
+      },
+      user: {
+        id: 'user-1',
+        email: 'test@example.com',
+        user_metadata: { full_name: 'Roberto Canete' }
+      }
+    }))
+
+    expect(result.error).toBe('')
+    expect(result.data.confirmationData.name).toBe('Roberto Canete')
+  })
+
+  it('blocks submission when customer name is numeric and no valid fallback exists', () => {
+    const result = validateOrderSubmission(baseArgs({
+      formData: {
+        location: 'Genneia',
+        name: '125',
+        email: '',
+        phone: '',
+        comments: ''
+      },
+      user: {
+        id: 'user-1',
+        email: 'test@example.com',
+        user_metadata: {}
+      }
+    }))
+
+    expect(result.error).toBe('No pudimos validar tu nombre. Completá tu nombre real en el perfil antes de enviar el pedido.')
+  })
+
   it('allows option 5 salad as the only lunch item', () => {
     const result = validateOrderSubmission(baseArgs({
       getSelectedItemsList: () => [{ id: 'option-5', name: 'Opción 5 - Ensalada', slotIndex: 5 }]

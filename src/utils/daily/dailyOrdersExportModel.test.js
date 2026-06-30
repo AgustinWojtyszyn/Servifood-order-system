@@ -357,4 +357,16 @@ describe('daily orders export model', () => {
       expect.arrayContaining(['Sin cliente', 'Sin email', 'Sin ubicación', 'Cantidad inválida'])
     )
   })
+
+  it('reporta cliente inválido si customer_name es numérico', () => {
+    const summary = buildDailyOrdersSummary([{
+      ...baseOrder,
+      id: 'numeric-customer',
+      customer_name: '125',
+      items: [{ name: 'Menú principal - Pastel de papas', quantity: 1 }],
+      total_items: 1
+    }], 'archived')
+
+    expect(summary.inconsistencies.map((row) => row.problema)).toContain('Cliente inválido')
+  })
 })

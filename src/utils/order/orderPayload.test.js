@@ -95,6 +95,26 @@ describe('order payload', () => {
     expect(orderData.total_items).toBe(1)
     expect(orderData.custom_responses).toEqual([{ id: 'bebida', title: 'Bebida', response: 'Agua' }])
   })
+
+  it('replaces numeric customer name with a valid metadata name', () => {
+    const { orderData } = buildOrderPayload({
+      service: 'lunch',
+      user,
+      formData: {
+        location: 'Planta Norte',
+        name: '125',
+        comments: ''
+      },
+      deliveryDate: '2026-06-20',
+      itemsForService: [{ id: 'menu-1', name: 'Menu', slotIndex: 0 }],
+      responsesForService: [],
+      dinnerOverrideChoice: null,
+      totalItems: 1,
+      idempotencyKey: 'idem-4'
+    })
+
+    expect(orderData.customer_name).toBe('Test User')
+  })
 })
 
 describe('order idempotency', () => {
