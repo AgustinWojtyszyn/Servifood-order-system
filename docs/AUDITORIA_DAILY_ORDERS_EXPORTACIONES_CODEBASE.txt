@@ -1,0 +1,477 @@
+Auditoria de /daily-orders, exportaciones manuales y guarniciones - ServiFood
+============================================================================
+
+Fecha y entorno
+---------------
+Fecha de auditoria: 2026-06-30.
+Entorno: repo local /home/aggustin/.vscode/food-order-app en WSL2/Linux.
+Herramienta principal usada: codebase-memory-mcp.
+Proyecto MCP usado: home-aggustin-.vscode-food-order-app.
+
+Objetivo de la auditoria
+------------------------
+Auditar el bloque operativo posterior a la creacion de pedidos: que los pedidos creados aparezcan correctamente en /daily-orders, que se filtren por delivery_date, que se agrupen por empresa/ubicacion, que las exportaciones manuales reflejen los datos correctos y que las guarniciones/custom_responses se correspondan con el pedido/menu.
+
+Esta auditoria es de lectura. No se modifico logica de negocio, componentes funcionales, Edge Functions, SQL/migraciones, package.json, package-lock.json, variables de entorno, Render, Supabase ni crons.
+
+Contexto previo de DB informado
+-------------------------------
+La auditoria SQL read-only previa reporto un estado sano:
+- Total orders: 9770.
+- Archived: 9768.
+- Pending: 2.
+- Pending solo para la fecha operativa 2026-07-01.
+- Estados raros: 0.
+- Duplicados activos: 0.
+- Pedidos huerfanos: 0.
+- Pedidos sin delivery_date: 0.
+- Items vacios o invalidos: 0.
+- Idempotency keys repetidas: 0.
+- daily_report_runs fallidos: 0.
+- daily_report_runs duplicados: 0.
+
+Alcance
+-------
+Incluido:
+- Ruta /daily-orders.
+- Componente DailyOrders.
+- Hook useDailyOrdersData.
+- Hook useDailyOrdersFilters.
+- Servicios de lectura de pedidos y personas.
+- Vista orders_with_person_key desde el cliente.
+- Filtro por delivery_date.
+- Filtro por status pending/archived.
+- Agrupacion por ubicacion/empresa.
+- Conteos por menu/opcion, turno, bebida y guarnicion.
+- Tabla/detalle visible de pedidos.
+- Exportacion manual a WhatsApp.
+- Exportacion manual a Excel.
+- Exportacion manual a PDF/impresion.
+- Guarniciones/custom_responses.
+- Archivado manual ligado a /daily-orders.
+
+Fuera de alcance:
+- Edge Function daily-orders-report.
+- Cron automatico.
+- Email automatico.
+- Panel mensual.
+- Creacion de pedidos, salvo estructura de datos necesaria para interpretar items/custom_responses.
+- Cambios funcionales.
+- Pruebas reales contra Supabase productivo.
+
+Nota de alcance: se leyeron 21 archivos. El pedido sugeria 15 a 20; se amplio levemente porque pantalla, filtros, resumen, exportaciones, guarniciones, archivado y empresas estan repartidos en componentes/helpers distintos.
+
+Uso de codebase-memory-mcp
+--------------------------
+Consultas realizadas al grafo:
+
+1. codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"daily-orders DailyOrders useDailyOrdersData orders_with_person_key delivery_date pending archived","limit":20}'
+2. codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"export WhatsApp Excel PDF daily orders custom_responses guarniciones","limit":20}'
+3. codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"availableSides side dishes guarniciones menu custom_responses export","limit":20}'
+4. codebase-memory-mcp cli search_graph '{"project":"home-aggustin-.vscode-food-order-app","query":"archive orders daily-orders manual archived pending delivery_date","limit":20}'
+
+Archivos detectados por el grafo y luego revisados:
+- src/components/DailyOrders.jsx
+- src/hooks/useDailyOrdersData.js
+- src/hooks/useDailyOrdersFilters.js
+- src/services/orders/ordersService.js
+- src/services/users/usersService.js
+- src/utils/daily/dailyOrderCalculations.js
+- src/utils/daily/dailyOrdersExportModel.js
+- src/utils/daily/exportDailyOrdersExcel.js
+- src/utils/daily/shareDailyOrdersWhatsApp.js
+- src/utils/daily/exportDailyOrdersPdf.js
+- src/components/daily/DailyOrdersTable.jsx
+- src/components/daily/DailyOrderRow.jsx
+- src/components/daily/DailyHeader.jsx
+- src/components/daily/DailyFilters.jsx
+- src/components/daily/DailySummary.jsx
+- src/components/daily/DailyExportActions.jsx
+- src/constants/companyConfig.js
+- src/utils/daily/dailyOrderFormatters.js
+- src/utils/daily/dailyOrderConstants.js
+- src/utils/order/normalizeOrderForReadOnly.js
+- supabase/migrations/20260625090000_archive_orders_by_delivery_date_and_report_locks.sql
+
+Funciones/componentes detectados:
+- DailyOrders
+- useDailyOrdersData
+- useDailyOrdersFilters
+- matchesDailyOrderStatusFilter
+- getOrdersWithPersonKey
+- getAdminPeopleUnified
+- calculateStats
+- buildOperationalSummary
+- buildLocationCards
+- buildPrintStats
+- filterOrdersByCompany
+- buildDailyOrdersSummary
+- formatDailyOrdersForWhatsApp
+- formatDailyOrdersOperationalText
+- exportDailyOrdersExcel
+- exportDailyOrdersPdf
+- shareDailyOrdersWhatsApp
+- buildOrderPreview
+- getCustomSideFromResponses
+- extractCustomResponses
+- buildDailyOrdersExcelDetailRows
+- archivePendingOrdersByDeliveryDate
+- archive_orders_bulk_by_delivery_date
+
+Rutas/componentes detectados:
+- /daily-orders
+- DailyOrders
+- DailyHeader
+- DailyFilters
+- DailySummary
+- DailyOrdersTable
+- DailyOrderRow
+- DailyExportActions
+
+Tablas/vistas detectadas:
+- orders
+- orders_with_person_key
+- admin_people_unified
+- users
+- RPC archive_orders_bulk_by_delivery_date
+
+Mapa de archivos involucrados
+-----------------------------
+src/components/DailyOrders.jsx
+Pantalla principal de /daily-orders. Controla filtros, exportCompany, exportaciones, resumen, tabla y acciones de archivado/refresco.
+
+src/hooks/useDailyOrdersData.js
+Carga pedidos diarios, valida admin, lee orders_with_person_key, enriquece personas con admin_people_unified, filtra por delivery_date operativo y maneja archivado individual/masivo.
+
+src/hooks/useDailyOrdersFilters.js
+Aplica filtros por ubicacion, status, platillo, guarnicion y orden. Construye availableSides desde custom_responses.
+
+src/services/orders/ordersService.js
+Expone getOrdersWithPersonKey, updateOrderStatus y archivePendingOrdersByDeliveryDate.
+
+src/services/users/usersService.js
+Expone getAdminPeopleUnified y getUserById para permisos/nombres.
+
+src/utils/daily/dailyOrderCalculations.js
+Calcula estadisticas visibles, previews, turnos, tarjetas por ubicacion, bebidas, guarniciones y filtros por empresa.
+
+src/utils/daily/dailyOrdersExportModel.js
+Modelo central de exportaciones. Normaliza items/custom_responses, arma filas, resumen, texto operativo, WhatsApp y detalle Excel.
+
+src/utils/daily/exportDailyOrdersExcel.js
+Genera workbook Excel con hojas Resumen, Pedidos Detallados, Comentarios e Inconsistencias.
+
+src/utils/daily/shareDailyOrdersWhatsApp.js
+Genera texto WhatsApp, copia al clipboard y abre wa.me.
+
+src/utils/daily/exportDailyOrdersPdf.js
+Genera HTML imprimible/PDF desde sortedOrders.
+
+src/components/daily/DailyOrdersTable.jsx
+Tabla/listado de pedidos filtrados.
+
+src/components/daily/DailyOrderRow.jsx
+Fila/card de pedido. Muestra cliente, ubicacion, items, bebida, turno, hora, estado, guarnicion y acciones.
+
+src/components/daily/DailyHeader.jsx
+Cabecera con metricas y acciones.
+
+src/components/daily/DailyFilters.jsx
+UI de filtros por ubicacion, estado, platillo, guarnicion y orden.
+
+src/components/daily/DailySummary.jsx
+Resumen visible/print: platillos, guarniciones, bebidas, turnos y ubicaciones.
+
+src/components/daily/DailyExportActions.jsx
+Botones de Excel, WhatsApp, PDF, refresh y archivar.
+
+src/constants/companyConfig.js
+Catalogo de empresas/ubicaciones: Ccp, La Laja, Padre Bueno, Los Berros, Genneia y Genneia O&M.
+
+src/utils/daily/dailyOrderFormatters.js
+Formato de fecha/hora/status y labels.
+
+src/utils/daily/dailyOrderConstants.js
+Keywords de cena/bebida y labels de status.
+
+src/utils/order/normalizeOrderForReadOnly.js
+Normalizador read-only para parsear items/custom_responses sin mutar el pedido.
+
+supabase/migrations/20260625090000_archive_orders_by_delivery_date_and_report_locks.sql
+RPC de archivado masivo por delivery_date y status.
+
+Mapa de funciones/componentes involucrados
+-----------------------------------------
+DailyOrders:
+Compone el bloque operativo. Usa useDailyOrdersData como fuente base, useDailyOrdersFilters para sortedOrders y dispara exportaciones usando sortedOrders.
+
+useDailyOrdersData:
+Lee todos los pedidos de orders_with_person_key disponibles para el admin, filtra por delivery_date == getTomorrowISOInTimeZone(), enriquece user_name/user_email y calcula stats.
+
+useDailyOrdersFilters:
+Filtra en memoria por location, status, dish, side y orden. availableSides sale de getCustomSideFromResponses.
+
+calculateStats:
+Calcula total, byLocation, byDish, totalItems, archived y pending sobre la lista ya filtrada por delivery_date.
+
+buildOperationalSummary:
+Calcula resumen visible de platillos, guarniciones y bebidas sobre sortedOrders.
+
+buildLocationCards:
+Construye resumen por ubicacion sobre allOrders.
+
+buildPrintStats:
+Calcula turnos, guarniciones y opciones para print summary.
+
+filterOrdersByCompany:
+Filtra por location o company/company_slug/target_company. En la practica, el flujo revisado suele depender de location.
+
+buildDailyOrdersSummary:
+Construye resumen central para Excel y texto operativo con totales, byLocation, byMenu, byLocationMenu, adicionales, comentarios, servicios e inconsistencias.
+
+formatDailyOrdersForWhatsApp:
+Construye texto compacto agrupado por ubicacion/menu y asocia guarniciones a menu cuando puede.
+
+exportDailyOrdersExcel:
+Filtra por exportCompany, deduplica por id, genera workbook y descarga.
+
+exportDailyOrdersPdf:
+Genera HTML imprimible desde sortedOrders; usa buildOrderPreview y buildTurnSummary.
+
+shareDailyOrdersWhatsApp:
+Usa formatDailyOrdersForWhatsApp(sortedOrders) y abre WhatsApp.
+
+getCustomSideFromResponses:
+Extrae la primera respuesta cuyo title contiene guarn.
+
+extractCustomResponses:
+Separa custom_responses en side, beverage y additional.
+
+getSideValuesFromOrder / findItemForSide:
+Intentan asociar guarniciones a menu usando metadata de item_id/menu_id/slotIndex; si no hay identidad, se asocia al primer item.
+
+archivePendingOrdersByDeliveryDate:
+Llama RPC archive_orders_bulk_by_delivery_date.
+
+archive_orders_bulk_by_delivery_date:
+Archiva solo orders con delivery_date indicado y status dentro de p_statuses.
+
+Flujo paso a paso de /daily-orders
+----------------------------------
+1. Usuario abre /daily-orders.
+2. DailyOrders monta useDailyOrdersData(user).
+3. useDailyOrdersData valida si user es admin con usersService.getUserById.
+4. Si es admin, fetchDailyOrders lee db.getOrdersWithPersonKey().
+5. getOrdersWithPersonKey consulta orders_with_person_key ordenado por created_at desc.
+6. useDailyOrdersData lee db.getAdminPeopleUnified() para enriquecer nombres/emails por person_key.
+7. Calcula operationalDate = getTomorrowISOInTimeZone().
+8. Filtra pedidos por String(order.delivery_date) === operationalDate. No usa created_at para decidir inclusion operativa.
+9. Mapea user_name/user_email desde customer fields o admin_people_unified.
+10. Construye availableDishes desde order.items.
+11. Calcula stats sobre todayOrders con calculateStats.
+12. useDailyOrdersFilters recibe orders y aplica filtros de UI: ubicacion, status, platillo, guarnicion y orden.
+13. DailyHeader muestra stats filtradas por status para metricas de cabecera.
+14. DailySummary muestra resumen operativo sobre sortedOrders y tarjetas por ubicacion sobre allOrders.
+15. DailyOrdersTable renderiza sortedOrders.
+16. Acciones de exportacion usan sortedOrders.
+17. Archivado individual usa updateOrderStatus(order.id, 'archived').
+18. Archivado masivo usa archivePendingOrdersByDeliveryDate({ deliveryDate: operationalDate, statuses: ['pending'] }).
+
+Flujo de exportacion manual
+---------------------------
+WhatsApp:
+- DailyOrders llama shareDailyOrdersWhatsApp(sortedOrders, selectedStatus).
+- sortedOrders ya trae filtros de ubicacion/status/platillo/guarnicion/orden.
+- shareDailyOrdersWhatsApp llama formatDailyOrdersForWhatsApp(sortedOrders).
+- formatDailyOrdersForWhatsApp agrupa por ubicacion, luego por menu, y muestra guarniciones bajo menu.
+- No aplica exportCompany. Usa exactamente sortedOrders visibles por filtros principales.
+
+Excel:
+- DailyOrders llama exportDailyOrdersExcel({ sortedOrders, exportCompany, selectedLocation, selectedStatus, stats }).
+- exportDailyOrdersExcel aplica filterOrdersByCompany(sortedOrders, exportCompany).
+- Deduplica por order.id.
+- buildDailyOrdersSummary arma Resumen, Detalle, Comentarios e Inconsistencias.
+- Usa fuente filteredOrders derivada de sortedOrders, por lo que respeta filtros principales y ademas el selector Empresa para exportar.
+
+PDF:
+- DailyOrders llama exportDailyOrdersPdf(sortedOrders).
+- Usa sortedOrders directamente.
+- Genera HTML con resumen por turno, empresas por turno y detalle.
+- No aplica exportCompany.
+- Usa getTomorrowDate() para label de entrega, no el delivery_date del primer pedido.
+
+Fuente de verdad:
+- Pantalla, WhatsApp, Excel y PDF parten de sortedOrders.
+- Excel agrega filtro extra exportCompany.
+- WhatsApp y PDF no usan exportCompany.
+- La logica de formateo no es unica: pantalla usa dailyOrderCalculations/DailyOrderRow, Excel usa dailyOrdersExportModel, WhatsApp usa buildWhatsAppLocationMenuSummary, PDF usa buildOrderPreview/buildTurnSummary. Hay normalizacion compartida parcial, pero hay logica duplicada.
+
+Flujo de guarniciones/custom_responses
+--------------------------------------
+Lectura:
+- Los pedidos traen custom_responses desde orders_with_person_key.
+- normalizeOrderForReadOnly parsea custom_responses si viene string JSON o array.
+
+Interpretacion en pantalla:
+- getCustomSideFromResponses busca responses cuyo title contiene guarn y devuelve answer/response.
+- DailyOrderRow muestra "Guarnicion: ..." en tabla/card.
+- availableSides usa getCustomSideFromResponses para poblar el filtro de guarnicion.
+- buildOperationalSummary y buildLocationCards cuentan guarniciones por respuesta.
+
+Interpretacion en Excel:
+- extractCustomResponses separa side, beverage y additional.
+- buildDailyOrdersExcelDetailRow pone Guarniciones, Respuestas personalizadas y otros campos.
+- buildDailyOrdersSummary incluye guarniciones/adicionales por ubicacion.
+
+Interpretacion en WhatsApp:
+- getSideValuesFromOrder extrae guarniciones.
+- findItemForSide intenta asociarlas al item correcto usando metadata si existe.
+- Si no hay identidad suficiente, asocia la guarnicion al primer item del pedido.
+
+Interpretacion en PDF:
+- buildOrderPreview muestra itemsText y optionsText.
+- La guarnicion se agrega a itemsText; otras opciones van a optionsText.
+
+Asociacion menu-guarnicion:
+- El modelo soporta asociacion por identidad si custom_responses trae item_id/menu_id/slotIndex o nombres.
+- Si esa metadata no viene en el pedido, WhatsApp cae al primer item. En pedidos con un solo menu no es problematico; en pedidos con multiples items puede asociar guarnicion al menu equivocado.
+
+Validaciones existentes
+-----------------------
+- /daily-orders filtra por delivery_date operativo, no por created_at.
+- El default de selectedStatus es pending.
+- Se puede ver pending, archived o all.
+- Archivado masivo usa delivery_date y statuses ['pending'].
+- RPC legacy archive_orders_bulk queda deshabilitado y fuerza usar delivery_date.
+- Archivado individual solo se ofrece si order.status === 'pending'.
+- Excel deduplica por id antes de exportar.
+- Excel agrega hoja de inconsistencias.
+- normalizeOrderForReadOnly evita romper si items/custom_responses llegan como string JSON.
+- availableSides sale de pedidos reales cargados.
+- Filtros de pantalla y exportaciones parten de sortedOrders.
+- COMPANY_LOCATIONS centraliza Ccp, La Laja, Padre Bueno, Los Berros, Genneia y Genneia O&M.
+
+Validaciones faltantes o dudosas
+--------------------------------
+1. useDailyOrdersData trae todos los pedidos de orders_with_person_key y filtra delivery_date en cliente.
+   Con 9770 orders actuales funciona, pero no escala idealmente y depende de permisos/limites de PostgREST.
+
+2. PDF usa getTomorrowDate() para el label de entrega.
+   Como sortedOrders ya fue filtrado por delivery_date operativo, normalmente coincide. Pero el PDF no toma el delivery_date real de los pedidos; si se exportara una lista distinta en el futuro, podria rotular mal.
+
+3. WhatsApp y PDF no usan exportCompany.
+   Excel puede exportar una empresa distinta usando selector Empresa (para exportar). WhatsApp/PDF exportan sortedOrders, no exportCompany. Esto puede generar diferencias si el operador espera que ese selector aplique a todos los botones.
+
+4. Asociacion guarnicion-menu depende de metadata opcional.
+   Si custom_responses no trae item_id/menu_id/slotIndex, WhatsApp asigna al primer item.
+
+5. Agrupacion por empresa depende principalmente de location.
+   filterOrdersByCompany tambien revisa company/company_slug/target_company, pero el flujo principal de creacion guardaba location. Si location no identifica univocamente la empresa, puede haber ambiguedad.
+
+6. Hay varias logicas de resumen/formato.
+   Pantalla, Excel, WhatsApp y PDF comparten algunos helpers, pero no una unica fuente completa. Esto aumenta riesgo de diferencias.
+
+7. getTomorrowDate usa new Date local y toLocaleDateString es-ES.
+   El filtro critico usa getTomorrowISOInTimeZone, pero labels visuales/PDF usan helper distinto. Puede haber diferencias de etiqueta cerca de medianoche o por zona horaria del navegador.
+
+8. Filtro de platillo compara item.name exacto.
+   availableDishes se arma desde item.name sin normalizar como normalizeDishName. Puede haber diferencias si pantalla muestra "Plato Principal" pero filtro usa nombre raw.
+
+Riesgos P0
+----------
+No se detectaron P0 evidentes en el alcance revisado.
+
+No se observo un camino claro para mezclar pedidos de otra fecha en /daily-orders: la carga filtra por delivery_date operativo. El archivado masivo tambien se limita por delivery_date y pending. Las exportaciones parten de sortedOrders, que ya viene de la lista filtrada por fecha operativa.
+
+Riesgos P1
+----------
+1. Diferencia entre Excel vs WhatsApp/PDF por exportCompany.
+   Excel respeta el selector Empresa (para exportar), pero WhatsApp y PDF no. Riesgo operativo: enviar por WhatsApp/PDF mas pedidos que los incluidos en Excel si el operador cree que exportCompany aplica a todo.
+
+2. PDF etiqueta entrega con getTomorrowDate, no con delivery_date del dataset.
+   Riesgo de etiqueta incorrecta en edge cases o si se reutiliza exportDailyOrdersPdf con datos no operativos.
+
+3. Guarnicion puede asociarse al menu equivocado en WhatsApp.
+   Si no hay metadata de identidad en custom_responses y hay multiples items, findItemForSide usa el primer item.
+
+4. Ambiguedad empresa/ubicacion.
+   Los reportes agrupan mayormente por location. Si se necesitan empresas separadas con misma location o nombres historicos, puede haber mezcla conceptual.
+
+5. Diferencias de logica entre pantalla, Excel, WhatsApp y PDF.
+   Pantalla usa DailyOrderRow/buildOrderPreview, Excel usa dailyOrdersExportModel, WhatsApp usa buildWhatsAppLocationMenuSummary y PDF usa otro HTML. Pueden divergir en casos de cena, bebidas, guarniciones y nombres normalizados.
+
+6. Filtro client-side sobre todos los pedidos.
+   No es un error de consistencia hoy, pero con mas datos podria degradar o depender de limites de API. Si PostgREST limita filas, podria ocultar pedidos del delivery_date esperado.
+
+Riesgos P2
+----------
+1. Nombres confusos.
+   Variables como todayOrders representan la fecha operativa de entrega, no "hoy" calendario.
+
+2. Helpers de fecha duplicados.
+   getTomorrowISOInTimeZone se usa para filtro real; getTomorrowDate se usa para labels. Conviene alinear semantica.
+
+3. Logica duplicada de custom_responses.
+   getCustomSideFromResponses, extractCustomResponses, getCustomResponsesTextForExcel y buildOrderPreview interpretan respuestas de formas parecidas pero no identicas.
+
+4. WhatsApp tiene dos modelos de texto.
+   Existe formatDailyOrdersOperationalText y formatDailyOrdersForWhatsApp; el flujo actual usa el segundo, mas compacto.
+
+5. Status legacy limitado.
+   Filtros solo contemplan pending/archived/all; getStatusText contempla cancelled/unknown. No se detectaron estados raros en DB, pero conviene mantener pruebas.
+
+6. Detail UI muestra hora created_at.
+   Correcto como hora de pedido, pero puede confundirse con criterio operativo si no se rotula claramente.
+
+Pruebas manuales recomendadas
+-----------------------------
+[ ] Crear pedido pending para manana y verificar que aparece en /daily-orders.
+[ ] Verificar que no aparece en otra fecha operativa.
+[ ] Verificar que selectedStatus pending muestra solo pending.
+[ ] Cambiar a archived y all para confirmar conteos.
+[ ] Verificar totales por empresa/ubicacion en cabecera y resumen.
+[ ] Verificar detalle de pedido en tabla/card.
+[ ] Verificar guarnicion en pantalla.
+[ ] Verificar guarnicion en filtro availableSides.
+[ ] Verificar guarnicion en WhatsApp.
+[ ] Verificar guarnicion en Excel, hoja Pedidos Detallados.
+[ ] Verificar guarniciones/adicionales en hoja Resumen.
+[ ] Verificar PDF/impresion para el mismo set de pedidos.
+[ ] Comparar pantalla vs Excel vs WhatsApp vs PDF con los mismos filtros.
+[ ] Probar exportCompany en Excel y confirmar que WhatsApp/PDF no lo aplican.
+[ ] Verificar cena si aplica, incluyendo item dinner-override.
+[ ] Verificar que no se duplique "Cena:" y "Menu de cena:" en adicionales.
+[ ] Verificar Genneia con bebida/postre.
+[ ] Verificar Los Berros, Padre Bueno, La Laja, Ccp, Genneia y Genneia O&M.
+[ ] Verificar archivado individual solo en pending.
+[ ] Verificar archivado manual masivo solo sobre fecha operativa y status pending.
+[ ] Verificar que pedidos archived de la misma fecha no se rearchivan ni se pierden.
+
+Que NO conviene tocar
+---------------------
+- Filtro por delivery_date en useDailyOrdersData sin pruebas contra DB real.
+- RPC archive_orders_bulk_by_delivery_date.
+- Vista orders_with_person_key.
+- Normalizacion read-only de items/custom_responses.
+- Interpretacion de guarniciones en dailyOrdersExportModel sin fixtures reales.
+- COMPANY_LOCATIONS/companyConfig.
+- Exportaciones manuales sin comparar contra pantalla.
+- Status pending/archived/cancelled.
+- Variables de entorno, Supabase, Render, crons y Edge Functions.
+
+Conclusion
+----------
+El bloque parece parcialmente solido a solido.
+
+La base critica esta bien: /daily-orders filtra por delivery_date operativo, los filtros de status se aplican sobre esa lista, y el archivado masivo usa delivery_date + pending en RPC. Las exportaciones parten de sortedOrders, por lo que no deberian mezclar fechas si la pantalla esta correcta.
+
+No se detectaron P0 evidentes. Los riesgos principales son P1: diferencias entre Excel y WhatsApp/PDF por exportCompany, asociacion imperfecta de guarniciones a menu cuando falta metadata, labels de PDF basados en getTomorrowDate y dependencia fuerte de location como empresa/ubicacion.
+
+Proximos pasos recomendados
+---------------------------
+1. Auditar guarniciones con datos reales de orders.custom_responses e items para confirmar metadata de item/menu/slotIndex.
+2. Auditar empresas/ubicaciones y decidir si orders debe persistir company_slug/company_name ademas de location.
+3. Auditar autoexportado daily-orders-report y compararlo contra exportaciones manuales.
+4. Auditar permisos/RLS de orders_with_person_key y admin_people_unified.
+5. Crear fixtures de pedidos representativos para comparar pantalla, Excel, WhatsApp y PDF.
+
