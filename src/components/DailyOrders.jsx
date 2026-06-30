@@ -61,8 +61,8 @@ const DailyOrders = ({ user, loading }) => {
 
   const exportToExcel = async () => {
     await exportDailyOrdersExcel({
-      sortedOrders,
-      exportCompany,
+      sortedOrders: manualExportOrders,
+      exportCompany: 'all',
       selectedLocation,
       selectedStatus,
       stats
@@ -70,11 +70,11 @@ const DailyOrders = ({ user, loading }) => {
   }
 
   const exportToPdf = () => {
-    exportDailyOrdersPdf(sortedOrders)
+    exportDailyOrdersPdf(manualExportOrders)
   }
 
   const shareViaWhatsApp = () => {
-    shareDailyOrdersWhatsApp(sortedOrders, selectedStatus)
+    shareDailyOrdersWhatsApp(manualExportOrders, selectedStatus)
   }
 
   const operationalSummary = useMemo(
@@ -102,7 +102,11 @@ const DailyOrders = ({ user, loading }) => {
   )
 
   const printStats = useMemo(() => buildPrintStats(allOrders), [allOrders])
-  const exportableOrdersCount = filterOrdersByCompany(sortedOrders, exportCompany).length
+  const manualExportOrders = useMemo(
+    () => filterOrdersByCompany(sortedOrders, exportCompany),
+    [sortedOrders, exportCompany]
+  )
+  const exportableOrdersCount = manualExportOrders.length
   const tomorrowLabel = getTomorrowDate()
 
   if (!isAdmin) {

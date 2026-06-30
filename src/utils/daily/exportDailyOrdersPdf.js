@@ -2,11 +2,37 @@ import {
   buildOrderPreview,
   buildTurnSummary
 } from './dailyOrderCalculations'
-import {
-  getStatusText,
-  getTomorrowDate
-} from './dailyOrderFormatters'
+import { getStatusText } from './dailyOrderFormatters'
 import { notifyError, notifyInfo } from '../notice'
+
+const formatDeliveryDateLabel = (value) => {
+  if (!value) return 'Sin fecha de entrega'
+  const raw = String(value).slice(0, 10)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [year, month, day] = raw.split('-').map(Number)
+    return new Intl.DateTimeFormat('es-AR', {
+      timeZone: 'UTC',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(new Date(Date.UTC(year, month - 1, day, 12, 0, 0)))
+  }
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime())
+    ? 'Sin fecha de entrega'
+    : parsed.toLocaleDateString('es-AR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+}
+
+const getExportDeliveryDateLabel = (orders = []) => {
+  const firstWithDeliveryDate = orders.find(order => order?.delivery_date)
+  return formatDeliveryDateLabel(firstWithDeliveryDate?.delivery_date)
+}
 
 export function exportDailyOrdersPdf(sortedOrders) {
   if (!sortedOrders.length) {
@@ -15,9 +41,11 @@ export function exportDailyOrdersPdf(sortedOrders) {
   }
 
   const today = new Date().toISOString().split('T')[0]
+  const deliveryDateLabel = getExportDeliveryDateLabel(sortedOrders)
   const { turnCounts, byLocationTurn } = buildTurnSummary(sortedOrders)
   const rowsHtml = sortedOrders.map(order => {
     const preview = buildOrderPreview(order)
+    const rowDeliveryDateLabel = formatDeliveryDateLabel(order.delivery_date)
     return `
         <tr>
           <td>${order.customer_name || order.user_name || 'Usuario'}</td>
@@ -27,7 +55,7 @@ export function exportDailyOrdersPdf(sortedOrders) {
           <td>${preview.itemsText}</td>
           <td>${preview.optionsText}</td>
           <td>${(order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'}</td>
-          <td>${getTomorrowDate()}</td>
+          <td>${rowDeliveryDateLabel}</td>
         </tr>
       `
   }).join('')
@@ -60,7 +88,7 @@ export function exportDailyOrdersPdf(sortedOrders) {
         </head>
         <body>
           <h1>Pedidos diarios</h1>
-          <h2>Fecha de generación: ${today} · Entrega: ${getTomorrowDate()}</h2>
+          <h2>Fecha de generación: ${today} · Entrega: ${deliveryDateLabel}</h2>
           <div class="meta">Total pedidos: ${sortedOrders.length}</div>
 
           <h2>Resumen por turno</h2>
