@@ -69,6 +69,32 @@ describe('order payload', () => {
       }
     ])
   })
+
+  it('defensively persists only one item per service', () => {
+    const { orderData } = buildOrderPayload({
+      service: 'lunch',
+      user,
+      formData: {
+        location: 'Planta Norte',
+        comments: ''
+      },
+      deliveryDate: '2026-06-20',
+      itemsForService: [
+        { id: 'main', name: 'Menú principal', slotIndex: 0 },
+        { id: 'option-5', name: 'Opción 5 - Ensalada', slotIndex: 5 }
+      ],
+      responsesForService: [{ id: 'bebida', title: 'Bebida', response: 'Agua' }],
+      dinnerOverrideChoice: null,
+      totalItems: 2,
+      idempotencyKey: 'idem-3'
+    })
+
+    expect(orderData.items).toEqual([
+      { id: 'main', name: 'Menú principal', quantity: 1, slotIndex: 0 }
+    ])
+    expect(orderData.total_items).toBe(1)
+    expect(orderData.custom_responses).toEqual([{ id: 'bebida', title: 'Bebida', response: 'Agua' }])
+  })
 })
 
 describe('order idempotency', () => {

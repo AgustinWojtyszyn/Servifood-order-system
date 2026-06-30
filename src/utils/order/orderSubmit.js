@@ -59,19 +59,20 @@ const submitOrders = async ({
     const itemsForService = isDinner ? selectedItemsListDinner : selectedItemsList
     const responsesForService = isDinner ? customResponsesDinnerArray : customResponsesArray
 
+    if (itemsForService.length > 1) {
+      return {
+        ok: false,
+        errorMessage: 'Solo podés seleccionar 1 menú por persona.',
+        forceLunchOnly: false
+      }
+    }
+
     if (isDinner) {
       const hasOverride = hasDinnerOverrideInResponses(responsesForService)
       if (itemsForService.length > 0 && hasOverride) {
         return {
           ok: false,
           errorMessage: 'Para cena elegí menú o la opción de cena, no ambas.',
-          forceLunchOnly: false
-        }
-      }
-      if (itemsForService.length > 1) {
-        return {
-          ok: false,
-          errorMessage: 'Solo un menú por persona en cena.',
           forceLunchOnly: false
         }
       }

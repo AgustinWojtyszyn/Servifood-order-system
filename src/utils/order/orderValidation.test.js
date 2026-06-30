@@ -1,0 +1,116 @@
+import { describe, expect, it } from 'vitest'
+import { validateOrderSubmission } from './orderValidation'
+
+const user = {
+  id: 'user-1',
+  email: 'test@example.com',
+  user_metadata: { full_name: 'Test User' }
+}
+
+const baseArgs = (overrides = {}) => ({
+  user,
+  formData: {
+    location: 'Genneia',
+    name: '',
+    email: '',
+    phone: '',
+    comments: ''
+  },
+  selectedTurns: { lunch: true, dinner: false },
+  dinnerEnabled: false,
+  dinnerMenuEnabled: false,
+  pendingLunch: false,
+  pendingDinner: false,
+  visibleLunchOptions: [],
+  visibleDinnerOptions: [],
+  customResponses: {},
+  customResponsesDinner: {},
+  isGenneiaPostreOption: (option) => (option?.title || '').toLowerCase().includes('postre'),
+  getSelectedItemsList: () => [{ id: 'main', name: 'Menú principal', slotIndex: 0 }],
+  getSelectedItemsListDinner: () => [],
+  getDinnerOverrideChoice: () => null,
+  dinnerSpecialTitle: '',
+  validateDinnerExclusivity: () => '',
+  calculateTotal: () => 1,
+  _calculateTotalDinner: () => 0,
+  companyConfig: { slug: 'genneia', name: 'Genneia' },
+  isOutsideWindow: () => false,
+  selectedDinnerDate: null,
+  ...overrides
+})
+
+describe('order validation', () => {
+  it('blocks lunch with main menu plus option 5 salad', () => {
+    const result = validateOrderSubmission(baseArgs({
+      getSelectedItemsList: () => [
+        { id: 'main', name: 'Menú principal', slotIndex: 0 },
+        { id: 'option-5', name: 'Opción 5 - Ensalada', slotIndex: 5 }
+      ],
+      calculateTotal: () => 2
+    }))
+
+    expect(result.error).toBe('Solo podés seleccionar 1 menú por persona.')
+  })
+
+  it('allows option 5 salad as the only lunch item', () => {
+    const result = validateOrderSubmission(baseArgs({
+      getSelectedItemsList: () => [{ id: 'option-5', name: 'Opción 5 - Ensalada', slotIndex: 5 }]
+    }))
+
+    expect(result.error).toBe('')
+    expect(result.data.selectedItemsList).toHaveLength(1)
+    expect(result.data.selectedItemsList[0].id).toBe('option-5')
+  })
+
+  it('keeps Genneia beverage and dessert as custom responses, not items', () => {
+    const result = validateOrderSubmission(baseArgs({
+      visibleLunchOptions: [
+        { id: 'bebida', title: 'Bebida', required: false },
+        { id: 'postre', title: 'Postre Genneia', required: false }
+      ],
+      customResponses: {
+        bebida: 'Agua',
+        postre: 'Fruta'
+      }
+    }))
+
+    expect(result.error).toBe('')
+    expect(result.data.selectedItemsList).toHaveLength(1)
+    expect(result.data.customResponsesArray).toEqual([
+      { id: 'bebida', title: 'Bebida', response: 'Agua' },
+      { id: 'postre', title: 'Postre Genneia', response: 'Fruta' }
+    ])
+  })
+
+  it('blocks custom side for menus that do not accept it', () => {
+    const result = validateOrderSubmission(baseArgs({
+      getSelectedItemsList: () => [{ id: 'option-5', name: 'Opción 5 - Ensalada', slotIndex: 5 }],
+      visibleLunchOptions: [{ id: 'side', title: 'Guarnición distinta', required: false }],
+      customResponses: { side: 'Puré' }
+    }))
+
+    expect(result.error).toBe('La guarnición distinta no está disponible para esta opción.')
+  })
+
+  it('adds side metadata for menus that accept custom side', () => {
+    const result = validateOrderSubmission(baseArgs({
+      getSelectedItemsList: () => [{ id: 'option-2', name: 'Opción 2 - Pollo', slotIndex: 2 }],
+      visibleLunchOptions: [{ id: 'side', title: 'Guarnición distinta', required: false }],
+      customResponses: { side: 'Puré' }
+    }))
+
+    expect(result.error).toBe('')
+    expect(result.data.customResponsesArray).toEqual([
+      {
+        id: 'side',
+        title: 'Guarnición distinta',
+        response: 'Puré',
+        item_id: 'option-2',
+        itemId: 'option-2',
+        itemName: 'Opción 2 - Pollo',
+        slotIndex: 2,
+        service: 'lunch'
+      }
+    ])
+  })
+})

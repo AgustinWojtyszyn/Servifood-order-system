@@ -9,14 +9,15 @@ const buildOrderPayload = ({
   itemsForService,
   responsesForService,
   dinnerOverrideChoice,
-  totalItems,
+  totalItems: _totalItems,
   idempotencyKey
 }) => {
   const isDinner = service === 'dinner'
 
-  const itemsToSend = (isDinner && dinnerOverrideChoice && itemsForService.length === 0)
+  const serviceItems = Array.isArray(itemsForService) ? itemsForService : []
+  const itemsToSend = (isDinner && dinnerOverrideChoice && serviceItems.length === 0)
     ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1, isDinnerOverride: true }]
-    : itemsForService
+    : serviceItems.slice(0, 1)
 
   const normalizedItemsToSend = itemsToSend.map(item => ({
     ...item,
@@ -48,7 +49,7 @@ const buildOrderPayload = ({
     comments: formData.comments,
     delivery_date: deliveryDate,
     status: 'pending',
-    total_items: totalItems,
+    total_items: normalizedItemsToSend.length,
     custom_responses: responsesForService,
     idempotency_key: idempotencyKey,
     service

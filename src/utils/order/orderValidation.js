@@ -2,6 +2,7 @@ import { getTomorrowISOInTimeZone } from '../dateUtils'
 import { canChooseCustomSide } from './orderCustomSideRules'
 
 const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
+const SINGLE_MENU_MESSAGE = 'Solo podés seleccionar 1 menú por persona.'
 
 const hasValidResponse = (response) => {
   if (!response) return false
@@ -89,10 +90,18 @@ const validateOrderSubmission = ({
     return { error: 'Selecciona al menos un plato para almuerzo.' }
   }
 
+  if (lunchSelected && selectedItemsList.length > 1) {
+    return { error: SINGLE_MENU_MESSAGE }
+  }
+
   const dinnerOverrideChoice = getDinnerOverrideChoice()
 
   if (dinnerSelected && selectedItemsListDinner.length === 0 && !dinnerOverrideChoice) {
     return { error: 'Selecciona al menos un plato para cena o una opción de cena.' }
+  }
+
+  if (dinnerSelected && selectedItemsListDinner.length > 1) {
+    return { error: SINGLE_MENU_MESSAGE }
   }
 
   let customResponsesArray = []
