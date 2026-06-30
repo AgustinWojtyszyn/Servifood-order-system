@@ -62,3 +62,6 @@ codebase-memory-mcp/
 *.graph
 *.graphml
 codebase-memory-mcp-*
+
+# Unlighthouse reports/generated files
+.unlighthouse/
