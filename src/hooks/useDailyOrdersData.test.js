@@ -10,11 +10,27 @@ const dailyHeaderSource = readFileSync(join(currentDir, '../components/daily/Dai
 const dailyExportActionsSource = readFileSync(join(currentDir, '../components/daily/DailyExportActions.jsx'), 'utf8')
 
 describe('useDailyOrdersData daily orders loading', () => {
+  it('starts with the current operational delivery date', () => {
+    expect(source).toContain('useState(() => getTomorrowISOInTimeZone())')
+  })
+
   it('loads daily orders with server-side delivery_date and operational statuses', () => {
     expect(source).toContain('db.getOrdersWithPersonKeyByDate')
     expect(source).toContain('deliveryDate: nextOperationalDate')
     expect(source).toContain("statuses: ['pending', 'archived']")
     expect(source).not.toContain('db.getOrdersWithPersonKey(')
+  })
+
+  it('changes the selected delivery date and reloads through the filtered loader', () => {
+    expect(source).toContain('handleDeliveryDateChange')
+    expect(source).toContain('setOperationalDate(nextDate)')
+    expect(source).toContain('deliveryDate = operationalDate')
+    expect(dailyOrdersSource).toContain('onDeliveryDateChange={handleDeliveryDateChange}')
+    expect(dailyHeaderSource).toContain('onDeliveryDateChange(event.target.value)')
+  })
+
+  it('refreshes using the selected delivery date', () => {
+    expect(source).toContain('await fetchDailyOrders(false, operationalDate)')
   })
 
   it('routes the refresh button through the filtered daily orders loader', () => {
@@ -28,8 +44,11 @@ describe('useDailyOrdersData daily orders loading', () => {
 
   it('keeps exports, summaries and close status based on the loaded daily dataset', () => {
     expect(dailyOrdersSource).toContain('filterOrdersByCompany(sortedOrders, exportCompany)')
+    expect(dailyOrdersSource).toContain('const deliveryDateLabel = formatDeliveryDateLabel(operationalDate)')
+    expect(dailyOrdersSource).toContain('tomorrowLabel={deliveryDateLabel}')
     expect(dailyOrdersSource).toContain('getDailyOperationalStatus({')
     expect(dailyOrdersSource).toContain('orders: allOrders')
+    expect(dailyOrdersSource).toContain('deliveryDate: operationalDate')
     expect(dailyOrdersSource).toContain('buildPrintStats(allOrders)')
   })
 })

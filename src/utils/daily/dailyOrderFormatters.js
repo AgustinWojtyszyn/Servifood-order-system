@@ -16,6 +16,31 @@ export const getTomorrowDate = () => {
   })
 }
 
+export const formatDeliveryDateLabel = (value) => {
+  if (!value) return 'Sin fecha de entrega'
+  const raw = String(value).slice(0, 10)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [year, month, day] = raw.split('-').map(Number)
+    return new Intl.DateTimeFormat('es-AR', {
+      timeZone: 'UTC',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(new Date(Date.UTC(year, month - 1, day, 12, 0, 0)))
+  }
+
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime())
+    ? 'Sin fecha de entrega'
+    : parsed.toLocaleDateString('es-AR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+}
+
 export const formatTime = (dateString) => {
   return new Date(dateString).toLocaleTimeString('es-ES', {
     hour: '2-digit',

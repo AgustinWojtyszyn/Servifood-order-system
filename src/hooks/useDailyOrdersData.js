@@ -64,7 +64,7 @@ export const useDailyOrdersData = (user) => {
     }
   }, [])
 
-  const fetchDailyOrders = useCallback(async (silent = false) => {
+  const fetchDailyOrders = useCallback(async (silent = false, deliveryDate = operationalDate) => {
     if (!user?.id) return
     if (isFetchingRef.current) return
     isFetchingRef.current = true
@@ -73,8 +73,7 @@ export const useDailyOrdersData = (user) => {
         setOrdersLoading(true)
       }
 
-      const nextOperationalDate = getTomorrowISOInTimeZone()
-      setOperationalDate(nextOperationalDate)
+      const nextOperationalDate = deliveryDate || getTomorrowISOInTimeZone()
 
       const { data: ordersData, error } = await db.getOrdersWithPersonKeyByDate({
         deliveryDate: nextOperationalDate,
@@ -147,7 +146,7 @@ export const useDailyOrdersData = (user) => {
         setOrdersLoading(false)
       }
     }
-  }, [fetchDailyReportRunStatus, user])
+  }, [fetchDailyReportRunStatus, operationalDate, user])
 
   useEffect(() => {
     if (!user?.id) return
@@ -169,9 +168,14 @@ export const useDailyOrdersData = (user) => {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    await fetchDailyOrders()
+    await fetchDailyOrders(false, operationalDate)
     setRefreshing(false)
-  }, [fetchDailyOrders])
+  }, [fetchDailyOrders, operationalDate])
+
+  const handleDeliveryDateChange = useCallback((nextDate) => {
+    if (!nextDate || nextDate === operationalDate) return
+    setOperationalDate(nextDate)
+  }, [operationalDate])
 
   const handleArchiveOrder = useCallback(async (order) => {
     if (!order?.id || order.status === 'archived') return
@@ -200,7 +204,6 @@ export const useDailyOrdersData = (user) => {
   }, [handleRefresh])
 
   const handleArchiveAllPending = useCallback(async () => {
-    const operationalDate = getTomorrowISOInTimeZone()
     const pendingCount = (Array.isArray(orders) ? orders : []).filter((order) =>
       String(order?.status || '').toLowerCase() === 'pending' &&
       String(order?.delivery_date || '') === operationalDate
@@ -244,7 +247,7 @@ export const useDailyOrdersData = (user) => {
         notifyError(`Error al archivar pedidos: ${error.message}`)
       }
     }
-  }, [handleRefresh, orders])
+  }, [handleRefresh, operationalDate, orders])
 
   return {
     orders,
@@ -259,6 +262,7 @@ export const useDailyOrdersData = (user) => {
     operationalDate,
     stats,
     handleRefresh,
+    handleDeliveryDateChange,
     handleArchiveOrder,
     handleArchiveAllPending
   }

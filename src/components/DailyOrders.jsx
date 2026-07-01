@@ -20,7 +20,7 @@ import {
   filterOrdersByCompany
 } from '../utils/daily/dailyOrderCalculations'
 import { getDailyOperationalStatus } from '../utils/daily/dailyCloseStatus'
-import { getTomorrowDate } from '../utils/daily/dailyOrderFormatters'
+import { formatDeliveryDateLabel } from '../utils/daily/dailyOrderFormatters'
 import { exportDailyOrdersExcel } from '../utils/daily/exportDailyOrdersExcel'
 import { exportDailyOrdersPdf } from '../utils/daily/exportDailyOrdersPdf'
 import { shareDailyOrdersWhatsApp } from '../utils/daily/shareDailyOrdersWhatsApp'
@@ -49,6 +49,7 @@ const DailyOrders = ({ user, loading }) => {
     operationalDate,
     stats,
     handleRefresh,
+    handleDeliveryDateChange,
     handleArchiveOrder,
     handleArchiveAllPending
   } = useDailyOrdersData(user)
@@ -114,7 +115,7 @@ const DailyOrders = ({ user, loading }) => {
     [sortedOrders, exportCompany]
   )
   const exportableOrdersCount = manualExportOrders.length
-  const tomorrowLabel = getTomorrowDate()
+  const deliveryDateLabel = formatDeliveryDateLabel(operationalDate)
   const dailyCloseStatus = useMemo(
     () => getDailyOperationalStatus({
       orders: allOrders,
@@ -162,13 +163,15 @@ const DailyOrders = ({ user, loading }) => {
           mode="print"
           stats={stats}
           printStats={printStats}
-          tomorrowLabel={tomorrowLabel}
+          tomorrowLabel={deliveryDateLabel}
         />
 
         <DailyHeader
           stats={statsForFilters}
           activeLocationsCount={activeLocationsCount}
-          tomorrowLabel={tomorrowLabel}
+          tomorrowLabel={deliveryDateLabel}
+          operationalDate={operationalDate}
+          onDeliveryDateChange={handleDeliveryDateChange}
           exportCompany={exportCompany}
           onExportCompanyChange={setExportCompany}
           locations={locations}
