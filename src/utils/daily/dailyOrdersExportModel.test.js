@@ -32,19 +32,18 @@ const baseOrder = {
 }
 
 describe('daily orders export model', () => {
-  it('extrae items sin mutar ni normalizar nombres de menú', () => {
+  it('extrae items normalizados sin mutar nombres de menú', () => {
     const items = extractOrderItems(baseOrder)
 
     expect(items).toEqual([
-      expect.objectContaining({ label: 'Opción 1 - BIDE DEL DIA', quantity: 2 }),
-      expect.objectContaining({ label: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 })
+      expect.objectContaining({ label: 'Opción 1 - BIDE DEL DIA', quantity: 1 })
     ])
   })
 
   it('extrae bebida, guarnición y opciones adicionales', () => {
     const responses = extractCustomResponses(baseOrder)
 
-    expect(responses.side).toBe('Puré (sin menú asociado)')
+    expect(responses.side).toBe('Puré')
     expect(responses.beverage).toBe('Coca cola')
     expect(responses.additional).toBe('Pan: Sin pan')
   })
@@ -74,24 +73,23 @@ describe('daily orders export model', () => {
 
     const summary = buildDailyOrdersSummary(orders, 'pending')
 
-    expect(summary.byLocation).toContainEqual({ label: 'Genneia', orders: 1, items: 3 })
+    expect(summary.byLocation).toContainEqual({ label: 'Genneia', orders: 1, items: 1 })
     expect(summary.byLocation).toContainEqual({ label: 'La Laja', orders: 1, items: 1 })
-    expect(summary.byMenu).toContainEqual({ label: 'Opción 1 - BIDE DEL DIA', quantity: 3 })
-    expect(summary.byMenu).toContainEqual({ label: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 })
+    expect(summary.byMenu).toContainEqual({ label: 'Opción 1 - BIDE DEL DIA', quantity: 2 })
+    expect(summary.byMenu).not.toContainEqual({ label: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 })
     expect(summary.byLocationMenu).toContainEqual({
       label: 'Genneia',
       orders: 1,
-      items: 3,
+      items: 1,
       menus: [
-        { label: 'Opción 1 - BIDE DEL DIA', quantity: 2 },
-        { label: 'Opción 4 - BIFE DEL DÍA CARNE', quantity: 1 }
+        { label: 'Opción 1 - BIDE DEL DIA', quantity: 1 }
       ]
     })
     expect(summary.additionalByLocation).toContainEqual({
       label: 'Genneia',
       items: [
         { label: 'Coca cola', quantity: 1 },
-        { label: 'Guarnición: Puré (sin menú asociado)', quantity: 1 },
+        { label: 'Guarnición: Puré', quantity: 1 },
         { label: 'Pan: Sin pan', quantity: 1 }
       ]
     })
@@ -162,14 +160,14 @@ describe('daily orders export model', () => {
       'Ubicación / empresa': 'Genneia',
       'Fecha de entrega': '25/06/2026',
       'Turno / servicio': 'Almuerzo',
-      'Menú elegido': 'Opción 1 - BIDE DEL DIA; Opción 4 - BIFE DEL DÍA CARNE',
-      'Opción elegida': 'Opción 1 - BIDE DEL DIA (x2); Opción 4 - BIFE DEL DÍA CARNE (x1)',
-      Cantidad: 3,
-      Guarniciones: 'Puré (sin menú asociado)',
+      'Menú elegido': 'Opción 1 - BIDE DEL DIA',
+      'Opción elegida': 'Opción 1 - BIDE DEL DIA (x1)',
+      Cantidad: 1,
+      Guarniciones: 'Puré',
       'Respuestas personalizadas': 'Bebida: Coca cola | Pan: Sin pan',
       Comentarios: 'Sin sal',
       Estado: 'Pendiente',
-      'Total de ítems': 3
+      'Total de ítems': 1
     })
   })
 
@@ -203,10 +201,10 @@ describe('daily orders export model', () => {
 
     expect(text).toContain('📋 PEDIDOS SERVIFOOD')
     expect(text).toContain('Genneia')
-    expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 6\n\n* 1 Puré\n* 1 Verduras')
-    expect(text).toContain('Opción 5 - ENSALADA DEL FOOD: 2')
-    expect(text).toContain('Total Genneia: 8')
-    expect(text).toContain('✅ TOTAL GENERAL: 8 pedidos')
+    expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 2\n\n* 1 Puré\n* 1 Verduras')
+    expect(text).toContain('Opción 5 - ENSALADA DEL FOOD: 1')
+    expect(text).toContain('Total Genneia: 3')
+    expect(text).toContain('✅ TOTAL GENERAL: 3 pedidos')
     expect(text).not.toContain('Ana Cliente')
     expect(text).not.toContain('ana@example.com')
     expect(text).not.toContain('Guarnición:')
@@ -326,7 +324,7 @@ describe('daily orders export model', () => {
     expect(text).toContain('✅ TOTAL GENERAL: 2 pedidos')
   })
 
-  it('separa guarniciones sin metadata cuando hay múltiples menús', () => {
+  it('normaliza múltiples menús históricos y asocia guarnición al menú preservado', () => {
     const text = formatDailyOrdersForWhatsApp([{
       ...baseOrder,
       id: 'unassigned-side',
@@ -340,8 +338,8 @@ describe('daily orders export model', () => {
     }], 'pending')
 
     expect(text).toContain('Opción 4 - BIFE DEL DÍA CARNE: 1')
-    expect(text).toContain('Opción 5 - ENSALADA DEL FOOD: 1')
-    expect(text).toContain('Guarnición sin menú asociado\n\n* 1 Puré')
+    expect(text).not.toContain('Opción 5 - ENSALADA DEL FOOD: 1')
+    expect(text).toContain('* 1 Puré')
   })
 
   it('reporta inconsistencias por datos faltantes y cantidades inválidas', () => {
@@ -354,7 +352,7 @@ describe('daily orders export model', () => {
     }], 'pending')
 
     expect(summary.inconsistencies.map((row) => row.problema)).toEqual(
-      expect.arrayContaining(['Sin cliente', 'Sin email', 'Sin ubicación', 'Cantidad inválida'])
+      expect.arrayContaining(['Sin cliente', 'Sin email', 'Sin ubicación', 'Cantidad histórica normalizada'])
     )
   })
 
@@ -368,5 +366,32 @@ describe('daily orders export model', () => {
     }], 'archived')
 
     expect(summary.inconsistencies.map((row) => row.problema)).toContain('Cliente inválido')
+  })
+
+  it('no duplica almuerzos históricos inconsistentes y marca inconsistencia', () => {
+    const summary = buildDailyOrdersSummary([{
+      ...baseOrder,
+      id: 'historical-duplicate',
+      total_items: 2,
+      items: [
+        { id: 'main', name: 'Menú principal', quantity: 1 },
+        { id: 'option-5', name: 'Opción 5 - Ensalada', quantity: 1 }
+      ],
+      custom_responses: [
+        { title: 'Guarnición', response: 'Puré', itemId: 'main' },
+        { title: 'Bebida', response: 'Agua' }
+      ]
+    }], 'pending')
+
+    expect(summary.totalItems).toBe(1)
+    expect(summary.byMenu).toEqual([{ label: 'Menú principal', quantity: 1 }])
+    expect(summary.rows[0].bebida).toBe('Agua')
+    expect(summary.rows[0].guarnicion).toBe('Puré')
+    expect(summary.inconsistencies.map((row) => row.problema)).toEqual(
+      expect.arrayContaining([
+        'Más de un menú principal en almuerzo/cena',
+        'Total histórico no coincide con items normalizados'
+      ])
+    )
   })
 })

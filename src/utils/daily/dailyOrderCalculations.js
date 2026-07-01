@@ -3,6 +3,14 @@ import { normalizeDishName } from './dailyOrderFormatters'
 import { getSideSummaryForOrder } from './dailyOrderSideAssociations'
 import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
 
+const getNormalizedOrderItemTotal = (order = {}) => {
+  const { normalizedItems } = normalizeOrderForReadOnly(order)
+  if (Array.isArray(normalizedItems)) {
+    return normalizedItems.reduce((sum, item) => sum + (Number(item?.quantity || item?.qty || 1) || 1), 0)
+  }
+  return 0
+}
+
 export const getCustomSideFromResponses = (responses = []) => {
   if (!Array.isArray(responses) || responses.length === 0) return null
   for (const r of responses) {
@@ -159,7 +167,7 @@ export const buildTurnSummary = (ordersList = []) => {
   ;(ordersList || []).forEach((order) => {
     if (!order) return
     const turn = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
-    const itemsQty = Number(order.total_items || 0)
+    const itemsQty = getNormalizedOrderItemTotal(order)
     const loc = order.location || 'Sin ubicación'
 
     turnCounts[turn].orders += 1
@@ -281,7 +289,7 @@ export const buildPrintStats = (ordersList = []) => {
     const { normalizedCustomResponses } = normalizeOrderForReadOnly(order)
     const customResponses = Array.isArray(normalizedCustomResponses) ? normalizedCustomResponses : []
     const turn = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
-    const itemsQty = Number(order.total_items || 0)
+    const itemsQty = getNormalizedOrderItemTotal(order)
 
     turnCounts[turn].orders += 1
     turnCounts[turn].items += itemsQty
@@ -335,7 +343,7 @@ export const calculateStats = (ordersData = []) => {
       })
     }
 
-    totalItems += order.total_items || 0
+    totalItems += getNormalizedOrderItemTotal(order)
 
     if (order.status === 'archived') {
       archived++

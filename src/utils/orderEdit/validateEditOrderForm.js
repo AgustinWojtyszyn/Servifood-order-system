@@ -28,6 +28,10 @@ export const validateEditOrderForm = ({
     return { ok: false, error: 'Por favor selecciona al menos un plato del menú' }
   }
 
+  if ((normalizedService === 'lunch' || normalizedService === 'dinner') && selectedItemsList.length > 1) {
+    return { ok: false, error: 'Solo podés seleccionar 1 comida principal por persona para almuerzo o cena.' }
+  }
+
   // Validar opciones requeridas (solo las que están activas)
   if (normalizedService === 'dinner' && hasDinnerOverrideChoice) {
     return { ok: true, error: null }

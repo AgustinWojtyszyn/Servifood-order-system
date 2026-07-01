@@ -49,7 +49,7 @@ describe('order validation', () => {
       calculateTotal: () => 2
     }))
 
-    expect(result.error).toBe('Solo podés seleccionar 1 menú por persona.')
+    expect(result.error).toBe('Solo podés seleccionar 1 comida principal por persona para almuerzo o cena.')
   })
 
   it('uses a valid profile name when form name is numeric', () => {

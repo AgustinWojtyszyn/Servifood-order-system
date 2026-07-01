@@ -96,6 +96,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     isGenneia,
     selectedTurns,
     menuItems,
+    dinnerMenuItems,
     selectedItems,
     selectedItemsDinner,
     visibleLunchOptions,

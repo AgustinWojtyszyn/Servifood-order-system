@@ -54,17 +54,17 @@ describe('daily report helpers', () => {
     const summary = buildDailySummary(orders, '2026-06-23')
 
     expect(summary.totalOrders).toBe(2)
-    expect(summary.totalItems).toBe(3)
-    expect(summary.byLocation[0]).toEqual({ label: 'Planta Norte', orders: 1, items: 2 })
-    expect(summary.byMenuOption).toContainEqual({ label: 'Menú principal - Pollo', quantity: 2 })
+    expect(summary.totalItems).toBe(1)
+    expect(summary.byLocation[0]).toEqual({ label: 'Planta Norte', orders: 1, items: 1 })
+    expect(summary.byMenuOption).toContainEqual({ label: 'Menú principal - Pollo', quantity: 1 })
     expect(summary.byLocationMenu).toContainEqual({
       label: 'Planta Norte',
       orders: 1,
-      items: 2,
+      items: 1,
       menus: [{
         label: 'Menú principal - Pollo',
-        quantity: 2,
-        sides: [{ label: 'Puré', quantity: 2 }]
+        quantity: 1,
+        sides: [{ label: 'Puré', quantity: 1 }]
       }]
     })
     expect(summary.additionalByLocation).toContainEqual({
@@ -220,11 +220,11 @@ describe('daily report helpers', () => {
 
     expect(text).toContain('Detalle por ubicación / empresa')
     expect(text).toContain('La Laja')
-    expect(text).toContain('- Opción 4 - Bife: 2')
+    expect(text).toContain('- Opción 4 - Bife: 1')
     expect(text).toContain('- Menú principal - Merluza: 1')
-    expect(text).toContain('- Subtotal La Laja: 3 ítems')
+    expect(text).toContain('- Subtotal La Laja: 2 ítems')
     expect(text).toContain('Genneia')
-    expect(text).toContain('- Opción 1 - Pan de carne: 3')
+    expect(text).toContain('- Opción 1 - Pan de carne: 1')
     expect(text).toContain('Adicionales por ubicación / empresa')
     expect(text).toContain('- Coca Zero')
     expect(text).toContain('Guarnición: Puré')
@@ -285,12 +285,12 @@ describe('daily report helpers', () => {
     ], '2026-06-23')
     const text = buildEmailText(summary)
 
-    expect(summary.totalItems).toBe(4)
+    expect(summary.totalItems).toBe(3)
     expect(summary.byLocationMenu[0].menus).toEqual([
       {
         label: 'Menú principal - Pollo',
-        quantity: 3,
-        sides: [{ label: 'Puré', quantity: 2 }]
+        quantity: 2,
+        sides: [{ label: 'Puré', quantity: 1 }]
       },
       {
         label: 'Cena - Milanesa',
@@ -299,7 +299,7 @@ describe('daily report helpers', () => {
       }
     ])
     expect(summary.additionalByLocation[0].items).toEqual([])
-    expect(text).toContain('- Menú principal - Pollo: 3\n  Guarnición: Puré (x2)')
+    expect(text).toContain('- Menú principal - Pollo: 2\n  Guarnición: Puré')
     expect(text).toContain('- Cena - Milanesa: 1\n  Guarnición: Puré')
     expect(text).not.toContain('- Guarnición: Puré (x3)')
   })
@@ -387,7 +387,7 @@ describe('daily report helpers', () => {
     const summary = buildDailySummary(createMockOrders('2026-06-23'), '2026-06-23')
 
     expect(summary.totalOrders).toBe(3)
-    expect(summary.totalItems).toBe(4)
+    expect(summary.totalItems).toBe(3)
   })
 
   it('testEmail usa mock interno y destinatario seguro por defecto', () => {

@@ -6,6 +6,7 @@ export const useCustomSideGuards = ({
   isGenneia,
   selectedTurns,
   menuItems,
+  dinnerMenuItems,
   selectedItems,
   selectedItemsDinner,
   visibleLunchOptions,
@@ -36,10 +37,10 @@ export const useCustomSideGuards = ({
   const canChooseCustomSideForDinner = useMemo(() => {
     if (!isGenneia) return true
     if (!selectedTurns?.dinner) return true
-    const selectedList = buildSelectedItemsList(menuItems, selectedItemsDinner)
+    const selectedList = buildSelectedItemsList(dinnerMenuItems, selectedItemsDinner)
     if (!selectedList.length) return false
     return selectedList.every(item => canChooseCustomSide(item))
-  }, [isGenneia, selectedTurns?.dinner, menuItems, selectedItemsDinner])
+  }, [isGenneia, selectedTurns?.dinner, dinnerMenuItems, selectedItemsDinner])
 
   useEffect(() => {
     if (canChooseCustomSideForSelection) return
@@ -80,4 +81,3 @@ export const useCustomSideGuards = ({
     canChooseCustomSideForDinner
   }
 }
-

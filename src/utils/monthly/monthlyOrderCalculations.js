@@ -15,8 +15,6 @@ export const createOptionCounts = () => OPTION_KEYS.reduce((acc, key) => {
 const getService = (order = {}) => String(order?.service || 'lunch').toLowerCase() === 'dinner' ? 'dinner' : 'lunch'
 
 const getOrderQuantity = (order = {}) => {
-  const totalItems = Number(order?.total_items)
-  if (Number.isFinite(totalItems) && totalItems > 0) return totalItems
   const { normalizedItems } = normalizeOrderForReadOnly(order)
   const itemsTotal = normalizedItems.reduce((sum, item) => sum + (Number(item?.quantity) || 1), 0)
   return itemsTotal || 1

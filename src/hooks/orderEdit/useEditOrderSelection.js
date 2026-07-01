@@ -40,14 +40,10 @@ export const useEditOrderSelection = ({
 
       const anySelected = Object.values(selectedItems || {}).some(Boolean)
       if (anySelected && !selectedItems?.[itemId]) {
-        notifyInfo('Solo puedes seleccionar 1 menú por persona en cena.')
-        return
+        notifyInfo('Se reemplazó la selección anterior de cena.')
       }
 
-      setSelectedItems(prev => ({
-        ...(prev || {}),
-        [itemId]: true
-      }))
+      setSelectedItems(() => ({ [itemId]: true }))
       return
     }
 
@@ -74,14 +70,10 @@ export const useEditOrderSelection = ({
       .some(m => Boolean(selectedItems?.[m.id]))
 
     if (mainMenuSelected && !selectedItems?.[itemId]) {
-      notifyInfo('Solo puedes seleccionar 1 menú por persona.')
-      return
+      notifyInfo('Se reemplazó la selección anterior.')
     }
 
-    setSelectedItems(prev => ({
-      ...(prev || {}),
-      [itemId]: true
-    }))
+    setSelectedItems(() => ({ [itemId]: true }))
   }, [service, dinnerOverrideChoice, menuItems, selectedItems, setSelectedItems])
 
   return { handleItemSelect, getSelectedItemsList, total }

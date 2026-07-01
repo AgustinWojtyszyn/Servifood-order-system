@@ -39,8 +39,6 @@ const DAILY_COLUMNS = [
 ]
 
 const getOrderQuantity = (order = {}) => {
-  const totalItems = Number(order?.total_items)
-  if (Number.isFinite(totalItems) && totalItems > 0) return totalItems
   const { normalizedItems } = normalizeOrderForReadOnly(order)
   const itemTotal = normalizedItems.reduce((sum, item) => sum + (Number(item?.quantity) || 1), 0)
   return itemTotal || 1

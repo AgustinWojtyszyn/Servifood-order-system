@@ -40,6 +40,7 @@ export type NormalizedOrder = {
   status?: string | null
   total_items?: number | null
   created_at?: string | null
+  normalization_warnings?: string[]
 }
 
 export type DailySummary = {
@@ -140,12 +141,47 @@ const safeArray = (value: unknown): Array<Record<string, unknown>> => {
   return []
 }
 
-export const normalizeOrder = (order: Record<string, unknown>): NormalizedOrder => ({
-  ...order,
-  items: safeArray(order.items),
-  custom_responses: safeArray(order.custom_responses),
-  total_items: Number.isFinite(Number(order.total_items)) ? Number(order.total_items) : 0
-})
+const getNormalizedService = (service?: unknown) => String(service || 'lunch').trim().toLowerCase()
+
+const isMealService = (service?: unknown) => {
+  const normalized = getNormalizedService(service)
+  return normalized === 'lunch' || normalized === 'dinner'
+}
+
+const normalizeItemsForService = (
+  service: unknown,
+  items: Array<Record<string, unknown>>
+): Array<Record<string, unknown>> => {
+  if (!isMealService(service)) return items.map((item) => ({ ...item }))
+  return items.slice(0, 1).map((item) => ({
+    ...item,
+    quantity: 1
+  }))
+}
+
+export const normalizeOrder = (order: Record<string, unknown>): NormalizedOrder => {
+  const rawItems = safeArray(order.items)
+  const normalizedItems = normalizeItemsForService(order.service, rawItems)
+  const service = getNormalizedService(order.service)
+  const warnings: string[] = []
+
+  if (isMealService(service)) {
+    if (rawItems.length > 1) warnings.push('más de un menú principal')
+    if (rawItems.some((item) => Number(item.quantity || item.qty || 1) !== 1)) warnings.push('cantidad histórica normalizada')
+    if (Number.isFinite(Number(order.total_items)) && Number(order.total_items) !== normalizedItems.length) {
+      warnings.push('total histórico no coincide con items normalizados')
+    }
+  }
+
+  return {
+    ...order,
+    service,
+    items: normalizedItems,
+    custom_responses: safeArray(order.custom_responses),
+    total_items: normalizedItems.length,
+    normalization_warnings: warnings
+  }
+}
 
 const normalizeValue = (value: unknown) => {
   if (Array.isArray(value)) return value.map(String).filter(Boolean).join(', ')
@@ -191,6 +227,7 @@ export const getServiceLabel = (service?: string | null) =>
   String(service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'
 
 export const getOrderTotalItems = (order: NormalizedOrder) => {
+  if (isMealService(order.service)) return order.items.length
   const storedTotal = Number(order.total_items || 0)
   if (storedTotal > 0) return storedTotal
   return order.items.reduce((sum, item) => sum + Number(item.quantity || item.qty || 1), 0)
@@ -328,6 +365,10 @@ export const buildDailySummary = (orders: NormalizedOrder[], reportDate: string)
     if (order.items.length === 0) missing.push('menú/opción')
     if (missing.length > 0) {
       warnings.push(`Pedido ${order.id || index + 1} con datos incompletos: ${missing.join(', ')}`)
+    }
+
+    if (order.normalization_warnings?.length) {
+      warnings.push(`Pedido ${order.id || index + 1} normalizado: ${order.normalization_warnings.join(', ')}`)
     }
   })
 

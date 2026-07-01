@@ -1,4 +1,5 @@
 import { resolveCustomerName } from '../order/orderCustomerName'
+import { normalizeOrderItemsForService, normalizeOrderPayloadForService } from '../order/orderItemNormalization'
 
 export const buildEditOrderPayload = ({
   formData,
@@ -35,10 +36,11 @@ export const buildEditOrderPayload = ({
 
   const itemsPayload = (normalizedService === 'dinner' && hasDinnerOverrideChoice && (selectedItemsList || []).length === 0)
     ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1, isDinnerOverride: true }]
-    : (selectedItemsList || []).map(item => ({
+    : normalizeOrderItemsForService(normalizedService, selectedItemsList || []).map(item => ({
         id: item.id,
         name: item.name,
-        quantity: 1
+        quantity: 1,
+        slotIndex: Number.isFinite(item?.slotIndex) ? item.slotIndex : undefined
       }))
 
   const customResponsesPayload = (normalizedService === 'dinner' && hasDinnerOverrideChoice && (selectedItemsList || []).length === 0)
@@ -49,7 +51,8 @@ export const buildEditOrderPayload = ({
       }]
     : customResponsesArray
 
-  return {
+  return normalizeOrderPayloadForService({
+    service: normalizedService,
     location: formData?.location,
     customer_name: userName,
     customer_email: formData?.email || user?.email,
@@ -57,5 +60,5 @@ export const buildEditOrderPayload = ({
     items: itemsPayload,
     comments: formData?.comments,
     custom_responses: customResponsesPayload
-  }
+  })
 }

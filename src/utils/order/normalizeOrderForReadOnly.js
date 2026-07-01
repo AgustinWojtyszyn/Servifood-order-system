@@ -2,6 +2,8 @@
 // Do not use in submit, update, edit payload builders, or idempotency logic.
 // Keeps raw order.items and order.custom_responses untouched.
 // normalizedItems / normalizedCustomResponses must not be mutated in place.
+import { normalizeOrderItemsForService } from './orderItemNormalization'
+
 const safeParseArray = (value) => {
   if (Array.isArray(value)) return value
   if (typeof value === 'string') {
@@ -16,7 +18,8 @@ const safeParseArray = (value) => {
 }
 
 const normalizeOrderForReadOnly = (order = {}) => {
-  const normalizedItems = safeParseArray(order?.items)
+  const parsedItems = safeParseArray(order?.items)
+  const normalizedItems = normalizeOrderItemsForService(order?.service || 'lunch', parsedItems)
   const normalizedCustomResponses = safeParseArray(order?.custom_responses)
   return {
     ...order,

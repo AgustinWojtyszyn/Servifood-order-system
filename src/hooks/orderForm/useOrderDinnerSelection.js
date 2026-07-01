@@ -1,5 +1,13 @@
 import { useCallback } from 'react'
 
+export const getNextDinnerSelection = (selectedItems = {}, itemId, isSelected) => {
+  if (isSelected) return { [itemId]: true }
+  return {
+    ...selectedItems,
+    [itemId]: false
+  }
+}
+
 export const useOrderDinnerSelection = ({
   dinnerMenuItems,
   selectedItemsDinner,
@@ -20,17 +28,14 @@ export const useOrderDinnerSelection = ({
         notifyInfo('Si elegís la opción de cena, no podés seleccionar otro menú u opción.')
         return
       }
-      // Si ya hay algo elegido (menú u otra opción), bloquear
       if (anySelected && !selectedItemsDinner[itemId]) {
-        notifyInfo('Solo puedes seleccionar 1 menú por persona en cena.')
-        return
+        notifyInfo('Se reemplazó la selección anterior de cena.')
       }
-      // Limpiar overrides de cena si elige un plato
       clearDinnerOverrideResponses()
       setDinnerSpecialChoice(null)
-      setSelectedItemsDinner(prev => ({ ...prev, [itemId]: true }))
+      setSelectedItemsDinner(prev => getNextDinnerSelection(prev, itemId, true))
     } else {
-      setSelectedItemsDinner(prev => ({ ...prev, [itemId]: false }))
+      setSelectedItemsDinner(prev => getNextDinnerSelection(prev, itemId, false))
     }
   }, [
     dinnerMenuItems,

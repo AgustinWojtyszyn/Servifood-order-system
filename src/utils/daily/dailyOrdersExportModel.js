@@ -3,6 +3,7 @@ import { isBeverage } from './dailyOrderCalculations'
 import { getSideAssociationsForOrder, getSideSummaryForOrder } from './dailyOrderSideAssociations'
 import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
 import { isValidCustomerName } from '../order/orderCustomerName'
+import { isMealService, safeOrderItemsArray } from '../order/orderItemNormalization'
 
 const EMPTY = ''
 
@@ -135,6 +136,7 @@ export const extractCustomResponses = (order = {}) => {
 }
 
 export const getOrderTotalItems = (order = {}, items = extractOrderItems(order)) => {
+  if (isMealService(order?.service || 'lunch')) return items.length
   const stored = Number(order.total_items)
   if (Number.isFinite(stored) && stored > 0) return stored
   return items.reduce((sum, item) => sum + item.quantity, 0)
@@ -440,6 +442,8 @@ const buildInconsistencies = (orders) => {
     const issues = []
     const normalized = normalizeOrderForReadOnly(order || {})
     const items = toArray(normalized.normalizedItems)
+    const rawItems = safeOrderItemsArray(order?.items)
+    const rawTotalItems = Number(order?.total_items)
 
     const rawCustomerName = normalizeText(order.customer_name || order.user_name || order.name)
     if (!rawCustomerName) issues.push('Sin cliente')
@@ -448,6 +452,11 @@ const buildInconsistencies = (orders) => {
     if (!normalizeText(order.location || order.company_name || order.company)) issues.push('Sin ubicación')
     if (items.length === 0) issues.push('Sin items')
     if (!Array.isArray(normalized.normalizedItems)) issues.push('Items malformados')
+    if (isMealService(order?.service || 'lunch')) {
+      if (rawItems.length > 1) issues.push('Más de un menú principal en almuerzo/cena')
+      if (rawItems.some((item) => getRawItemQuantity(item) !== 1)) issues.push('Cantidad histórica normalizada')
+      if (Number.isFinite(rawTotalItems) && rawTotalItems !== items.length) issues.push('Total histórico no coincide con items normalizados')
+    }
 
     items.forEach((item) => {
       if (!item || typeof item !== 'object' || !getItemLabel(item)) issues.push('Items malformados')

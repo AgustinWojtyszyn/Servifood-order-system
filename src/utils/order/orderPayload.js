@@ -1,6 +1,7 @@
 import { buildOrderItemLabel } from './orderFormatters'
 import { resolveCustomerName } from './orderCustomerName'
 import { computePayloadSignature } from './orderIdempotency'
+import { normalizeOrderItemsForService, normalizeOrderPayloadForService } from './orderItemNormalization'
 
 const buildOrderPayload = ({
   service,
@@ -15,10 +16,10 @@ const buildOrderPayload = ({
 }) => {
   const isDinner = service === 'dinner'
 
-  const serviceItems = Array.isArray(itemsForService) ? itemsForService : []
+  const serviceItems = normalizeOrderItemsForService(service, itemsForService)
   const itemsToSend = (isDinner && dinnerOverrideChoice && serviceItems.length === 0)
     ? [{ id: 'dinner-override', name: `Cena: ${dinnerOverrideChoice}`, quantity: 1, isDinnerOverride: true }]
-    : serviceItems.slice(0, 1)
+    : serviceItems
 
   const normalizedItemsToSend = itemsToSend.map(item => ({
     ...item,
@@ -35,7 +36,7 @@ const buildOrderPayload = ({
     service
   )
 
-  const orderData = {
+  const orderData = normalizeOrderPayloadForService({
     user_id: user.id,
     location: formData.location,
     customer_name: resolveCustomerName({ formData, user }),
@@ -54,7 +55,7 @@ const buildOrderPayload = ({
     custom_responses: responsesForService,
     idempotency_key: idempotencyKey,
     service
-  }
+  })
 
   return {
     orderData,

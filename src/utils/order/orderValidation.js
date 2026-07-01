@@ -3,7 +3,7 @@ import { resolveCustomerName } from './orderCustomerName'
 import { canChooseCustomSide } from './orderCustomSideRules'
 
 const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
-const SINGLE_MENU_MESSAGE = 'Solo podés seleccionar 1 menú por persona.'
+const SINGLE_MENU_MESSAGE = 'Solo podés seleccionar 1 comida principal por persona para almuerzo o cena.'
 
 const hasValidResponse = (response) => {
   if (!response) return false

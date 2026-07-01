@@ -2,6 +2,7 @@ import { ordersService } from '../../services/orders'
 import { buildIdempotencyStorageKey, generateIdempotencyKey } from './orderIdempotency'
 import { buildOrderPayload } from './orderPayload'
 import { hasDinnerOverrideInResponses } from './orderBusinessRules'
+import { normalizeOrderItemsForService } from './orderItemNormalization'
 
 const ACTIVE_ORDER_STATUSES = new Set(['pending'])
 const DUPLICATE_ORDER_MESSAGE = 'Ya tenés un pedido registrado para esta fecha y servicio.'
@@ -25,9 +26,7 @@ const submitOrders = async ({
   user,
   formData,
   deliveryDate,
-  deliveryDates,
-  calculateTotal,
-  calculateTotalDinner
+  deliveryDates
 }) => {
   const createdOrderIds = []
   const { data: existingOrders, error: existingOrdersError } = await ordersService.getOrders(user.id, {
@@ -56,13 +55,14 @@ const submitOrders = async ({
     }
 
     const overrideChoice = isDinner ? dinnerOverrideChoice : null
-    const itemsForService = isDinner ? selectedItemsListDinner : selectedItemsList
+    const rawItemsForService = isDinner ? selectedItemsListDinner : selectedItemsList
+    const itemsForService = normalizeOrderItemsForService(service, rawItemsForService)
     const responsesForService = isDinner ? customResponsesDinnerArray : customResponsesArray
 
-    if (itemsForService.length > 1) {
+    if ((rawItemsForService || []).length > 1) {
       return {
         ok: false,
-        errorMessage: 'Solo podés seleccionar 1 menú por persona.',
+        errorMessage: 'Solo podés seleccionar 1 comida principal por persona para almuerzo o cena.',
         forceLunchOnly: false
       }
     }
@@ -78,7 +78,7 @@ const submitOrders = async ({
       }
     }
 
-    const totalItems = service === 'dinner' ? calculateTotalDinner() : calculateTotal()
+    const totalItems = itemsForService.length
     const { orderData, idempotencySignature } = buildOrderPayload({
       service,
       user,
