@@ -57,8 +57,8 @@ const useAdminCleanupActions = ({
     const confirmed = await confirmAction({
       title: 'Eliminar pedidos archivados',
       message:
-        'Esta acción liberará espacio en la base de datos, pero elimina permanentemente los pedidos archivados.',
-      highlight: `Se eliminarán ${archivedOrdersCount} pedidos archivados.`,
+        'Esta acción afecta pedidos archivados guardados en la base de datos. No limpia la caché del navegador ni archivos temporales del dispositivo.',
+      highlight: `Se eliminarán permanentemente ${archivedOrdersCount} pedidos archivados.`,
       confirmText: 'Eliminar definitivamente'
     })
     if (!confirmed) return

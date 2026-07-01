@@ -36,8 +36,8 @@ const AdminCleanupSection = ({
           <Database className="h-8 w-8 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Limpiar Cache</h2>
-          <p className="text-gray-600 mt-1">Libera espacio eliminando pedidos finalizados</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Eliminar pedidos archivados</h2>
+          <p className="text-gray-600 mt-1">Libera espacio eliminando pedidos archivados de la base de datos</p>
         </div>
       </div>
 
@@ -161,7 +161,7 @@ const AdminCleanupSection = ({
           <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
             <Database className="h-10 w-10 text-green-600" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">✨ Todo Limpio</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">✨ Sin pedidos archivados para eliminar</h3>
           <p className="text-gray-600 mb-4 max-w-md mx-auto">
             No hay pedidos archivados para eliminar en este momento.
           </p>
@@ -182,7 +182,7 @@ const AdminCleanupSection = ({
         <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
           <h4 className="font-bold mb-2">🕐 Frecuencia Recomendada</h4>
           <p className="text-sm leading-relaxed">
-            Limpia los pedidos archivados una vez por semana o cuando acumules más de 100 pedidos.
+            Eliminá pedidos archivados una vez por semana o cuando acumules más de 100 pedidos.
           </p>
         </div>
         <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
