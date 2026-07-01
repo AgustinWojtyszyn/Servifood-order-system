@@ -42,6 +42,7 @@ const DailyOrders = ({ user, loading }) => {
     isAdmin,
     availableDishes,
     refreshing,
+    ordersError,
     reportRun,
     reportRunError,
     lastUpdatedAt,
@@ -182,6 +183,12 @@ const DailyOrders = ({ user, loading }) => {
           pendingOrdersCount={dailyCloseStatus.pendingCount}
           isAdmin={isAdmin}
         />
+
+        {ordersError && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 print-hide">
+            {ordersError}
+          </div>
+        )}
 
         <DailyClosePanel
           status={dailyCloseStatus}

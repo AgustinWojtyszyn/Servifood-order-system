@@ -1,3 +1,71 @@
+export const isTransientSupabaseError = (error) => {
+  if (!error) return false
+
+  const status = Number(error.status || error.code)
+  if ([502, 503, 504].includes(status)) return true
+
+  const message = String(error.message || error.name || error.code || error).toLowerCase()
+  return [
+    'failed to fetch',
+    'err_connection_closed',
+    'err_network',
+    'network request failed',
+    'networkerror',
+    'timeout'
+  ].some((pattern) => message.includes(pattern))
+}
+
+export const withSupabaseRetry = async (
+  operation,
+  {
+    attempts = 3,
+    delays = [300, 800, 1500],
+    context = 'supabase query'
+  } = {}
+) => {
+  let lastError
+  let lastResult
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const result = await operation()
+      lastResult = result
+
+      if (!isTransientSupabaseError(result?.error)) {
+        return result
+      }
+
+      lastError = result.error
+    } catch (error) {
+      if (!isTransientSupabaseError(error)) {
+        throw error
+      }
+      lastError = error
+    }
+
+    if (attempt >= attempts) {
+      if (lastResult) return lastResult
+      throw lastError
+    }
+
+    const delay = delays[Math.min(attempt - 1, delays.length - 1)] || 0
+    if (import.meta.env.DEV) {
+      console.warn(`[supabase-retry] ${context} failed on attempt ${attempt}; retrying in ${delay}ms`, lastError)
+    }
+    await new Promise((resolve) => setTimeout(resolve, delay))
+  }
+
+  if (lastResult) return lastResult
+  throw lastError
+}
+
+const normalizeStatuses = (statuses) => {
+  if (statuses === undefined || statuses === null) return []
+  if (Array.isArray(statuses)) return statuses.map(status => String(status || '').trim()).filter(Boolean)
+  const status = String(statuses || '').trim()
+  return status ? [status] : []
+}
+
 export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {}) => {
   if (!supabase) {
     throw new Error('createOrdersService requires a supabase client')
@@ -113,6 +181,13 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
 
     // Pedidos con person_key para agrupar por persona (grupo o usuario suelto)
     getOrdersWithPersonKey: async ({ userId = null, personKey = null } = {}) => {
+      if (!userId && !personKey) {
+        return {
+          data: null,
+          error: new Error('getOrdersWithPersonKey requiere userId/personKey; usar getOrdersWithPersonKeyByDate para /daily-orders')
+        }
+      }
+
       let query = supabase
         .from('orders_with_person_key')
         .select('*')
@@ -128,6 +203,44 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
 
       const { data, error } = await query
       return { data, error }
+    },
+
+    getOrdersWithPersonKeyByDate: async ({
+      deliveryDate,
+      statuses = ['pending', 'archived'],
+      userId = null,
+      personKey = null
+    } = {}) => {
+      if (!deliveryDate) {
+        return { data: null, error: new Error('deliveryDate es requerido para consultar pedidos diarios') }
+      }
+
+      return withSupabaseRetry(async () => {
+        let query = supabase
+          .from('orders_with_person_key')
+          .select('*')
+          .eq('delivery_date', deliveryDate)
+
+        const normalizedStatuses = normalizeStatuses(statuses)
+        if (normalizedStatuses.length === 1) {
+          query = query.eq('status', normalizedStatuses[0])
+        } else if (normalizedStatuses.length > 1) {
+          query = query.in('status', normalizedStatuses)
+        }
+
+        if (userId) {
+          query = query.eq('user_id', userId)
+        }
+
+        if (personKey) {
+          query = query.eq('person_key', personKey)
+        }
+
+        query = query.order('created_at', { ascending: false })
+
+        const { data, error } = await query
+        return { data, error }
+      }, { context: 'orders_with_person_key daily date query' })
     },
 
     // Conteo de pedidos agrupado por persona

@@ -1,0 +1,35 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+const currentDir = dirname(fileURLToPath(import.meta.url))
+const source = readFileSync(join(currentDir, 'useDailyOrdersData.js'), 'utf8')
+const dailyOrdersSource = readFileSync(join(currentDir, '../components/DailyOrders.jsx'), 'utf8')
+const dailyHeaderSource = readFileSync(join(currentDir, '../components/daily/DailyHeader.jsx'), 'utf8')
+const dailyExportActionsSource = readFileSync(join(currentDir, '../components/daily/DailyExportActions.jsx'), 'utf8')
+
+describe('useDailyOrdersData daily orders loading', () => {
+  it('loads daily orders with server-side delivery_date and operational statuses', () => {
+    expect(source).toContain('db.getOrdersWithPersonKeyByDate')
+    expect(source).toContain('deliveryDate: nextOperationalDate')
+    expect(source).toContain("statuses: ['pending', 'archived']")
+    expect(source).not.toContain('db.getOrdersWithPersonKey(')
+  })
+
+  it('routes the refresh button through the filtered daily orders loader', () => {
+    expect(dailyOrdersSource).toContain('onRefresh={handleRefresh}')
+    expect(dailyHeaderSource).toContain('onRefresh={onRefresh}')
+    expect(dailyExportActionsSource).toContain('onClick={onRefresh}')
+    expect(dailyOrdersSource).not.toContain('getOrdersWithPersonKey(')
+    expect(dailyHeaderSource).not.toContain('getOrdersWithPersonKey(')
+    expect(dailyExportActionsSource).not.toContain('getOrdersWithPersonKey(')
+  })
+
+  it('keeps exports, summaries and close status based on the loaded daily dataset', () => {
+    expect(dailyOrdersSource).toContain('filterOrdersByCompany(sortedOrders, exportCompany)')
+    expect(dailyOrdersSource).toContain('getDailyOperationalStatus({')
+    expect(dailyOrdersSource).toContain('orders: allOrders')
+    expect(dailyOrdersSource).toContain('buildPrintStats(allOrders)')
+  })
+})

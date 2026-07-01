@@ -13,6 +13,7 @@ export const useDailyOrdersData = (user) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [availableDishes, setAvailableDishes] = useState([])
   const [refreshing, setRefreshing] = useState(false)
+  const [ordersError, setOrdersError] = useState('')
   const [reportRun, setReportRun] = useState(null)
   const [reportRunError, setReportRunError] = useState('')
   const [lastUpdatedAt, setLastUpdatedAt] = useState('')
@@ -72,25 +73,33 @@ export const useDailyOrdersData = (user) => {
         setOrdersLoading(true)
       }
 
-      const { data: ordersData, error } = await db.getOrdersWithPersonKey()
+      const nextOperationalDate = getTomorrowISOInTimeZone()
+      setOperationalDate(nextOperationalDate)
+
+      const { data: ordersData, error } = await db.getOrdersWithPersonKeyByDate({
+        deliveryDate: nextOperationalDate,
+        statuses: ['pending', 'archived']
+      })
 
       if (error) {
         console.error('Error fetching orders:', error)
+        if (!silent) {
+          setOrders([])
+          setAvailableDishes([])
+          setStats(calculateStats([]))
+        }
+        setOrdersError('No se pudieron cargar los pedidos diarios. Usá Actualizar para reintentar.')
       } else {
+        setOrdersError('')
         const { data: peopleData } = await db.getAdminPeopleUnified()
         const personById = new Map(
           (Array.isArray(peopleData) ? peopleData : []).map(person => [person.person_id, person])
         )
 
-        const operationalDate = getTomorrowISOInTimeZone()
-        setOperationalDate(operationalDate)
-
         const dishesSet = new Set()
 
-        const todayOrders = Array.isArray(ordersData) ? ordersData.filter(order => {
+        const todayOrders = Array.isArray(ordersData) ? ordersData.map(order => {
           if (!order) return false
-          return String(order.delivery_date || '') === operationalDate
-        }).map(order => {
           const personId = order.person_key || (order.user_id ? String(order.user_id) : null)
           const person = personId ? personById.get(personId) : null
           const emails = Array.isArray(person?.emails) ? person.emails.filter(Boolean) : []
@@ -116,16 +125,22 @@ export const useDailyOrdersData = (user) => {
             user_name: userName,
             user_email: orderEmail || emails[0] || ''
           }
-        }) : []
+        }).filter(Boolean) : []
 
         setOrders(todayOrders)
         setAvailableDishes(Array.from(dishesSet).sort())
         setStats(calculateStats(todayOrders))
         setLastUpdatedAt(new Date().toISOString())
-        await fetchDailyReportRunStatus(operationalDate)
+        await fetchDailyReportRunStatus(nextOperationalDate)
       }
     } catch (err) {
       console.error('Error:', err)
+      if (!silent) {
+        setOrders([])
+        setAvailableDishes([])
+        setStats(calculateStats([]))
+      }
+      setOrdersError('No se pudieron cargar los pedidos diarios. Usá Actualizar para reintentar.')
     } finally {
       isFetchingRef.current = false
       if (!silent) {
@@ -237,6 +252,7 @@ export const useDailyOrdersData = (user) => {
     isAdmin,
     availableDishes,
     refreshing,
+    ordersError,
     reportRun,
     reportRunError,
     lastUpdatedAt,
