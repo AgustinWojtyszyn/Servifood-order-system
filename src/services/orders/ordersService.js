@@ -15,6 +15,19 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
     return { data, error }
   }
 
+  const getDailyReportRunStatus = async ({ reportDate, reportType = 'daily_orders' } = {}) => {
+    if (!reportDate) {
+      return { data: null, error: new Error('reportDate es requerido para consultar el reporte diario') }
+    }
+
+    const { data, error } = await supabase.rpc('get_daily_report_run_status', {
+      p_report_date: reportDate,
+      p_report_type: reportType
+    })
+    const row = Array.isArray(data) ? (data[0] || null) : data
+    return { data: row || null, error }
+  }
+
   const createRequestId = (prefix) => {
     const random = typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
@@ -25,6 +38,7 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
   return {
     archivePendingOrdersByDeliveryDate,
     archiveAllPendingOrders: archivePendingOrdersByDeliveryDate,
+    getDailyReportRunStatus,
 
     // "Eliminar" pendientes: se cancelan para conservarlos en el histórico (panel mensual)
     deleteAllPendingOrders: async ({ deliveryDate } = {}) => {

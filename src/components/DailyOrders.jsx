@@ -6,6 +6,7 @@ import { COMPANY_LOCATIONS } from '../constants/companyConfig'
 import DailyFilters from './daily/DailyFilters'
 import DailyHeader from './daily/DailyHeader'
 import DailyLoader from './daily/DailyLoader'
+import DailyClosePanel from './daily/DailyClosePanel'
 import DailyOrdersTable from './daily/DailyOrdersTable'
 import DailySummary from './daily/DailySummary'
 import DailyPrintStyles from './daily/DailyPrintStyles'
@@ -18,6 +19,7 @@ import {
   buildPrintStats,
   filterOrdersByCompany
 } from '../utils/daily/dailyOrderCalculations'
+import { getDailyOperationalStatus } from '../utils/daily/dailyCloseStatus'
 import { getTomorrowDate } from '../utils/daily/dailyOrderFormatters'
 import { exportDailyOrdersExcel } from '../utils/daily/exportDailyOrdersExcel'
 import { exportDailyOrdersPdf } from '../utils/daily/exportDailyOrdersPdf'
@@ -40,6 +42,10 @@ const DailyOrders = ({ user, loading }) => {
     isAdmin,
     availableDishes,
     refreshing,
+    reportRun,
+    reportRunError,
+    lastUpdatedAt,
+    operationalDate,
     stats,
     handleRefresh,
     handleArchiveOrder,
@@ -108,6 +114,18 @@ const DailyOrders = ({ user, loading }) => {
   )
   const exportableOrdersCount = manualExportOrders.length
   const tomorrowLabel = getTomorrowDate()
+  const dailyCloseStatus = useMemo(
+    () => getDailyOperationalStatus({
+      orders: allOrders,
+      deliveryDate: operationalDate,
+      selectedStatus: 'all',
+      reportRun,
+      reportRunError,
+      lastUpdatedAt,
+      exportCompany
+    }),
+    [allOrders, exportCompany, lastUpdatedAt, operationalDate, reportRun, reportRunError]
+  )
 
   if (!isAdmin) {
     return (
@@ -161,7 +179,12 @@ const DailyOrders = ({ user, loading }) => {
           onExportPdf={exportToPdf}
           onArchiveAll={handleArchiveAllPending}
           sortedOrdersLength={sortedOrders.length}
+          pendingOrdersCount={dailyCloseStatus.pendingCount}
           isAdmin={isAdmin}
+        />
+
+        <DailyClosePanel
+          status={dailyCloseStatus}
         />
 
         <DailyFilters

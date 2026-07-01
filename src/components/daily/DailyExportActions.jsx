@@ -14,6 +14,7 @@ const DailyExportActions = ({
   onExportPdf,
   onArchiveAll,
   sortedOrdersLength,
+  pendingOrdersCount = 0,
   isAdmin
 }) => (
   <div className="flex flex-col gap-3 xl:min-w-[420px]">
@@ -83,11 +84,12 @@ const DailyExportActions = ({
       {isAdmin && (
         <button
           onClick={onArchiveAll}
-          className="inline-flex w-full items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:w-auto"
-          title="Archiva todos los pedidos pendientes al final del día"
+          disabled={pendingOrdersCount === 0}
+          className="inline-flex w-full items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          title={pendingOrdersCount > 0 ? 'Archiva todos los pedidos pendientes al final del día' : 'No hay pedidos pendientes para archivar'}
         >
           <ArchiveIcon className="mr-2 h-4 w-4" />
-          Archivar pedidos
+          Archivar pendientes ({pendingOrdersCount})
         </button>
       )}
     </div>

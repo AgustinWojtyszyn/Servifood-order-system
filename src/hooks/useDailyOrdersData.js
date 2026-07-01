@@ -13,6 +13,10 @@ export const useDailyOrdersData = (user) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [availableDishes, setAvailableDishes] = useState([])
   const [refreshing, setRefreshing] = useState(false)
+  const [reportRun, setReportRun] = useState(null)
+  const [reportRunError, setReportRunError] = useState('')
+  const [lastUpdatedAt, setLastUpdatedAt] = useState('')
+  const [operationalDate, setOperationalDate] = useState(() => getTomorrowISOInTimeZone())
   const [stats, setStats] = useState({
     total: 0,
     byLocation: {},
@@ -39,6 +43,26 @@ export const useDailyOrdersData = (user) => {
     }
   }, [user])
 
+  const fetchDailyReportRunStatus = useCallback(async (reportDate) => {
+    if (!reportDate) return
+
+    try {
+      setReportRunError('')
+      const { data, error } = await db.getDailyReportRunStatus({ reportDate })
+      if (error) {
+        console.error('Error fetching daily report run status:', error)
+        setReportRun(null)
+        setReportRunError('No se pudo consultar el estado del reporte automático.')
+        return
+      }
+      setReportRun(data || null)
+    } catch (err) {
+      console.error('Error fetching daily report run status:', err)
+      setReportRun(null)
+      setReportRunError('No se pudo consultar el estado del reporte automático.')
+    }
+  }, [])
+
   const fetchDailyOrders = useCallback(async (silent = false) => {
     if (!user?.id) return
     if (isFetchingRef.current) return
@@ -59,6 +83,7 @@ export const useDailyOrdersData = (user) => {
         )
 
         const operationalDate = getTomorrowISOInTimeZone()
+        setOperationalDate(operationalDate)
 
         const dishesSet = new Set()
 
@@ -96,6 +121,8 @@ export const useDailyOrdersData = (user) => {
         setOrders(todayOrders)
         setAvailableDishes(Array.from(dishesSet).sort())
         setStats(calculateStats(todayOrders))
+        setLastUpdatedAt(new Date().toISOString())
+        await fetchDailyReportRunStatus(operationalDate)
       }
     } catch (err) {
       console.error('Error:', err)
@@ -105,7 +132,7 @@ export const useDailyOrdersData = (user) => {
         setOrdersLoading(false)
       }
     }
-  }, [user])
+  }, [fetchDailyReportRunStatus, user])
 
   useEffect(() => {
     if (!user?.id) return
@@ -159,9 +186,19 @@ export const useDailyOrdersData = (user) => {
 
   const handleArchiveAllPending = useCallback(async () => {
     const operationalDate = getTomorrowISOInTimeZone()
+    const pendingCount = (Array.isArray(orders) ? orders : []).filter((order) =>
+      String(order?.status || '').toLowerCase() === 'pending' &&
+      String(order?.delivery_date || '') === operationalDate
+    ).length
+
+    if (pendingCount === 0) {
+      notifyInfo('No hay pedidos pendientes para archivar.')
+      return
+    }
+
     const confirmed = await confirmAction({
       title: 'Archivar todos los pedidos pendientes',
-      message: `Se archivarán solo los pedidos pendientes con fecha de entrega ${operationalDate}. Esta acción no se puede deshacer.`,
+      message: `Se archivarán ${pendingCount} pedido${pendingCount === 1 ? '' : 's'} pendiente${pendingCount === 1 ? '' : 's'} con fecha de entrega ${operationalDate}. Esta acción no se puede deshacer.`,
       confirmText: 'Archivar todos'
     })
     if (confirmed) {
@@ -192,7 +229,7 @@ export const useDailyOrdersData = (user) => {
         notifyError(`Error al archivar pedidos: ${error.message}`)
       }
     }
-  }, [handleRefresh])
+  }, [handleRefresh, orders])
 
   return {
     orders,
@@ -200,6 +237,10 @@ export const useDailyOrdersData = (user) => {
     isAdmin,
     availableDishes,
     refreshing,
+    reportRun,
+    reportRunError,
+    lastUpdatedAt,
+    operationalDate,
     stats,
     handleRefresh,
     handleArchiveOrder,

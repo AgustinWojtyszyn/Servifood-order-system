@@ -1,0 +1,143 @@
+import { useState } from 'react'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Clock3,
+  XCircle
+} from 'lucide-react'
+
+const toneClasses = {
+  success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  warning: 'border-amber-200 bg-amber-50 text-amber-900',
+  error: 'border-red-200 bg-red-50 text-red-800',
+  neutral: 'border-slate-200 bg-slate-50 text-slate-700'
+}
+
+const statusStyles = {
+  ok: {
+    icon: CheckCircle2,
+    className: toneClasses.success,
+    iconClassName: 'text-emerald-600'
+  },
+  warning: {
+    icon: AlertTriangle,
+    className: toneClasses.warning,
+    iconClassName: 'text-amber-600'
+  },
+  error: {
+    icon: XCircle,
+    className: toneClasses.error,
+    iconClassName: 'text-red-600'
+  }
+}
+
+const overallIconByState = {
+  ok: CheckCircle2,
+  attention: AlertTriangle,
+  failed: XCircle
+}
+
+const Chip = ({ children, tone = 'neutral' }) => (
+  <span className={`inline-flex min-h-[30px] items-center rounded-full border px-3 py-1 text-xs font-bold ${toneClasses[tone] || toneClasses.neutral}`}>
+    {children}
+  </span>
+)
+
+const ChecklistItem = ({ item }) => {
+  const styles = statusStyles[item.status] || statusStyles.warning
+  const Icon = styles.icon
+
+  return (
+    <li className={`flex items-start gap-3 rounded-xl border px-3 py-2 ${styles.className}`}>
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${styles.iconClassName}`} />
+      <div className="min-w-0">
+        <p className="text-sm font-bold">{item.label}</p>
+        <p className="text-xs font-semibold opacity-80">{item.detail}</p>
+      </div>
+    </li>
+  )
+}
+
+const DailyClosePanel = ({ status }) => {
+  const [expanded, setExpanded] = useState(false)
+  const overallStatus = status.overallStatus || { state: 'attention', label: 'Atención', tone: 'warning' }
+  const OverallIcon = overallIconByState[overallStatus.state] || AlertTriangle
+  const reportTone = status.reportStatus?.tone || 'warning'
+  const archiveTone = status.pendingCount > 0 ? 'warning' : 'success'
+  const inconsistencyTone = status.inconsistencyCount > 0 ? 'error' : 'success'
+  const hasContextWarning = status.isExportFiltered || status.totalOrders === 0
+
+  return (
+    <section className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm print-hide">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`inline-flex min-h-[32px] items-center gap-2 rounded-full border px-3 py-1 text-sm font-black ${toneClasses[overallStatus.tone] || toneClasses.warning}`}>
+              <OverallIcon className="h-4 w-4" />
+              Cierre: {overallStatus.label}
+            </span>
+            <h2 className="text-sm font-black text-slate-900">Cierre diario operativo</h2>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500">
+              <Clock3 className="h-3.5 w-3.5" />
+              {status.lastUpdatedLabel}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip tone={reportTone}>{status.reportStatus?.label || 'Reporte pendiente'}</Chip>
+          <Chip tone={archiveTone}>
+            {status.pendingCount > 0 ? `${status.pendingCount} pendientes` : 'Archivado realizado'}
+          </Chip>
+          <Chip tone={inconsistencyTone}>
+            {status.inconsistencyCount === 0 ? 'Sin inconsistencias' : `${status.inconsistencyCount} inconsistencias`}
+          </Chip>
+          <button
+            type="button"
+            onClick={() => setExpanded((current) => !current)}
+            className="inline-flex min-h-[32px] items-center rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            aria-expanded={expanded}
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="mr-1 h-4 w-4" />
+                Ocultar checklist
+              </>
+            ) : (
+              <>
+                <ChevronDown className="mr-1 h-4 w-4" />
+                Ver checklist
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {hasContextWarning && !expanded && (
+        <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+          {status.totalOrders === 0 && <span>Sin pedidos para esta fecha.</span>}
+          {status.isExportFiltered && <span>Exportación filtrada por {status.exportCompany}.</span>}
+        </div>
+      )}
+
+      {expanded && (
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            {(status.checklist || []).map(item => (
+              <ChecklistItem key={item.id} item={item} />
+            ))}
+          </ul>
+          {status.isExportFiltered && (
+            <p className="mt-2 text-xs font-semibold text-slate-600">
+              Las exportaciones manuales están filtradas por empresa: {status.exportCompany}.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+export default DailyClosePanel
