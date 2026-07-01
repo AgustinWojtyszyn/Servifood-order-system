@@ -45,7 +45,29 @@ const Chip = ({ children, tone = 'neutral' }) => (
   </span>
 )
 
-const ChecklistItem = ({ item }) => {
+const getReportLabel = (reportStatus = {}) => {
+  if (reportStatus.state === 'sent') return 'Reporte automático: Enviado'
+  if (reportStatus.state === 'failed' || reportStatus.state === 'unavailable') return 'Reporte automático: Falló'
+  if (reportStatus.state === 'no_record') return 'Reporte automático: Sin registro'
+  return 'Reporte automático: Pendiente'
+}
+
+const getArchiveLabel = (pendingCount = 0) => {
+  if (pendingCount === 0) return 'Archivado: Realizado'
+  if (pendingCount === 1) return 'Archivado: Pendiente'
+  return `Archivado: ${pendingCount} pendientes`
+}
+
+const getInconsistencyLabel = (inconsistencyCount = 0) => `Inconsistencias: ${inconsistencyCount}`
+
+const getChecklistItemLabel = (item, status) => {
+  if (item.id === 'report') return getReportLabel(status.reportStatus)
+  if (item.id === 'archive') return getArchiveLabel(status.pendingCount)
+  if (item.id === 'inconsistencies') return getInconsistencyLabel(status.inconsistencyCount)
+  return item.label
+}
+
+const ChecklistItem = ({ item, label }) => {
   const styles = statusStyles[item.status] || statusStyles.warning
   const Icon = styles.icon
 
@@ -53,7 +75,7 @@ const ChecklistItem = ({ item }) => {
     <li className={`flex items-start gap-3 rounded-xl border px-3 py-2 ${styles.className}`}>
       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${styles.iconClassName}`} />
       <div className="min-w-0">
-        <p className="text-sm font-bold">{item.label}</p>
+        <p className="text-sm font-bold">{label}</p>
         <p className="text-xs font-semibold opacity-80">{item.detail}</p>
       </div>
     </li>
@@ -68,6 +90,9 @@ const DailyClosePanel = ({ status }) => {
   const archiveTone = status.pendingCount > 0 ? 'warning' : 'success'
   const inconsistencyTone = status.inconsistencyCount > 0 ? 'error' : 'success'
   const hasContextWarning = status.isExportFiltered || status.totalOrders === 0
+  const reportLabel = getReportLabel(status.reportStatus)
+  const archiveLabel = getArchiveLabel(status.pendingCount)
+  const inconsistencyLabel = getInconsistencyLabel(status.inconsistencyCount)
 
   return (
     <section className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm print-hide">
@@ -87,13 +112,9 @@ const DailyClosePanel = ({ status }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Chip tone={reportTone}>{status.reportStatus?.label || 'Reporte pendiente'}</Chip>
-          <Chip tone={archiveTone}>
-            {status.pendingCount > 0 ? `${status.pendingCount} pendientes` : 'Archivado realizado'}
-          </Chip>
-          <Chip tone={inconsistencyTone}>
-            {status.inconsistencyCount === 0 ? 'Sin inconsistencias' : `${status.inconsistencyCount} inconsistencias`}
-          </Chip>
+          <Chip tone={reportTone}>{reportLabel}</Chip>
+          <Chip tone={archiveTone}>{archiveLabel}</Chip>
+          <Chip tone={inconsistencyTone}>{inconsistencyLabel}</Chip>
           <button
             type="button"
             onClick={() => setExpanded((current) => !current)}
@@ -126,7 +147,11 @@ const DailyClosePanel = ({ status }) => {
         <div className="mt-3 border-t border-slate-100 pt-3">
           <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             {(status.checklist || []).map(item => (
-              <ChecklistItem key={item.id} item={item} />
+              <ChecklistItem
+                key={item.id}
+                item={item}
+                label={getChecklistItemLabel(item, status)}
+              />
             ))}
           </ul>
           {status.isExportFiltered && (
