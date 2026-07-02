@@ -1,62 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { ChefHat } from 'lucide-react'
-
-const CONFETTI_PIECES = Array.from({ length: 270 }, (_, index) => ({
-  left: `${2 + ((index * 17) % 96)}%`,
-  drift: `${((index % 15) - 7) * 15}px`,
-  rotate: `${((index % 13) - 6) * 42}deg`,
-  delay: `${Math.floor(index / 90) * 260 + (index % 18) * 14}ms`,
-  duration: `${1250 + (index % 10) * 75}ms`,
-  size: `${5 + (index % 5)}px`,
-  top: `${-12 - (index % 5) * 12}px`
-}))
-
-const OrderSuccessConfetti = () => {
-  const [visible, setVisible] = useState(false)
-  const [portalTarget, setPortalTarget] = useState(null)
-  const launchedRef = useRef(false)
-
-  useEffect(() => {
-    if (launchedRef.current) return undefined
-    launchedRef.current = true
-
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    if (reduceMotion) return undefined
-
-    setPortalTarget(document.body)
-    setVisible(true)
-    const timer = window.setTimeout(() => setVisible(false), 3300)
-    return () => window.clearTimeout(timer)
-  }, [])
-
-  if (!visible || !portalTarget) return null
-
-  return createPortal(
-    <div className="order-success-confetti" aria-hidden="true">
-      {CONFETTI_PIECES.map(({ left, drift, rotate, delay, duration, size, top }, index) => (
-        <span
-          key={`${left}-${delay}-${index}`}
-          className="order-success-confetti__piece"
-          style={{
-            left,
-            top,
-            '--confetti-drift': drift,
-            '--confetti-rotate': rotate,
-            '--confetti-size': size,
-            animationDelay: delay,
-            animationDuration: duration
-          }}
-        />
-      ))}
-    </div>,
-    portalTarget
-  )
-}
 
 const OrderSuccessScreen = () => (
   <div className="relative p-3 sm:p-6 flex items-center justify-center min-h-dvh">
-    <OrderSuccessConfetti />
     <div className="max-w-2xl mx-auto text-center px-4">
       <div className="bg-white/95 backdrop-blur-sm border-2 border-green-300 rounded-2xl p-6 sm:p-8 shadow-2xl">
         <div className="flex justify-center mb-3 sm:mb-4">

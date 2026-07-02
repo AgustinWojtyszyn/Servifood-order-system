@@ -8,6 +8,7 @@ import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
 import SupportButton from './SupportButton'
 import RequireUser from './RequireUser'
+import OrderSuccessConfetti from './order-form/OrderSuccessConfetti'
 import { useAuthContext } from '../contexts/authContextValue'
 import { useScrollLock } from '../hooks/useScrollLock'
 import { OverlayLockProvider } from '../contexts/OverlayLockContext'
@@ -125,9 +126,9 @@ const Layout = ({ children, user, loading }) => {
       <OverlayLockProvider registerLock={registerExternalLock}>
       <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-dvh w-full">
       {/* Header */}
-      <header className="relative bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl">
+      <header className="bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-row items-center h-32 py-4 overflow-hidden w-full justify-center relative">
+          <div className="flex flex-row items-center min-h-36 sm:min-h-32 py-5 sm:py-4 w-full justify-center relative">
             <img
               src={servifoodLogo}
               alt="Servifood Logo"
@@ -278,6 +279,7 @@ const Layout = ({ children, user, loading }) => {
 
       {/* Support Button */}
       <SupportButton />
+      <OrderSuccessConfetti />
       </div>
       </OverlayLockProvider>
     </RequireUser>

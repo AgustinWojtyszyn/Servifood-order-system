@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { validateOrderSubmission } from '../utils/order/orderValidation'
 import { submitOrders } from '../utils/order/orderSubmit'
+import { triggerOrderSuccessConfetti } from '../utils/order/orderSuccessConfetti'
 
 const useOrderSubmit = ({
   user,
@@ -126,6 +127,7 @@ const useOrderSubmit = ({
         return
       }
 
+      triggerOrderSuccessConfetti()
       setSuccess(true)
       try {
         if (typeof window !== 'undefined' && rawCompanySlug) {
