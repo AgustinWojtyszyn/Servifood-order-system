@@ -54,7 +54,6 @@ const addSummarySheet = (workbook, summary) => {
     { Concepto: 'Fecha de entrega', Valor: summary.deliveryDate || 'Sin fecha' },
     { Concepto: 'Estado exportado', Valor: summary.exportedStatus },
     { Concepto: 'Total de pedidos', Valor: summary.totalOrders },
-    { Concepto: 'Total de ítems', Valor: summary.totalItems },
     { Concepto: 'Cantidad de pedidos con comentarios', Valor: summary.commentsCount }
   ])
 
@@ -88,11 +87,9 @@ const addDetailsSheet = (workbook, summary) => {
     'Menú elegido': '',
     'Opción elegida': '',
     Guarniciones: '',
-    'DistroCuyo': '',
     'Respuestas personalizadas': '',
     Comentarios: '',
-    Estado: '',
-    'Total de ítems': ''
+    Estado: ''
   }).map((key) => ({ header: key, key }))
   worksheet.addRows(rows)
   applyHeaderStyle(worksheet)

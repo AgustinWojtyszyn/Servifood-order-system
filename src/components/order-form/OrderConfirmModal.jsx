@@ -35,7 +35,6 @@ const OrderConfirmModal = ({
               <p><span className="font-semibold">Nombre:</span> {confirmData.name}</p>
               <p><span className="font-semibold">Email:</span> {confirmData.email}</p>
               <p><span className="font-semibold">Teléfono:</span> {confirmData.phone || '-'}</p>
-              <p><span className="font-semibold">DistroCuyo:</span> {confirmData.distro_cuyo || '-'}</p>
               <p><span className="font-semibold">Entrega:</span> {confirmData.deliveryDate}</p>
               <p><span className="font-semibold">Turnos:</span> {confirmData.turnos.map(t => (t === 'lunch' ? 'Almuerzo' : 'Cena')).join(' + ')}</p>
             </div>

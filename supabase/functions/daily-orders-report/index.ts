@@ -18,7 +18,6 @@ import {
   getDefaultReportDate,
   getEmailSubject,
   getMenuOptionText,
-  getOrderTotalItems,
   getRecipientsForMode,
   getServiceLabel,
   isAuthorized,
@@ -118,11 +117,9 @@ const buildWorkbook = async ({
     { header: 'Menú elegido', key: 'menu', width: 36 },
     { header: 'Opción elegida', key: 'opcion', width: 36 },
     { header: 'Guarniciones', key: 'guarniciones', width: 24 },
-    { header: 'DistroCuyo', key: 'distroCuyo', width: 20 },
     { header: 'Respuestas personalizadas', key: 'respuestas', width: 42 },
     { header: 'Comentarios', key: 'comentarios', width: 36 },
-    { header: 'Estado', key: 'estado', width: 14 },
-    { header: 'Total de ítems', key: 'totalItems', width: 14 }
+    { header: 'Estado', key: 'estado', width: 14 }
   ]
 
   if (isTest) {
@@ -134,11 +131,9 @@ const buildWorkbook = async ({
       menu: '',
       opcion: '',
       guarniciones: '',
-      distroCuyo: '',
       respuestas: '',
       comentarios: '',
-      estado: '',
-      totalItems: ''
+      estado: ''
     })
   }
 
@@ -151,11 +146,9 @@ const buildWorkbook = async ({
       menu: getMenuNames(order),
       opcion: getOptionNames(order),
       guarniciones: getCustomSide(order) || 'Sin guarnición',
-      distroCuyo: order.distro_cuyo || order.distroCuyo || '',
       respuestas: getCustomResponsesText(order),
       comentarios: order.comments || 'Sin comentarios',
-      estado: order.status === 'pending' ? 'Pendiente' : String(order.status || 'Sin estado'),
-      totalItems: getOrderTotalItems(order)
+      estado: order.status === 'pending' ? 'Pendiente' : String(order.status || 'Sin estado')
     })
   })
   addHeaderStyle(details)
@@ -172,7 +165,6 @@ const buildWorkbook = async ({
   stats.addRows([
     { concepto: 'Fecha de entrega reportada', valor: summary.displayDate },
     { concepto: 'Total de pedidos', valor: summary.totalOrders },
-    { concepto: 'Total de ítems', valor: summary.totalItems },
     { concepto: '', valor: '' },
     { concepto: 'Totales por ubicación / empresa', valor: '' },
     ...summary.byLocation.map((row) => ({

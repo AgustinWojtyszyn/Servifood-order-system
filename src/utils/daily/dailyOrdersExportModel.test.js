@@ -145,11 +145,9 @@ describe('daily orders export model', () => {
       'Menú elegido',
       'Opción elegida',
       'Guarniciones',
-      'DistroCuyo',
       'Respuestas personalizadas',
       'Comentarios',
-      'Estado',
-      'Total de ítems'
+      'Estado'
     ])
     expect(rows[0]).toMatchObject({
       Cliente: 'Nombre Desde Vista',
@@ -159,11 +157,9 @@ describe('daily orders export model', () => {
       'Menú elegido': 'Opción 1 - BIDE DEL DIA',
       'Opción elegida': 'Opción 1 - BIDE DEL DIA (x1)',
       Guarniciones: 'Puré',
-      DistroCuyo: '',
       'Respuestas personalizadas': 'Bebida: Coca cola | Pan: Sin pan',
       Comentarios: 'Sin sal',
-      Estado: 'Pendiente',
-      'Total de ítems': 1
+      Estado: 'Pendiente'
     })
   })
 

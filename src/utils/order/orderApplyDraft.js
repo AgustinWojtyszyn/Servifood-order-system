@@ -21,7 +21,6 @@ export const buildDraftFromPayload = ({
 
   const baseFormData = {
     comments: payload?.comments || '',
-    distro_cuyo: payload?.distro_cuyo || payload?.distroCuyo || '',
     location: normalizeLocation({ draftLocation: payload?.location, locations, fallbackLocation: locations[0] })
   }
 
@@ -73,7 +72,6 @@ export const buildDraftFromSuggestion = ({
 
   const baseFormData = {
     comments: suggestion?.comments || '',
-    distro_cuyo: suggestion?.distro_cuyo || suggestion?.distroCuyo || '',
     location: normalizeLocation({ draftLocation: suggestion?.location, locations, fallbackLocation: locations[0] })
   }
 

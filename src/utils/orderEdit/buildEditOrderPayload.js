@@ -57,7 +57,6 @@ export const buildEditOrderPayload = ({
     customer_name: userName,
     customer_email: formData?.email || user?.email,
     customer_phone: formData?.phone,
-    distro_cuyo: formData?.distro_cuyo || null,
     items: itemsPayload,
     comments: formData?.comments,
     custom_responses: customResponsesPayload

@@ -4,7 +4,6 @@ export const mapOrderToEditForm = ({ order, user }) => {
     name: order?.customer_name || user?.user_metadata?.full_name || '',
     email: order?.customer_email || user?.email || '',
     phone: order?.customer_phone || '',
-    distro_cuyo: order?.distro_cuyo || order?.distroCuyo || '',
     comments: order?.comments || ''
   }
 
