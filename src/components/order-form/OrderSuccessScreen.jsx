@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChefHat } from 'lucide-react'
 
-const CONFETTI_PIECES = [
-  ['8%', '-18px', '12deg', '0ms'], ['14%', '16px', '-18deg', '70ms'], ['20%', '-8px', '32deg', '130ms'],
-  ['27%', '22px', '-26deg', '40ms'], ['33%', '-24px', '18deg', '110ms'], ['39%', '12px', '-34deg', '0ms'],
-  ['46%', '-18px', '24deg', '90ms'], ['52%', '18px', '-12deg', '150ms'], ['58%', '-10px', '36deg', '30ms'],
-  ['64%', '24px', '-30deg', '120ms'], ['70%', '-22px', '16deg', '50ms'], ['76%', '14px', '-24deg', '160ms'],
-  ['82%', '-16px', '28deg', '20ms'], ['88%', '20px', '-16deg', '100ms'], ['94%', '-12px', '22deg', '60ms']
-]
+const CONFETTI_PIECES = Array.from({ length: 72 }, (_, index) => ({
+  left: `${4 + ((index * 13) % 92)}%`,
+  drift: `${((index % 9) - 4) * 13}px`,
+  rotate: `${((index % 11) - 5) * 38}deg`,
+  delay: `${(index % 18) * 28}ms`,
+  duration: `${1320 + (index % 8) * 95}ms`,
+  size: `${6 + (index % 4)}px`
+}))
 
 const OrderSuccessConfetti = () => {
   const [visible, setVisible] = useState(false)
@@ -29,15 +30,17 @@ const OrderSuccessConfetti = () => {
 
   return (
     <div className="order-success-confetti" aria-hidden="true">
-      {CONFETTI_PIECES.map(([left, drift, rotate, delay], index) => (
+      {CONFETTI_PIECES.map(({ left, drift, rotate, delay, duration, size }, index) => (
         <span
-          key={`${left}-${index}`}
+          key={`${left}-${delay}-${index}`}
           className="order-success-confetti__piece"
           style={{
             left,
             '--confetti-drift': drift,
             '--confetti-rotate': rotate,
-            animationDelay: delay
+            '--confetti-size': size,
+            animationDelay: delay,
+            animationDuration: duration
           }}
         />
       ))}

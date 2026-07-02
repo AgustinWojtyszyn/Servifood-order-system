@@ -176,19 +176,23 @@
 .order-success-confetti__piece {
   position: absolute;
   top: -16px;
-  width: 8px;
-  height: 14px;
+  width: var(--confetti-size, 8px);
+  height: calc(var(--confetti-size, 8px) * 1.65);
   border-radius: 2px;
   background: #74acdf;
   animation: order-success-confetti-fall 1500ms ease-out forwards;
 }
 
-.order-success-confetti__piece:nth-child(3n) {
+.order-success-confetti__piece:nth-child(2n) {
   background: #ffffff;
   border: 1px solid rgb(116 172 223 / 0.45);
 }
 
-.order-success-confetti__piece:nth-child(3n + 1) {
+.order-success-confetti__piece:nth-child(4n) {
+  background: #9ed0f1;
+}
+
+.order-success-confetti__piece:nth-child(11n) {
   background: #f6b40e;
 }
 
