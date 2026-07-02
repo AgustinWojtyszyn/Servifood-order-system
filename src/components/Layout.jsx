@@ -147,12 +147,10 @@ const Layout = ({ children, user, loading }) => {
               <LogOut className="h-5 w-5" />
             </button>
             <span
-              className="absolute right-16 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[20px] leading-none shadow-sm backdrop-blur-sm"
+              className="argentina-flag absolute right-16 top-1/2 -translate-y-1/2"
               aria-label="Bandera de Argentina"
               title="Argentina"
-            >
-              🇦🇷
-            </span>
+            />
           </div>
         </div>
       </header>

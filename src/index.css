@@ -165,6 +165,32 @@
   animation: notice-fade 160ms ease-out;
 }
 
+.argentina-flag {
+  width: 28px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgb(255 255 255 / 0.45);
+  background: linear-gradient(
+    to bottom,
+    #74ACDF 0 33.333%,
+    #FFFFFF 33.333% 66.666%,
+    #74ACDF 66.666% 100%
+  );
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
+}
+
+.argentina-flag::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: #f6b40e;
+  transform: translate(-50%, -50%);
+}
+
 .order-success-confetti {
   position: fixed;
   inset: 0;
