@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChefHat } from 'lucide-react'
 
-const CONFETTI_PIECES = Array.from({ length: 240 }, (_, index) => ({
+const CONFETTI_PIECES = Array.from({ length: 270 }, (_, index) => ({
   left: `${2 + ((index * 17) % 96)}%`,
   drift: `${((index % 15) - 7) * 15}px`,
   rotate: `${((index % 13) - 6) * 42}deg`,
-  delay: `${(index % 30) * 24}ms`,
-  duration: `${1500 + (index % 10) * 85}ms`,
+  delay: `${Math.floor(index / 90) * 260 + (index % 18) * 14}ms`,
+  duration: `${1250 + (index % 10) * 75}ms`,
   size: `${5 + (index % 5)}px`,
-  top: `${-28 - (index % 6) * 18}px`
+  top: `${-12 - (index % 5) * 12}px`
 }))
 
 const OrderSuccessConfetti = () => {

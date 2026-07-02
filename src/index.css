@@ -184,6 +184,7 @@
 
 .order-success-confetti {
   position: fixed;
+  inset: 0;
   top: 0;
   right: 0;
   bottom: 0;
@@ -193,7 +194,7 @@
   height: 100dvh;
   min-height: 100vh;
   min-height: 100dvh;
-  z-index: 9999;
+  z-index: 2147483647;
   pointer-events: none;
   overflow: hidden;
   transform: translateZ(0);
