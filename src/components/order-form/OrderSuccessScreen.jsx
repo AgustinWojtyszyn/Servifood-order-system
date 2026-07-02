@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChefHat } from 'lucide-react'
 
-const CONFETTI_PIECES = Array.from({ length: 72 }, (_, index) => ({
-  left: `${4 + ((index * 13) % 92)}%`,
-  drift: `${((index % 9) - 4) * 13}px`,
-  rotate: `${((index % 11) - 5) * 38}deg`,
-  delay: `${(index % 18) * 28}ms`,
-  duration: `${1320 + (index % 8) * 95}ms`,
-  size: `${6 + (index % 4)}px`
+const CONFETTI_PIECES = Array.from({ length: 220 }, (_, index) => ({
+  left: `${2 + ((index * 17) % 96)}%`,
+  drift: `${((index % 15) - 7) * 15}px`,
+  rotate: `${((index % 13) - 6) * 42}deg`,
+  delay: `${(index % 30) * 24}ms`,
+  duration: `${1500 + (index % 10) * 85}ms`,
+  size: `${5 + (index % 5)}px`,
+  top: `${-28 - (index % 6) * 18}px`
 }))
 
 const OrderSuccessConfetti = () => {
@@ -22,7 +23,7 @@ const OrderSuccessConfetti = () => {
     if (reduceMotion) return undefined
 
     setVisible(true)
-    const timer = window.setTimeout(() => setVisible(false), 1700)
+    const timer = window.setTimeout(() => setVisible(false), 3300)
     return () => window.clearTimeout(timer)
   }, [])
 
@@ -30,12 +31,13 @@ const OrderSuccessConfetti = () => {
 
   return (
     <div className="order-success-confetti" aria-hidden="true">
-      {CONFETTI_PIECES.map(({ left, drift, rotate, delay, duration, size }, index) => (
+      {CONFETTI_PIECES.map(({ left, drift, rotate, delay, duration, size, top }, index) => (
         <span
           key={`${left}-${delay}-${index}`}
           className="order-success-confetti__piece"
           style={{
             left,
+            top,
             '--confetti-drift': drift,
             '--confetti-rotate': rotate,
             '--confetti-size': size,

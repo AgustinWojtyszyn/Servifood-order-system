@@ -128,21 +128,12 @@ const Layout = ({ children, user, loading }) => {
       <header className="bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex flex-row items-center h-32 py-4 overflow-hidden w-full justify-center relative">
-            <div className="relative inline-flex items-center justify-center">
-              <img
-                src={servifoodLogo}
-                alt="Servifood Logo"
-                className="max-h-40 sm:max-h-48 w-auto object-contain"
-                style={{height: '120px', maxHeight: '160px', display: 'block'}}
-              />
-              <span
-                className="absolute right-0 top-5 sm:right-2 sm:top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-white/12 text-base shadow-sm backdrop-blur-sm"
-                aria-label="Argentina"
-                title="Argentina"
-              >
-                🇦🇷
-              </span>
-            </div>
+            <img
+              src={servifoodLogo}
+              alt="Servifood Logo"
+              className="max-h-40 sm:max-h-48 w-auto object-contain"
+              style={{height: '120px', maxHeight: '160px', display: 'block'}}
+            />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden mr-1 absolute left-2 top-1/2 transform -translate-y-1/2"
@@ -155,6 +146,13 @@ const Layout = ({ children, user, loading }) => {
             >
               <LogOut className="h-5 w-5" />
             </button>
+            <span
+              className="absolute right-14 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[20px] leading-none shadow-sm backdrop-blur-sm"
+              aria-label="Bandera de Argentina"
+              title="Argentina"
+            >
+              🇦🇷
+            </span>
           </div>
         </div>
       </header>

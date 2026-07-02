@@ -175,7 +175,6 @@
 
 .order-success-confetti__piece {
   position: absolute;
-  top: -16px;
   width: var(--confetti-size, 8px);
   height: calc(var(--confetti-size, 8px) * 1.65);
   border-radius: 2px;
@@ -189,11 +188,7 @@
 }
 
 .order-success-confetti__piece:nth-child(4n) {
-  background: #9ed0f1;
-}
-
-.order-success-confetti__piece:nth-child(11n) {
-  background: #f6b40e;
+  background: #9DD9F3;
 }
 
 @keyframes order-success-confetti-fall {
