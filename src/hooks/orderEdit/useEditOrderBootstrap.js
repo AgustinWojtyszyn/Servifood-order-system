@@ -28,6 +28,7 @@ export const useEditOrderBootstrap = ({ order, user, navigate }) => {
     name: '',
     email: '',
     phone: '',
+    distro_cuyo: '',
     comments: ''
   })
 

@@ -1,5 +1,5 @@
 import { AlertTriangle, Building2 } from 'lucide-react'
-import { COMPANY_LIST } from '../../constants/companyConfig'
+import { getVisibleCompanyList } from '../../constants/companyConfig'
 
 const ChangeCompanyModal = ({
   open,
@@ -12,12 +12,14 @@ const ChangeCompanyModal = ({
   onSelect,
   onContinue,
   onBack,
-  onConfirm
+  onConfirm,
+  isAdmin = false
 }) => {
   if (!open) return null
 
-  const currentCompany = COMPANY_LIST.find(c => c.slug === currentCompanySlug)
-  const selectedCompany = COMPANY_LIST.find(c => c.slug === selectedCompanySlug)
+  const companies = getVisibleCompanyList({ includeAdminOnly: isAdmin })
+  const currentCompany = companies.find(c => c.slug === currentCompanySlug)
+  const selectedCompany = companies.find(c => c.slug === selectedCompanySlug)
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-4">
@@ -36,7 +38,7 @@ const ChangeCompanyModal = ({
                 className="w-full rounded-xl border border-blue-300/40 bg-slate-800 px-3 py-2 text-white outline-none"
               >
                 <option value="" disabled>Elegí una empresa</option>
-                {COMPANY_LIST.map((company) => (
+                {companies.map((company) => (
                   <option key={company.slug} value={company.slug}>{company.name}</option>
                 ))}
               </select>

@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2, ArrowRight, ShieldCheck } from 'lucide-react'
 import RequireUser from './RequireUser'
-import { COMPANY_LIST } from '../constants/companyConfig'
+import { getVisibleCompanyList } from '../constants/companyConfig'
+import { useAuthContext } from '../contexts/authContextValue'
 import { db } from '../supabaseClient'
 
 const OrderCompanySelector = ({ user, loading }) => {
   const navigate = useNavigate()
+  const { isAdmin } = useAuthContext()
   const [activeCompanySlug, setActiveCompanySlug] = useState('')
 
   const lastCompanySelected = useMemo(() => {
@@ -35,12 +37,12 @@ const OrderCompanySelector = ({ user, loading }) => {
   }, [])
 
   const orderedCompanies = useMemo(() => {
-    return [...COMPANY_LIST].sort((a, b) => {
+    return getVisibleCompanyList({ includeAdminOnly: isAdmin }).sort((a, b) => {
       if (a.slug === recommendedCompany) return -1
       if (b.slug === recommendedCompany) return 1
       return 0
     })
-  }, [recommendedCompany])
+  }, [isAdmin, recommendedCompany])
 
   const handleSelect = (slug) => {
     try {

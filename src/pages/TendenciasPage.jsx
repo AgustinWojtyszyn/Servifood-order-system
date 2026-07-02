@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 import ExcelJS from 'exceljs'
-import { COMPANY_LIST } from '../constants/companyConfig'
+import { ALL_COMPANY_LIST as COMPANY_LIST } from '../constants/companyConfig'
 import excelLogo from '../assets/logoexcel.png'
 import { useTrendsData } from '../hooks/analytics/useTrendsData'
 import TrendsFilters from '../components/analytics/TrendsFilters'

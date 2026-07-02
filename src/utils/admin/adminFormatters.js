@@ -1,4 +1,4 @@
-import { COMPANY_LIST } from '../../constants/companyConfig'
+import { ALL_COMPANY_LIST as COMPANY_LIST } from '../../constants/companyConfig'
 
 export const getCompanyLabel = (slug) => {
   if (!slug) return 'Todas las empresas'

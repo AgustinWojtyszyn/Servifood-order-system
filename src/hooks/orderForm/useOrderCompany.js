@@ -1,23 +1,33 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../../constants/companyConfig'
+import { useAuthContext } from '../../contexts/authContextValue'
 import { db } from '../../supabaseClient'
 
 export const useOrderCompany = () => {
   const { companySlug: companySlugParam } = useParams()
   const [searchParams] = useSearchParams()
+  const { isAdmin } = useAuthContext()
   const [activeCompanySlug, setActiveCompanySlug] = useState('')
 
   const recommendedCompany = typeof window !== 'undefined'
     ? window.localStorage.getItem('lastCompany')
     : null
 
-  const defaultCompanySlug = activeCompanySlug || recommendedCompany || COMPANY_LIST[0]?.slug || 'laja'
+  const fallbackCompanySlug = COMPANY_LIST[0]?.slug || 'laja'
+  const defaultCompanyCandidate = activeCompanySlug || recommendedCompany || fallbackCompanySlug
+  const defaultCompanySlug = (!COMPANY_CATALOG[defaultCompanyCandidate]?.adminOnly || isAdmin)
+    ? defaultCompanyCandidate
+    : fallbackCompanySlug
   const rawCompanySlug = (companySlugParam || searchParams.get('company') || defaultCompanySlug || '')
     .trim()
     .toLowerCase()
 
-  const companyConfig = COMPANY_CATALOG[rawCompanySlug] || COMPANY_CATALOG[defaultCompanySlug]
+  const requestedCompany = COMPANY_CATALOG[rawCompanySlug]
+  const requestedCompanyAllowed = requestedCompany && (!requestedCompany.adminOnly || isAdmin)
+  const companyConfig = requestedCompanyAllowed
+    ? requestedCompany
+    : COMPANY_CATALOG[defaultCompanySlug]
   const companyOptionsSlug = (companyConfig?.optionsSourceSlug || companyConfig?.slug || rawCompanySlug || '')
     .trim()
     .toLowerCase()

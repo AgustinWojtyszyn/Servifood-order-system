@@ -77,6 +77,21 @@ const EditOrderPersonalInfoSection = ({ formData, locations, onChange }) => {
             autoComplete="tel"
           />
         </div>
+
+        <div>
+          <label htmlFor="distro_cuyo" className="block text-sm font-bold text-gray-700 mb-2">
+            DistroCuyo
+          </label>
+          <input
+            id="distro_cuyo"
+            type="text"
+            name="distro_cuyo"
+            value={formData.distro_cuyo}
+            onChange={onChange}
+            className="input-field"
+            autoComplete="off"
+          />
+        </div>
       </div>
     </div>
   )

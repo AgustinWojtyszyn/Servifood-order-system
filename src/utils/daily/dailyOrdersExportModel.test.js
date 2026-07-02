@@ -100,11 +100,11 @@ describe('daily orders export model', () => {
     expect(summary.commentsCount).toBe(1)
   })
 
-  it('mantiene Genneia O&M como ubicación independiente en resúmenes y exportaciones', () => {
+  it('mantiene Administración ServiFood como ubicación independiente en resúmenes y exportaciones', () => {
     const order = {
       ...baseOrder,
-      id: 'order-genneia-om',
-      location: 'Genneia O&M',
+      id: 'order-admin-servifood',
+      location: 'Administración ServiFood',
       total_items: 1,
       items: [{ name: 'Opción 1 - BIDE DEL DIA', quantity: 1 }],
       custom_responses: []
@@ -114,10 +114,10 @@ describe('daily orders export model', () => {
     const rows = buildDailyOrdersExcelDetailRows([order])
     const text = formatDailyOrdersForWhatsApp([order], 'pending')
 
-    expect(summary.byLocation).toContainEqual({ label: 'Genneia O&M', orders: 1, items: 1 })
-    expect(rows[0]['Ubicación / empresa']).toBe('Genneia O&M')
-    expect(text).toContain('Genneia O&M')
-    expect(text).toContain('Total Genneia O&M: 1')
+    expect(summary.byLocation).toContainEqual({ label: 'Administración ServiFood', orders: 1, items: 1 })
+    expect(rows[0]['Ubicación / empresa']).toBe('Administración ServiFood')
+    expect(text).toContain('Administración ServiFood')
+    expect(text).toContain('Total Administración ServiFood: 1')
   })
 
   it('genera nombre de Excel con delivery_date y estado', () => {
@@ -139,15 +139,13 @@ describe('daily orders export model', () => {
 
     expect(Object.keys(rows[0])).toEqual([
       'Cliente',
-      'Email',
-      'Teléfono',
       'Ubicación / empresa',
       'Fecha de entrega',
       'Turno / servicio',
       'Menú elegido',
       'Opción elegida',
-      'Cantidad',
       'Guarniciones',
+      'DistroCuyo',
       'Respuestas personalizadas',
       'Comentarios',
       'Estado',
@@ -155,15 +153,13 @@ describe('daily orders export model', () => {
     ])
     expect(rows[0]).toMatchObject({
       Cliente: 'Nombre Desde Vista',
-      Email: 'vista@example.com',
-      'Teléfono': 'Sin teléfono',
       'Ubicación / empresa': 'Genneia',
       'Fecha de entrega': '25/06/2026',
       'Turno / servicio': 'Almuerzo',
       'Menú elegido': 'Opción 1 - BIDE DEL DIA',
       'Opción elegida': 'Opción 1 - BIDE DEL DIA (x1)',
-      Cantidad: 1,
       Guarniciones: 'Puré',
+      DistroCuyo: '',
       'Respuestas personalizadas': 'Bebida: Coca cola | Pan: Sin pan',
       Comentarios: 'Sin sal',
       Estado: 'Pendiente',

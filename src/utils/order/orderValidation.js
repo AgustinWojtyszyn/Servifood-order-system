@@ -245,6 +245,7 @@ const validateOrderSubmission = ({
     name: customerName,
     email: formData.email || user?.email || '',
     phone: formData.phone || '',
+    distro_cuyo: formData.distro_cuyo || '',
     deliveryDate,
     deliveryDates,
     turnos: turnosSeleccionados,

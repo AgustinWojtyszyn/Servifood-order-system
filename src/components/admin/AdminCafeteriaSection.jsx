@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import excelLogo from '../../assets/logoexcel.png'
 import whatsappIcon from '../../assets/whatsapp.png'
-import { COMPANY_LIST } from '../../constants/companyConfig'
+import { ALL_COMPANY_LIST as COMPANY_LIST } from '../../constants/companyConfig'
 import { db } from '../../supabaseClient'
 import { exportCafeteriaOrdersExcel, summarizeCafeteriaOrders } from '../../utils/cafeteria/exportCafeteriaOrdersExcel'
 import { shareCafeteriaOrdersWhatsApp } from '../../utils/cafeteria/shareCafeteriaOrdersWhatsApp'

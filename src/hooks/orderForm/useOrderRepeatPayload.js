@@ -50,6 +50,7 @@ export const useOrderRepeatPayload = ({
     setFormData(prev => ({
       ...prev,
       comments: draft.comments,
+      distro_cuyo: draft.distro_cuyo || prev.distro_cuyo || '',
       location: draft.location || locations[0] || prev.location
     }))
 

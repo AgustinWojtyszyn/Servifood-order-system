@@ -38,12 +38,6 @@ const DAILY_COLUMNS = [
   ...SUMMARY_COLUMNS.slice(1)
 ]
 
-const getOrderQuantity = (order = {}) => {
-  const { normalizedItems } = normalizeOrderForReadOnly(order)
-  const itemTotal = normalizedItems.reduce((sum, item) => sum + (Number(item?.quantity) || 1), 0)
-  return itemTotal || 1
-}
-
 const getOrderDate = (order = {}) => (order?.delivery_date || '').slice(0, 10)
 
 const formatResponseSummary = (responses = []) => {
@@ -201,8 +195,6 @@ export const useMonthlyExport = ({
       { header: 'Fecha', key: 'Fecha', width: 14 },
       { header: 'Empresa', key: 'Empresa', width: 24 },
       { header: 'Cliente', key: 'Cliente', width: 24 },
-      { header: 'Email', key: 'Email', width: 28 },
-      { header: 'Cantidad', key: 'Cantidad', width: 10 },
       { header: 'Plato de cena', key: 'Plato de cena', width: 42 },
       { header: 'Respuestas adicionales', key: 'Respuestas adicionales', width: 50 },
       { header: 'Estado', key: 'Estado', width: 14 }
@@ -213,8 +205,6 @@ export const useMonthlyExport = ({
         Fecha: formatDateDMY(getOrderDate(order)),
         Empresa: order?.location || 'Sin ubicación',
         Cliente: order?.customer_name || order?.user_name || 'Sin nombre',
-        Email: order?.customer_email || order?.user_email || 'Sin email',
-        Cantidad: getOrderQuantity(order),
         'Plato de cena': dinnerDish?.dish || '',
         'Respuestas adicionales': formatResponseSummary(normalizedCustomResponses),
         Estado: order?.status || '-'
@@ -224,8 +214,6 @@ export const useMonthlyExport = ({
       Fecha: 'Total cenas',
       Empresa: '',
       Cliente: '',
-      Email: '',
-      Cantidad: model.totals.racionesCena,
       'Plato de cena': '',
       'Respuestas adicionales': '',
       Estado: ''
@@ -299,7 +287,6 @@ export const useMonthlyExport = ({
         'Fecha',
         'Empresa',
         'Cliente',
-        'Email',
         'Servicio',
         'Items originales',
         'Respuestas originales',
@@ -314,7 +301,6 @@ export const useMonthlyExport = ({
           formatDateDMY(item.fecha),
           item.empresa,
           item.cliente,
-          item.email,
           item.servicio,
           item.itemsOriginales,
           item.respuestasOriginales,
@@ -322,9 +308,9 @@ export const useMonthlyExport = ({
         ])
       })
       ws.getColumn(1).width = 48
+      ws.getColumn(6).width = 60
       ws.getColumn(7).width = 60
-      ws.getColumn(8).width = 60
-      ws.getColumn(9).width = 42
+      ws.getColumn(8).width = 42
     }
     return ws
   }

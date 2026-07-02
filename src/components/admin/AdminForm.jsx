@@ -1,5 +1,5 @@
 import { Plus, Save, X } from 'lucide-react'
-import { COMPANY_LIST } from '../../constants/companyConfig'
+import { ALL_COMPANY_LIST as COMPANY_LIST } from '../../constants/companyConfig'
 
 const AdminForm = ({
   newOption,

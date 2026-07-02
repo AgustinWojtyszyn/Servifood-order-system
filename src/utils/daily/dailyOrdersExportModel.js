@@ -76,6 +76,9 @@ export const getOrderEmail = (order = {}) =>
 export const getOrderPhone = (order = {}) =>
   normalizeText(order.customer_phone || order.phone)
 
+export const getOrderDistroCuyo = (order = {}) =>
+  normalizeText(order.distro_cuyo || order.distroCuyo)
+
 export const getOrderServiceLabel = (order = {}) =>
   String(order.service || 'lunch') === 'dinner' ? 'Cena' : 'Almuerzo'
 
@@ -220,15 +223,13 @@ export const buildDailyOrdersExcelDetailRow = (order = {}) => {
 
   return {
     Cliente: getOrderCustomer(order).replace(/^Sin cliente$/, 'Sin nombre'),
-    Email: getOrderEmail(order) || 'Sin email',
-    'Teléfono': getOrderPhone(order) || 'Sin teléfono',
     'Ubicación / empresa': getOrderLocation(order).replace(/^Sin ubicación$/, 'Sin ubicación / empresa'),
     'Fecha de entrega': formatDateOnly(deliveryDate),
     'Turno / servicio': getOrderServiceLabel(order),
     'Menú elegido': getMenuNames(items),
     'Opción elegida': getOptionNames(items),
-    Cantidad: totalItems,
     Guarniciones: custom.side || 'Sin guarnición',
+    'DistroCuyo': getOrderDistroCuyo(order) || '',
     'Respuestas personalizadas': getCustomResponsesTextForExcel(order),
     Comentarios: normalizeText(order.comments) || 'Sin comentarios',
     Estado: status === 'pending' ? 'Pendiente' : getStatusText(order.status),

@@ -29,6 +29,8 @@ export type NormalizedOrder = {
   customer_email?: string | null
   user_email?: string | null
   customer_phone?: string | null
+  distro_cuyo?: string | null
+  distroCuyo?: string | null
   location?: string | null
   company?: string | null
   company_name?: string | null

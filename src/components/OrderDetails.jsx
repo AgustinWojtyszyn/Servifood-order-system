@@ -152,6 +152,7 @@ const OrderDetails = ({ user, loading }) => {
       service: order.service || 'lunch',
       items: items,
       custom_responses: rawCustomResponses,
+      distro_cuyo: order.distro_cuyo || order.distroCuyo || '',
       comments: order.comments || ''
     }
 
@@ -387,6 +388,13 @@ const OrderDetails = ({ user, loading }) => {
                     <div>
                       <p className="text-gray-600 font-semibold">Telefono</p>
                       <p className="text-gray-900 font-bold">{order.customer_phone || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <User className="h-5 w-5 text-gray-500 mt-0.5" />
+                    <div>
+                      <p className="text-gray-600 font-semibold">DistroCuyo</p>
+                      <p className="text-gray-900 font-bold">{order.distro_cuyo || order.distroCuyo || '-'}</p>
                     </div>
                   </div>
                 </div>

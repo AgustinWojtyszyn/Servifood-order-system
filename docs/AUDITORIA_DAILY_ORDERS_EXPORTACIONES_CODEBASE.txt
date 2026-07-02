@@ -186,7 +186,7 @@ src/components/daily/DailyExportActions.jsx
 Botones de Excel, WhatsApp, PDF, refresh y archivar.
 
 src/constants/companyConfig.js
-Catalogo de empresas/ubicaciones: Ccp, La Laja, Padre Bueno, Los Berros, Genneia y Genneia O&M.
+Catalogo de empresas/ubicaciones: Ccp, La Laja, Padre Bueno, Los Berros y Genneia.
 
 src/utils/daily/dailyOrderFormatters.js
 Formato de fecha/hora/status y labels.
@@ -349,7 +349,7 @@ Validaciones existentes
 - normalizeOrderForReadOnly evita romper si items/custom_responses llegan como string JSON.
 - availableSides sale de pedidos reales cargados.
 - Filtros de pantalla y exportaciones parten de sortedOrders.
-- COMPANY_LOCATIONS centraliza Ccp, La Laja, Padre Bueno, Los Berros, Genneia y Genneia O&M.
+- COMPANY_LOCATIONS centraliza Ccp, La Laja, Padre Bueno, Los Berros y Genneia.
 
 Validaciones faltantes o dudosas
 --------------------------------
@@ -442,7 +442,7 @@ Pruebas manuales recomendadas
 [ ] Verificar cena si aplica, incluyendo item dinner-override.
 [ ] Verificar que no se duplique "Cena:" y "Menu de cena:" en adicionales.
 [ ] Verificar Genneia con bebida/postre.
-[ ] Verificar Los Berros, Padre Bueno, La Laja, Ccp, Genneia y Genneia O&M.
+[ ] Verificar Los Berros, Padre Bueno, La Laja, Ccp y Genneia.
 [ ] Verificar archivado individual solo en pending.
 [ ] Verificar archivado manual masivo solo sobre fecha operativa y status pending.
 [ ] Verificar que pedidos archived de la misma fecha no se rearchivan ni se pierden.

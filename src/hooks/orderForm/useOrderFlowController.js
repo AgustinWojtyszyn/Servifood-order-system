@@ -19,6 +19,7 @@ import { useOrderTotals } from './useOrderTotals'
 import { useOrderFormEffects } from './useOrderFormEffects'
 import { useOrderFormState } from './useOrderFormState'
 import { useOrderSelectionsState } from './useOrderSelectionsState'
+import { normalizeGenneiaOptionSections } from '../../utils/order/genneiaOptionSections'
 import {
   isBeverageOrDessertOption,
   isDinnerOverrideValue,
@@ -68,11 +69,17 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     locations
   } = useOrderCompany()
 
-  const isGenneiaPostreOptionLocal = useCallback(
-    (option = {}) => isGenneiaPostreOption(isGenneia, option),
-    [isGenneia]
-  )
   const { isGenneiaPostreDay } = useGenneiaPostreDay({ isGenneia })
+
+  const isGenneiaPostreOptionLocal = useCallback((option = {}) => {
+    if (!isGenneia) return false
+    const title = (option.title || '').toLowerCase()
+    const values = Array.isArray(option.options) ? option.options : []
+    const hasFrutaChoice = values.some((value) => (value || '').toLowerCase().includes('fruta'))
+    if (title.includes('postre') && hasFrutaChoice) return isGenneiaPostreOption(isGenneia, option)
+    if (isGenneiaPostreDay) return title.includes('postre')
+    return title.includes('fruta')
+  }, [isGenneia, isGenneiaPostreDay])
 
   const activeOptions = useMemo(
     () => (customOptionsLunch || []).filter(opt => opt.active),
@@ -80,14 +87,14 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
   )
 
   const visibleLunchOptions = useMemo(
-    () => activeOptions.filter(Boolean),
-    [activeOptions]
+    () => normalizeGenneiaOptionSections(activeOptions.filter(Boolean), isGenneia),
+    [activeOptions, isGenneia]
   )
 
   const visibleDinnerOptions = useMemo(() => {
     if (!dinnerEnabled) return []
-    return (customOptionsDinner || []).filter(opt => opt.active)
-  }, [customOptionsDinner, dinnerEnabled])
+    return normalizeGenneiaOptionSections((customOptionsDinner || []).filter(opt => opt.active), isGenneia)
+  }, [customOptionsDinner, dinnerEnabled, isGenneia])
 
   const {
     canChooseCustomSideForSelection,

@@ -42,6 +42,7 @@ const buildOrderPayload = ({
     customer_name: resolveCustomerName({ formData, user }),
     customer_email: formData.email || user?.email,
     customer_phone: formData.phone,
+    distro_cuyo: formData.distro_cuyo || null,
     items: normalizedItemsToSend.map(item => ({
       id: item.id,
       name: item.name,

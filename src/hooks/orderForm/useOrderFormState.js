@@ -6,6 +6,7 @@ export const useOrderFormState = () => {
     name: '',
     email: '',
     phone: '',
+    distro_cuyo: '',
     comments: ''
   })
   const [mode, setMode] = useState('lunch') // legacy, derives from selection (keep for compat)
@@ -58,4 +59,3 @@ export const useOrderFormState = () => {
     setDinnerMenuEnabled
   }
 }
-

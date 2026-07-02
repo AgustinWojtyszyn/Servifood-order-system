@@ -82,15 +82,13 @@ const addDetailsSheet = (workbook, summary) => {
   const rows = buildDailyOrdersExcelDetailRows(summary.rows.map((row) => row.original))
   worksheet.columns = Object.keys(rows[0] || {
     Cliente: '',
-    Email: '',
-    'Teléfono': '',
     'Ubicación / empresa': '',
     'Fecha de entrega': '',
     'Turno / servicio': '',
     'Menú elegido': '',
     'Opción elegida': '',
-    Cantidad: '',
     Guarniciones: '',
+    'DistroCuyo': '',
     'Respuestas personalizadas': '',
     Comentarios: '',
     Estado: '',

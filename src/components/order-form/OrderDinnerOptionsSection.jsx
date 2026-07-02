@@ -71,6 +71,7 @@ const OrderDinnerOptionsSection = ({
           const isBlockedByDinnerSpecial =
             Boolean(dinnerSpecialChoice) &&
             !(option?.title || '').toLowerCase().includes('bebida') &&
+            !(option?.title || '').toLowerCase().includes('fruta') &&
             !(option?.title || '').toLowerCase().includes('postre')
           const isBlockedByCustomSide = Boolean(customSideBlocked) && isCustomSideOption
           const isBlocked = isBlockedByDinnerSpecial || isBlockedByCustomSide

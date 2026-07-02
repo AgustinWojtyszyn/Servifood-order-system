@@ -291,6 +291,7 @@ const Dashboard = ({ user, loading }) => {
         onContinue={continueChangeCompanyFlow}
         onBack={() => setCompanyModalStep(1)}
         onConfirm={confirmChangeCompanyFlow}
+        isAdmin={isAdmin}
       />
 
       </div>

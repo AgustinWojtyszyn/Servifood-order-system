@@ -53,18 +53,26 @@ export const COMPANY_CATALOG = {
     customHint: 'Verás preguntas específicas y menú filtrado para Genneia.',
     optionsSourceSlug: 'genneia'
   },
-  genneia_om: {
-    slug: 'genneia_om',
-    name: 'Genneia O&M',
-    description: 'Flujo dedicado para equipos que operan en Genneia O&M.',
-    accent: 'from-orange-500 to-orange-600',
-    badgeClass: 'bg-orange-100 text-orange-700',
-    locations: ['Genneia O&M'],
-    customHint: 'Configura opciones solo visibles para pedidos de Genneia O&M.',
-    optionsSourceSlug: 'genneia_om'
+  administracion_servifood: {
+    slug: 'administracion_servifood',
+    name: 'Administración ServiFood',
+    description: 'Flujo interno para administración de ServiFood.',
+    accent: 'from-slate-700 to-slate-900',
+    badgeClass: 'bg-slate-100 text-slate-700',
+    locations: ['Administración ServiFood'],
+    customHint: 'Visible solo para usuarios administradores.',
+    optionsSourceSlug: 'administracion_servifood',
+    adminOnly: true
   }
 }
 
-export const COMPANY_LIST = Object.values(COMPANY_CATALOG)
+export const ALL_COMPANY_LIST = Object.values(COMPANY_CATALOG)
+
+export const getVisibleCompanyList = ({ includeAdminOnly = false } = {}) =>
+  ALL_COMPANY_LIST.filter((company) => includeAdminOnly || !company.adminOnly)
+
+export const COMPANY_LIST = getVisibleCompanyList()
+
+export const ALL_COMPANY_LOCATIONS = ALL_COMPANY_LIST.flatMap((company) => company.locations || [])
 
 export const COMPANY_LOCATIONS = COMPANY_LIST.flatMap((company) => company.locations || [])
