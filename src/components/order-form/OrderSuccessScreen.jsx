@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ChefHat } from 'lucide-react'
 
 const CONFETTI_PIECES = Array.from({ length: 240 }, (_, index) => ({
@@ -13,6 +14,7 @@ const CONFETTI_PIECES = Array.from({ length: 240 }, (_, index) => ({
 
 const OrderSuccessConfetti = () => {
   const [visible, setVisible] = useState(false)
+  const [portalTarget, setPortalTarget] = useState(null)
   const launchedRef = useRef(false)
 
   useEffect(() => {
@@ -22,14 +24,15 @@ const OrderSuccessConfetti = () => {
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     if (reduceMotion) return undefined
 
+    setPortalTarget(document.body)
     setVisible(true)
     const timer = window.setTimeout(() => setVisible(false), 3300)
     return () => window.clearTimeout(timer)
   }, [])
 
-  if (!visible) return null
+  if (!visible || !portalTarget) return null
 
-  return (
+  return createPortal(
     <div className="order-success-confetti" aria-hidden="true">
       {CONFETTI_PIECES.map(({ left, drift, rotate, delay, duration, size, top }, index) => (
         <span
@@ -46,7 +49,8 @@ const OrderSuccessConfetti = () => {
           }}
         />
       ))}
-    </div>
+    </div>,
+    portalTarget
   )
 }
 
