@@ -125,7 +125,7 @@ const Layout = ({ children, user, loading }) => {
       <OverlayLockProvider registerLock={registerExternalLock}>
       <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-dvh w-full">
       {/* Header */}
-      <header className="bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl border-b-4 border-secondary-500">
+      <header className="bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex flex-row items-center h-32 py-4 overflow-hidden w-full justify-center relative">
             <img
@@ -146,13 +146,9 @@ const Layout = ({ children, user, loading }) => {
             >
               <LogOut className="h-5 w-5" />
             </button>
-            <span
-              className="argentina-flag absolute right-16 top-1/2 -translate-y-1/2"
-              aria-label="Bandera de Argentina"
-              title="Argentina"
-            />
           </div>
         </div>
+        <div className="argentina-header-band" aria-label="Bandera de Argentina" />
       </header>
 
       <div className="flex flex-1 min-h-0">

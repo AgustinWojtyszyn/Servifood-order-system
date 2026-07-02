@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChefHat } from 'lucide-react'
 
-const CONFETTI_PIECES = Array.from({ length: 220 }, (_, index) => ({
+const CONFETTI_PIECES = Array.from({ length: 240 }, (_, index) => ({
   left: `${2 + ((index * 17) % 96)}%`,
   drift: `${((index % 15) - 7) * 15}px`,
   rotate: `${((index % 13) - 6) * 42}deg`,
