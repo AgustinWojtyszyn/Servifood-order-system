@@ -53,6 +53,16 @@ export const COMPANY_CATALOG = {
     customHint: 'Verás preguntas específicas y menú filtrado para Genneia.',
     optionsSourceSlug: 'genneia'
   },
+  distro_cuyo: {
+    slug: 'distro_cuyo',
+    name: 'DistroCuyo',
+    description: 'Flujo dedicado para equipos que operan en DistroCuyo.',
+    accent: 'from-indigo-500 to-indigo-700',
+    badgeClass: 'bg-indigo-100 text-indigo-700',
+    locations: ['DistroCuyo'],
+    customHint: 'Configura opciones solo visibles para pedidos de DistroCuyo.',
+    optionsSourceSlug: 'distro_cuyo'
+  },
   administracion_servifood: {
     slug: 'administracion_servifood',
     name: 'Administración ServiFood',
