@@ -134,6 +134,13 @@ const Layout = ({ children, user, loading }) => {
               className="max-h-40 sm:max-h-48 w-auto object-contain"
               style={{height: '120px', maxHeight: '160px', display: 'block'}}
             />
+            <span
+              className="absolute right-14 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-lg shadow-sm backdrop-blur-sm"
+              aria-label="Argentina"
+              title="Argentina"
+            >
+              🇦🇷
+            </span>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden mr-1 absolute left-2 top-1/2 transform -translate-y-1/2"

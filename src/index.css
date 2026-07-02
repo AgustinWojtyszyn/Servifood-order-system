@@ -165,9 +165,51 @@
   animation: notice-fade 160ms ease-out;
 }
 
+.order-success-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.order-success-confetti__piece {
+  position: absolute;
+  top: -16px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  background: #74acdf;
+  animation: order-success-confetti-fall 1500ms ease-out forwards;
+}
+
+.order-success-confetti__piece:nth-child(3n) {
+  background: #ffffff;
+  border: 1px solid rgb(116 172 223 / 0.45);
+}
+
+.order-success-confetti__piece:nth-child(3n + 1) {
+  background: #f6b40e;
+}
+
+@keyframes order-success-confetti-fall {
+  0% {
+    transform: translate3d(0, -24px, 0) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--confetti-drift), 105vh, 0) rotate(var(--confetti-rotate));
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .notice-pop,
-  .notice-fade {
+  .notice-fade,
+  .order-success-confetti__piece {
     animation: none;
   }
 }
