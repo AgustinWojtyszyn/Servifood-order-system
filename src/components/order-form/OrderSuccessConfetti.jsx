@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   getOrderSuccessConfettiEventName,
+  getOrderSuccessConfettiPendingValue,
   getOrderSuccessConfettiStorageKey
 } from '../../utils/order/orderSuccessConfetti'
 
@@ -17,6 +18,12 @@ const CONFETTI_PIECES = Array.from({ length: 270 }, (_, index) => ({
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+const debugConfetti = (message) => {
+  if (import.meta.env.DEV) {
+    console.debug(message)
+  }
+}
 
 const OrderSuccessConfetti = () => {
   const [visible, setVisible] = useState(false)
@@ -39,6 +46,7 @@ const OrderSuccessConfetti = () => {
     runningRef.current = true
     setPortalTarget(document.body)
     setVisible(true)
+    debugConfetti('order success confetti fired')
     if (timerRef.current) window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
       setVisible(false)
@@ -52,7 +60,7 @@ const OrderSuccessConfetti = () => {
     window.addEventListener(eventName, handleLaunch)
 
     try {
-      if (window.sessionStorage.getItem(getOrderSuccessConfettiStorageKey()) === 'pending') {
+      if (window.sessionStorage.getItem(getOrderSuccessConfettiStorageKey()) === getOrderSuccessConfettiPendingValue()) {
         launch()
       }
     } catch (_err) {
