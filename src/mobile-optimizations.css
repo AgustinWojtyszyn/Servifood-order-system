@@ -295,6 +295,13 @@ textarea,
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  .order-success-confetti__piece {
+    animation-name: order-success-confetti-fall !important;
+    animation-duration: var(--confetti-duration, 1500ms) !important;
+    animation-timing-function: ease-out !important;
+    animation-fill-mode: forwards !important;
+  }
 }
 
 /* ============================================

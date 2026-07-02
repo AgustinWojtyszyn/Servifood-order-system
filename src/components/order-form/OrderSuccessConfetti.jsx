@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation } from 'react-router-dom'
 import {
   getOrderSuccessConfettiEventName,
   getOrderSuccessConfettiPendingValue,
@@ -16,9 +17,6 @@ const CONFETTI_PIECES = Array.from({ length: 270 }, (_, index) => ({
   top: `${-12 - (index % 5) * 12}px`
 }))
 
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-
 const debugConfetti = (message) => {
   if (import.meta.env.DEV) {
     console.debug(message)
@@ -26,6 +24,7 @@ const debugConfetti = (message) => {
 }
 
 const OrderSuccessConfetti = () => {
+  const location = useLocation()
   const [visible, setVisible] = useState(false)
   const [portalTarget, setPortalTarget] = useState(null)
   const timerRef = useRef(null)
@@ -40,8 +39,7 @@ const OrderSuccessConfetti = () => {
   }, [])
 
   const launch = useCallback(() => {
-    clearPending()
-    if (prefersReducedMotion() || runningRef.current) return
+    if (runningRef.current) return
 
     runningRef.current = true
     setPortalTarget(document.body)
@@ -52,26 +50,36 @@ const OrderSuccessConfetti = () => {
       setVisible(false)
       runningRef.current = false
     }, 2600)
-  }, [clearPending])
+  }, [])
 
-  useEffect(() => {
-    const handleLaunch = () => launch()
-    const eventName = getOrderSuccessConfettiEventName()
-    window.addEventListener(eventName, handleLaunch)
-
+  const launchPending = useCallback(() => {
     try {
-      if (window.sessionStorage.getItem(getOrderSuccessConfettiStorageKey()) === getOrderSuccessConfettiPendingValue()) {
-        launch()
+      if (window.sessionStorage.getItem(getOrderSuccessConfettiStorageKey()) !== getOrderSuccessConfettiPendingValue()) {
+        return
       }
+      clearPending()
+      launch()
     } catch (_err) {
       // no-op
     }
+  }, [clearPending, launch])
+
+  useEffect(() => {
+    const handleLaunch = () => launchPending()
+    const eventName = getOrderSuccessConfettiEventName()
+    window.addEventListener(eventName, handleLaunch)
+
+    launchPending()
 
     return () => {
       window.removeEventListener(eventName, handleLaunch)
       if (timerRef.current) window.clearTimeout(timerRef.current)
     }
-  }, [launch])
+  }, [launchPending])
+
+  useEffect(() => {
+    launchPending()
+  }, [location.pathname, launchPending])
 
   if (!visible || !portalTarget) return null
 
@@ -87,6 +95,7 @@ const OrderSuccessConfetti = () => {
             '--confetti-drift': drift,
             '--confetti-rotate': rotate,
             '--confetti-size': size,
+            '--confetti-duration': duration,
             animationDelay: delay,
             animationDuration: duration
           }}
