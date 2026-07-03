@@ -108,6 +108,37 @@ const buildWorkbook = async ({
   workbook.creator = 'ServiFood Pedidos'
   workbook.created = new Date()
 
+  const summary = buildDailySummary(orders, reportDate)
+  const summarySheet = workbook.addWorksheet('Resumen')
+  summarySheet.columns = [
+    { header: 'Concepto', key: 'Concepto', width: 36 },
+    { header: 'Valor', key: 'Valor', width: 48 }
+  ]
+  summarySheet.addRows([
+    { Concepto: 'Fecha de entrega', Valor: summary.displayDate || 'Sin fecha' },
+    { Concepto: 'Estado exportado', Valor: 'Pendientes' },
+    { Concepto: 'Total de pedidos', Valor: summary.totalOrders },
+    { Concepto: 'Cantidad de pedidos con comentarios', Valor: summary.commentRows.length }
+  ])
+  summarySheet.addRow({ Concepto: 'Totales por ubicación / empresa', Valor: '' })
+  summary.byLocation.forEach((row) => {
+    summarySheet.addRow({ Concepto: row.label, Valor: `${row.orders} pedidos / ${row.items} ítems` })
+  })
+  summarySheet.addRow({ Concepto: 'Totales por menú / opción', Valor: '' })
+  summary.byMenuOption.forEach((row) => {
+    summarySheet.addRow({ Concepto: row.label, Valor: row.quantity })
+  })
+  summarySheet.addRow({ Concepto: 'Totales por servicio / turno', Valor: '' })
+  ;['Almuerzo', 'Cena'].forEach((serviceLabel) => {
+    const serviceOrders = orders.filter((order) => getServiceLabel(order.service) === serviceLabel)
+    if (!serviceOrders.length) return
+    summarySheet.addRow({ Concepto: serviceLabel, Valor: `${serviceOrders.length} pedidos` })
+  })
+  addHeaderStyle(summarySheet)
+  summarySheet.eachRow((row) => {
+    row.alignment = { vertical: 'top', wrapText: true }
+  })
+
   const details = workbook.addWorksheet('Pedidos Detallados')
   details.columns = [
     { header: 'Cliente', key: 'cliente', width: 24 },
@@ -156,29 +187,57 @@ const buildWorkbook = async ({
     row.alignment = { vertical: 'top', wrapText: true }
   })
 
-  const summary = buildDailySummary(orders, reportDate)
-  const stats = workbook.addWorksheet('Resumen')
-  stats.columns = [
-    { header: 'Concepto', key: 'concepto', width: 36 },
-    { header: 'Valor', key: 'valor', width: 48 }
+  const comments = workbook.addWorksheet('Comentarios')
+  comments.columns = [
+    { header: 'Cliente', key: 'cliente', width: 24 },
+    { header: 'Ubicación / Empresa', key: 'ubicacion', width: 28 },
+    { header: 'Servicio / Turno', key: 'servicio', width: 16 },
+    { header: 'Menú / Opción', key: 'menu', width: 36 },
+    { header: 'Comentario', key: 'comentario', width: 48 }
   ]
-  stats.addRows([
-    { concepto: 'Fecha de entrega reportada', valor: summary.displayDate },
-    { concepto: 'Total de pedidos', valor: summary.totalOrders },
-    { concepto: '', valor: '' },
-    { concepto: 'Totales por ubicación / empresa', valor: '' },
-    ...summary.byLocation.map((row) => ({
-      concepto: row.label,
-      valor: `${row.orders} pedidos, ${row.items} ítems`
-    })),
-    { concepto: '', valor: '' },
-    { concepto: 'Totales por menú / opción', valor: '' },
-    ...summary.byMenuOption.map((row) => ({ concepto: row.label, valor: row.quantity })),
-    { concepto: '', valor: '' },
-    { concepto: 'Avisos', valor: summary.warnings.length ? summary.warnings.join(' | ') : 'Sin avisos' }
-  ])
-  addHeaderStyle(stats)
-  stats.eachRow((row) => {
+  comments.addRows(orders
+    .filter((order) => String(order.comments || '').trim())
+    .map((order) => ({
+      cliente: order.customer_name || order.user_name || 'Sin nombre',
+      ubicacion: order.location || order.company_name || order.company || 'Sin ubicación / empresa',
+      servicio: getServiceLabel(order.service),
+      menu: getMenuOptionText(order),
+      comentario: order.comments || ''
+    })))
+  addHeaderStyle(comments)
+  comments.eachRow((row) => {
+    row.alignment = { vertical: 'top', wrapText: true }
+  })
+
+  const inconsistencies = workbook.addWorksheet('Inconsistencias')
+  inconsistencies.columns = [
+    { header: 'Pedido', key: 'pedido', width: 28 },
+    { header: 'Ubicación / Empresa', key: 'ubicacion', width: 28 },
+    { header: 'Problema', key: 'problema', width: 48 }
+  ]
+  const issueRows: Array<{ pedido: string; ubicacion: string; problema: string }> = []
+  orders.forEach((order, index) => {
+    const pedido = order.customer_name || order.user_name || `Pedido ${index + 1}`
+    const ubicacion = order.location || order.company_name || order.company || 'Sin ubicación'
+    if (!order.customer_name && !order.user_name) issueRows.push({ pedido, ubicacion, problema: 'Sin cliente' })
+    if (!order.customer_email && !order.user_email) issueRows.push({ pedido, ubicacion, problema: 'Sin email' })
+    if (!order.location && !order.company && !order.company_name) issueRows.push({ pedido, ubicacion, problema: 'Sin ubicación' })
+    if (!order.items.length) issueRows.push({ pedido, ubicacion, problema: 'Sin items' })
+    ;(order.normalization_warnings || []).forEach((warning) => {
+      issueRows.push({ pedido, ubicacion, problema: warning })
+    })
+  })
+  if (issueRows.length) {
+    inconsistencies.addRows(issueRows)
+  } else {
+    inconsistencies.addRow({
+      pedido: 'No se detectaron datos incompletos o inconsistentes.',
+      ubicacion: '',
+      problema: ''
+    })
+  }
+  addHeaderStyle(inconsistencies)
+  inconsistencies.eachRow((row) => {
     row.alignment = { vertical: 'top', wrapText: true }
   })
 
