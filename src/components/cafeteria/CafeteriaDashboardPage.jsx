@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Coffee } from 'lucide-react'
 import RequireUser from '../RequireUser'
+import LoadingState from '../ui/LoadingState'
 import { useCafeteriaPendingOrder } from '../../hooks/useCafeteriaPendingOrder'
 import { CAFETERIA_PLANS } from '../../cafeteria/cafeteriaPlans'
 import { getCafeteriaWindowLabel } from '../../cafeteria/cafeteriaTime'
@@ -72,7 +73,7 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
 
         <section className="bg-white/95 px-6 py-10 sm:px-8 sm:py-12 w-full">
           {pendingLoading && (
-            <p className="text-sm font-semibold text-gray-600">Cargando pedido...</p>
+            <LoadingState variant="inline" message="Cargando pedido..." tone="slate" />
           )}
           {!pendingLoading && error && (
             <p className="text-sm font-semibold text-red-600">{error}</p>

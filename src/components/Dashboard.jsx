@@ -16,6 +16,7 @@ import StatsCards from './dashboard/StatsCards'
 import ToastBanner from './dashboard/ToastBanner'
 import ChangeCompanyModal from './dashboard/ChangeCompanyModal'
 import { notifyError, notifyInfo, notifySuccess, notifyWarning } from '../utils/notice'
+import LoadingState from './ui/LoadingState'
 import { confirmAction } from '../utils/confirm'
 import {
   getCustomSideFromResponses,
@@ -191,8 +192,8 @@ const Dashboard = ({ user, loading }) => {
   if (ordersLoading) {
     return (
       <RequireUser user={user} loading={loading}>
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="py-8">
+          <LoadingState message="Cargando pedidos..." />
         </div>
       </RequireUser>
     )

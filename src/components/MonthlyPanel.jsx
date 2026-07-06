@@ -6,6 +6,7 @@ import MonthlyExportActions from './monthly/MonthlyExportActions'
 import MonthlyFilters from './monthly/MonthlyFilters'
 import MonthlyHeader from './monthly/MonthlyHeader'
 import MonthlySummary from './monthly/MonthlySummary'
+import LoadingState from './ui/LoadingState'
 import excelLogo from '../assets/logoexcel.png'
 import { useMonthlyMetrics } from '../hooks/monthly/useMonthlyMetrics'
 import { useMonthlyCompanyFilter } from '../hooks/monthly/useMonthlyCompanyFilter'
@@ -205,13 +206,11 @@ const MonthlyPanel = ({ user, loading }) => {
 
           {metricsLoading && (
             <div className="mt-4 mx-auto max-w-2xl">
-              <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin" aria-hidden="true"></div>
-                <div>
-                  <p className="text-base sm:text-lg font-extrabold text-slate-800">Cargando métricas del rango...</p>
-                  <p className="text-sm text-slate-600">Esto debería tardar solo un momento.</p>
-                </div>
-              </div>
+              <LoadingState
+                message="Cargando métricas del rango..."
+                description="Esto debería tardar solo un momento."
+                tone="slate"
+              />
             </div>
           )}
           {!metrics && !metricsLoading && (

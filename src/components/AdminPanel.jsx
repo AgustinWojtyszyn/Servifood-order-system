@@ -2,6 +2,7 @@ import { useAuthContext } from '../contexts/authContextValue'
 import { Link } from 'react-router-dom'
 import { Shield } from 'lucide-react'
 import RequireUser from './RequireUser'
+import LoadingState from './ui/LoadingState'
 import AdminHeader from './admin/AdminHeader'
 import AdminTabs from './admin/AdminTabs'
 import AdminUsersSection from './admin/AdminUsersSection'
@@ -61,8 +62,8 @@ const AdminPanel = () => {
   if (loading || mergedLoading) {
     return (
       <RequireUser user={user} loading={loading}>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="py-12">
+          <LoadingState message="Cargando panel..." />
         </div>
       </RequireUser>
     )

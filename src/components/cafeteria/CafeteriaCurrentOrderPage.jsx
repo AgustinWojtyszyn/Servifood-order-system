@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CafeteriaConfirm from './CafeteriaConfirm'
 import RequireUser from '../RequireUser'
+import LoadingState from '../ui/LoadingState'
 import { useCafeteriaPendingOrder } from '../../hooks/useCafeteriaPendingOrder'
 
 const CafeteriaCurrentOrderPage = ({ user, loading }) => {
@@ -18,8 +19,8 @@ const CafeteriaCurrentOrderPage = ({ user, loading }) => {
   if (pendingLoading || !pendingOrder) {
     return (
       <RequireUser user={user} loading={loading}>
-        <div className="flex items-center justify-center py-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        <div className="py-10">
+          <LoadingState message="Cargando pedido..." />
         </div>
       </RequireUser>
     )

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle, Coffee, ArrowRight, X } from 'lucide-react'
 import RequireUser from '../RequireUser'
+import InlineSpinner from '../ui/InlineSpinner'
 import { CAFETERIA_PLANS } from '../../cafeteria/cafeteriaPlans'
 import { buildEmptyQuantities, buildOrderFromQuantities, saveCafeteriaOrder } from '../../cafeteria/cafeteriaStorage'
 import { db } from '../../supabaseClient'
@@ -257,8 +258,17 @@ const CafeteriaHome = ({ user, loading }) => {
               disabled={totalSelected === 0 || submitting}
               className="inline-flex items-center gap-2 rounded-full bg-[#0b1f3a] text-white font-bold text-base px-5 py-2.5 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Confirmar pedido
-              <ArrowRight className="h-4 w-4" />
+              {submitting ? (
+                <>
+                  <InlineSpinner size="sm" tone="light" label="Confirmando pedido" />
+                  Confirmando...
+                </>
+              ) : (
+                <>
+                  Confirmar pedido
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
           </div>
 

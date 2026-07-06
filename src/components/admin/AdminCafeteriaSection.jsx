@@ -3,6 +3,7 @@ import excelLogo from '../../assets/logoexcel.png'
 import whatsappIcon from '../../assets/whatsapp.png'
 import { ALL_COMPANY_LIST as COMPANY_LIST } from '../../constants/companyConfig'
 import { db } from '../../supabaseClient'
+import LoadingState from '../ui/LoadingState'
 import { exportCafeteriaOrdersExcel, summarizeCafeteriaOrders } from '../../utils/cafeteria/exportCafeteriaOrdersExcel'
 import { shareCafeteriaOrdersWhatsApp } from '../../utils/cafeteria/shareCafeteriaOrdersWhatsApp'
 
@@ -87,7 +88,9 @@ const AdminCafeteriaSection = ({ adminName }) => {
       </div>
 
       {loading && (
-        <p className="mt-4 text-gray-600 font-semibold">Cargando pedidos...</p>
+        <div className="mt-4">
+          <LoadingState variant="inline" message="Cargando pedidos..." tone="slate" />
+        </div>
       )}
       {error && (
         <p className="mt-4 text-red-600 font-semibold">{error}</p>

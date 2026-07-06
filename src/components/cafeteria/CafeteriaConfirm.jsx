@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CheckCircle, Coffee, Save, Trash2 } from 'lucide-react'
 import RequireUser from '../RequireUser'
+import LoadingState from '../ui/LoadingState'
 import { CAFETERIA_PLANS } from '../../cafeteria/cafeteriaPlans'
 import {
   buildEmptyQuantities,
@@ -188,7 +189,7 @@ const CafeteriaConfirm = ({ user, loading, orderId: orderIdOverride, initialOrde
 
           <div className="mt-6">
             {loadingOrder && (
-              <p className="text-gray-600 font-semibold text-center">Cargando pedido...</p>
+              <LoadingState message="Cargando pedido..." tone="slate" />
             )}
             {loadError && (
               <p className="text-red-600 font-semibold text-center">{loadError}</p>

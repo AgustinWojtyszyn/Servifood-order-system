@@ -15,6 +15,7 @@ import OrderLunchOptionsSection from './order-form/OrderLunchOptionsSection'
 import OrderDinnerOptionsSection from './order-form/OrderDinnerOptionsSection'
 import OrderSuccessScreen from './order-form/OrderSuccessScreen'
 import OrderHoursBanner from './order-form/OrderHoursBanner'
+import InlineSpinner from './ui/InlineSpinner'
 import { formatResponseValue } from '../utils/order/orderFormatters'
 import { useOrderFlowController } from '../hooks/orderForm/useOrderFlowController'
 
@@ -159,7 +160,7 @@ const OrderForm = ({ user, loading }) => {
               >
                 {(loading || controller.submit.submitting) ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                    <InlineSpinner size="md" tone="light" className="mr-3" label="Creando pedido" />
                     <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', fontWeight: '900' }}>Creando pedido...</span>
                   </>
                 ) : controller.form.hasOrderToday ? (

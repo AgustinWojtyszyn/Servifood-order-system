@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import InlineSpinner from '../ui/InlineSpinner'
 import { getMenuDisplay } from '../../utils/order/menuDisplay'
 
 const OrderConfirmModal = ({
@@ -145,7 +146,12 @@ const OrderConfirmModal = ({
             disabled={submitting}
             className="w-full sm:w-auto px-6 py-3 rounded-xl bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-lg transition-all disabled:opacity-60"
           >
-            {submitting ? 'Enviando...' : 'Confirmar y enviar'}
+            {submitting ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <InlineSpinner size="sm" tone="light" label="Enviando pedido" />
+                Enviando...
+              </span>
+            ) : 'Confirmar y enviar'}
           </button>
         </div>
       </div>

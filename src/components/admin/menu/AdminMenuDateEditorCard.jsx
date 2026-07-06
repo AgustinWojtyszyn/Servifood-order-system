@@ -1,4 +1,5 @@
 import { Edit3, Plus, Save, Trash2, X } from 'lucide-react'
+import LoadingState from '../../ui/LoadingState'
 import { formatDateLabel } from '../../../utils/admin/adminMenuSectionFormatters'
 
 const AdminMenuDateEditorCard = ({
@@ -64,7 +65,9 @@ const AdminMenuDateEditorCard = ({
       </div>
 
       {loadingMenu && (
-        <div className="text-sm text-gray-600 mb-4">Cargando menú...</div>
+        <div className="mb-4">
+          <LoadingState variant="inline" message="Cargando menú..." tone="slate" />
+        </div>
       )}
 
       {!editingMenu ? (

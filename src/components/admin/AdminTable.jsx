@@ -1,5 +1,6 @@
 import { Users, X } from 'lucide-react'
 import AdminRow from './AdminRow'
+import LoadingState from '../ui/LoadingState'
 
 const AdminTable = ({
   filteredUsers,
@@ -17,7 +18,9 @@ const AdminTable = ({
 }) => (
   <>
     {usersLoading && (
-      <div className="mb-4 text-sm font-semibold text-gray-600">Cargando usuarios...</div>
+      <div className="mb-4">
+        <LoadingState variant="inline" message="Cargando usuarios..." tone="slate" />
+      </div>
     )}
 
     <div className="block md:hidden space-y-4">
