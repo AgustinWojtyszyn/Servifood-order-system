@@ -400,7 +400,7 @@ describe('daily report helpers', () => {
     expect(recipients).toEqual(['agustinwojtyszyn99@gmail.com'])
   })
 
-  it('send incluye siempre los tres destinatarios productivos sin duplicados', () => {
+  it('send incluye siempre los cuatro destinatarios productivos sin duplicados', () => {
     const recipients = getRecipientsForMode({
       mode: 'send',
       configuredRecipients: ['sarmientoclaudia985@gmail.com', 'agustinwojtyszyn99@gmail.com']
@@ -409,7 +409,8 @@ describe('daily report helpers', () => {
     expect(recipients).toEqual([
       'sarmientoclaudia985@gmail.com',
       'agustinwojtyszyn99@gmail.com',
-      'servifoodrecepcion@gmail.com'
+      'servifoodrecepcion@gmail.com',
+      'sesquivel@calidra.com.ar'
     ])
   })
 

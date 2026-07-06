@@ -41,7 +41,10 @@ const OrderForm = ({ user, loading }) => {
         }}
       >
         <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 mb-4 flex-1">
-          <OrderFormHeader companyName={controller.company.companyConfig.name} isGenneia={controller.company.isGenneia} />
+          <OrderFormHeader
+            companyName={controller.company.companyConfig.name}
+            showPostreNotice={controller.company.hasGenneiaRules}
+          />
           {!controller.form.hasOrderToday && <OrderHoursBanner />}
 
           <form onSubmit={controller.submit.handleSubmit} className="space-y-6 sm:space-y-8">
@@ -111,7 +114,7 @@ const OrderForm = ({ user, loading }) => {
                   options={controller.dinner.visibleDinnerOptions}
                   customResponsesDinner={controller.dinner.customResponsesDinner}
                   setCustomResponsesDinner={controller.dinner.setCustomResponsesDinnerSafe}
-                  isGenneia={controller.company.isGenneia}
+                  isGenneia={controller.company.hasGenneiaRules}
                   isGenneiaPostreDay={controller.dinner.isGenneiaPostreDay}
                   customSideBlocked={!controller.dinner.canChooseCustomSideForDinner}
                   isDinnerOverrideValue={controller.dinner.isDinnerOverrideValue}

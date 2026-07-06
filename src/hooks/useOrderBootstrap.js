@@ -22,6 +22,32 @@ const filterByMealScope = (options = [], meal) =>
     return scope === 'both' || scope === meal
   })
 
+const isBeverageDessertOrFruitOption = (option = {}) => {
+  const text = [
+    option.title,
+    ...(Array.isArray(option.options) ? option.options : [])
+  ].join(' ').toLowerCase()
+
+  return text.includes('bebida') ||
+    text.includes('postre') ||
+    text.includes('fruta') ||
+    text.includes('coca') ||
+    text.includes('agua')
+}
+
+const hasBeverageDessertOrFruitOption = (options = []) =>
+  (options || []).some(isBeverageDessertOrFruitOption)
+
+const mergeFallbackSpecialOptions = (options = [], fallbackOptions = []) => {
+  if (hasBeverageDessertOrFruitOption(options)) return options
+  const existingIds = new Set((options || []).map((option) => option?.id).filter(Boolean))
+  const additions = (fallbackOptions || [])
+    .filter(isBeverageDessertOrFruitOption)
+    .filter((option) => !existingIds.has(option?.id))
+    .map((option) => ({ ...option, id: `distro-cuyo-${option.id}` }))
+  return [...options, ...additions]
+}
+
 const ACTIVE_ORDER_STATUSES = new Set(['pending'])
 
 const isActiveOrderForDelivery = (order, deliveryDate, service) => {
@@ -88,7 +114,17 @@ const useOrderBootstrap = ({
         setCustomOptionsLunch([])
         return
       }
-      setCustomOptionsLunch(filterByMealScope(data, 'lunch'))
+      let lunchOptions = filterByMealScope(data, 'lunch')
+      if (companyOptionsSlug === 'distro_cuyo' && !hasBeverageDessertOrFruitOption(lunchOptions)) {
+        const { data: fallbackData, error: fallbackError } = await db.getVisibleCustomOptions({
+          company: 'genneia',
+          meal: 'lunch',
+          date: deliveryDate
+        })
+        if (fallbackError) console.error('Error fetching DistroCuyo lunch fallback options:', fallbackError)
+        lunchOptions = mergeFallbackSpecialOptions(lunchOptions, filterByMealScope(fallbackData, 'lunch'))
+      }
+      setCustomOptionsLunch(lunchOptions)
     } catch (err) {
       console.error('Error fetching lunch custom options:', err)
       setCustomOptionsLunch([])
@@ -110,7 +146,17 @@ const useOrderBootstrap = ({
         return
       }
       // Cena siempre se resuelve con su consulta específica, sin reutilizar catálogo de almuerzo.
-      setCustomOptionsDinner(filterByMealScope(data, 'dinner'))
+      let dinnerOptions = filterByMealScope(data, 'dinner')
+      if (companyOptionsSlug === 'distro_cuyo' && !hasBeverageDessertOrFruitOption(dinnerOptions)) {
+        const { data: fallbackData, error: fallbackError } = await db.getVisibleCustomOptions({
+          company: 'genneia',
+          meal: 'dinner',
+          date: dinnerDate
+        })
+        if (fallbackError) console.error('Error fetching DistroCuyo dinner fallback options:', fallbackError)
+        dinnerOptions = mergeFallbackSpecialOptions(dinnerOptions, filterByMealScope(fallbackData, 'dinner'))
+      }
+      setCustomOptionsDinner(dinnerOptions)
     } catch (err) {
       console.error('Error fetching dinner custom options:', err)
       setCustomOptionsDinner([])

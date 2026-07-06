@@ -20,6 +20,7 @@ import { useOrderFormEffects } from './useOrderFormEffects'
 import { useOrderFormState } from './useOrderFormState'
 import { useOrderSelectionsState } from './useOrderSelectionsState'
 import { normalizeGenneiaOptionSections } from '../../utils/order/genneiaOptionSections'
+import { getTomorrowISOInTimeZone } from '../../utils/dateUtils'
 import {
   isBeverageOrDessertOption,
   isDinnerOverrideValue,
@@ -66,20 +67,24 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     companyConfig,
     companyOptionsSlug,
     isGenneia,
+    hasGenneiaRules,
     locations
   } = useOrderCompany()
 
-  const { isGenneiaPostreDay } = useGenneiaPostreDay({ isGenneia })
+  const { isGenneiaPostreDay } = useGenneiaPostreDay({
+    isGenneia: hasGenneiaRules,
+    deliveryDate: getTomorrowISOInTimeZone()
+  })
 
   const isGenneiaPostreOptionLocal = useCallback((option = {}) => {
-    if (!isGenneia) return false
+    if (!hasGenneiaRules) return false
     const title = (option.title || '').toLowerCase()
     const values = Array.isArray(option.options) ? option.options : []
     const hasFrutaChoice = values.some((value) => (value || '').toLowerCase().includes('fruta'))
-    if (title.includes('postre') && hasFrutaChoice) return isGenneiaPostreOption(isGenneia, option)
+    if (title.includes('postre') && hasFrutaChoice) return isGenneiaPostreOption(hasGenneiaRules, option)
     if (isGenneiaPostreDay) return title.includes('postre')
     return title.includes('fruta')
-  }, [isGenneia, isGenneiaPostreDay])
+  }, [hasGenneiaRules, isGenneiaPostreDay])
 
   const activeOptions = useMemo(
     () => (customOptionsLunch || []).filter(opt => opt.active),
@@ -87,20 +92,20 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
   )
 
   const visibleLunchOptions = useMemo(
-    () => normalizeGenneiaOptionSections(activeOptions.filter(Boolean), isGenneia),
-    [activeOptions, isGenneia]
+    () => normalizeGenneiaOptionSections(activeOptions.filter(Boolean), hasGenneiaRules),
+    [activeOptions, hasGenneiaRules]
   )
 
   const visibleDinnerOptions = useMemo(() => {
     if (!dinnerEnabled) return []
-    return normalizeGenneiaOptionSections((customOptionsDinner || []).filter(opt => opt.active), isGenneia)
-  }, [customOptionsDinner, dinnerEnabled, isGenneia])
+    return normalizeGenneiaOptionSections((customOptionsDinner || []).filter(opt => opt.active), hasGenneiaRules)
+  }, [customOptionsDinner, dinnerEnabled, hasGenneiaRules])
 
   const {
     canChooseCustomSideForSelection,
     canChooseCustomSideForDinner
   } = useCustomSideGuards({
-    isGenneia,
+    isGenneia: hasGenneiaRules,
     selectedTurns,
     menuItems,
     dinnerMenuItems,
@@ -115,7 +120,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
   const lunchOptionsUI = useLunchOptionsUI({
     visibleLunchOptions,
     customResponses,
-    isGenneia,
+    isGenneia: hasGenneiaRules,
     isGenneiaPostreDay,
     canChooseCustomSideForSelection
   })
@@ -133,7 +138,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
   }, [customOptionsLunch, customOptionsDinner])
 
   useGenneiaPostreRules({
-    isGenneia,
+    isGenneia: hasGenneiaRules,
     isGenneiaPostreDay,
     allCustomOptions,
     visibleDinnerOptions,
@@ -274,7 +279,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
     menuItems,
     dinnerMenuItems,
     locations,
-    isGenneia,
+    isGenneia: hasGenneiaRules,
     setSelectedItems,
     setSelectedItemsDinner,
     setCustomResponses,
@@ -330,7 +335,7 @@ export const useOrderFlowController = ({ user, locationState, navigate } = {}) =
 
   return {
     success,
-    company: { companyConfig, isGenneia, locations, rawCompanySlug, companySlugParam, companyOptionsSlug },
+    company: { companyConfig, isGenneia, hasGenneiaRules, locations, rawCompanySlug, companySlugParam, companyOptionsSlug },
     form: { formData, handleFormChange, hasOrderToday },
     turns: { selectedTurns, toggleLunchTurn, toggleDinnerTurn, dinnerEnabled, dinnerMenuEnabled },
     lunch: {

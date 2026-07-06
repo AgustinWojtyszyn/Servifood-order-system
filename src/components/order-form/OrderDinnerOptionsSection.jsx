@@ -86,7 +86,7 @@ const OrderDinnerOptionsSection = ({
             </label>
             {isPostreGroup && (
               <p className="text-xs sm:text-sm text-gray-600 font-semibold mb-3">
-                Solo elegí <b>Postre del día</b> lunes y miércoles (entrega martes y jueves). El resto de los días marcá <b>Fruta</b>.
+                Solo elegí <b>Postre del día</b> para entregas de martes y jueves. El resto de los días marcá <b>Fruta</b>.
               </p>
             )}
             {isBlockedByCustomSide && (

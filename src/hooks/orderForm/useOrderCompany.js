@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { COMPANY_CATALOG, COMPANY_LIST } from '../../constants/companyConfig'
 import { useAuthContext } from '../../contexts/authContextValue'
 import { db } from '../../supabaseClient'
+import { hasGenneiaOptionRules } from '../../utils/order/companySpecialRules'
 
 export const useOrderCompany = () => {
   const { companySlug: companySlugParam } = useParams()
@@ -33,6 +34,7 @@ export const useOrderCompany = () => {
     .toLowerCase()
 
   const isGenneia = (companyConfig?.slug || rawCompanySlug || '').toLowerCase() === 'genneia'
+  const hasGenneiaRules = hasGenneiaOptionRules(companyConfig || rawCompanySlug)
 
   const locations = useMemo(
     () => companyConfig?.locations || COMPANY_LIST[0]?.locations || [],
@@ -71,6 +73,7 @@ export const useOrderCompany = () => {
     companyConfig,
     companyOptionsSlug,
     isGenneia,
+    hasGenneiaRules,
     locations
   }
 }

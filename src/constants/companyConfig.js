@@ -60,7 +60,7 @@ export const COMPANY_CATALOG = {
     accent: 'from-indigo-500 to-indigo-700',
     badgeClass: 'bg-indigo-100 text-indigo-700',
     locations: ['DistroCuyo'],
-    customHint: 'Configura opciones solo visibles para pedidos de DistroCuyo.',
+    customHint: 'Incluye bebida y regla de postre/fruta igual que Genneia.',
     optionsSourceSlug: 'distro_cuyo'
   },
   administracion_servifood: {

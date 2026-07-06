@@ -1,20 +1,14 @@
 import { useMemo } from 'react'
+import { getTomorrowISOInTimeZone } from '../../utils/dateUtils'
+import { isPostreDeliveryDate } from '../../utils/order/companySpecialRules'
 
-export const useGenneiaPostreDay = ({ isGenneia }) => {
-  const argentinaWeekday = useMemo(() => {
-    try {
-      return new Intl.DateTimeFormat('es-AR', { weekday: 'long', timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date())
-    } catch (_err) {
-      return new Date().toLocaleDateString('es-AR', { weekday: 'long' })
-    }
-  }, [])
+export const useGenneiaPostreDay = ({ isGenneia, deliveryDate }) => {
+  const effectiveDeliveryDate = deliveryDate || getTomorrowISOInTimeZone()
 
-  const normalizedWeekday = useMemo(
-    () => (argentinaWeekday || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
-    [argentinaWeekday]
+  const isGenneiaPostreDay = useMemo(
+    () => !!isGenneia && isPostreDeliveryDate(effectiveDeliveryDate),
+    [effectiveDeliveryDate, isGenneia]
   )
-
-  const isGenneiaPostreDay = !!isGenneia && (normalizedWeekday === 'lunes' || normalizedWeekday === 'miercoles')
 
   return { isGenneiaPostreDay }
 }

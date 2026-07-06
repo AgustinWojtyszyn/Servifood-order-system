@@ -1,6 +1,7 @@
 import { getTomorrowISOInTimeZone } from '../dateUtils'
 import { resolveCustomerName } from './orderCustomerName'
 import { canChooseCustomSide } from './orderCustomSideRules'
+import { hasGenneiaOptionRules } from './companySpecialRules'
 
 const isCustomSideOption = (opt) => (opt?.title || '').toLowerCase().includes('guarn')
 const SINGLE_MENU_MESSAGE = 'Solo podés seleccionar 1 comida principal por persona para almuerzo o cena.'
@@ -166,7 +167,7 @@ const validateOrderSubmission = ({
         response: dinnerOverrideChoice
       }]
     } else {
-      const isGenneia = (companyConfig?.slug || '').toLowerCase() === 'genneia'
+      const isGenneia = hasGenneiaOptionRules(companyConfig)
       const canChooseCustomSideForDinner = selectedItemsListDinner.length > 0
         ? selectedItemsListDinner.every(item => canChooseCustomSide(item))
         : false

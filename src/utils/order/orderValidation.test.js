@@ -121,6 +121,34 @@ describe('order validation', () => {
     ])
   })
 
+  it('keeps DistroCuyo beverage and dessert as custom responses, not items', () => {
+    const result = validateOrderSubmission(baseArgs({
+      formData: {
+        location: 'DistroCuyo',
+        name: '',
+        email: '',
+        phone: '',
+        comments: ''
+      },
+      companyConfig: { slug: 'distro_cuyo', name: 'DistroCuyo' },
+      visibleLunchOptions: [
+        { id: 'bebida', title: 'Bebida', required: false },
+        { id: 'postre', title: 'Postre', required: false }
+      ],
+      customResponses: {
+        bebida: 'Coca Zero',
+        postre: 'Fruta'
+      }
+    }))
+
+    expect(result.error).toBe('')
+    expect(result.data.selectedItemsList).toHaveLength(1)
+    expect(result.data.customResponsesArray).toEqual([
+      { id: 'bebida', title: 'Bebida', response: 'Coca Zero' },
+      { id: 'postre', title: 'Postre', response: 'Fruta' }
+    ])
+  })
+
   it('blocks custom side for menus that do not accept it', () => {
     const result = validateOrderSubmission(baseArgs({
       getSelectedItemsList: () => [{ id: 'option-5', name: 'Opción 5 - Ensalada', slotIndex: 5 }],

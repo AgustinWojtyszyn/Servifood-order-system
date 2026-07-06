@@ -6,7 +6,8 @@ const DEFAULT_TEST_RECIPIENT = 'agustinwojtyszyn99@gmail.com'
 const PERMANENT_REPORT_RECIPIENTS = [
   'sarmientoclaudia985@gmail.com',
   'agustinwojtyszyn99@gmail.com',
-  'servifoodrecepcion@gmail.com'
+  'servifoodrecepcion@gmail.com',
+  'sesquivel@calidra.com.ar'
 ]
 
 const pad = (value: number) => String(value).padStart(2, '0')

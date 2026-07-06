@@ -659,6 +659,12 @@ export const formatDailyOrdersOperationalText = (orders = [], selectedStatus = '
 
 export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pending') => {
   const summary = buildWhatsAppLocationMenuSummary(orders, selectedStatus)
+  const additionalByLocation = new Map(
+    buildDailyOrdersSummary(orders, selectedStatus).additionalByLocation.map((location) => [
+      location.label,
+      location.items.filter((item) => !normalizeText(item.label).toLowerCase().startsWith('guarnición:'))
+    ])
+  )
   const lines = ['📋 PEDIDOS SERVIFOOD', '']
 
   if (!summary.locations.length) {
@@ -678,6 +684,15 @@ export const formatDailyOrdersForWhatsApp = (orders = [], selectedStatus = 'pend
       })
       if (menu.sides.length) lines.push('')
     })
+
+    const additionalItems = additionalByLocation.get(location.label) || []
+    if (additionalItems.length) {
+      lines.push('Adicionales:', '')
+      additionalItems.forEach((item) => {
+        lines.push(`* ${item.quantity} ${item.label}`)
+      })
+      lines.push('')
+    }
 
     lines.push(`Total ${location.label}: ${location.total}`, '')
   })

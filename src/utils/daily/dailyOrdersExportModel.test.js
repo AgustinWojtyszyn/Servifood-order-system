@@ -237,9 +237,47 @@ describe('daily orders export model', () => {
     }], 'pending')
 
     expect(text).toContain('Cena: PASTEL DE PAPAS: 1')
-    expect(text).not.toContain('Coca cola')
-    expect(text).not.toContain('Postre (solo Genneia): Fruta')
+    expect(text).toContain('Adicionales:')
+    expect(text).toContain('* 1 Coca cola')
+    expect(text).toContain('* 1 Postre (solo Genneia): Fruta')
     expect(text).not.toContain('Menú de cena: PASTEL DE PAPAS')
+  })
+
+  it('incluye bebida y fruta de DistroCuyo en resumen y Excel sin contarlas como menú', () => {
+    const order = {
+      ...baseOrder,
+      id: 'distro-bebida-fruta',
+      location: 'DistroCuyo',
+      total_items: 1,
+      items: [{ name: 'Opción 1 - POLLO', quantity: 1 }],
+      custom_responses: [
+        { title: 'Bebida', response: 'Coca Zero' },
+        { title: 'Fruta', response: 'Fruta' }
+      ],
+      comments: ''
+    }
+
+    const summary = buildDailyOrdersSummary([order], 'pending')
+    const rows = buildDailyOrdersExcelDetailRows([order])
+    const text = formatDailyOrdersForWhatsApp([order], 'pending')
+
+    expect(summary.additionalByLocation).toContainEqual({
+      label: 'DistroCuyo',
+      items: [
+        { label: 'Coca Zero', quantity: 1 },
+        { label: 'Fruta: Fruta', quantity: 1 }
+      ]
+    })
+    expect(rows[0]).toMatchObject({
+      'Ubicación / empresa': 'DistroCuyo',
+      'Respuestas personalizadas': 'Bebida: Coca Zero | Fruta: Fruta'
+    })
+    expect(text).toContain('DistroCuyo')
+    expect(text).toContain('Opción 1 - POLLO: 1')
+    expect(text).toContain('Adicionales:')
+    expect(text).toContain('* 1 Coca Zero')
+    expect(text).toContain('* 1 Fruta: Fruta')
+    expect(text).toContain('Total DistroCuyo: 1')
   })
 
   it('corrige formato de totales para muchos pedidos en WhatsApp', () => {
