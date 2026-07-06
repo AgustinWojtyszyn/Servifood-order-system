@@ -1,5 +1,4 @@
 import { useAuthContext } from './authContextValue'
-import LoadingState from '../components/ui/LoadingState'
 
 // HOC para componentes que requieren autenticación
 export const withAuth = (_Component) => {
@@ -8,8 +7,13 @@ export const withAuth = (_Component) => {
 
     if (loading) {
       return (
-        <div className="px-3 py-6 sm:px-6">
-          <LoadingState message="Cargando..." tone="slate" />
+        <div className="min-h-dvh flex items-center justify-center">
+          <div className="animate-pulse-slow">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-200 rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Cargando...</p>
+            </div>
+          </div>
         </div>
       )
     }
@@ -46,8 +50,13 @@ export const withAdmin = (_Component) => {
 
     if (loading) {
       return (
-        <div className="px-3 py-6 sm:px-6">
-          <LoadingState message="Verificando permisos..." tone="slate" />
+        <div className="min-h-dvh flex items-center justify-center">
+          <div className="animate-pulse-slow">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-200 rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Verificando permisos...</p>
+            </div>
+          </div>
         </div>
       )
     }
