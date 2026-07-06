@@ -1,11 +1,10 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import LoadingState from './ui/LoadingState'
 
 export default function RequireUser({ user, loading, children }) {
   const location = useLocation()
 
   if (loading) {
-    return <LoadingState variant="fullscreen" message="Cargando..." />
+    return user?.id ? <>{children}</> : null
   }
 
   if (!user?.id) {

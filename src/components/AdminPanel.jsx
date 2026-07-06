@@ -59,12 +59,10 @@ const AdminPanel = () => {
     )
   }
 
-  if (loading || mergedLoading) {
+  if (loading) {
     return (
       <RequireUser user={user} loading={loading}>
-        <div className="py-12">
-          <LoadingState message="Cargando panel..." />
-        </div>
+        {null}
       </RequireUser>
     )
   }
@@ -77,32 +75,40 @@ const AdminPanel = () => {
       {/* Tabs - Scroll horizontal completo en mobile */}
       <AdminTabs activeTab={activeTab} onChange={setActiveTab} showCafeteria={canExportCafeteria} />
 
+      {mergedLoading && (
+        <LoadingState
+          message="Cargando panel..."
+          description="El contenido disponible queda listo por secciones."
+          tone="slate"
+        />
+      )}
+
       {/* Users Tab */}
-      {activeTab === 'users' && (
+      {!mergedLoading && activeTab === 'users' && (
         <AdminUsersSection {...usersSection} />
       )}
 
       {/* Menu Tab */}
-      {activeTab === 'menu' && (
+      {!mergedLoading && activeTab === 'menu' && (
         <AdminMenuSection {...menuSection} />
       )}
 
-      {activeTab === 'cafeteria' && canExportCafeteria && (
+      {!mergedLoading && activeTab === 'cafeteria' && canExportCafeteria && (
         <AdminCafeteriaSection {...cafeteriaSection} />
       )}
 
       {/* Dinner Option Tab */}
-      {activeTab === 'dinner-option' && (
+      {!mergedLoading && activeTab === 'dinner-option' && (
         <AdminDinnerOptionSection {...dinnerSection} />
       )}
 
       {/* Custom Options Tab */}
-      {activeTab === 'options' && (
+      {!mergedLoading && activeTab === 'options' && (
         <AdminOptionsSection {...optionsSection} />
       )}
 
       {/* Cleanup Tab */}
-      {activeTab === 'cleanup' && (
+      {!mergedLoading && activeTab === 'cleanup' && (
         <AdminCleanupSection {...cleanupSection} />
       )}
     </div>

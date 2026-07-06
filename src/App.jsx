@@ -13,7 +13,6 @@ import AdminPanel from './components/AdminPanel'
 import NoticeHost from './components/NoticeHost'
 import ConfirmHost from './components/ConfirmHost'
 import RequireAdmin from './components/RequireAdmin'
-import LoadingState from './components/ui/LoadingState'
 
 // Lazy loading de componentes (carga diferida)
 const Register = lazy(() => import('./components/Register'))
@@ -42,24 +41,6 @@ const ExcelAnalysis = ENABLE_EXCEL_ANALYSIS
   ? lazy(() => import('./components/ExcelAnalysis'))
   : null
 
-const ADMIN_ROUTE_PATHS = [
-  '/cafeteria',
-  '/cafeteria/new',
-  '/cafeteria/order',
-  '/cafeteria/confirm',
-  '/admin',
-  '/daily-orders',
-  '/monthly-panel',
-  '/auditoria',
-  '/tendencias',
-  '/excel-analysis'
-]
-
-// Componente de carga interno (para Suspense)
-const InternalLoader = () => (
-  <LoadingState variant="fullscreen" message="Cargando..." />
-)
-
 const ExcelAnalysisDisabled = () => (
   <div className="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center px-4 py-10">
     <section className="w-full rounded-lg border border-white/20 bg-white p-6 text-slate-900 shadow-xl sm:p-8">
@@ -79,7 +60,6 @@ const ExcelAnalysisDisabled = () => (
 
 function App() {
   const { user, loading } = useAuthContext()
-  const isAdminPath = ADMIN_ROUTE_PATHS.includes(window.location.pathname)
 
   const ScreenMetricsListener = () => {
     useScreenMetrics()
@@ -87,11 +67,11 @@ function App() {
   }
 
   const renderAdminRoute = (content) => (
-    <RequireAdmin>
-      <Layout user={user} loading={loading}>
+    <Layout user={user} loading={loading}>
+      <RequireAdmin>
         {content}
-      </Layout>
-    </RequireAdmin>
+      </RequireAdmin>
+    </Layout>
   )
 
   useEffect(() => {
@@ -219,8 +199,8 @@ function App() {
   }, [])
 
   return (
-    loading && !isAdminPath ? (
-      <InternalLoader />
+    loading && !user ? (
+      <SplashScreen />
     ) : (
       <Router>
         <ScreenMetricsListener />
@@ -229,30 +209,30 @@ function App() {
         <div
           className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
         >
-          <Suspense fallback={<InternalLoader />}>
+          <Suspense fallback={null}>
             <Routes>
             <Route path="/" element={
-              !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
+              user ? <Navigate to="/dashboard" /> : <LandingPage />
             } />
             <Route path="/dashboard" element={
-              !loading && (user ? <Layout user={user} loading={loading}><Dashboard user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              user ? <Layout user={user} loading={loading}><Dashboard user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/login" element={
-              !loading && (user ? <Navigate to="/dashboard" /> : <Login />)
+              user ? <Navigate to="/dashboard" /> : <Login />
             } />
             <Route path="/register" element={
-              !loading && (user ? <Navigate to="/dashboard" /> : <Register />)
+              user ? <Navigate to="/dashboard" /> : <Register />
             } />
             <Route path="/forgot-password" element={
-              !loading && (user ? <Navigate to="/dashboard" /> : <ForgotPassword />)
+              user ? <Navigate to="/dashboard" /> : <ForgotPassword />
             } />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/order" element={
-              !loading && (user ? <Layout user={user} loading={loading}><OrderCompanySelector user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              user ? <Layout user={user} loading={loading}><OrderCompanySelector user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/order/:companySlug" element={
-              !loading && (user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/cafeteria" element={
               renderAdminRoute(<CafeteriaDashboardPage user={user} loading={loading} />)
@@ -267,10 +247,10 @@ function App() {
               renderAdminRoute(<CafeteriaSuccessPage user={user} loading={loading} />)
             } />
             <Route path="/edit-order" element={
-              !loading && (user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/profile" element={
-              !loading && (user ? <Layout user={user} loading={loading}><Profile user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              user ? <Layout user={user} loading={loading}><Profile user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/admin" element={
               renderAdminRoute(<AdminPanel loading={loading} />)
@@ -282,7 +262,7 @@ function App() {
               renderAdminRoute(<MonthlyPanel user={user} loading={loading} />)
             } />
             <Route path="/orders/:orderId" element={
-              !loading && (user ? <Layout user={user} loading={loading}><OrderDetails user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
+              user ? <Layout user={user} loading={loading}><OrderDetails user={user} loading={loading} /></Layout> : <Navigate to="/login" />
             } />
             <Route path="/auditoria" element={
               renderAdminRoute(<AuditLogs user={user} loading={loading} />)
@@ -297,12 +277,10 @@ function App() {
             <Route
               path="*"
               element={
-                !loading && (
-                  <Navigate
-                    to={user ? '/dashboard' : '/'}
-                    replace
-                  />
-                )
+                <Navigate
+                  to={user ? '/dashboard' : '/'}
+                  replace
+                />
               }
             />
             </Routes>

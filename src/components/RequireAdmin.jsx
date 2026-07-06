@@ -2,18 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuthContext } from '../contexts/authContextValue'
 import serviFoodLogo from '../assets/servifood_logo_white_text_HQ.png'
+import LoadingState from './ui/LoadingState'
 
 const PERMISSION_VALIDATION_TIMEOUT_MS = 7000
 
 const AdminLoader = () => (
-  <div
-    className="min-h-dvh flex items-center justify-center bg-linear-to-br from-primary-700 via-primary-800 to-primary-900"
-    style={{ backgroundImage: 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 52%, #172554 100%)' }}
-  >
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/30 border-t-white mx-auto mb-4"></div>
-      <p className="text-white font-medium">Verificando permisos...</p>
-    </div>
+  <div className="px-3 py-6 sm:px-6">
+    <LoadingState
+      message="Verificando permisos..."
+      description="El panel se va a mostrar apenas termine la validación."
+      tone="slate"
+      className="mx-auto max-w-2xl"
+    />
   </div>
 )
 

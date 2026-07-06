@@ -158,7 +158,7 @@ const OrderForm = ({ user, loading }) => {
                 }}
                 className="w-full sm:w-auto hover:bg-green-700 font-black py-5 px-8 rounded-xl shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-2xl border-2 border-green-600"
               >
-                {(loading || controller.submit.submitting) ? (
+                {controller.submit.submitting ? (
                   <>
                     <InlineSpinner size="md" tone="light" className="mr-3" label="Creando pedido" />
                     <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', fontWeight: '900' }}>Creando pedido...</span>
