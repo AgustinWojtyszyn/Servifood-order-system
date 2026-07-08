@@ -58,3 +58,4 @@ codebase-memory-mcp/
 codebase-memory-mcp-*
 # Unlighthouse reports/generated files
 reports/
+testing/load/reports/
