@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle, AlertTriangle, XCircle, Info } from 'lucide-react'
+import { createNoticeId } from './noticeHostIds'
 
 const VARIANT_STYLES = {
   success: {
@@ -41,12 +42,22 @@ const defaultTimeoutFor = (variant) => {
 const NoticeHost = () => {
   const [notice, setNotice] = useState(null)
   const timerRef = useRef(null)
+  const closeButtonRef = useRef(null)
+  const previousFocusRef = useRef(null)
+  const currentNoticeRef = useRef(null)
+
+  useEffect(() => {
+    currentNoticeRef.current = notice
+  }, [notice])
 
   useEffect(() => {
     const handler = (event) => {
       const detail = event?.detail || {}
+      if (!currentNoticeRef.current) {
+        previousFocusRef.current = document.activeElement
+      }
       const next = {
-        id: crypto.randomUUID(),
+        id: createNoticeId(),
         title: detail.title || null,
         message: detail.message || '',
         variant: detail.variant || 'info',
@@ -60,6 +71,30 @@ const NoticeHost = () => {
   }, [])
 
   useEffect(() => {
+    if (!notice) {
+      const previousFocus = previousFocusRef.current
+      previousFocusRef.current = null
+      if (previousFocus?.isConnected && typeof previousFocus.focus === 'function') {
+        previousFocus.focus()
+      }
+      return
+    }
+
+    closeButtonRef.current?.focus()
+  }, [notice])
+
+  useEffect(() => {
+    if (!notice) return
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setNotice(null)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [notice])
+
+  useEffect(() => {
     if (!notice) return
     if (timerRef.current) clearTimeout(timerRef.current)
     const timeout = notice.timeoutMs ?? defaultTimeoutFor(notice.variant)
@@ -71,6 +106,8 @@ const NoticeHost = () => {
 
   const variant = VARIANT_STYLES[notice.variant] || VARIANT_STYLES.info
   const Icon = variant.icon
+  const titleId = `notice-title-${notice.id}`
+  const messageId = `notice-message-${notice.id}`
 
   return (
     <div
@@ -78,6 +115,8 @@ const NoticeHost = () => {
       role="dialog"
       aria-modal="true"
       aria-live="polite"
+      aria-labelledby={titleId}
+      aria-describedby={messageId}
     >
       <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={() => setNotice(null)} />
       <div
@@ -90,16 +129,17 @@ const NoticeHost = () => {
               <Icon className="h-7 w-7" />
             </div>
             <div className="flex-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+              <p id={titleId} className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
                 {notice.title || 'Aviso'}
               </p>
-              <p className="mt-2 text-2xl sm:text-3xl font-semibold text-gray-900">
+              <p id={messageId} className="mt-2 text-2xl sm:text-3xl font-semibold text-gray-900">
                 {notice.message}
               </p>
             </div>
           </div>
           <div className="mt-auto pt-8 flex justify-end">
             <button
+              ref={closeButtonRef}
               className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-base font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
               onClick={() => setNotice(null)}
               type="button"
