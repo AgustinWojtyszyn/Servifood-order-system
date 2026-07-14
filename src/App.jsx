@@ -41,19 +41,6 @@ const ExcelAnalysis = ENABLE_EXCEL_ANALYSIS
   ? lazy(() => import('./components/ExcelAnalysis'))
   : null
 
-const ADMIN_ROUTE_PATHS = [
-  '/cafeteria',
-  '/cafeteria/new',
-  '/cafeteria/order',
-  '/cafeteria/confirm',
-  '/admin',
-  '/daily-orders',
-  '/monthly-panel',
-  '/auditoria',
-  '/tendencias',
-  '/excel-analysis'
-]
-
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
   <div className="min-h-dvh flex items-center justify-center bg-linear-to-br from-primary-700 via-primary-800 to-primary-900">
@@ -65,25 +52,33 @@ const InternalLoader = () => (
 )
 
 const AuthenticatedLayoutRoute = ({ user, loading }) => {
-  const location = useLocation()
-
   return (
-    <Layout key={location.pathname} user={user} loading={loading}>
-      <Outlet key={location.pathname} />
+    <Layout user={user} loading={loading}>
+      <Outlet />
     </Layout>
   )
 }
 
 const AdminLayoutRoute = ({ user, loading }) => {
-  const location = useLocation()
-
   return (
     <RequireAdmin>
-      <Layout key={location.pathname} user={user} loading={loading}>
-        <Outlet key={location.pathname} />
+      <Layout user={user} loading={loading}>
+        <Outlet />
       </Layout>
     </RequireAdmin>
   )
+}
+
+const PublicOnlyRoute = ({ user, loading, children }) => {
+  if (loading) return <InternalLoader />
+  if (user) return <Navigate to="/dashboard" replace />
+  return children
+}
+
+const AuthenticatedRoute = ({ user, loading, children }) => {
+  if (loading) return <InternalLoader />
+  if (!user) return <Navigate to="/login" replace />
+  return children
 }
 
 const ExcelAnalysisDisabled = () => (
@@ -110,48 +105,63 @@ const ScreenMetricsListener = () => {
 
 const RouteSwitch = ({ user, loading }) => {
   const location = useLocation()
-  const isAdminPath = ADMIN_ROUTE_PATHS.includes(location.pathname)
-
-  if (loading && !isAdminPath) {
-    return <InternalLoader />
-  }
 
   return (
-    <Suspense key={location.pathname} fallback={<InternalLoader />}>
+    <Suspense fallback={<InternalLoader />}>
       <Routes location={location}>
         <Route path="/" element={
-          !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
+          <PublicOnlyRoute user={user} loading={loading}>
+            <LandingPage />
+          </PublicOnlyRoute>
         } />
         <Route path="/login" element={
-          !loading && (user ? <Navigate to="/dashboard" /> : <Login />)
+          <PublicOnlyRoute user={user} loading={loading}>
+            <Login />
+          </PublicOnlyRoute>
         } />
         <Route path="/register" element={
-          !loading && (user ? <Navigate to="/dashboard" /> : <Register />)
+          <PublicOnlyRoute user={user} loading={loading}>
+            <Register />
+          </PublicOnlyRoute>
         } />
         <Route path="/forgot-password" element={
-          !loading && (user ? <Navigate to="/dashboard" /> : <ForgotPassword />)
+          <PublicOnlyRoute user={user} loading={loading}>
+            <ForgotPassword />
+          </PublicOnlyRoute>
         } />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         <Route element={<AuthenticatedLayoutRoute user={user} loading={loading} />}>
           <Route path="/dashboard" element={
-            !loading && (user ? <Dashboard user={user} loading={loading} /> : <Navigate to="/login" />)
+            <AuthenticatedRoute user={user} loading={loading}>
+              <Dashboard user={user} loading={loading} />
+            </AuthenticatedRoute>
           } />
           <Route path="/order" element={
-            !loading && (user ? <OrderCompanySelector user={user} loading={loading} /> : <Navigate to="/login" />)
+            <AuthenticatedRoute user={user} loading={loading}>
+              <OrderCompanySelector user={user} loading={loading} />
+            </AuthenticatedRoute>
           } />
           <Route path="/order/:companySlug" element={
-            !loading && (user ? <OrderForm user={user} loading={loading} /> : <Navigate to="/login" />)
+            <AuthenticatedRoute user={user} loading={loading}>
+              <OrderForm user={user} loading={loading} />
+            </AuthenticatedRoute>
           } />
           <Route path="/edit-order" element={
-            !loading && (user ? <EditOrderForm user={user} loading={loading} /> : <Navigate to="/login" />)
+            <AuthenticatedRoute user={user} loading={loading}>
+              <EditOrderForm user={user} loading={loading} />
+            </AuthenticatedRoute>
           } />
           <Route path="/profile" element={
-            !loading && (user ? <Profile user={user} loading={loading} /> : <Navigate to="/login" />)
+            <AuthenticatedRoute user={user} loading={loading}>
+              <Profile user={user} loading={loading} />
+            </AuthenticatedRoute>
           } />
           <Route path="/orders/:orderId" element={
-            !loading && (user ? <OrderDetails user={user} loading={loading} /> : <Navigate to="/login" />)
+            <AuthenticatedRoute user={user} loading={loading}>
+              <OrderDetails user={user} loading={loading} />
+            </AuthenticatedRoute>
           } />
         </Route>
 
@@ -171,7 +181,9 @@ const RouteSwitch = ({ user, loading }) => {
         <Route
           path="*"
           element={
-            !loading && (
+            loading ? (
+              <InternalLoader />
+            ) : (
               <Navigate
                 to={user ? '/dashboard' : '/'}
                 replace
