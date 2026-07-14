@@ -23,106 +23,140 @@ const DashboardHeader = ({
   const allowEdit = headerOrder && canEditOrder ? canEditOrder(headerOrder) : false
 
   return (
-    <section className="relative isolate overflow-hidden rounded-3xl border border-sky-200/15 bg-slate-950 px-5 pt-5 pb-7 shadow-2xl shadow-slate-950/25 sm:px-7 sm:pt-6 sm:pb-8 lg:min-h-[240px] lg:max-h-[280px]">
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.28),transparent_30%),radial-gradient(circle_at_top_right,rgba(250,204,21,0.13),transparent_24%),linear-gradient(135deg,#061225_0%,#0b2d66_48%,#04111f_100%)]" />
-      <div className="absolute -top-24 left-8 -z-10 h-48 w-48 rounded-full bg-sky-300/16 blur-3xl" />
-      <div className="absolute -top-20 right-8 -z-10 h-44 w-44 rounded-full bg-white/10 blur-3xl" />
-      <div className="absolute left-0 top-0 -z-10 h-full w-32 bg-[linear-gradient(115deg,rgba(255,255,255,0.10),transparent_55%)]" />
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-        <div className="min-w-0">
-          <div className="mb-2 flex items-center gap-[10px] text-[clamp(18px,1.8vw,24px)] leading-none text-amber-300 drop-shadow">
-            <span>★</span>
-            <span>★</span>
-            <span>★</span>
-          </div>
-          <h1 className="text-3xl font-black leading-tight text-white drop-shadow sm:text-4xl lg:text-5xl">Panel Principal</h1>
-          <p className="mt-2 text-lg font-semibold text-sky-50 sm:text-xl">
-            ¡Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}!
-          </p>
-          <p className="mt-1 text-sm font-medium text-sky-100/85 sm:text-base">Aquí está el resumen de tus pedidos</p>
-          <div
-            className={`mt-4 inline-flex max-w-full flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold shadow-lg shadow-slate-950/15 sm:px-4 ${
-              countdownTone === 'urgent'
-                ? 'bg-red-500/20 border-red-200/70 text-red-50'
-                : countdownTone === 'warn'
-                ? 'bg-amber-500/20 border-amber-200/70 text-amber-50'
-                : 'bg-white/10 border-white/25 text-white'
-            }`}
-          >
-            <Clock className="h-4 w-4 shrink-0" />
-            <span>Horario pedidos: 09:00 a 22:00</span>
-            <span className="text-white/75">•</span>
-            <span>{countdownLabel} {countdownValue}</span>
-          </div>
-        </div>
-
-        <div className="flex min-w-0 flex-col items-start gap-4 lg:items-end">
-          <img
-            src={servifoodLogo}
-            alt="ServiFood"
-            className="h-16 w-auto object-contain drop-shadow-2xl sm:h-20 lg:h-24"
-          />
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row lg:justify-end">
-            <button
-              onClick={onRefresh}
-              disabled={refreshing}
-              className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition-all duration-200 ${
-                refreshing
-                  ? 'bg-slate-200 border-slate-200 cursor-not-allowed text-slate-500'
-                  : 'bg-white text-slate-950 border-white/40 hover:bg-sky-50'
+    <div className="space-y-4">
+      <section className="dashboardHero">
+        <div className="dashboardHeroContent">
+          <div className="dashboardHeroInfo">
+            <h1 className="dashboardHeroTitle">Panel Principal</h1>
+            <p className="dashboardHeroGreeting">
+              ¡Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}!
+            </p>
+            <p className="dashboardHeroDescription">Aquí está el resumen de tus pedidos</p>
+            <div
+              className={`dashboardHeroSchedule ${
+                countdownTone === 'urgent'
+                  ? 'dashboardHeroSchedule--urgent'
+                  : countdownTone === 'warn'
+                  ? 'dashboardHeroSchedule--warn'
+                  : ''
               }`}
             >
-              <RefreshCw className={`mr-2 h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Actualizando...' : 'Actualizar'}
-            </button>
-            <Link to="/order" className="inline-flex items-center justify-center rounded-xl border border-sky-200/70 bg-sky-500/15 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-950/25 transition-colors hover:bg-sky-500/25">
-              <Plus className="mr-2 h-5 w-5" />
-              Nuevo Pedido
-            </Link>
+              <Clock className="h-5 w-5 shrink-0" />
+              <span>Horario pedidos: 09:00 a 22:00</span>
+              <span>• {countdownLabel} {countdownValue}</span>
+            </div>
+            <div className="dashboardHeroActions">
+              <button
+                onClick={onRefresh}
+                disabled={refreshing}
+                className={`inline-flex items-center justify-center font-bold py-3 px-6 text-base rounded-xl border transition-all duration-200 ${
+                  refreshing
+                    ? 'bg-gray-200 border-gray-200 cursor-not-allowed text-gray-500'
+                    : 'bg-white text-gray-900 border-white/40 hover:bg-white/90'
+                }`}
+              >
+                <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Actualizando...' : 'Actualizar'}
+              </button>
+              <Link to="/order" className="inline-flex items-center justify-center w-full sm:w-auto text-white font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg rounded-xl border border-blue-300/70 bg-transparent hover:bg-blue-600/25 shadow-lg shadow-blue-900/25 transition-colors">
+                <Plus className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                Nuevo Pedido
+              </Link>
+            </div>
+          </div>
+
+          <div className="dashboardHeroBrand">
+            <img
+              src={servifoodLogo}
+              alt="ServiFood"
+              className="dashboardHeroLogo"
+            />
+            <div className="dashboardHeroStars" aria-label="Tres estrellas">
+              <span>★</span>
+              <span>★</span>
+              <span>★</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-5 grid gap-3 rounded-2xl border border-white/20 bg-white/[0.08] p-3 backdrop-blur sm:p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-        <div className="min-w-0 space-y-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-100/70">Estado del pedido</p>
-          {headerOrder ? (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-lg font-black text-white sm:text-xl">Pedido en curso</p>
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-950">
-                  {headerStatus}
-                </span>
-                <span className="text-xs font-semibold text-sky-100/90">
-                  Pedido #{String(headerOrder.id).slice(-8)}
-                </span>
-              </div>
-              <p className="text-sm font-semibold text-white/90">
-                {headerSummary}
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-sky-100/90" />
-                <p className="text-xl font-black text-white sm:text-2xl">Sin pedido activo</p>
-              </div>
-              <p className="text-sm font-semibold text-white/80">
-                Creá tu pedido para hoy en segundos
-              </p>
-            </>
-          )}
+        <div className="dashboardHeroFlag" aria-label="Bandera de Argentina">
+          <div className="dashboardHeroFlagStripe dashboardHeroFlagStripe--sky" />
+          <div className="dashboardHeroFlagStripe dashboardHeroFlagStripe--white">
+            <svg
+              className="dashboardHeroSun"
+              viewBox="0 0 64 64"
+              role="img"
+              aria-label="Sol de Mayo"
+            >
+              <g fill="none" stroke="#d89b12" strokeLinecap="round" strokeWidth="3">
+                <path d="M32 4v9" />
+                <path d="M32 51v9" />
+                <path d="M4 32h9" />
+                <path d="M51 32h9" />
+                <path d="m12.2 12.2 6.4 6.4" />
+                <path d="m45.4 45.4 6.4 6.4" />
+                <path d="m51.8 12.2-6.4 6.4" />
+                <path d="m18.6 45.4-6.4 6.4" />
+                <path d="M20.4 6.8 24 15" />
+                <path d="M40 49l3.6 8.2" />
+                <path d="M6.8 43.6 15 40" />
+                <path d="M49 24l8.2-3.6" />
+                <path d="M43.6 6.8 40 15" />
+                <path d="M24 49l-3.6 8.2" />
+                <path d="M6.8 20.4 15 24" />
+                <path d="M49 40l8.2 3.6" />
+              </g>
+              <circle cx="32" cy="32" r="13" fill="#f6c445" stroke="#d89b12" strokeWidth="2" />
+              <path d="M24 31c2-3 5-4 8-4s6 1 8 4" fill="none" stroke="#9b6b08" strokeLinecap="round" strokeWidth="2" />
+              <circle cx="27" cy="33" r="1.5" fill="#7a5206" />
+              <circle cx="37" cy="33" r="1.5" fill="#7a5206" />
+              <path d="M27 39c3 2 7 2 10 0" fill="none" stroke="#9b6b08" strokeLinecap="round" strokeWidth="2" />
+            </svg>
+          </div>
+          <div className="dashboardHeroFlagStripe dashboardHeroFlagStripe--sky" />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+      </section>
+
+      <div className="rounded-2xl border border-white/30 bg-white/10 p-4 sm:p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wide text-white/70 font-semibold">Estado del pedido</p>
+            {headerOrder ? (
+              <>
+                <p className="text-xl sm:text-2xl font-black text-white">Pedido en curso</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-gray-900">
+                    {headerStatus}
+                  </span>
+                  <span className="text-xs sm:text-sm text-white/90 font-semibold">
+                    Pedido #{String(headerOrder.id).slice(-8)}
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base text-white font-semibold">
+                  {headerSummary}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-white/90" />
+                  <p className="text-3xl sm:text-4xl font-black text-white">Sin pedido activo</p>
+                </div>
+                <p className="text-base sm:text-lg text-white/90 font-semibold mt-3">
+                  Creá tu pedido para hoy en segundos
+                </p>
+              </>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={onOpenChangeCompany}
               disabled={!canOpenChangeCompany}
               title={changeCompanyHint || ''}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-colors ${
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-colors ${
                 canOpenChangeCompany
-                  ? 'bg-sky-500 text-white border-sky-400 hover:bg-sky-600'
+                  ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
                   : 'bg-slate-200/25 text-slate-200 border-slate-200/30 cursor-not-allowed'
               }`}
             >
@@ -135,9 +169,9 @@ const DashboardHeader = ({
                   type="button"
                   onClick={() => headerOrder && onEditOrder && onEditOrder(headerOrder)}
                   disabled={!allowEdit}
-                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-colors ${
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-colors ${
                     allowEdit
-                      ? 'bg-white text-slate-950 border-white hover:bg-sky-50'
+                      ? 'bg-white text-gray-900 border-white hover:bg-white/90'
                       : 'bg-white/40 text-white/70 border-white/30 cursor-not-allowed'
                   }`}
                 >
@@ -148,7 +182,7 @@ const DashboardHeader = ({
                   type="button"
                   onClick={() => headerOrder && onDeleteOrder && onDeleteOrder(headerOrder)}
                   disabled={!allowEdit}
-                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-colors ${
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-colors ${
                     allowEdit
                       ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
                       : 'bg-red-100/60 text-red-200 border-red-100/60 cursor-not-allowed'
@@ -159,19 +193,10 @@ const DashboardHeader = ({
                 </button>
               </>
             )}
-        </div>
-      </div>
-
-      <div className="absolute inset-x-0 bottom-0 h-3 overflow-hidden rounded-b-3xl" aria-hidden="true">
-        <div className="grid h-full grid-rows-3">
-          <div className="bg-sky-400" />
-          <div className="relative bg-white">
-            <span className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400 shadow-[0_0_0_2px_rgba(251,191,36,0.20),0_0_14px_rgba(251,191,36,0.65)]" />
           </div>
-          <div className="bg-sky-400" />
         </div>
       </div>
-    </section>
+    </div>
   )
 }
 
