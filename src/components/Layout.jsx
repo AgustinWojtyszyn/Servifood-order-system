@@ -129,15 +129,15 @@ const Layout = ({ children, user, loading }) => {
         {/* Overlay para mobile */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden"
+            className="fixed inset-0 z-[900] bg-black bg-opacity-40 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
         <aside
           className={`
-            fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
+            fixed left-0 top-0 z-[1000] h-[100dvh] w-[min(85vw,320px)] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            md:translate-x-0 md:static md:inset-0 border-r-4 border-secondary-500
+            md:translate-x-0 md:static md:inset-0 md:h-auto md:w-64 border-r-4 border-secondary-500
           `}
           style={{ pointerEvents: sidebarOpen || window.innerWidth >= 768 ? 'auto' : 'none' }}
         >
@@ -155,7 +155,7 @@ const Layout = ({ children, user, loading }) => {
               <X className="h-7 w-7" />
             </button>
           </div>
-          <nav className="mt-8 px-4 bg-white flex flex-col flex-1 min-h-0">
+          <nav className="mt-8 px-4 bg-white flex flex-col flex-1 min-h-0 overflow-y-auto">
             <ul className="space-y-2 flex-1 bg-white">
               {menuItems.map((item) => {
                 const Icon = item.icon
