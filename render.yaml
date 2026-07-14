@@ -16,6 +16,12 @@ services:
       - path: /assets/*.css
         name: Cache-Control
         value: public, max-age=0, must-revalidate
+      - path: /service-worker.js
+        name: Cache-Control
+        value: no-store, max-age=0
+      - path: /sw.js
+        name: Cache-Control
+        value: no-store, max-age=0
       - path: /assets/*.jpg
         name: Cache-Control
         value: public, max-age=31536000, immutable

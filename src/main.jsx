@@ -9,6 +9,20 @@ import AppErrorBoundary from './components/ui/ErrorBoundary'
 
 // No limpiar localStorage ni sessionStorage para mantener la sesión activa
 
+// La app ya no usa service worker. Si quedó uno de un deploy anterior,
+// puede seguir entregando bundles viejos y desincronizar el router.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations()
+    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+    .catch(() => {})
+}
+
+if ('caches' in window) {
+  caches.keys()
+    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+    .catch(() => {})
+}
+
 // Diagnóstico de arranque en desarrollo
 if (import.meta.env.DEV) {
   console.log('[App] Boot start', {
