@@ -51,7 +51,7 @@ const InternalLoader = () => (
   </div>
 )
 
-const AuthenticatedLayoutRoute = ({ user, loading }) => {
+const AppLayoutRoute = ({ user, loading }) => {
   return (
     <Layout user={user} loading={loading}>
       <Outlet />
@@ -59,12 +59,10 @@ const AuthenticatedLayoutRoute = ({ user, loading }) => {
   )
 }
 
-const AdminLayoutRoute = ({ user, loading }) => {
+const AdminGuardRoute = () => {
   return (
     <RequireAdmin>
-      <Layout user={user} loading={loading}>
-        <Outlet />
-      </Layout>
+      <Outlet />
     </RequireAdmin>
   )
 }
@@ -132,7 +130,7 @@ const RouteSwitch = ({ user, loading }) => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        <Route element={<AuthenticatedLayoutRoute user={user} loading={loading} />}>
+        <Route element={<AppLayoutRoute user={user} loading={loading} />}>
           <Route path="/dashboard" element={
             <AuthenticatedRoute user={user} loading={loading}>
               <Dashboard user={user} loading={loading} />
@@ -163,19 +161,19 @@ const RouteSwitch = ({ user, loading }) => {
               <OrderDetails user={user} loading={loading} />
             </AuthenticatedRoute>
           } />
-        </Route>
 
-        <Route element={<AdminLayoutRoute user={user} loading={loading} />}>
-          <Route path="/cafeteria" element={<CafeteriaDashboardPage user={user} loading={loading} />} />
-          <Route path="/cafeteria/new" element={<CafeteriaNewOrderPage user={user} loading={loading} />} />
-          <Route path="/cafeteria/order" element={<CafeteriaCurrentOrderPage user={user} loading={loading} />} />
-          <Route path="/cafeteria/confirm" element={<CafeteriaSuccessPage user={user} loading={loading} />} />
-          <Route path="/admin" element={<AdminPanel loading={loading} />} />
-          <Route path="/daily-orders" element={<DailyOrders user={user} loading={loading} />} />
-          <Route path="/monthly-panel" element={<MonthlyPanel user={user} loading={loading} />} />
-          <Route path="/auditoria" element={<AuditLogs user={user} loading={loading} />} />
-          <Route path="/tendencias" element={<TendenciasPage />} />
-          <Route path="/excel-analysis" element={ENABLE_EXCEL_ANALYSIS ? <ExcelAnalysis /> : <ExcelAnalysisDisabled />} />
+          <Route element={<AdminGuardRoute />}>
+            <Route path="/cafeteria" element={<CafeteriaDashboardPage user={user} loading={loading} />} />
+            <Route path="/cafeteria/new" element={<CafeteriaNewOrderPage user={user} loading={loading} />} />
+            <Route path="/cafeteria/order" element={<CafeteriaCurrentOrderPage user={user} loading={loading} />} />
+            <Route path="/cafeteria/confirm" element={<CafeteriaSuccessPage user={user} loading={loading} />} />
+            <Route path="/admin" element={<AdminPanel loading={loading} />} />
+            <Route path="/daily-orders" element={<DailyOrders user={user} loading={loading} />} />
+            <Route path="/monthly-panel" element={<MonthlyPanel user={user} loading={loading} />} />
+            <Route path="/auditoria" element={<AuditLogs user={user} loading={loading} />} />
+            <Route path="/tendencias" element={<TendenciasPage />} />
+            <Route path="/excel-analysis" element={ENABLE_EXCEL_ANALYSIS ? <ExcelAnalysis /> : <ExcelAnalysisDisabled />} />
+          </Route>
         </Route>
 
         <Route
