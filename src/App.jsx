@@ -68,7 +68,7 @@ const AuthenticatedLayoutRoute = ({ user, loading }) => {
   const location = useLocation()
 
   return (
-    <Layout user={user} loading={loading}>
+    <Layout key={location.pathname} user={user} loading={loading}>
       <Outlet key={location.pathname} />
     </Layout>
   )
@@ -79,7 +79,7 @@ const AdminLayoutRoute = ({ user, loading }) => {
 
   return (
     <RequireAdmin>
-      <Layout user={user} loading={loading}>
+      <Layout key={location.pathname} user={user} loading={loading}>
         <Outlet key={location.pathname} />
       </Layout>
     </RequireAdmin>
