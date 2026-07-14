@@ -124,6 +124,16 @@ const Layout = ({ children, user, loading }) => {
     <RequireUser user={user} loading={loading}>
       <OverlayLockProvider registerLock={registerExternalLock}>
       <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-dvh w-full">
+      {!sidebarOpen && (
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          className="fixed left-4 top-4 z-[1000] md:hidden p-2 rounded-md text-white bg-blue-900/90 hover:bg-blue-900 shadow-lg"
+          aria-label="Abrir menú"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+      )}
       <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
         {/* Overlay para mobile */}

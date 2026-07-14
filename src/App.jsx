@@ -64,19 +64,27 @@ const InternalLoader = () => (
   </div>
 )
 
-const AuthenticatedLayoutRoute = ({ user, loading }) => (
-  <Layout user={user} loading={loading}>
-    <Outlet />
-  </Layout>
-)
+const AuthenticatedLayoutRoute = ({ user, loading }) => {
+  const location = useLocation()
 
-const AdminLayoutRoute = ({ user, loading }) => (
-  <RequireAdmin>
+  return (
     <Layout user={user} loading={loading}>
-      <Outlet />
+      <Outlet key={location.pathname} />
     </Layout>
-  </RequireAdmin>
-)
+  )
+}
+
+const AdminLayoutRoute = ({ user, loading }) => {
+  const location = useLocation()
+
+  return (
+    <RequireAdmin>
+      <Layout user={user} loading={loading}>
+        <Outlet key={location.pathname} />
+      </Layout>
+    </RequireAdmin>
+  )
+}
 
 const ExcelAnalysisDisabled = () => (
   <div className="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center px-4 py-10">
