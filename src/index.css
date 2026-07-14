@@ -280,8 +280,8 @@
 .dashboardHeroLogo {
   display: block;
   width: auto;
-  height: clamp(54px, 5vw, 76px);
-  max-width: 110px;
+  height: clamp(85px, 7vw, 115px);
+  max-width: 150px;
   object-fit: contain;
 }
 
@@ -292,7 +292,7 @@
   gap: 10px;
   margin-top: 10px;
   color: #f6c445;
-  font-size: 22px;
+  font-size: 30px;
   line-height: 1;
 }
 
@@ -336,7 +336,7 @@
   }
 
   .dashboardHeroLogo {
-    height: 54px;
+    height: 78px;
   }
 
   .dashboardHeroActions {
