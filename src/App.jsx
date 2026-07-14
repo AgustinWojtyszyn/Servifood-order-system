@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { useAuthContext } from './contexts/authContextValue'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import SplashScreen from './components/SplashScreen'
 import './App.css'
 
@@ -83,7 +83,6 @@ const ExcelAnalysisDisabled = () => (
 
 function App() {
   const { user, loading } = useAuthContext()
-  const isAdminPath = ADMIN_ROUTE_PATHS.includes(window.location.pathname)
 
   const ScreenMetricsListener = () => {
     useScreenMetrics()
@@ -222,19 +221,17 @@ function App() {
     }
   }, [])
 
-  return (
-    loading && !isAdminPath ? (
-      <InternalLoader />
-    ) : (
-      <Router>
-        <ScreenMetricsListener />
-        <NoticeHost />
-        <ConfirmHost />
-        <div
-          className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
-        >
-          <Suspense fallback={<InternalLoader />}>
-            <Routes>
+  const RouteSwitch = () => {
+    const location = useLocation()
+    const isAdminPath = ADMIN_ROUTE_PATHS.includes(location.pathname)
+
+    if (loading && !isAdminPath) {
+      return <InternalLoader />
+    }
+
+    return (
+      <Suspense fallback={<InternalLoader />}>
+            <Routes location={location} key={location.pathname}>
             <Route path="/" element={
               !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
             } />
@@ -311,9 +308,20 @@ function App() {
             />
             </Routes>
           </Suspense>
+    )
+  }
+
+  return (
+      <Router>
+        <ScreenMetricsListener />
+        <NoticeHost />
+        <ConfirmHost />
+        <div
+          className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
+        >
+          <RouteSwitch />
         </div>
       </Router>
-    )
   )
 }
 
