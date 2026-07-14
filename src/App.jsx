@@ -10,29 +10,29 @@ import Login from './components/Login'
 import LandingPage from './components/LandingPage'
 import { useScreenMetrics } from './hooks/useScreenMetrics'
 import AdminPanel from './components/AdminPanel'
+import Dashboard from './components/Dashboard'
+import DailyOrders from './components/DailyOrders'
+import OrderCompanySelector from './components/OrderCompanySelector'
 import NoticeHost from './components/NoticeHost'
 import ConfirmHost from './components/ConfirmHost'
 import RequireAdmin from './components/RequireAdmin'
+import CafeteriaDashboardPage from './components/cafeteria/CafeteriaDashboardPage'
+import TendenciasPage from './pages/TendenciasPage'
 
 // Lazy loading de componentes (carga diferida)
 const Register = lazy(() => import('./components/Register'))
 const ForgotPassword = lazy(() => import('./components/ForgotPassword'))
 const ResetPassword = lazy(() => import('./components/ResetPassword'))
 const AuthCallback = lazy(() => import('./pages/AuthCallback'))
-const Dashboard = lazy(() => import('./components/Dashboard'))
-const DailyOrders = lazy(() => import('./components/DailyOrders'))
-const OrderCompanySelector = lazy(() => import('./components/OrderCompanySelector'))
 const OrderForm = lazy(() => import('./components/OrderForm'))
 const EditOrderForm = lazy(() => import('./components/EditOrderForm'))
 const Profile = lazy(() => import('./components/Profile'))
 const MonthlyPanel = lazy(() => import('./components/MonthlyPanel'))
 const AuditLogs = lazy(() => import('./components/AuditLogs'))
 const OrderDetails = lazy(() => import('./components/OrderDetails'))
-const CafeteriaDashboardPage = lazy(() => import('./components/cafeteria/CafeteriaDashboardPage'))
 const CafeteriaNewOrderPage = lazy(() => import('./components/cafeteria/CafeteriaNewOrderPage'))
 const CafeteriaCurrentOrderPage = lazy(() => import('./components/cafeteria/CafeteriaCurrentOrderPage'))
 const CafeteriaSuccessPage = lazy(() => import('./components/cafeteria/CafeteriaSuccessPage'))
-const TendenciasPage = lazy(() => import('./pages/TendenciasPage'))
 
 // Excel Analysis queda deshabilitado por defecto mientras Render sirve solo el
 // frontend estatico. Reactivar unicamente al migrarlo a Edge Function/backend real.
