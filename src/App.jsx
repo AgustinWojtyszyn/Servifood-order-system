@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { useAuthContext } from './contexts/authContextValue'
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import SplashScreen from './components/SplashScreen'
 import './App.css'
 
@@ -64,6 +64,20 @@ const InternalLoader = () => (
   </div>
 )
 
+const AuthenticatedLayoutRoute = ({ user, loading }) => (
+  <Layout user={user} loading={loading}>
+    <Outlet />
+  </Layout>
+)
+
+const AdminLayoutRoute = ({ user, loading }) => (
+  <RequireAdmin>
+    <Layout user={user} loading={loading}>
+      <Outlet />
+    </Layout>
+  </RequireAdmin>
+)
+
 const ExcelAnalysisDisabled = () => (
   <div className="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center px-4 py-10">
     <section className="w-full rounded-lg border border-white/20 bg-white p-6 text-slate-900 shadow-xl sm:p-8">
@@ -81,21 +95,89 @@ const ExcelAnalysisDisabled = () => (
   </div>
 )
 
-function App() {
-  const { user, loading } = useAuthContext()
+const ScreenMetricsListener = () => {
+  useScreenMetrics()
+  return null
+}
 
-  const ScreenMetricsListener = () => {
-    useScreenMetrics()
-    return null
+const RouteSwitch = ({ user, loading }) => {
+  const location = useLocation()
+  const isAdminPath = ADMIN_ROUTE_PATHS.includes(location.pathname)
+
+  if (loading && !isAdminPath) {
+    return <InternalLoader />
   }
 
-  const renderAdminRoute = (content) => (
-    <RequireAdmin>
-      <Layout user={user} loading={loading}>
-        {content}
-      </Layout>
-    </RequireAdmin>
+  return (
+    <Suspense key={location.pathname} fallback={<InternalLoader />}>
+      <Routes location={location}>
+        <Route path="/" element={
+          !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
+        } />
+        <Route path="/login" element={
+          !loading && (user ? <Navigate to="/dashboard" /> : <Login />)
+        } />
+        <Route path="/register" element={
+          !loading && (user ? <Navigate to="/dashboard" /> : <Register />)
+        } />
+        <Route path="/forgot-password" element={
+          !loading && (user ? <Navigate to="/dashboard" /> : <ForgotPassword />)
+        } />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+
+        <Route element={<AuthenticatedLayoutRoute user={user} loading={loading} />}>
+          <Route path="/dashboard" element={
+            !loading && (user ? <Dashboard user={user} loading={loading} /> : <Navigate to="/login" />)
+          } />
+          <Route path="/order" element={
+            !loading && (user ? <OrderCompanySelector user={user} loading={loading} /> : <Navigate to="/login" />)
+          } />
+          <Route path="/order/:companySlug" element={
+            !loading && (user ? <OrderForm user={user} loading={loading} /> : <Navigate to="/login" />)
+          } />
+          <Route path="/edit-order" element={
+            !loading && (user ? <EditOrderForm user={user} loading={loading} /> : <Navigate to="/login" />)
+          } />
+          <Route path="/profile" element={
+            !loading && (user ? <Profile user={user} loading={loading} /> : <Navigate to="/login" />)
+          } />
+          <Route path="/orders/:orderId" element={
+            !loading && (user ? <OrderDetails user={user} loading={loading} /> : <Navigate to="/login" />)
+          } />
+        </Route>
+
+        <Route element={<AdminLayoutRoute user={user} loading={loading} />}>
+          <Route path="/cafeteria" element={<CafeteriaDashboardPage user={user} loading={loading} />} />
+          <Route path="/cafeteria/new" element={<CafeteriaNewOrderPage user={user} loading={loading} />} />
+          <Route path="/cafeteria/order" element={<CafeteriaCurrentOrderPage user={user} loading={loading} />} />
+          <Route path="/cafeteria/confirm" element={<CafeteriaSuccessPage user={user} loading={loading} />} />
+          <Route path="/admin" element={<AdminPanel loading={loading} />} />
+          <Route path="/daily-orders" element={<DailyOrders user={user} loading={loading} />} />
+          <Route path="/monthly-panel" element={<MonthlyPanel user={user} loading={loading} />} />
+          <Route path="/auditoria" element={<AuditLogs user={user} loading={loading} />} />
+          <Route path="/tendencias" element={<TendenciasPage />} />
+          <Route path="/excel-analysis" element={ENABLE_EXCEL_ANALYSIS ? <ExcelAnalysis /> : <ExcelAnalysisDisabled />} />
+        </Route>
+
+        <Route
+          path="*"
+          element={
+            !loading && (
+              <Navigate
+                to={user ? '/dashboard' : '/'}
+                replace
+              />
+            )
+          }
+        />
+      </Routes>
+    </Suspense>
   )
+}
+
+function App() {
+  const { user, loading } = useAuthContext()
 
   useEffect(() => {
     if (!import.meta.env.DEV) return
@@ -221,96 +303,6 @@ function App() {
     }
   }, [])
 
-  const RouteSwitch = () => {
-    const location = useLocation()
-    const isAdminPath = ADMIN_ROUTE_PATHS.includes(location.pathname)
-
-    if (loading && !isAdminPath) {
-      return <InternalLoader />
-    }
-
-    return (
-      <Suspense fallback={<InternalLoader />}>
-            <Routes location={location} key={location.pathname}>
-            <Route path="/" element={
-              !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
-            } />
-            <Route path="/dashboard" element={
-              !loading && (user ? <Layout user={user} loading={loading}><Dashboard user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-            } />
-            <Route path="/login" element={
-              !loading && (user ? <Navigate to="/dashboard" /> : <Login />)
-            } />
-            <Route path="/register" element={
-              !loading && (user ? <Navigate to="/dashboard" /> : <Register />)
-            } />
-            <Route path="/forgot-password" element={
-              !loading && (user ? <Navigate to="/dashboard" /> : <ForgotPassword />)
-            } />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/order" element={
-              !loading && (user ? <Layout user={user} loading={loading}><OrderCompanySelector user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-            } />
-            <Route path="/order/:companySlug" element={
-              !loading && (user ? <Layout user={user} loading={loading}><OrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-            } />
-            <Route path="/cafeteria" element={
-              renderAdminRoute(<CafeteriaDashboardPage user={user} loading={loading} />)
-            } />
-            <Route path="/cafeteria/new" element={
-              renderAdminRoute(<CafeteriaNewOrderPage user={user} loading={loading} />)
-            } />
-            <Route path="/cafeteria/order" element={
-              renderAdminRoute(<CafeteriaCurrentOrderPage user={user} loading={loading} />)
-            } />
-            <Route path="/cafeteria/confirm" element={
-              renderAdminRoute(<CafeteriaSuccessPage user={user} loading={loading} />)
-            } />
-            <Route path="/edit-order" element={
-              !loading && (user ? <Layout user={user} loading={loading}><EditOrderForm user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-            } />
-            <Route path="/profile" element={
-              !loading && (user ? <Layout user={user} loading={loading}><Profile user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-            } />
-            <Route path="/admin" element={
-              renderAdminRoute(<AdminPanel loading={loading} />)
-            } />
-            <Route path="/daily-orders" element={
-              renderAdminRoute(<DailyOrders user={user} loading={loading} />)
-            } />
-            <Route path="/monthly-panel" element={
-              renderAdminRoute(<MonthlyPanel user={user} loading={loading} />)
-            } />
-            <Route path="/orders/:orderId" element={
-              !loading && (user ? <Layout user={user} loading={loading}><OrderDetails user={user} loading={loading} /></Layout> : <Navigate to="/login" />)
-            } />
-            <Route path="/auditoria" element={
-              renderAdminRoute(<AuditLogs user={user} loading={loading} />)
-            } />
-            <Route path="/tendencias" element={
-              renderAdminRoute(<TendenciasPage />)
-            } />
-            <Route path="/excel-analysis" element={
-              renderAdminRoute(ENABLE_EXCEL_ANALYSIS ? <ExcelAnalysis /> : <ExcelAnalysisDisabled />)
-            } />
-            {/* Redirección global para rutas inexistentes */}
-            <Route
-              path="*"
-              element={
-                !loading && (
-                  <Navigate
-                    to={user ? '/dashboard' : '/'}
-                    replace
-                  />
-                )
-              }
-            />
-            </Routes>
-          </Suspense>
-    )
-  }
-
   return (
       <Router>
         <ScreenMetricsListener />
@@ -319,7 +311,7 @@ function App() {
         <div
           className="app-shell bg-linear-to-br from-primary-700 via-primary-800 to-primary-900 min-h-dvh min-w-0 w-full overflow-x-hidden overflow-y-visible"
         >
-          <RouteSwitch />
+          <RouteSwitch user={user} loading={loading} />
         </div>
       </Router>
   )
