@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList, BarChart3 } from 'lucide-react'
-import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
 import cafeteriaLogo from '../assets/food-delivery (1).png'
 import Tutorial from './Tutorial'
 import AdminTutorial from './AdminTutorial'
@@ -125,33 +124,6 @@ const Layout = ({ children, user, loading }) => {
     <RequireUser user={user} loading={loading}>
       <OverlayLockProvider registerLock={registerExternalLock}>
       <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-dvh w-full">
-      {/* Header */}
-      <header className="bg-linear-to-r from-blue-800 to-blue-900 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex flex-row items-center min-h-36 sm:min-h-32 py-5 sm:py-4 w-full justify-center relative">
-            <img
-              src={servifoodLogo}
-              alt="Servifood Logo"
-              className="max-h-40 sm:max-h-48 w-auto object-contain"
-              style={{height: '120px', maxHeight: '160px', display: 'block'}}
-            />
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 md:hidden mr-1 absolute left-2 top-1/2 transform -translate-y-1/2"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors absolute right-2 top-1/2 transform -translate-y-1/2"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-        <div className="argentina-header-band" aria-label="Bandera de Argentina" />
-      </header>
-
       <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
         {/* Overlay para mobile */}
