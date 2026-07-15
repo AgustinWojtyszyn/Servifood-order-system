@@ -9,19 +9,26 @@ import AppErrorBoundary from './components/ui/ErrorBoundary'
 
 // No limpiar localStorage ni sessionStorage para mantener la sesión activa
 
-// La app ya no usa service worker. Si quedó uno de un deploy anterior,
-// puede seguir entregando bundles viejos y desincronizar el router.
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations()
-    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
-    .catch(() => {})
+const clearLegacyPwaState = () => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+      .catch(() => {})
+  }
+
+  if ('caches' in window) {
+    const appCachePattern = /(servifood|servi-food|food-order|food-order-app|workbox|precache|runtime|vite)/i
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => appCachePattern.test(key))
+          .map((key) => caches.delete(key))
+      ))
+      .catch(() => {})
+  }
 }
 
-if ('caches' in window) {
-  caches.keys()
-    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-    .catch(() => {})
-}
+clearLegacyPwaState()
 
 // Diagnóstico de arranque en desarrollo
 if (import.meta.env.DEV) {
