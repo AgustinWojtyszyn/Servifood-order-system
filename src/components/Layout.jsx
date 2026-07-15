@@ -198,7 +198,17 @@ const Layout = ({ children, user, loading }) => {
                         }
                         return classes
                       }}
-                      onClick={() => setSidebarOpen(false)}
+                      onClick={(event) => {
+                        setSidebarOpen(false)
+
+                        if (
+                          location.pathname === '/admin' &&
+                          item.path !== '/admin'
+                        ) {
+                          event.preventDefault()
+                          window.location.assign(item.path)
+                        }
+                      }}
                     >
                       {item.logoSrc ? (
                         <img
