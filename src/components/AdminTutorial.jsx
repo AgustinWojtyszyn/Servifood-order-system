@@ -1,31 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useState } from 'react'
 import { X, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
 import { useOverlayLock } from '../contexts/overlayLockContext'
 import { ADMIN_TUTORIAL_STEPS } from './adminTutorial/adminTutorialSteps'
 
 const AdminTutorial = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0)
-  const location = useLocation()
-  const openedAtPathRef = useRef(null)
   useOverlayLock(isOpen)
-
-  useEffect(() => {
-    if (!isOpen) {
-      openedAtPathRef.current = null
-      return
-    }
-
-    if (openedAtPathRef.current === null) {
-      openedAtPathRef.current = location.pathname
-      return
-    }
-
-    if (openedAtPathRef.current !== location.pathname) {
-      setCurrentStep(0)
-      onClose()
-    }
-  }, [isOpen, location.pathname, onClose])
 
   if (!isOpen) return null
 

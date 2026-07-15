@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { auth } from '../supabaseClient'
 import { Menu, X, User, LogOut, ShoppingCart, Settings, HelpCircle, UserCircle, Calendar, MessageCircle, ClipboardList, BarChart3 } from 'lucide-react'
 import cafeteriaLogo from '../assets/food-delivery (1).png'
@@ -18,6 +18,7 @@ const Layout = ({ children, user, loading }) => {
   const [externalLocks, setExternalLocks] = useState(0)
   const { isAdmin } = useAuthContext()
   const navigate = useNavigate()
+  const location = useLocation()
   // Helpers de diagnóstico disponibles solo en dev o con flag explícito.
   const _isScrollDebug = useMemo(() => {
     if (typeof import.meta === 'undefined') return false
@@ -30,10 +31,17 @@ const Layout = ({ children, user, loading }) => {
     setExternalLocks((count) => count + 1)
     return () => setExternalLocks((count) => Math.max(0, count - 1))
   }, [])
-  const isAnyOverlayOpen = sidebarOpen || tutorialOpen || adminTutorialOpen || externalLocks > 0
+  const isAdminTutorialVisible = adminTutorialOpen && location.pathname === '/admin'
+  const isAnyOverlayOpen = sidebarOpen || tutorialOpen || isAdminTutorialVisible || externalLocks > 0
 
   // Scroll lock centralizado para cualquier overlay (sidebar, tutoriales o locks de hijos).
   useScrollLock(isAnyOverlayOpen)
+
+  useEffect(() => {
+    if (location.pathname !== '/admin' && adminTutorialOpen) {
+      setAdminTutorialOpen(false)
+    }
+  }, [location.pathname, adminTutorialOpen])
 
   // Herramienta de diagnóstico (dev) para identificar contenedores que generan barras de scroll internas.
   useEffect(() => {
@@ -257,7 +265,7 @@ const Layout = ({ children, user, loading }) => {
 
       {/* Tutorial Modals */}
       <Tutorial isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
-      <AdminTutorial isOpen={adminTutorialOpen} onClose={() => setAdminTutorialOpen(false)} />
+      <AdminTutorial isOpen={isAdminTutorialVisible} onClose={() => setAdminTutorialOpen(false)} />
 
       {/* Support Button */}
       <SupportButton />
