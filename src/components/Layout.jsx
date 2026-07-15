@@ -128,7 +128,7 @@ const Layout = ({ children, user, loading }) => {
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
-          className="fixed left-4 top-4 z-[1000] md:hidden p-2 rounded-md text-white bg-blue-900/90 hover:bg-blue-900 shadow-lg"
+          className="fixed left-4 top-4 z-1000 md:hidden p-2 rounded-md text-white bg-blue-900/90 hover:bg-blue-900 shadow-lg"
           aria-label="Abrir menú"
         >
           <Menu className="h-6 w-6" />
@@ -139,13 +139,13 @@ const Layout = ({ children, user, loading }) => {
         {/* Overlay para mobile */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-[900] bg-black bg-opacity-40 md:hidden"
+            className="fixed inset-0 z-900 bg-black bg-opacity-40 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
         <aside
           className={`
-            fixed left-0 top-0 z-[1000] h-[100dvh] w-[min(85vw,320px)] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
+            fixed left-0 top-0 z-1000 h-dvh w-[min(85vw,320px)] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             md:translate-x-0 md:static md:inset-0 md:h-auto md:w-64 border-r-4 border-secondary-500
           `}
