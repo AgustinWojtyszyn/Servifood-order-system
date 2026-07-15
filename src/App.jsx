@@ -41,6 +41,19 @@ const ExcelAnalysis = ENABLE_EXCEL_ANALYSIS
   ? lazy(() => import('./components/ExcelAnalysis'))
   : null
 
+const ADMIN_ROUTE_PATHS = [
+  '/cafeteria',
+  '/cafeteria/new',
+  '/cafeteria/order',
+  '/cafeteria/confirm',
+  '/admin',
+  '/daily-orders',
+  '/monthly-panel',
+  '/auditoria',
+  '/tendencias',
+  '/excel-analysis'
+]
+
 // Componente de carga interno (para Suspense)
 const InternalLoader = () => (
   <div className="min-h-dvh flex items-center justify-center bg-linear-to-br from-primary-700 via-primary-800 to-primary-900">
@@ -51,18 +64,24 @@ const InternalLoader = () => (
   </div>
 )
 
-const AppLayoutRoute = ({ user, loading }) => {
+const AuthenticatedLayoutRoute = ({ user, loading }) => {
+  const location = useLocation()
+
   return (
-    <Layout user={user} loading={loading}>
-      <Outlet />
+    <Layout key={location.pathname} user={user} loading={loading}>
+      <Outlet key={location.pathname} />
     </Layout>
   )
 }
 
-const AdminGuardRoute = () => {
+const AdminLayoutRoute = ({ user, loading }) => {
+  const location = useLocation()
+
   return (
     <RequireAdmin>
-      <Outlet />
+      <Layout key={location.pathname} user={user} loading={loading}>
+        <Outlet key={location.pathname} />
+      </Layout>
     </RequireAdmin>
   )
 }
@@ -103,9 +122,14 @@ const ScreenMetricsListener = () => {
 
 const RouteSwitch = ({ user, loading }) => {
   const location = useLocation()
+  const isAdminPath = ADMIN_ROUTE_PATHS.includes(location.pathname)
+
+  if (loading && !isAdminPath) {
+    return <InternalLoader />
+  }
 
   return (
-    <Suspense fallback={<InternalLoader />}>
+    <Suspense key={location.pathname} fallback={<InternalLoader />}>
       <Routes location={location}>
         <Route path="/" element={
           <PublicOnlyRoute user={user} loading={loading}>
@@ -130,7 +154,7 @@ const RouteSwitch = ({ user, loading }) => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        <Route element={<AppLayoutRoute user={user} loading={loading} />}>
+        <Route element={<AuthenticatedLayoutRoute user={user} loading={loading} />}>
           <Route path="/dashboard" element={
             <AuthenticatedRoute user={user} loading={loading}>
               <Dashboard user={user} loading={loading} />
@@ -161,19 +185,19 @@ const RouteSwitch = ({ user, loading }) => {
               <OrderDetails user={user} loading={loading} />
             </AuthenticatedRoute>
           } />
+        </Route>
 
-          <Route element={<AdminGuardRoute />}>
-            <Route path="/cafeteria" element={<CafeteriaDashboardPage user={user} loading={loading} />} />
-            <Route path="/cafeteria/new" element={<CafeteriaNewOrderPage user={user} loading={loading} />} />
-            <Route path="/cafeteria/order" element={<CafeteriaCurrentOrderPage user={user} loading={loading} />} />
-            <Route path="/cafeteria/confirm" element={<CafeteriaSuccessPage user={user} loading={loading} />} />
-            <Route path="/admin" element={<AdminPanel loading={loading} />} />
-            <Route path="/daily-orders" element={<DailyOrders user={user} loading={loading} />} />
-            <Route path="/monthly-panel" element={<MonthlyPanel user={user} loading={loading} />} />
-            <Route path="/auditoria" element={<AuditLogs user={user} loading={loading} />} />
-            <Route path="/tendencias" element={<TendenciasPage />} />
-            <Route path="/excel-analysis" element={ENABLE_EXCEL_ANALYSIS ? <ExcelAnalysis /> : <ExcelAnalysisDisabled />} />
-          </Route>
+        <Route element={<AdminLayoutRoute user={user} loading={loading} />}>
+          <Route path="/cafeteria" element={<CafeteriaDashboardPage user={user} loading={loading} />} />
+          <Route path="/cafeteria/new" element={<CafeteriaNewOrderPage user={user} loading={loading} />} />
+          <Route path="/cafeteria/order" element={<CafeteriaCurrentOrderPage user={user} loading={loading} />} />
+          <Route path="/cafeteria/confirm" element={<CafeteriaSuccessPage user={user} loading={loading} />} />
+          <Route path="/admin" element={<AdminPanel loading={loading} />} />
+          <Route path="/daily-orders" element={<DailyOrders user={user} loading={loading} />} />
+          <Route path="/monthly-panel" element={<MonthlyPanel user={user} loading={loading} />} />
+          <Route path="/auditoria" element={<AuditLogs user={user} loading={loading} />} />
+          <Route path="/tendencias" element={<TendenciasPage />} />
+          <Route path="/excel-analysis" element={ENABLE_EXCEL_ANALYSIS ? <ExcelAnalysis /> : <ExcelAnalysisDisabled />} />
         </Route>
 
         <Route
