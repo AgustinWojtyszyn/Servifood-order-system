@@ -198,54 +198,10 @@ class UsersService {
         throw new Error('ID de usuario requerido')
       }
 
-      // Primero eliminar pedidos del usuario
-      const { error: ordersError } = await supabase
-        .from('orders')
-        .delete()
-        .eq('user_id', userId)
-
-      if (ordersError) {
-        console.warn('Error eliminando pedidos del usuario:', ordersError)
-        // No fallar si no se pueden eliminar pedidos
+      return {
+        data: null,
+        error: new Error('No existe un mecanismo de baja lógica para usuarios. No se eliminó el usuario para preservar todos sus pedidos históricos.')
       }
-
-      // Eliminar notificaciones si existen
-      try {
-        const { error: notificationsError } = await supabase
-          .from('notifications')
-          .delete()
-          .eq('user_id', userId)
-
-        if (notificationsError) {
-          console.warn('Error eliminando notificaciones del usuario:', notificationsError)
-        }
-      } catch (_e) {
-        // Tabla de notificaciones podría no existir
-      }
-
-      // Eliminar usuario de la tabla users
-      const { data, error } = await supabaseService.withRetry(
-        () => supabase
-          .from('users')
-          .delete()
-          .eq('id', userId),
-        'deleteUser'
-      )
-
-      if (error) throw error
-
-      // Invalidar cache
-      supabaseService.invalidateCache('users')
-      supabaseService.invalidateCache(`user_${userId}`)
-      supabaseService.invalidateCache('orders') // Por si había pedidos
-
-      await logAudit({
-        action: 'user_deleted',
-        details: 'Usuario eliminado por administrador',
-        target_id: userId
-      })
-
-      return { data, error: null }
     } catch (error) {
       return { data: null, error: handleError(error, 'deleteUser') }
     }

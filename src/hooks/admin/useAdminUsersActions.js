@@ -51,11 +51,11 @@ const useAdminUsersActions = ({
   const handleDeleteUser = async (userId, userName) => {
     if (!userId || deletingById[userId]) return
     const confirmed = await confirmAction({
-      title: 'Eliminar usuario',
+      title: 'Dar de baja usuario',
       message:
-        `Se eliminarán todos los pedidos asociados al usuario "${userName}".`,
-      highlight: 'Esta acción NO se puede deshacer.',
-      confirmText: 'Eliminar usuario'
+        `El usuario "${userName}" dejará de estar activo si existe baja lógica disponible. Todos sus pedidos históricos se conservarán intactos.`,
+      highlight: 'No se eliminarán pedidos asociados al usuario.',
+      confirmText: 'Dar de baja'
     })
     if (!confirmed) return
 
@@ -64,13 +64,13 @@ const useAdminUsersActions = ({
       const { error } = await usersService.deleteUser(userId)
 
       if (error) {
-        notifyError(`Error al eliminar el usuario: ${error.message}`)
+        notifyError(`No se pudo dar de baja el usuario: ${error.message}`)
       } else {
-        notifySuccess('Usuario eliminado exitosamente')
+        notifySuccess('Usuario dado de baja exitosamente')
         await refreshAdminData()
       }
     } catch {
-      notifyError('Error al eliminar el usuario')
+      notifyError('Error al dar de baja el usuario')
     } finally {
       setDeletingById(prev => ({ ...prev, [userId]: false }))
     }

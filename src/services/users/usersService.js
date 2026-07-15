@@ -87,42 +87,14 @@ export const createUsersService = ({
     },
 
     deleteUser: async (userId) => {
-      // Primero eliminar todos los pedidos del usuario
-      const { error: ordersError } = await supabase
-        .from('orders')
-        .delete()
-        .eq('user_id', userId)
-
-      if (ordersError) return { error: ordersError }
-
-      // Eliminar notificaciones del usuario (solo si la tabla existe)
-      // Comentado temporalmente hasta que se cree la tabla notifications
-      /*
-      const { error: notificationsError } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('user_id', userId)
-
-      if (notificationsError) return { error: notificationsError }
-      */
-
-      // Luego eliminar el usuario de auth usando Admin API
-      // Nota: Esto requiere que tengas configurado el Service Role Key
-      // Por ahora solo eliminamos de la tabla users
-      const { data, error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId)
-
-      if (!error && typeof logAudit === 'function') {
-        await logAudit({
-          action: 'user_deleted',
-          details: 'Usuario eliminado por administrador',
-          target_id: userId
-        })
+      if (!userId) {
+        return { data: null, error: new Error('ID de usuario requerido') }
       }
 
-      return { data, error }
+      return {
+        data: null,
+        error: new Error('No existe un mecanismo de baja lógica para usuarios. No se eliminó el usuario para preservar todos sus pedidos históricos.')
+      }
     },
 
     // Pedidos
