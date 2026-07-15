@@ -227,23 +227,28 @@ if (cluster.isMaster) {
 
 
 
-  // Servir assets estáticos versionados con cache largo e immutable
+  // Servir assets: el JS/CSS de la app debe revalidarse para evitar bundles viejos.
   app.use('/assets', express.static(assetsPath, {
-    maxAge: '1y',
-    immutable: true,
+    maxAge: 0,
+    immutable: false,
     etag: true,
     index: false,
     fallthrough: false,
-    setHeaders: (res) => {
+    setHeaders: (res, filePath) => {
+      if (/\.(js|css)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+        return;
+      }
+
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
   }));
 
   // Manifest y service worker siempre sin cache
-  app.get(['/manifest.json', '/manifest.webmanifest', '/service-worker.js'], (req, res, next) => {
+  app.get(['/manifest.json', '/manifest.webmanifest', '/service-worker.js', '/sw.js'], (req, res, next) => {
     const fileName = req.path === '/manifest.json' || req.path === '/manifest.webmanifest'
       ? (fs.existsSync(path.join(distPath, 'manifest.webmanifest')) ? 'manifest.webmanifest' : 'manifest.json')
-      : 'service-worker.js';
+      : req.path.slice(1);
     const filePath = path.join(distPath, fileName);
     setNoStoreHeaders(res);
     res.sendFile(filePath, (err) => {
