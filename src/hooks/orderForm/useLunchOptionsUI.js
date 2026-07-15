@@ -30,6 +30,7 @@ export const useLunchOptionsUI = ({
         const isDisabled = (isPostreOption && !isGenneiaPostreDay) || customSideBlocked
         return {
           value: opt,
+          label: isPostreOption ? `${opt} (solo martes y jueves)` : opt,
           isSelected,
           isChecked,
           isDisabled,

@@ -101,6 +101,7 @@ const OrderDinnerOptionsSection = ({
                   const isSelected = customResponsesDinner[option.id] === opt
                   const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
                   const isDisabled = (isPostreOption && !isGenneiaPostreDay) || isBlocked
+                  const label = isPostreOption ? `${opt} (solo martes y jueves)` : opt
                   return (
                     <button
                       key={index}
@@ -130,7 +131,7 @@ const OrderDinnerOptionsSection = ({
                         ${isDisabled ? 'opacity-60 pointer-events-none' : ''}`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
+                        <span className="text-base sm:text-lg text-gray-900 font-semibold">{label}</span>
                         {isSelected && !isDisabled && (
                           <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
                         )}
@@ -151,6 +152,7 @@ const OrderDinnerOptionsSection = ({
                   const isChecked = list.includes(opt)
                   const isPostreOption = isPostreGroup && opt?.toLowerCase().includes('postre')
                   const isDisabled = (isPostreOption && !isGenneiaPostreDay) || isBlocked
+                  const label = isPostreOption ? `${opt} (solo martes y jueves)` : opt
                   return (
                     <button
                       key={index}
@@ -174,7 +176,7 @@ const OrderDinnerOptionsSection = ({
                         ${isDisabled ? 'opacity-60 pointer-events-none' : ''}`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-base sm:text-lg text-gray-900 font-semibold">{opt}</span>
+                        <span className="text-base sm:text-lg text-gray-900 font-semibold">{label}</span>
                         {isChecked && !isDisabled && (
                           <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
                         )}

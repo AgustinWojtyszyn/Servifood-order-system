@@ -57,7 +57,7 @@ const OrderLunchOptionsSection = ({ options, companyName, onCustomResponse }) =>
                         className={`text-sm ${choice.isDisabled ? 'text-gray-400' : 'text-gray-900'}`}
                         style={{ fontWeight: '900' }}
                       >
-                        {choice.value}
+                        {choice.label || choice.value}
                         {choice.showUnavailableLabel && ' (no disponible hoy)'}
                       </span>
                       {choice.isSelected && (
@@ -82,7 +82,7 @@ const OrderLunchOptionsSection = ({ options, companyName, onCustomResponse }) =>
                       ${choice.isChecked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/60'}`}
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-gray-900" style={{ fontWeight: '900' }}>{choice.value}</span>
+                      <span className="text-sm text-gray-900" style={{ fontWeight: '900' }}>{choice.label || choice.value}</span>
                       {choice.isChecked && (
                         <CheckCircle className="h-6 w-6 text-blue-600 shrink-0" />
                       )}

@@ -50,6 +50,9 @@ const buildSection = (option, section, title, values) => ({
   required: false
 })
 
+const buildFruitDessertSection = (option, frutaValues, postreValues) =>
+  buildSection(option, 'fruta_postre', 'Fruta o postre', [...frutaValues, ...postreValues])
+
 export const normalizeGenneiaOptionSections = (options = [], isGenneia = false) => {
   if (!isGenneia) return options
 
@@ -97,8 +100,12 @@ export const normalizeGenneiaOptionSections = (options = [], isGenneia = false) 
     }
 
     if (buckets.bebidas.length) normalized.push(buildSection(option, 'bebidas', 'Bebidas', buckets.bebidas))
-    if (buckets.fruta.length) normalized.push(buildSection(option, 'fruta', 'Fruta', buckets.fruta))
-    if (buckets.postre.length) normalized.push(buildSection(option, 'postre', 'Postre', buckets.postre))
+    if (buckets.fruta.length && buckets.postre.length) {
+      normalized.push(buildFruitDessertSection(option, buckets.fruta, buckets.postre))
+    } else {
+      if (buckets.fruta.length) normalized.push(buildSection(option, 'fruta', 'Fruta', buckets.fruta))
+      if (buckets.postre.length) normalized.push(buildSection(option, 'postre', 'Postre', buckets.postre))
+    }
   })
 
   return normalized
