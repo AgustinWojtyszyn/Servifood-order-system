@@ -10,7 +10,73 @@ const hasValidResponse = (response) => {
   if (!response) return false
   if (Array.isArray(response) && response.length === 0) return false
   if (typeof response === 'string' && response.trim() === '') return false
+  if (typeof response === 'object' && !Array.isArray(response)) {
+    return Object.values(response).some(hasValidResponse)
+  }
   return true
+}
+
+const normalizeOptionText = (value = '') =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
+const optionHasKeyword = (option = {}, keyword) => {
+  const title = normalizeOptionText(option.title)
+  const values = Array.isArray(option.options) ? option.options : []
+  return title.includes(keyword) || values.some((value) => normalizeOptionText(value).includes(keyword))
+}
+
+const getGenneiaDessertChoiceRequirement = ({ options = [], responses = {}, isGenneiaPostreOption }) => {
+  const fruitOptions = options.filter((opt) => optionHasKeyword(opt, 'fruta'))
+  const dessertOptions = options.filter((opt) => optionHasKeyword(opt, 'postre'))
+  const hasDessertDayRequirement = dessertOptions.some((opt) => isGenneiaPostreOption(opt))
+
+  if (!hasDessertDayRequirement || fruitOptions.length === 0 || dessertOptions.length === 0) {
+    return null
+  }
+
+  const choiceOptions = [...fruitOptions, ...dessertOptions]
+  const optionIds = new Set(choiceOptions.map((opt) => opt.id))
+  const hasSelection = choiceOptions.some((opt) => hasValidResponse(responses?.[opt.id]))
+
+  return {
+    optionIds,
+    hasSelection,
+    missingTitle: dessertOptions[0]?.title || 'Postre'
+  }
+}
+
+const getMissingRequiredOptionTitles = ({
+  options = [],
+  responses = {},
+  isRequiredOption,
+  isSkippedOption = () => false,
+  enableDessertChoiceRule = false
+}) => {
+  const availableOptions = (options || []).filter((opt) => !isSkippedOption(opt))
+  const dessertChoiceRequirement = enableDessertChoiceRule
+    ? getGenneiaDessertChoiceRequirement({
+      options: availableOptions,
+      responses,
+      isGenneiaPostreOption: isRequiredOption
+    })
+    : null
+
+  const missing = availableOptions
+    .filter((opt) => {
+      if (dessertChoiceRequirement?.optionIds.has(opt.id)) return false
+      return isRequiredOption(opt) && !hasValidResponse(responses?.[opt.id])
+    })
+    .map((opt) => opt.title)
+
+  if (dessertChoiceRequirement && !dessertChoiceRequirement.hasSelection) {
+    missing.push(dessertChoiceRequirement.missingTitle)
+  }
+
+  return missing
 }
 
 const getSelectedItemName = (item = {}) =>
@@ -92,6 +158,7 @@ const validateOrderSubmission = ({
 
   const selectedItemsList = getSelectedItemsList()
   const selectedItemsListDinner = getSelectedItemsListDinner()
+  const isGenneiaCompany = hasGenneiaOptionRules(companyConfig)
 
   if (lunchSelected && selectedItemsList.length === 0) {
     return { error: 'Selecciona al menos un plato para almuerzo.' }
@@ -127,12 +194,13 @@ const validateOrderSubmission = ({
       }
     }
 
-    const missingRequiredOptions = (visibleLunchOptions || [])
-      .filter(opt => {
-        if (isCustomSideOption(opt) && !canChooseCustomSideForSelection) return false
-        return (opt.required || isGenneiaPostreOption(opt)) && !customResponses[opt.id]
-      })
-      .map(opt => opt.title)
+    const missingRequiredOptions = getMissingRequiredOptionTitles({
+      options: visibleLunchOptions,
+      responses: customResponses,
+      isRequiredOption: (opt) => opt.required || isGenneiaPostreOption(opt),
+      isSkippedOption: (opt) => isCustomSideOption(opt) && !canChooseCustomSideForSelection,
+      enableDessertChoiceRule: isGenneiaCompany
+    })
 
     if (missingRequiredOptions.length > 0) {
       return { error: `Por favor completa (almuerzo): ${missingRequiredOptions.join(', ')}` }
@@ -167,7 +235,7 @@ const validateOrderSubmission = ({
         response: dinnerOverrideChoice
       }]
     } else {
-      const isGenneia = hasGenneiaOptionRules(companyConfig)
+      const isGenneia = isGenneiaCompany
       const canChooseCustomSideForDinner = selectedItemsListDinner.length > 0
         ? selectedItemsListDinner.every(item => canChooseCustomSide(item))
         : false
@@ -182,12 +250,13 @@ const validateOrderSubmission = ({
         }
       }
 
-      const missingRequiredOptionsDinner = (visibleDinnerOptions || [])
-        .filter(opt => {
-          if (isGenneia && isCustomSideOption(opt) && !canChooseCustomSideForDinner) return false
-          return (opt.required || isGenneiaPostreOption(opt)) && !customResponsesDinner[opt.id]
-        })
-        .map(opt => opt.title)
+      const missingRequiredOptionsDinner = getMissingRequiredOptionTitles({
+        options: visibleDinnerOptions,
+        responses: customResponsesDinner,
+        isRequiredOption: (opt) => opt.required || isGenneiaPostreOption(opt),
+        isSkippedOption: (opt) => isGenneia && isCustomSideOption(opt) && !canChooseCustomSideForDinner,
+        enableDessertChoiceRule: isGenneia
+      })
       if (missingRequiredOptionsDinner.length > 0) {
         return { error: `Para cena completa: ${missingRequiredOptionsDinner.join(', ')}` }
       }
