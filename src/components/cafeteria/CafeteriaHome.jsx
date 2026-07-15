@@ -7,7 +7,7 @@ import { CAFETERIA_PLANS } from '../../cafeteria/cafeteriaPlans'
 import { buildEmptyQuantities, buildOrderFromQuantities, saveCafeteriaOrder } from '../../cafeteria/cafeteriaStorage'
 import { db } from '../../supabaseClient'
 import { COMPANY_LIST } from '../../constants/companyConfig'
-import { getCafeteriaWindowLabel, isCafeteriaWithinWindow } from '../../cafeteria/cafeteriaTime'
+import { getCafeteriaOperationalDate, getCafeteriaWindowLabel, isCafeteriaWithinWindow } from '../../cafeteria/cafeteriaTime'
 
 const CafeteriaHome = ({ user, loading }) => {
   const [selectedPlanId, setSelectedPlanId] = useState(null)
@@ -60,6 +60,7 @@ const CafeteriaHome = ({ user, loading }) => {
       const payload = {
         ...order,
         createdAt: new Date().toISOString(),
+        delivery_date: getCafeteriaOperationalDate(),
         userId: user?.id || null,
         company_slug: companySlug,
         company_name: COMPANY_LIST.find((c) => c.slug === companySlug)?.name || '',
@@ -83,6 +84,7 @@ const CafeteriaHome = ({ user, loading }) => {
       userId: payload.userId,
       items: payload.items,
       totalItems: payload.totalItems,
+      deliveryDate: payload.delivery_date,
       companySlug: payload.company_slug,
       companyName: payload.company_name,
       adminName: payload.admin_name,

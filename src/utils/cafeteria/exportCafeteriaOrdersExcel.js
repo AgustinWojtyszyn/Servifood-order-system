@@ -17,6 +17,7 @@ const normalizeOrderRow = (order) => {
   return {
     id: order.id,
     created_at: order.created_at,
+    delivery_date: order.delivery_date,
     company: order.company_name || order.company_slug || 'Sin empresa',
     admin: order.admin_name || order.admin_email || 'Sin nombre',
     notes: order.notes || '',
@@ -41,6 +42,7 @@ export async function exportCafeteriaOrdersExcel(orders = [], companyFilter = 'a
       return {
         'ID Pedido': normalized.id,
         'Fecha': new Date(normalized.created_at).toLocaleString('es-AR'),
+        'Fecha operativa': normalized.delivery_date || '',
         'Empresa': normalized.company,
         'Administrador': normalized.admin,
         'Aclaraciones': normalized.notes,
@@ -56,6 +58,7 @@ export async function exportCafeteriaOrdersExcel(orders = [], companyFilter = 'a
     ws.columns = [
       { header: 'ID Pedido', key: 'ID Pedido', width: 18 },
       { header: 'Fecha', key: 'Fecha', width: 20 },
+      { header: 'Fecha operativa', key: 'Fecha operativa', width: 16 },
       { header: 'Empresa', key: 'Empresa', width: 16 },
       { header: 'Administrador', key: 'Administrador', width: 22 },
       { header: 'Aclaraciones', key: 'Aclaraciones', width: 30 },

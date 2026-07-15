@@ -216,30 +216,51 @@ export const db = {
 
     
   // Cafeteria orders (admin only via RLS)
-  getCafeteriaOrders: async () => {
-    const { data, error } = await supabase
+  getCafeteriaOrders: async ({ deliveryDate = null, statuses = null, userId = null, adminEmail = null } = {}) => {
+    let query = supabase
       .from('cafeteria_orders')
-      .select('id, user_id, items, total_items, status, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes')
+      .select('id, user_id, items, total_items, status, delivery_date, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes')
       .order('created_at', { ascending: false })
+
+    if (deliveryDate) {
+      query = query.eq('delivery_date', deliveryDate)
+    }
+
+    if (Array.isArray(statuses) && statuses.length > 0) {
+      query = query.in('status', statuses)
+    } else if (typeof statuses === 'string' && statuses) {
+      query = query.eq('status', statuses)
+    }
+
+    if (userId && adminEmail) {
+      query = query.or(`user_id.eq.${userId},admin_email.eq.${adminEmail}`)
+    } else if (userId) {
+      query = query.eq('user_id', userId)
+    } else if (adminEmail) {
+      query = query.eq('admin_email', adminEmail)
+    }
+
+    const { data, error } = await query
     return { data, error }
   },
 
   getCafeteriaOrderById: async (orderId) => {
     const { data, error } = await supabase
       .from('cafeteria_orders')
-      .select('id, user_id, items, total_items, status, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes')
+      .select('id, user_id, items, total_items, status, delivery_date, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes')
       .eq('id', orderId)
       .single()
     return { data, error }
   },
 
-  createCafeteriaOrder: async ({ userId, items, totalItems, companySlug, companyName, adminName, adminEmail, notes }) => {
+  createCafeteriaOrder: async ({ userId, items, totalItems, deliveryDate, companySlug, companyName, adminName, adminEmail, notes }) => {
     const { data, error } = await supabase
       .from('cafeteria_orders')
       .insert([{
         user_id: userId,
         items,
         total_items: totalItems,
+        delivery_date: deliveryDate || null,
         company_slug: companySlug || null,
         company_name: companyName || null,
         admin_name: adminName || null,

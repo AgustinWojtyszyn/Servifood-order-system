@@ -6,6 +6,7 @@ import { db } from '../../supabaseClient'
 import LoadingState from '../ui/LoadingState'
 import { exportCafeteriaOrdersExcel, summarizeCafeteriaOrders } from '../../utils/cafeteria/exportCafeteriaOrdersExcel'
 import { shareCafeteriaOrdersWhatsApp } from '../../utils/cafeteria/shareCafeteriaOrdersWhatsApp'
+import { getCafeteriaOperationalDate } from '../../cafeteria/cafeteriaTime'
 
 const AdminCafeteriaSection = ({ adminName }) => {
   const [orders, setOrders] = useState([])
@@ -18,7 +19,10 @@ const AdminCafeteriaSection = ({ adminName }) => {
       setLoading(true)
       setError('')
       try {
-        const { data, error: fetchError } = await db.getCafeteriaOrders()
+        const { data, error: fetchError } = await db.getCafeteriaOrders({
+          deliveryDate: getCafeteriaOperationalDate(),
+          statuses: ['pending']
+        })
         if (fetchError) {
           setError('No se pudo cargar los pedidos de cafeteria.')
         } else {

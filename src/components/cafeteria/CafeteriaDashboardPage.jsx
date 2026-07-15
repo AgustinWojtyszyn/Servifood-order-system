@@ -7,11 +7,11 @@ import { useCafeteriaPendingOrder } from '../../hooks/useCafeteriaPendingOrder'
 import { CAFETERIA_PLANS } from '../../cafeteria/cafeteriaPlans'
 import { getCafeteriaWindowLabel } from '../../cafeteria/cafeteriaTime'
 
-const formatDeliveryDate = (createdAt) => {
-  if (!createdAt) return '-'
-  const base = new Date(createdAt)
+const formatDeliveryDate = (deliveryDate, createdAt) => {
+  const rawDate = deliveryDate || createdAt
+  if (!rawDate) return '-'
+  const base = new Date(`${String(rawDate).slice(0, 10)}T00:00:00`)
   if (Number.isNaN(base.getTime())) return '-'
-  base.setDate(base.getDate() + 1)
   return base.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'short',
@@ -55,7 +55,7 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
       : status === 'cancelled'
         ? 'bg-red-50 text-red-700 border-red-200'
         : 'bg-slate-100 text-slate-700 border-slate-300'
-  const deliveryDate = formatDeliveryDate(pendingOrder?.created_at)
+  const deliveryDate = formatDeliveryDate(pendingOrder?.delivery_date, pendingOrder?.created_at)
   const deliveryWindow = getCafeteriaWindowLabel()
 
   return (

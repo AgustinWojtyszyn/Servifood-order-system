@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { db } from '../supabaseClient'
+import { getCafeteriaOperationalDate } from '../cafeteria/cafeteriaTime'
 
 const matchesUser = (order, user) => {
   if (!order || !user) return false
@@ -22,7 +23,13 @@ export const useCafeteriaPendingOrder = (user) => {
     setLoading(true)
     setError('')
     try {
-      const { data, error: fetchError } = await db.getCafeteriaOrders()
+      const operationalDate = getCafeteriaOperationalDate()
+      const { data, error: fetchError } = await db.getCafeteriaOrders({
+        deliveryDate: operationalDate,
+        statuses: ['pending'],
+        userId: user.id,
+        adminEmail: user.email || null
+      })
       if (fetchError) {
         setError('No se pudo cargar el pedido de cafetería.')
         setPendingOrder(null)

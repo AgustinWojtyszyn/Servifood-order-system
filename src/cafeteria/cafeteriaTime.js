@@ -1,3 +1,5 @@
+import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
+
 const CAFETERIA_TZ = 'America/Argentina/Buenos_Aires'
 const START_HOUR = 7
 const END_HOUR = 14
@@ -23,3 +25,5 @@ export const isCafeteriaWithinWindow = () => {
 }
 
 export const getCafeteriaWindowLabel = () => '07:00 a 14:00 (hora Buenos Aires)'
+
+export const getCafeteriaOperationalDate = () => getTomorrowISOInTimeZone(CAFETERIA_TZ)
