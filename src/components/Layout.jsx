@@ -34,6 +34,12 @@ const Layout = ({ children, user, loading }) => {
   const isAdminTutorialVisible = adminTutorialOpen && location.pathname === '/admin'
   const isAnyOverlayOpen = sidebarOpen || tutorialOpen || isAdminTutorialVisible || externalLocks > 0
 
+  console.log('[DEBUG Layout] render', {
+    pathname: location.pathname,
+    adminTutorialOpen,
+    isAdminTutorialVisible
+  })
+
   // Scroll lock centralizado para cualquier overlay (sidebar, tutoriales o locks de hijos).
   useScrollLock(isAnyOverlayOpen)
 
@@ -131,7 +137,7 @@ const Layout = ({ children, user, loading }) => {
   return (
     <RequireUser user={user} loading={loading}>
       <OverlayLockProvider registerLock={registerExternalLock}>
-      <div className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-dvh w-full">
+      <div data-debug-component="layout" className="flex flex-col bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 min-h-dvh w-full">
       {!sidebarOpen && (
         <button
           type="button"

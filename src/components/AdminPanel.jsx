@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useAuthContext } from '../contexts/authContextValue'
 import { Link } from 'react-router-dom'
 import { Shield } from 'lucide-react'
@@ -31,6 +32,14 @@ const AdminPanel = () => {
     isAdmin,
     refreshSession
   })
+
+  useEffect(() => {
+    console.log('[DEBUG AdminPanel] mounted', window.location.pathname)
+
+    return () => {
+      console.log('[DEBUG AdminPanel] unmounted', window.location.pathname)
+    }
+  }, [])
 
   // Verificación de admin
   if (!isAdmin && !loading) {
@@ -69,7 +78,7 @@ const AdminPanel = () => {
 
   return (
     <RequireUser user={user} loading={loading}>
-    <div className="min-h-dvh pt-16 pb-24 p-3 sm:p-6 space-y-6 sm:space-y-8" style={{ paddingBottom: '120px' }}>
+    <div data-debug-component="admin-panel" className="min-h-dvh pt-16 pb-24 p-3 sm:p-6 space-y-6 sm:space-y-8" style={{ paddingBottom: '120px' }}>
       <AdminHeader />
 
       {/* Tabs - Scroll horizontal completo en mobile */}

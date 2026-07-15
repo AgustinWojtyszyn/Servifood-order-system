@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
 import { useOverlayLock } from '../contexts/overlayLockContext'
 import { ADMIN_TUTORIAL_STEPS } from './adminTutorial/adminTutorialSteps'
@@ -6,6 +6,25 @@ import { ADMIN_TUTORIAL_STEPS } from './adminTutorial/adminTutorialSteps'
 const AdminTutorial = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0)
   useOverlayLock(isOpen)
+
+  useEffect(() => {
+    console.log('[DEBUG AdminTutorial] mounted', {
+      pathname: window.location.pathname,
+      isOpen
+    })
+
+    return () => {
+      console.log('[DEBUG AdminTutorial] unmounted', {
+        pathname: window.location.pathname,
+        isOpen
+      })
+    }
+  }, [])
+
+  console.log('[DEBUG AdminTutorial] render', {
+    pathname: window.location.pathname,
+    isOpen
+  })
 
   if (!isOpen) return null
 
@@ -35,7 +54,7 @@ const AdminTutorial = ({ isOpen, onClose }) => {
   const CurrentIcon = steps[currentStep].icon
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div data-debug-component="admin-tutorial" className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-linear-to-r from-primary-600 to-primary-700 text-white p-6">
