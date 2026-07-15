@@ -52,7 +52,7 @@ const useAdminUsersActions = ({
     if (!userId || deletingById[userId]) return
     const confirmed = await confirmAction({
       title: 'Eliminar usuario',
-      message: `El usuario "${userName}" será eliminado. Todos sus pedidos históricos se conservarán.`,
+      message: 'El usuario será eliminado. Todos sus pedidos históricos se conservarán.',
       highlight: 'No se eliminarán pedidos asociados al usuario.',
       confirmText: 'Eliminar usuario'
     })
