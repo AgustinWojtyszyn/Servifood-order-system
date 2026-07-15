@@ -200,7 +200,7 @@ class UsersService {
 
       return {
         data: null,
-        error: new Error('No existe un mecanismo de baja lógica para usuarios. No se eliminó el usuario para preservar todos sus pedidos históricos.')
+        error: new Error('No existe un backend seguro para eliminar auth.users desde el Panel Admin. No se eliminó el usuario y todos sus pedidos históricos se conservan.')
       }
     } catch (error) {
       return { data: null, error: handleError(error, 'deleteUser') }
