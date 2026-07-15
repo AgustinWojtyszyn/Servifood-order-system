@@ -86,18 +86,6 @@ const AdminLayoutRoute = ({ user, loading }) => {
   )
 }
 
-const PublicOnlyRoute = ({ user, loading, children }) => {
-  if (loading) return <InternalLoader />
-  if (user) return <Navigate to="/dashboard" replace />
-  return children
-}
-
-const AuthenticatedRoute = ({ user, loading, children }) => {
-  if (loading) return <InternalLoader />
-  if (!user) return <Navigate to="/login" replace />
-  return children
-}
-
 const ExcelAnalysisDisabled = () => (
   <div className="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center px-4 py-10">
     <section className="w-full rounded-lg border border-white/20 bg-white p-6 text-slate-900 shadow-xl sm:p-8">
@@ -132,58 +120,38 @@ const RouteSwitch = ({ user, loading }) => {
     <Suspense key={location.pathname} fallback={<InternalLoader />}>
       <Routes location={location}>
         <Route path="/" element={
-          <PublicOnlyRoute user={user} loading={loading}>
-            <LandingPage />
-          </PublicOnlyRoute>
+          !loading && (user ? <Navigate to="/dashboard" /> : <LandingPage />)
         } />
         <Route path="/login" element={
-          <PublicOnlyRoute user={user} loading={loading}>
-            <Login />
-          </PublicOnlyRoute>
+          !loading && (user ? <Navigate to="/dashboard" /> : <Login />)
         } />
         <Route path="/register" element={
-          <PublicOnlyRoute user={user} loading={loading}>
-            <Register />
-          </PublicOnlyRoute>
+          !loading && (user ? <Navigate to="/dashboard" /> : <Register />)
         } />
         <Route path="/forgot-password" element={
-          <PublicOnlyRoute user={user} loading={loading}>
-            <ForgotPassword />
-          </PublicOnlyRoute>
+          !loading && (user ? <Navigate to="/dashboard" /> : <ForgotPassword />)
         } />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         <Route element={<AuthenticatedLayoutRoute user={user} loading={loading} />}>
           <Route path="/dashboard" element={
-            <AuthenticatedRoute user={user} loading={loading}>
-              <Dashboard user={user} loading={loading} />
-            </AuthenticatedRoute>
+            !loading && (user ? <Dashboard user={user} loading={loading} /> : <Navigate to="/login" />)
           } />
           <Route path="/order" element={
-            <AuthenticatedRoute user={user} loading={loading}>
-              <OrderCompanySelector user={user} loading={loading} />
-            </AuthenticatedRoute>
+            !loading && (user ? <OrderCompanySelector user={user} loading={loading} /> : <Navigate to="/login" />)
           } />
           <Route path="/order/:companySlug" element={
-            <AuthenticatedRoute user={user} loading={loading}>
-              <OrderForm user={user} loading={loading} />
-            </AuthenticatedRoute>
+            !loading && (user ? <OrderForm user={user} loading={loading} /> : <Navigate to="/login" />)
           } />
           <Route path="/edit-order" element={
-            <AuthenticatedRoute user={user} loading={loading}>
-              <EditOrderForm user={user} loading={loading} />
-            </AuthenticatedRoute>
+            !loading && (user ? <EditOrderForm user={user} loading={loading} /> : <Navigate to="/login" />)
           } />
           <Route path="/profile" element={
-            <AuthenticatedRoute user={user} loading={loading}>
-              <Profile user={user} loading={loading} />
-            </AuthenticatedRoute>
+            !loading && (user ? <Profile user={user} loading={loading} /> : <Navigate to="/login" />)
           } />
           <Route path="/orders/:orderId" element={
-            <AuthenticatedRoute user={user} loading={loading}>
-              <OrderDetails user={user} loading={loading} />
-            </AuthenticatedRoute>
+            !loading && (user ? <OrderDetails user={user} loading={loading} /> : <Navigate to="/login" />)
           } />
         </Route>
 
@@ -203,9 +171,7 @@ const RouteSwitch = ({ user, loading }) => {
         <Route
           path="*"
           element={
-            loading ? (
-              <InternalLoader />
-            ) : (
+            !loading && (
               <Navigate
                 to={user ? '/dashboard' : '/'}
                 replace
