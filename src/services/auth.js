@@ -2,6 +2,11 @@ import { supabase, supabaseService, sanitizeQuery } from './supabase'
 import { validateEmail, validatePassword } from '../utils'
 import { handleError } from '../utils'
 
+const hasUsableAccessToken = (session) => {
+  const token = session?.access_token
+  return typeof token === 'string' && token.split('.').length === 3 && token.split('.').every(Boolean)
+}
+
 class AuthService {
   // Registro de usuario con validación
   async signUp(email, password, metadata = {}) {
@@ -168,10 +173,15 @@ class AuthService {
   // Obtener usuario actual
   async getUser() {
     try {
-      const { data: { user }, error } = await supabaseService.withRetry(
-        () => supabase.auth.getUser(),
-        'getUser'
-      )
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) throw sessionError
+
+      if (!hasUsableAccessToken(session)) {
+        return { user: null, error: null }
+      }
+
+      const { data: { user }, error } = await supabase.auth.getUser()
 
       if (error) throw error
 
@@ -200,8 +210,9 @@ class AuthService {
   }
 
   // Verificar si el usuario está autenticado
-  isAuthenticated() {
-    return !!supabase.auth.getUser()
+  async isAuthenticated() {
+    const { session } = await this.getSession()
+    return hasUsableAccessToken(session)
   }
 
   // Refresh token manual

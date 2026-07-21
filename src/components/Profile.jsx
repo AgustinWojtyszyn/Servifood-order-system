@@ -25,22 +25,10 @@ const Profile = ({ user, loading }) => {
 
   useEffect(() => {
     if (!user?.id) return
-    let cancelled = false
-    ;(async () => {
-      const { data, error } = await supabase.auth.getUser()
-      if (cancelled) return
-      if (error) {
-        setGoogleError('No se pudo obtener el estado de Google.')
-        return
-      }
-      const isLinked = Array.isArray(data?.user?.identities) && data.user.identities.some((i) => i.provider === 'google')
-      setGoogleLinked(isLinked)
-      setGoogleError('')
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [user?.id])
+    const isLinked = Array.isArray(user?.identities) && user.identities.some((i) => i.provider === 'google')
+    setGoogleLinked(isLinked)
+    setGoogleError('')
+  }, [user?.id, user?.identities])
 
   const handleChange = (e) => {
     setFormData({

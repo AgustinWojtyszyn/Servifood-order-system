@@ -28,6 +28,7 @@ export const useAuth = () => {
   const [permissionError, setPermissionError] = useState(null)
   const roleRequestIdRef = useRef(0)
   const mountedRef = useRef(true)
+  const refreshInFlightRef = useRef(null)
 
   const logRoleDebug = useCallback((...args) => {
     if (import.meta.env.DEV) {
@@ -123,10 +124,25 @@ export const useAuth = () => {
           console.log('[Auth] initial session', session ? 'found' : 'none')
         }
 
-        if (session?.user) {
-          setUser(session.user)
+        if (session?.access_token) {
+          const { user: currentUser, error: userError } = await authService.getUser()
+          if (userError && import.meta.env.DEV) {
+            console.warn('[Auth] getUser error after session restore', userError)
+          }
+
+          if (!currentUser) {
+            roleRequestIdRef.current += 1
+            setUser(null)
+            setIsAdmin(false)
+            setPermissionError(userError || null)
+            setPermissionLoading(false)
+            setLoading(false)
+            return
+          }
+
+          setUser(currentUser)
           setLoading(false)
-          validateUserRole(session.user)
+          validateUserRole(currentUser)
         } else {
           roleRequestIdRef.current += 1
           setUser(null)
@@ -153,7 +169,7 @@ export const useAuth = () => {
       if (import.meta.env.DEV) {
         console.log('[Auth] onAuthStateChange', event, session ? 'has session' : 'no session')
       }
-      if (event === 'SIGNED_IN' && session?.user) {
+      if (event === 'SIGNED_IN' && session?.access_token && session?.user) {
         setUser(session.user)
         setLoading(false)
         validateUserRole(session.user)
@@ -265,7 +281,12 @@ export const useAuth = () => {
 
   const refreshSession = useCallback(async () => {
     try {
-      const result = await authService.refreshSession()
+      if (refreshInFlightRef.current) {
+        return await refreshInFlightRef.current
+      }
+
+      refreshInFlightRef.current = authService.refreshSession()
+      const result = await refreshInFlightRef.current
 
       if (result.error) {
         return result
@@ -280,6 +301,8 @@ export const useAuth = () => {
       return result
     } catch (error) {
       return { data: null, error }
+    } finally {
+      refreshInFlightRef.current = null
     }
   }, [validateUserRole])
 

@@ -18,8 +18,8 @@ const logAudit = async ({
   request_id = null
 }) => {
   try {
-    const { data: authUser } = await supabase.auth.getUser()
-    const actor = authUser?.user
+    const { data: { session } } = await supabase.auth.getSession()
+    const actor = session?.user
     const payload = {
       action,
       details,

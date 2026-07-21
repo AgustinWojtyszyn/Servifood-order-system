@@ -27,6 +27,11 @@ const readAuthToken = (req: Request) => {
   return authHeader.replace('Bearer ', '').trim()
 }
 
+const isLikelyJwt = (token: string) => {
+  const parts = token.split('.')
+  return parts.length === 3 && parts.every(Boolean)
+}
+
 const isValidEmail = (value: string) => {
   if (value.length < 3 || value.length > 254) return false
   // Simple sanity check; not full RFC validation.
@@ -52,6 +57,9 @@ Deno.serve(async (req: Request) => {
   const token = readAuthToken(req)
   if (!token) {
     return jsonResponse(401, { success: false, error: 'Missing Authorization' })
+  }
+  if (!isLikelyJwt(token)) {
+    return jsonResponse(401, { success: false, error: 'Invalid Authorization' })
   }
 
   let body: { userId?: string; newEmail?: string }

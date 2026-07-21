@@ -8,17 +8,10 @@ import { createUsersService } from './services/users/usersService'
 import { createAnalyticsService } from './services/analytics/analyticsService'
 export { supabase }
 
-// Redirección global si el token expira mucho tiempo (fuera de línea)
-supabase.auth.onAuthStateChange((event, session) => {
-  if ((event === 'SIGNED_OUT' || event === 'TOKEN_REFRESH_FAILED') && !session) {
-    // Evitar interceptar rutas públicas de autenticación (ej: recovery/reset)
-    const publicAuthRoutes = ['/login', '/forgot-password', '/reset-password', '/register', '/auth/callback']
-    const isPublicAuthRoute = publicAuthRoutes.some((route) => window.location.pathname.startsWith(route))
-    if (!isPublicAuthRoute) {
-      window.location.href = '/login';
-    }
-  }
-})
+const hasUsableAccessToken = (session) => {
+  const token = session?.access_token
+  return typeof token === 'string' && token.split('.').length === 3 && token.split('.').every(Boolean)
+}
 
 // Eliminar todos los pedidos pendientes de días anteriores
 // Se agrega como método a db más abajo
@@ -122,6 +115,10 @@ export const auth = {
   },
 
   getUser: async () => {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError || !hasUsableAccessToken(session)) {
+      return { user: null, error: sessionError || null }
+    }
     const { data: { user }, error } = await supabase.auth.getUser()
     return { user, error }
   },
@@ -161,8 +158,8 @@ const logAudit = async ({
   request_id = null
 }) => {
   try {
-    const { data: authUser } = await supabase.auth.getUser()
-    const actor = authUser?.user
+    const { data: { session } } = await supabase.auth.getSession()
+    const actor = session?.user
     const payload = {
       action,
       details,

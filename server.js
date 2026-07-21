@@ -14,6 +14,12 @@ import XLSX from 'xlsx';
 
 let supabase = null;
 
+const isLikelyJwt = (token) => (
+  typeof token === 'string' &&
+  token.split('.').length === 3 &&
+  token.split('.').every(Boolean)
+);
+
 // Supabase JWT verification middleware
 const verifySupabaseJWT = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -22,6 +28,10 @@ const verifySupabaseJWT = async (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
+  if (!isLikelyJwt(token)) {
+    return res.status(401).json({ error: 'Authorization header missing or invalid' });
+  }
+
   try {
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error || !user) {
