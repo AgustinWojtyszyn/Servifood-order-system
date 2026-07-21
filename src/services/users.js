@@ -2,6 +2,12 @@ import { supabase, supabaseService, sanitizeQuery } from './supabase'
 import { handleError } from '../utils'
 import { USER_ROLES } from '../types'
 
+const PUBLIC_USER_COLUMNS = new Set(['id', 'email', 'role', 'created_at', 'full_name', 'email_confirmed_at'])
+
+const pickPublicUserColumns = (updates = {}) => Object.fromEntries(
+  Object.entries(updates).filter(([column]) => PUBLIC_USER_COLUMNS.has(column))
+)
+
 const logAudit = async ({
   action,
   details = '',
@@ -124,10 +130,7 @@ class UsersService {
       const { data, error } = await supabaseService.withRetry(
         () => supabase
           .from('users')
-          .update({
-            role,
-            updated_at: new Date().toISOString()
-          })
+          .update({ role })
           .eq('id', userId)
           .select()
           .single(),
@@ -164,10 +167,7 @@ class UsersService {
 
       const sanitizedUpdates = sanitizeQuery(updates)
 
-      const updateData = {
-        ...sanitizedUpdates,
-        updated_at: new Date().toISOString()
-      }
+      const updateData = pickPublicUserColumns(sanitizedUpdates)
 
       const { data, error } = await supabaseService.withRetry(
         () => supabase
@@ -321,8 +321,7 @@ class UsersService {
         })
         .map(dbUser => ({
           id: dbUser.id,
-          full_name: authUserMap.get(dbUser.id).full_name,
-          updated_at: new Date().toISOString()
+          full_name: authUserMap.get(dbUser.id).full_name
         }))
 
       if (updates.length > 0) {
