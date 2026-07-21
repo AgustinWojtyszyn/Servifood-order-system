@@ -3,6 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
+import {
+  clearAuthLinkFromUrl,
+  exchangeCodeForSessionOnce,
+  getAuthLinkErrorMessage,
+  getAuthLinkParams
+} from '../utils/authLinks'
 
 const ResetPassword = () => {
   const [formData, setFormData] = useState({
@@ -23,13 +29,15 @@ const ResetPassword = () => {
 
     const initializeRecoverySession = async () => {
       setCheckingRecovery(true)
-      const queryParams = new URLSearchParams(window.location.search)
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-
-      const code = queryParams.get('code') || hashParams.get('code')
-      const type = queryParams.get('type') || hashParams.get('type')
-      const tokenHash = queryParams.get('token_hash') || hashParams.get('token_hash')
-      const accessToken = queryParams.get('access_token') || hashParams.get('access_token')
+      const {
+        code,
+        type,
+        tokenHash,
+        accessToken,
+        error,
+        errorCode,
+        errorDescription
+      } = getAuthLinkParams()
       const hasRecoveryHints = Boolean(code || type === 'recovery' || tokenHash || accessToken)
 
       console.debug('[auth-recovery] enter /reset-password', {
@@ -39,9 +47,18 @@ const ResetPassword = () => {
       })
 
       try {
+        const linkErrorMessage = getAuthLinkErrorMessage({ error, errorCode, errorDescription })
+        if (linkErrorMessage) {
+          if (!isMounted) return
+          setHasRecoverySession(false)
+          setError(linkErrorMessage)
+          clearAuthLinkFromUrl()
+          return
+        }
+
         // PKCE: el link trae `code` y requiere exchange explícito para obtener sesión válida.
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          const { error: exchangeError } = await exchangeCodeForSessionOnce(supabase, code)
           console.debug('[auth-recovery] exchangeCodeForSession', {
             ok: !exchangeError,
             hasError: Boolean(exchangeError)
@@ -54,8 +71,7 @@ const ResetPassword = () => {
             return
           }
 
-          const cleanUrl = `${window.location.origin}${window.location.pathname}`
-          window.history.replaceState({}, document.title, cleanUrl)
+          clearAuthLinkFromUrl()
         }
         // OTP recovery: el link trae `token_hash` + `type=recovery`.
         else if (tokenHash && type === 'recovery') {
@@ -75,8 +91,7 @@ const ResetPassword = () => {
             return
           }
 
-          const cleanUrl = `${window.location.origin}${window.location.pathname}`
-          window.history.replaceState({}, document.title, cleanUrl)
+          clearAuthLinkFromUrl()
         }
 
         const { data: { session } } = await supabase.auth.getSession()
@@ -225,8 +240,16 @@ const ResetPassword = () => {
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-8 border-4 border-white/20" style={{maxHeight: 'none', overflow: 'visible', minWidth: '320px', width: '100%'}}>
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border-2 border-red-400 text-red-800 px-5 py-4 rounded-xl font-bold text-base">
-                {error}
+              <div className="space-y-3 bg-red-50 border-2 border-red-400 text-red-800 px-5 py-4 rounded-xl font-bold text-base">
+                <p>{error}</p>
+                {!hasRecoverySession && !checkingRecovery && (
+                  <Link
+                    to="/forgot-password"
+                    className="inline-flex w-full justify-center rounded-xl bg-red-700 px-4 py-3 text-white hover:bg-red-800"
+                  >
+                    Pedir nuevo enlace
+                  </Link>
+                )}
               </div>
             )}
 

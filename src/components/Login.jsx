@@ -16,6 +16,7 @@ const Login = () => {
   const { search } = useLocation()
   const params = new URLSearchParams(search)
   const confirmed = params.get('confirmed')
+  const authLink = params.get('auth_link')
   const next = params.get('next')
   const navigate = useNavigate()
 
@@ -122,6 +123,11 @@ const Login = () => {
             {confirmed === '0' && (
               <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-xl font-medium">
                 ❌ No se pudo confirmar el correo. Intentá nuevamente.
+              </div>
+            )}
+            {authLink === 'expired' && (
+              <div className="bg-red-50 border-2 border-red-300 text-red-700 px-4 py-3 rounded-xl font-medium">
+                El enlace es inválido, expiró o ya fue usado. Solicitá uno nuevo.
               </div>
             )}
             {error && (

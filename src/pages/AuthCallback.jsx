@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import {
+  clearAuthLinkFromUrl,
+  exchangeCodeForSessionOnce,
+  getAuthLinkErrorMessage,
+  getAuthLinkParams
+} from '../utils/authLinks'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
@@ -21,6 +27,39 @@ export default function AuthCallback() {
       const params = new URLSearchParams(window.location.search)
       const isLinkFlow = params.get('link') === '1'
       const isLinkedReturn = params.get('linked') === '1'
+      const {
+        code,
+        error,
+        errorCode,
+        errorDescription
+      } = getAuthLinkParams()
+
+      const linkErrorMessage = getAuthLinkErrorMessage({ error, errorCode, errorDescription })
+      if (linkErrorMessage) {
+        clearAuthLinkFromUrl()
+        if (!isLinkFlow) {
+          navigate('/login?auth_link=expired', { replace: true })
+          return
+        }
+        setError(linkErrorMessage)
+        setLoading(false)
+        return
+      }
+
+      if (code) {
+        const { error: exchangeError } = await exchangeCodeForSessionOnce(supabase, code)
+        if (cancelled) return
+        clearAuthLinkFromUrl()
+        if (exchangeError) {
+          if (!isLinkFlow) {
+            navigate('/login?auth_link=expired', { replace: true })
+            return
+          }
+          setError('El enlace es inválido, expiró o ya fue usado. Pedí uno nuevo.')
+          setLoading(false)
+          return
+        }
+      }
 
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
       if (cancelled) return
@@ -28,7 +67,7 @@ export default function AuthCallback() {
       const sessionUser = sessionData?.session?.user
       if (!sessionUser) {
         if (!isLinkFlow) {
-          navigate(sessionError ? '/login?confirmed=0' : '/login?confirmed=1', { replace: true })
+          navigate(sessionError ? '/login?confirmed=0' : '/login?auth_link=expired', { replace: true })
           return
         }
         setError('No se pudo iniciar sesión. Por favor, intenta nuevamente.')
