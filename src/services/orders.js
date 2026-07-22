@@ -82,13 +82,16 @@ class OrdersService {
     try {
       const {
         status,
+        deliveryDate,
+        service,
         limit = 50,
         offset = 0,
         includeUserData = false,
         force = false
       } = options
 
-      const cacheKey = `orders_${userId || 'all'}_${status || 'all'}_${limit}_${offset}`
+      const userDataKey = includeUserData ? 'with_user' : 'base'
+      const cacheKey = `orders_${userId || 'all'}_${status || 'all'}_${deliveryDate || 'all'}_${service || 'all'}_${userDataKey}_${limit}_${offset}`
 
       const queryFn = async () => {
         let query = supabase
@@ -103,6 +106,14 @@ class OrdersService {
 
         if (status) {
           query = query.eq('status', status)
+        }
+
+        if (deliveryDate) {
+          query = query.eq('delivery_date', deliveryDate)
+        }
+
+        if (service) {
+          query = query.eq('service', service)
         }
 
         const { data, error } = await query

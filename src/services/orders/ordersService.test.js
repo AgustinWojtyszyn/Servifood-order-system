@@ -30,6 +30,11 @@ class QueryBuilder {
     return this
   }
 
+  limit(value) {
+    this.calls.push(['limit', value])
+    return this
+  }
+
   then(resolve, reject) {
     return Promise.resolve(this.result).then(resolve, reject)
   }
@@ -50,6 +55,26 @@ const createSupabaseMock = (results) => {
 }
 
 describe('ordersService daily orders query', () => {
+  it('applies optional filters when loading orders', async () => {
+    const { supabase, calls } = createSupabaseMock([{ data: [{ id: 'order-1' }], error: null }])
+    const service = createOrdersService({ supabase })
+
+    const result = await service.getOrders('user-1', {
+      status: 'pending',
+      deliveryDate: '2026-07-23',
+      service: 'lunch',
+      limit: 25
+    })
+
+    expect(result).toEqual({ data: [{ id: 'order-1' }], error: null })
+    expect(calls).toContainEqual(['from', 'orders'])
+    expect(calls).toContainEqual(['eq', 'user_id', 'user-1'])
+    expect(calls).toContainEqual(['eq', 'status', 'pending'])
+    expect(calls).toContainEqual(['eq', 'delivery_date', '2026-07-23'])
+    expect(calls).toContainEqual(['eq', 'service', 'lunch'])
+    expect(calls).toContainEqual(['limit', 25])
+  })
+
   it('does not execute the legacy person-key query without a narrowing filter', async () => {
     const { supabase, calls } = createSupabaseMock([{ data: [{ id: 'should-not-load' }], error: null }])
     const service = createOrdersService({ supabase })

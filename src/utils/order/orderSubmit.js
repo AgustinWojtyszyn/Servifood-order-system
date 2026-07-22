@@ -31,7 +31,8 @@ const submitOrders = async ({
   const createdOrderIds = []
   const { data: existingOrders, error: existingOrdersError } = await ordersService.getOrders(user.id, {
     force: true,
-    limit: 200
+    limit: 200,
+    status: 'pending'
   })
 
   if (existingOrdersError) {

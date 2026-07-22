@@ -165,7 +165,12 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
       return { data, error }
     },
 
-    getOrders: async (userId = null) => {
+    getOrders: async (userId = null, {
+      status = null,
+      deliveryDate = null,
+      service = null,
+      limit = null
+    } = {}) => {
       let query = supabase
         .from('orders')
         .select('*') // Seleccionar TODOS los campos
@@ -173,6 +178,22 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
 
       if (userId) {
         query = query.eq('user_id', userId)
+      }
+
+      if (status) {
+        query = query.eq('status', status)
+      }
+
+      if (deliveryDate) {
+        query = query.eq('delivery_date', deliveryDate)
+      }
+
+      if (service) {
+        query = query.eq('service', service)
+      }
+
+      if (Number.isInteger(limit) && limit > 0) {
+        query = query.limit(limit)
       }
 
       const { data, error } = await query
