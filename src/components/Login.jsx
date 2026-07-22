@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { auth, supabase } from '../supabaseClient'
 import { Eye, EyeOff } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
+import { getUserFriendlyErrorMessage } from '../utils'
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -39,24 +40,24 @@ const Login = () => {
       if (error) {
         // Mensajes de error más específicos
         if (error.message.includes('Email not confirmed')) {
-          setError('📧 Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada y haz clic en el enlace de confirmación.')
+          setError('Tenés que verificar tu correo antes de iniciar sesión. Revisá tu bandeja de entrada y abrí el enlace de confirmación.')
         } else if (error.message.includes('Invalid login credentials')) {
-          setError('❌ Correo o contraseña incorrectos. Por favor, verifica tus datos.')
+          setError('El correo o la contraseña no son correctos. Revisá los datos e intentá nuevamente.')
         } else {
-          setError(error.message || 'Error al iniciar sesión')
+          setError(getUserFriendlyErrorMessage(error, 'No pudimos iniciar sesión. Revisá tus datos e intentá nuevamente.'))
         }
       } else {
         // Verificar si el email está confirmado
         if (data?.user && !data.user.email_confirmed_at) {
-          setError('📧 Tu correo electrónico aún no ha sido verificado. Por favor, revisa tu bandeja de entrada y confirma tu email antes de iniciar sesión.')
+          setError('Tu correo todavía no está verificado. Revisá tu bandeja de entrada y confirmalo antes de iniciar sesión.')
           await auth.signOut()
         } else {
           const target = next && next.startsWith('/') ? next : '/dashboard'
           navigate(target, { replace: true })
         }
       }
-    } catch {
-      setError('Error al iniciar sesión. Por favor, intenta nuevamente.')
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, 'No pudimos iniciar sesión. Intentá nuevamente.'))
     } finally {
       setLoading(false)
     }
@@ -73,11 +74,11 @@ const Login = () => {
         }
       })
       if (error) {
-        setError(error.message || 'Error al iniciar sesión con Google.')
+        setError(getUserFriendlyErrorMessage(error, 'No pudimos iniciar sesión con Google. Intentá nuevamente.'))
         setOauthLoading(false)
       }
-    } catch {
-      setError('Error al iniciar sesión con Google. Por favor, intenta nuevamente.')
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, 'No pudimos iniciar sesión con Google. Intentá nuevamente.'))
       setOauthLoading(false)
     }
   }

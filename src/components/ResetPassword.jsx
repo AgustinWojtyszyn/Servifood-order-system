@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
+import { getUserFriendlyErrorMessage } from '../utils'
 import {
   clearAuthLinkFromUrl,
   exchangeCodeForSessionOnce,
@@ -167,7 +168,7 @@ const ResetPassword = () => {
       console.debug('[auth-recovery] updateUser', { ok: !updErr, hasError: Boolean(updErr) })
 
       if (updErr) {
-        setError(updErr.message || 'No se pudo actualizar la contraseña.')
+        setError(getUserFriendlyErrorMessage(updErr, 'No pudimos actualizar la contraseña. Intentá nuevamente.'))
         setLoading(false)
         return
       }
@@ -177,8 +178,8 @@ const ResetPassword = () => {
       setTimeout(() => {
         navigate('/login?reset=ok')
       }, 1500)
-    } catch (_err) {
-      setError('Error al actualizar la contraseña')
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, 'No pudimos actualizar la contraseña. Intentá nuevamente.'))
     } finally {
       setLoading(false)
     }

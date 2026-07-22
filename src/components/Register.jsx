@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { auth, supabase } from '../supabaseClient'
 import { Eye, EyeOff, CheckCircle, Mail, AlertCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
+import { getUserFriendlyErrorMessage } from '../utils'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -79,15 +80,15 @@ const Register = () => {
         } else if (error.message.includes('invalid email')) {
           setError('El correo electrónico no es válido')
         } else {
-          setError(error.message || 'Error al crear la cuenta')
+          setError(getUserFriendlyErrorMessage(error, 'No pudimos crear la cuenta. Revisá los datos e intentá nuevamente.'))
         }
       } else {
         console.log('Usuario registrado exitosamente:', data)
         setUserEmail(formData.email)
         setSuccess(true)
       }
-    } catch (_err) {
-      setError('Error al crear la cuenta: Error desconocido')
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, 'No pudimos crear la cuenta. Intentá nuevamente.'))
     } finally {
       setLoading(false)
       inFlightRef.current = false
@@ -103,11 +104,11 @@ const Register = () => {
         options: { redirectTo: `${window.location.origin}/auth/callback` }
       })
       if (error) {
-        setGoogleError(error.message || 'Error al registrarse con Google.')
+        setGoogleError(getUserFriendlyErrorMessage(error, 'No pudimos registrarte con Google. Intentá nuevamente.'))
         setGoogleLoading(false)
       }
-    } catch (_err) {
-      setGoogleError('Error al registrarse con Google. Por favor, intenta nuevamente.')
+    } catch (err) {
+      setGoogleError(getUserFriendlyErrorMessage(err, 'No pudimos registrarte con Google. Intentá nuevamente.'))
       setGoogleLoading(false)
     }
   }

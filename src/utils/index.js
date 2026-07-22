@@ -235,6 +235,74 @@ export const getTimeAgo = (dateString) => {
 }
 
 // Utilidades de errores
+export const getUserFriendlyErrorMessage = (error, fallback = 'No pudimos completar la acción. Intentá nuevamente.') => {
+  const rawMessage = typeof error === 'string'
+    ? error
+    : (error?.message || error?.error_description || error?.description || '')
+  const rawCode = error?.code || error?.error || error?.status || ''
+  const normalized = `${rawCode} ${rawMessage}`.toLowerCase()
+
+  if (!normalized.trim()) return fallback
+
+  if (
+    normalized.includes('invalid login credentials') ||
+    normalized.includes('invalid credentials') ||
+    normalized.includes('email not confirmed')
+  ) {
+    return 'El correo o la contraseña no son correctos. Revisá los datos e intentá nuevamente.'
+  }
+
+  if (
+    normalized.includes('user already registered') ||
+    normalized.includes('already registered') ||
+    normalized.includes('already exists')
+  ) {
+    return 'Ya existe una cuenta con ese correo. Iniciá sesión o recuperá tu contraseña.'
+  }
+
+  if (
+    normalized.includes('rate limit') ||
+    normalized.includes('too many requests') ||
+    normalized.includes('over_email_send_rate_limit')
+  ) {
+    return 'Hiciste varios intentos seguidos. Esperá unos minutos antes de volver a probar.'
+  }
+
+  if (
+    normalized.includes('expired') ||
+    normalized.includes('otp_expired') ||
+    normalized.includes('invalid_grant') ||
+    normalized.includes('invalid token') ||
+    normalized.includes('token has expired')
+  ) {
+    return 'El enlace es inválido, expiró o ya fue usado. Pedí uno nuevo.'
+  }
+
+  if (
+    normalized.includes('weak password') ||
+    normalized.includes('password should') ||
+    normalized.includes('password must') ||
+    normalized.includes('password')
+  ) {
+    return 'La contraseña no cumple los requisitos. Usá al menos 8 caracteres y evitá claves fáciles de adivinar.'
+  }
+
+  if (
+    normalized.includes('network') ||
+    normalized.includes('failed to fetch') ||
+    normalized.includes('fetch') ||
+    normalized.includes('timeout')
+  ) {
+    return 'No pudimos conectar con el servidor. Revisá tu conexión e intentá nuevamente.'
+  }
+
+  if (normalized.includes('correo electrónico inválido') || normalized.includes('invalid email')) {
+    return 'Ingresá un correo electrónico válido.'
+  }
+
+  return fallback
+}
+
 export const handleError = (error, context = '') => {
   console.error(`Error${context ? ` in ${context}` : ''}:`, error)
 
@@ -242,7 +310,7 @@ export const handleError = (error, context = '') => {
   // logErrorToService(error, context)
 
   return {
-    message: error.message || 'Ha ocurrido un error inesperado',
+    message: getUserFriendlyErrorMessage(error, 'Ha ocurrido un error inesperado. Intentá nuevamente.'),
     code: error.code || 'UNKNOWN_ERROR',
     context
   }

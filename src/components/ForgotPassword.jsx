@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { auth } from '../supabaseClient'
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
 import servifoodLogo from '../assets/servifood_logo_white_text_HQ.png'
+import { getUserFriendlyErrorMessage } from '../utils'
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
@@ -38,21 +39,21 @@ const ForgotPassword = () => {
       const normalizedEmail = (email || '').trim().toLowerCase()
       const last = normalizedEmail ? getLastResetAt(normalizedEmail) : 0
       if (normalizedEmail && last && (Date.now() - last) < COOLDOWN_MS) {
-        setError('Error al enviar el correo de recuperación')
+        setError('Ya enviamos un enlace hace menos de un minuto. Revisá tu correo o esperá unos segundos para pedir otro.')
         return
       }
 
       const { error } = await auth.resetPassword(normalizedEmail)
 
       if (error) {
-        setError(error.message || 'Error al enviar el correo de recuperación')
+        setError(getUserFriendlyErrorMessage(error, 'No pudimos enviar el correo de recuperación. Revisá el email e intentá nuevamente.'))
         return
       }
 
       if (normalizedEmail) setLastResetAt(normalizedEmail, Date.now())
       setSuccess(true)
-    } catch (_err) {
-      setError('Error al enviar el correo de recuperación')
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, 'No pudimos enviar el correo de recuperación. Intentá nuevamente.'))
     } finally {
       setLoading(false)
       inFlightRef.current = false

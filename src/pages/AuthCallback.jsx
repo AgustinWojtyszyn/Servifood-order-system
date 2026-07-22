@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import { getUserFriendlyErrorMessage } from '../utils'
 import {
   clearAuthLinkFromUrl,
   exchangeCodeForSessionOnce,
@@ -101,7 +102,7 @@ export default function AuthCallback() {
           })
           if (cancelled) return
           if (linkError) {
-            setError(linkError.message || 'Error al vincular Google.')
+            setError(getUserFriendlyErrorMessage(linkError, 'No pudimos vincular Google. Intentá nuevamente.'))
             setLoading(false)
           }
           return
@@ -161,14 +162,14 @@ export default function AuthCallback() {
         options: { emailRedirectTo: `${window.location.origin}/auth/callback?link=1` }
       })
       if (otpError) {
-        setError(otpError.message || 'Error al enviar el email de verificación.')
+        setError(getUserFriendlyErrorMessage(otpError, 'No pudimos enviar el correo de verificación. Intentá nuevamente.'))
         setLoading(false)
         return
       }
       setOtpSent(true)
       setLoading(false)
-    } catch (_err) {
-      setError('Error al iniciar el vínculo con Google. Por favor, intenta nuevamente.')
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, 'No pudimos iniciar el vínculo con Google. Intentá nuevamente.'))
       setLoading(false)
     }
   }
