@@ -8,6 +8,7 @@ import { buildEmptyQuantities, buildOrderFromQuantities, saveCafeteriaOrder } fr
 import { db } from '../../supabaseClient'
 import { COMPANY_LIST } from '../../constants/companyConfig'
 import { getCafeteriaOperationalDate, getCafeteriaWindowLabel, isCafeteriaWithinWindow } from '../../cafeteria/cafeteriaTime'
+import { getUserFriendlyErrorMessage } from '../../utils'
 
 const matchesAdminOrderForDate = (order, user, deliveryDate) => {
   if (!order || !user) return false
@@ -79,10 +80,10 @@ const CafeteriaHome = ({ user, loading }) => {
         admin_email: user?.email || '',
         notes: notes || ''
       }
-      saveCafeteriaOrder(payload)
       await createOrder(payload)
-    } catch {
-      setError('No se pudo guardar el pedido en el historial. Reintenta.')
+    } catch (err) {
+      console.error('[cafeteria] create/update order failed', err)
+      setError(getUserFriendlyErrorMessage(err, 'No se pudo guardar el pedido en el historial. Reintentá.'))
     } finally {
       submitLockRef.current = false
       setSubmitting(false)
@@ -97,11 +98,11 @@ const CafeteriaHome = ({ user, loading }) => {
       userId: payload.userId,
       adminEmail: payload.admin_email
     })
-    if (existingError) {
-      throw existingError
+    if (existingError && import.meta.env.DEV) {
+      console.warn('[cafeteria] no se pudo buscar pedido existente antes de crear', existingError)
     }
 
-    const existingOrder = (Array.isArray(existingOrders) ? existingOrders : [])
+    const existingOrder = existingError ? null : (Array.isArray(existingOrders) ? existingOrders : [])
       .find((order) => matchesAdminOrderForDate(order, user, deliveryDate))
 
     if (existingOrder?.id) {
@@ -116,6 +117,7 @@ const CafeteriaHome = ({ user, loading }) => {
       if (updateError) {
         throw updateError
       }
+      saveCafeteriaOrder({ ...payload, id: existingOrder.id })
       navigate('/cafeteria', { replace: true })
       return
     }
