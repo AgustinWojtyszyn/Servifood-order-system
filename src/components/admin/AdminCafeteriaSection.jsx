@@ -18,6 +18,11 @@ const getOrderItemsLabel = (order) => {
     .join(' · ')
 }
 
+const matchesOperationalDate = (order, operationalDate) => {
+  if (!order?.delivery_date) return true
+  return String(order.delivery_date).slice(0, 10) === operationalDate
+}
+
 const AdminCafeteriaSection = ({ adminName }) => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
@@ -29,14 +34,15 @@ const AdminCafeteriaSection = ({ adminName }) => {
     setLoading(true)
     setError('')
     try {
+      const operationalDate = getCafeteriaOperationalDate()
       const { data, error: fetchError } = await db.getCafeteriaOrders({
-        deliveryDate: getCafeteriaOperationalDate(),
         statuses: ['pending']
       })
       if (fetchError) {
         setError(getUserFriendlyErrorMessage(fetchError, 'No se pudieron cargar los pedidos de cafeteria.'))
       } else {
-        setOrders(Array.isArray(data) ? data : [])
+        const pendingOrders = Array.isArray(data) ? data : []
+        setOrders(pendingOrders.filter((order) => matchesOperationalDate(order, operationalDate)))
       }
     } catch (err) {
       setError(getUserFriendlyErrorMessage(err, 'No se pudieron cargar los pedidos de cafeteria.'))
