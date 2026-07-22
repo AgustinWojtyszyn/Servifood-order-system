@@ -23,6 +23,8 @@ dist-ssr
 !supabase/migrations/20260625090000_archive_orders_by_delivery_date_and_report_locks.sql
 !supabase/migrations/20260626091500_daily_orders_report_archive_cron.sql
 !supabase/migrations/20260701100000_daily_report_run_status_admin_rpc.sql
+!supabase/migrations/20260722100000_ensure_cafeteria_orders_delivery_date.sql
+!supabase/migrations/20260722101000_ensure_cafeteria_admin_access.sql
 # Python
 __pycache__/
 *.pyc

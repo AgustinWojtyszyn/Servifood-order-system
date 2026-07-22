@@ -204,6 +204,19 @@ const usersService = createUsersService({
 
 const analyticsService = createAnalyticsService({ supabase })
 
+const CAFETERIA_ORDER_COLUMNS = 'id, user_id, items, total_items, status, delivery_date, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes'
+const CAFETERIA_ORDER_LEGACY_COLUMNS = 'id, user_id, items, total_items, status, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes'
+
+const isMissingDeliveryDateColumn = (error) => {
+  const message = String(error?.message || '').toLowerCase()
+  return error?.code === '42703' && message.includes('delivery_date')
+}
+
+const withLegacyDeliveryDate = (rows) => {
+  if (!Array.isArray(rows)) return rows
+  return rows.map((row) => ({ delivery_date: null, ...row }))
+}
+
 export const db = {
   ...ordersService,
   ...menuService,
@@ -214,58 +227,88 @@ export const db = {
     
   // Cafeteria orders (admin only via RLS)
   getCafeteriaOrders: async ({ deliveryDate = null, statuses = null, userId = null, adminEmail = null } = {}) => {
-    let query = supabase
-      .from('cafeteria_orders')
-      .select('id, user_id, items, total_items, status, delivery_date, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes')
-      .order('created_at', { ascending: false })
+    const buildQuery = ({ includeDeliveryDate }) => {
+      let query = supabase
+        .from('cafeteria_orders')
+        .select(includeDeliveryDate ? CAFETERIA_ORDER_COLUMNS : CAFETERIA_ORDER_LEGACY_COLUMNS)
+        .order('created_at', { ascending: false })
 
-    if (deliveryDate) {
-      query = query.eq('delivery_date', deliveryDate)
+      if (includeDeliveryDate && deliveryDate) {
+        query = query.eq('delivery_date', deliveryDate)
+      }
+
+      if (Array.isArray(statuses) && statuses.length > 0) {
+        query = query.in('status', statuses)
+      } else if (typeof statuses === 'string' && statuses) {
+        query = query.eq('status', statuses)
+      }
+
+      if (userId && adminEmail) {
+        query = query.or(`user_id.eq.${userId},admin_email.eq.${adminEmail}`)
+      } else if (userId) {
+        query = query.eq('user_id', userId)
+      } else if (adminEmail) {
+        query = query.eq('admin_email', adminEmail)
+      }
+
+      return query
     }
 
-    if (Array.isArray(statuses) && statuses.length > 0) {
-      query = query.in('status', statuses)
-    } else if (typeof statuses === 'string' && statuses) {
-      query = query.eq('status', statuses)
+    let { data, error } = await buildQuery({ includeDeliveryDate: true })
+    if (isMissingDeliveryDateColumn(error)) {
+      const fallback = await buildQuery({ includeDeliveryDate: false })
+      data = withLegacyDeliveryDate(fallback.data)
+      error = fallback.error
     }
-
-    if (userId && adminEmail) {
-      query = query.or(`user_id.eq.${userId},admin_email.eq.${adminEmail}`)
-    } else if (userId) {
-      query = query.eq('user_id', userId)
-    } else if (adminEmail) {
-      query = query.eq('admin_email', adminEmail)
-    }
-
-    const { data, error } = await query
     return { data, error }
   },
 
   getCafeteriaOrderById: async (orderId) => {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('cafeteria_orders')
-      .select('id, user_id, items, total_items, status, delivery_date, created_at, updated_at, company_slug, company_name, admin_name, admin_email, notes')
+      .select(CAFETERIA_ORDER_COLUMNS)
       .eq('id', orderId)
       .single()
+    if (isMissingDeliveryDateColumn(error)) {
+      const fallback = await supabase
+        .from('cafeteria_orders')
+        .select(CAFETERIA_ORDER_LEGACY_COLUMNS)
+        .eq('id', orderId)
+        .single()
+      data = fallback.data ? { delivery_date: null, ...fallback.data } : fallback.data
+      error = fallback.error
+    }
     return { data, error }
   },
 
   createCafeteriaOrder: async ({ userId, items, totalItems, deliveryDate, companySlug, companyName, adminName, adminEmail, notes }) => {
-    const { data, error } = await supabase
+    const payload = {
+      user_id: userId,
+      items,
+      total_items: totalItems,
+      delivery_date: deliveryDate || null,
+      company_slug: companySlug || null,
+      company_name: companyName || null,
+      admin_name: adminName || null,
+      admin_email: adminEmail || null,
+      notes: notes || null
+    }
+
+    let { data, error } = await supabase
       .from('cafeteria_orders')
-      .insert([{
-        user_id: userId,
-        items,
-        total_items: totalItems,
-        delivery_date: deliveryDate || null,
-        company_slug: companySlug || null,
-        company_name: companyName || null,
-        admin_name: adminName || null,
-        admin_email: adminEmail || null,
-        notes: notes || null
-      }])
+      .insert([payload])
       .select()
       .single()
+    if (isMissingDeliveryDateColumn(error)) {
+      const { delivery_date: _deliveryDate, ...legacyPayload } = payload
+      const fallback = await supabase
+        .from('cafeteria_orders')
+        .insert([legacyPayload])
+        .select()
+        .single()
+      data = fallback.data ? { delivery_date: null, ...fallback.data } : fallback.data
+      error = fallback.error
+    }
     return { data, error }
   },
 
