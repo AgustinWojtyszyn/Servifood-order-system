@@ -80,7 +80,7 @@ class AuthService {
 
       if (error) {
         // fallback: limpiar storage local si el endpoint devolvió error
-        import('../supabaseClient').then(({ clearSupabaseStorage }) => clearSupabaseStorage())
+        import('../utils/clearSupabaseStorage').then(({ clearSupabaseStorage }) => clearSupabaseStorage())
         throw error
       }
 

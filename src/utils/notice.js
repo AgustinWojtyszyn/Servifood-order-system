@@ -13,7 +13,7 @@ const DEFAULT_TITLES = {
 }
 
 const recentNotices = new Map()
-const DEDUPE_WINDOW_MS = 1200
+const DEDUPE_WINDOW_MS = 300
 
 const normalizeVariant = (variant = 'info') => {
   if (variant === 'success' || variant === 'error' || variant === 'warning' || variant === 'info') {

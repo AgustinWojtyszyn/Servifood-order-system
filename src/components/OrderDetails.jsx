@@ -4,7 +4,7 @@ import { supabase, db } from '../supabaseClient'
 import { useAuthContext } from '../contexts/authContextValue'
 import { COMPANY_LIST } from '../constants/companyConfig'
 import RequireUser from './RequireUser'
-import { getUserFriendlyErrorMessage, isOrderEditable } from '../utils'
+import { getUserFriendlyErrorMessage, isOrderEditable, formatDate } from '../utils'
 import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
 import { confirmAction } from '../utils/confirm'
 import { notifyError, notifyInfo, notifySuccess } from '../utils/notice'
@@ -38,19 +38,6 @@ const normalizeList = (value) => {
     }
   }
   return []
-}
-
-const formatDateTime = (value) => {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 const formatDateOnly = (value) => {
@@ -194,10 +181,7 @@ const OrderDetails = ({ user, loading }) => {
           })
       const { data, error: deleteError } = result
       if (deleteError) {
-        notifyError(getUserFriendlyErrorMessage(
-          deleteError,
-          `No pudimos ${isAdmin ? 'eliminar' : 'cancelar'} el pedido. Intentá nuevamente.`
-        ))
+        notifyError(getUserFriendlyErrorMessage(deleteError))
         return
       }
       if (!isAdmin && (!Array.isArray(data) || data.length === 0)) {
@@ -210,8 +194,8 @@ const OrderDetails = ({ user, loading }) => {
       } else {
         setOrder((prev) => prev ? { ...prev, status: 'archived' } : prev)
       }
-    } catch (_err) {
-      notifyError(`Error al ${isAdmin ? 'eliminar' : 'cancelar'} el pedido`)
+    } catch (error) {
+      notifyError(getUserFriendlyErrorMessage(error))
     } finally {
       setDeleteSubmitting(false)
     }
@@ -279,7 +263,7 @@ const OrderDetails = ({ user, loading }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-gray-600 font-semibold">Fecha del pedido</p>
-                    <p className="text-gray-900 font-bold">{formatDateTime(order.created_at)}</p>
+                    <p className="text-gray-900 font-bold">{formatDate(order.created_at)}</p>
                   </div>
                   <div>
                     <p className="text-gray-600 font-semibold">Estado</p>
@@ -352,7 +336,7 @@ const OrderDetails = ({ user, loading }) => {
                     <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
                     <div>
                       <p className="text-gray-600 font-semibold">Fecha del pedido</p>
-                      <p className="text-gray-900 font-bold">{formatDateTime(order.created_at)}</p>
+                      <p className="text-gray-900 font-bold">{formatDate(order.created_at)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

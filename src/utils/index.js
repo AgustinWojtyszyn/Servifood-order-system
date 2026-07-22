@@ -4,12 +4,12 @@ export { cn } from './cn'
 
 // Utilidades de validación y sanitización
 export const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return input
+  if (!input || typeof input !== 'string') return ''
   return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] }).trim()
 }
 
 export const sanitizeHtml = (html) => {
-  if (typeof html !== 'string') return html
+  if (!html || typeof html !== 'string') return ''
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u'],
     ALLOWED_ATTR: []
@@ -18,7 +18,9 @@ export const sanitizeHtml = (html) => {
 
 // Utilidades de formato
 export const formatDate = (dateString, options = {}) => {
+  if (!dateString) return '-'
   const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return dateString
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'short',
@@ -30,7 +32,7 @@ export const formatDate = (dateString, options = {}) => {
 }
 
 export const timeAgo = (dateString) => {
-  if (!dateString) return null
+  if (!dateString || typeof dateString !== 'string') return null
   const diffMs = Date.now() - new Date(dateString).getTime()
   const seconds = Math.floor(diffMs / 1000)
   if (seconds < 10) return 'Recién'
@@ -47,6 +49,7 @@ export const timeAgo = (dateString) => {
 }
 
 export const formatCurrency = (amount, currency = 'ARS') => {
+  if (amount === null || amount === undefined || typeof amount !== 'number') return '-'
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency
@@ -55,6 +58,7 @@ export const formatCurrency = (amount, currency = 'ARS') => {
 
 // Utilidades de validación
 export const validateEmail = (email) => {
+  if (!email || typeof email !== 'string') return false
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
@@ -160,6 +164,7 @@ export const safeSessionStorage = {
 
 // Utilidades de arrays y objetos
 export const groupBy = (array, key) => {
+  if (!Array.isArray(array)) return {}
   return array.reduce((result, item) => {
     const groupKey = item[key]
     if (!result[groupKey]) {
@@ -171,6 +176,7 @@ export const groupBy = (array, key) => {
 }
 
 export const sortBy = (array, key, direction = 'asc') => {
+  if (!Array.isArray(array)) return []
   return [...array].sort((a, b) => {
     if (a[key] < b[key]) return direction === 'asc' ? -1 : 1
     if (a[key] > b[key]) return direction === 'asc' ? 1 : -1
@@ -180,21 +186,23 @@ export const sortBy = (array, key, direction = 'asc') => {
 
 // Utilidades de strings
 export const capitalize = (str) => {
-  if (!str) return str
+  if (!str || typeof str !== 'string') return str
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 export const truncate = (str, length = 100, suffix = '...') => {
-  if (!str || str.length <= length) return str
+  if (!str || typeof str !== 'string' || str.length <= length) return str || ''
   return str.substring(0, length - suffix.length) + suffix
 }
 
 // Utilidades de números
 export const clamp = (num, min, max) => {
+  if (typeof num !== 'number') return min
   return Math.min(Math.max(num, min), max)
 }
 
 export const roundTo = (num, decimals = 2) => {
+  if (typeof num !== 'number') return 0
   return Number(Math.round(num + 'e' + decimals) + 'e-' + decimals)
 }
 
@@ -204,15 +212,19 @@ export const sleep = (ms) => {
 }
 
 export const isOrderEditable = (createdAt, minutesLimit = EDIT_WINDOW_MINUTES) => {
+  if (!createdAt) return false
   const now = new Date()
   const created = new Date(createdAt)
+  if (Number.isNaN(created.getTime())) return false
   const diffInMinutes = (now - created) / (1000 * 60)
   return diffInMinutes <= minutesLimit
 }
 
 export const getTimeAgo = (dateString) => {
+  if (!dateString || typeof dateString !== 'string') return 'ahora mismo'
   const now = new Date()
   const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return 'ahora mismo'
   const diffInSeconds = Math.floor((now - date) / 1000)
 
   const intervals = [
@@ -236,6 +248,7 @@ export const getTimeAgo = (dateString) => {
 
 // Utilidades de errores
 export const getUserFriendlyErrorMessage = (error, fallback = 'No pudimos completar la acción. Intentá nuevamente.') => {
+  if (!error) return fallback
   const rawMessage = typeof error === 'string'
     ? error
     : (error?.message || error?.error_description || error?.description || '')

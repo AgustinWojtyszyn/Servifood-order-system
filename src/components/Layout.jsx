@@ -102,7 +102,7 @@ const Layout = ({ children, user, loading }) => {
     if (result?.error) {
       // Limpieza defensiva si el endpoint devolvió 403/session_not_found
       try {
-        const { clearSupabaseStorage } = await import('../supabaseClient')
+        const { clearSupabaseStorage } = await import('../utils/clearSupabaseStorage')
         clearSupabaseStorage()
       } catch (_err) {
         console.error('Error cleaning Supabase storage after signOut:', _err)

@@ -6,7 +6,8 @@ import { createMenuService } from './services/menu/menuService'
 import { createCustomOptionsService } from './services/customOptions/customOptionsService'
 import { createUsersService } from './services/users/usersService'
 import { createAnalyticsService } from './services/analytics/analyticsService'
-export { supabase }
+import { clearSupabaseStorage } from './utils/clearSupabaseStorage'
+export { supabase, clearSupabaseStorage }
 
 const hasUsableAccessToken = (session) => {
   const token = session?.access_token
@@ -126,22 +127,6 @@ export const auth = {
   onAuthStateChange: (callback) => {
     return supabase.auth.onAuthStateChange(callback)
   }
-}
-
-// Limpia cualquier rastro de sesión de Supabase en storages
-export const clearSupabaseStorage = () => {
-  const patterns = ['sb-', 'supabase', 'gotrue']
-  ;[window.localStorage, window.sessionStorage].forEach(store => {
-    if (!store) return
-    const keysToRemove = []
-    for (let i = 0; i < store.length; i++) {
-      const key = store.key(i)
-      if (patterns.some(p => key?.toLowerCase().includes(p))) {
-        keysToRemove.push(key)
-      }
-    }
-    keysToRemove.forEach(k => store.removeItem(k))
-  })
 }
 
 // Funciones de base de datos
