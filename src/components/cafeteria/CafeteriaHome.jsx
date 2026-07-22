@@ -11,6 +11,8 @@ import { getCafeteriaOperationalDate, getCafeteriaWindowLabel, isCafeteriaWithin
 
 const matchesAdminOrderForDate = (order, user, deliveryDate) => {
   if (!order || !user) return false
+  const status = String(order.status || 'pending').toLowerCase()
+  if (status !== 'pending') return false
   const sameUser = (order.user_id && user.id && order.user_id === user.id) ||
     (order.admin_email && user.email && order.admin_email === user.email)
   if (!sameUser) return false
@@ -92,7 +94,6 @@ const CafeteriaHome = ({ user, loading }) => {
     const deliveryDate = payload.delivery_date
     const { data: existingOrders, error: existingError } = await db.getCafeteriaOrders({
       deliveryDate,
-      statuses: ['pending'],
       userId: payload.userId,
       adminEmail: payload.admin_email
     })

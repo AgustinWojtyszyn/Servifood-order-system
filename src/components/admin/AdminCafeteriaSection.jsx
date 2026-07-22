@@ -23,6 +23,11 @@ const matchesOperationalDate = (order, operationalDate) => {
   return String(order.delivery_date).slice(0, 10) === operationalDate
 }
 
+const isPendingOrder = (order) => {
+  const status = String(order?.status || 'pending').toLowerCase()
+  return status === 'pending'
+}
+
 const AdminCafeteriaSection = ({ adminName }) => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
@@ -35,14 +40,12 @@ const AdminCafeteriaSection = ({ adminName }) => {
     setError('')
     try {
       const operationalDate = getCafeteriaOperationalDate()
-      const { data, error: fetchError } = await db.getCafeteriaOrders({
-        statuses: ['pending']
-      })
+      const { data, error: fetchError } = await db.getCafeteriaOrders()
       if (fetchError) {
         setError(getUserFriendlyErrorMessage(fetchError, 'No se pudieron cargar los pedidos de cafeteria.'))
       } else {
         const pendingOrders = Array.isArray(data) ? data : []
-        setOrders(pendingOrders.filter((order) => matchesOperationalDate(order, operationalDate)))
+        setOrders(pendingOrders.filter((order) => isPendingOrder(order) && matchesOperationalDate(order, operationalDate)))
       }
     } catch (err) {
       setError(getUserFriendlyErrorMessage(err, 'No se pudieron cargar los pedidos de cafeteria.'))

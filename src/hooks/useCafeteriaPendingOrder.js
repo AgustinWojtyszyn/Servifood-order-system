@@ -14,6 +14,11 @@ const matchesOperationalDate = (order, operationalDate) => {
   return String(order.delivery_date).slice(0, 10) === operationalDate
 }
 
+const isPendingOrder = (order) => {
+  const status = String(order?.status || 'pending').toLowerCase()
+  return status === 'pending'
+}
+
 export const useCafeteriaPendingOrder = (user) => {
   const [pendingOrder, setPendingOrder] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -30,7 +35,6 @@ export const useCafeteriaPendingOrder = (user) => {
     try {
       const operationalDate = getCafeteriaOperationalDate()
       const { data, error: fetchError } = await db.getCafeteriaOrders({
-        statuses: ['pending'],
         userId: user.id,
         adminEmail: user.email || null
       })
@@ -40,7 +44,7 @@ export const useCafeteriaPendingOrder = (user) => {
         return
       }
       const scoped = (Array.isArray(data) ? data : [])
-        .filter((order) => matchesUser(order, user) && matchesOperationalDate(order, operationalDate))
+        .filter((order) => isPendingOrder(order) && matchesUser(order, user) && matchesOperationalDate(order, operationalDate))
       const sorted = scoped.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       setPendingOrder(sorted[0] || null)
     } catch (_err) {
