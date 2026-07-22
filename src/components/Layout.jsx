@@ -159,11 +159,11 @@ const Layout = ({ children, user, loading }) => {
         )}
         <aside
           className={`
-            fixed left-0 top-0 z-1000 h-dvh w-[min(85vw,320px)] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
+            fixed left-0 top-0 z-1000 flex h-dvh w-[min(85vw,320px)] flex-col bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             md:translate-x-0 md:static md:inset-0 md:h-auto md:w-64 border-r-4 border-secondary-500
           `}
-          style={{ pointerEvents: sidebarOpen || window.innerWidth >= 768 ? 'auto' : 'none' }}
+          style={{ pointerEvents: sidebarOpen || window.innerWidth >= 768 ? 'auto' : 'none', boxSizing: 'border-box' }}
         >
           {/* Botón cerrar solo en mobile */}
           <div className="flex items-center justify-between h-16 px-4 border-b-2 border-primary-200 bg-linear-to-r from-primary-700 to-primary-800">
