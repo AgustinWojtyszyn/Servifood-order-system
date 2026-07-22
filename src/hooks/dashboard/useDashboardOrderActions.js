@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { getUserFriendlyErrorMessage } from '../../utils'
 
 export const useDashboardOrderActions = ({
   orders,
@@ -161,7 +162,10 @@ export const useDashboardOrderActions = ({
           })
       const { data, error } = result
       if (error) {
-        showToast(`Error al ${isAdmin ? 'eliminar' : 'cancelar'} el pedido: ${error.message}`, 'error')
+        showToast(
+          getUserFriendlyErrorMessage(error, `No pudimos ${isAdmin ? 'eliminar' : 'cancelar'} el pedido. Intentá nuevamente.`),
+          'error'
+        )
         return
       }
       if (!isAdmin && (!Array.isArray(data) || data.length === 0)) {
@@ -183,7 +187,10 @@ export const useDashboardOrderActions = ({
       setDeleteConfirmOrder(null)
     } catch (err) {
       console.error('Error:', err)
-      showToast(`Error al ${isAdmin ? 'eliminar' : 'cancelar'} el pedido`, 'error')
+      showToast(
+        getUserFriendlyErrorMessage(err, `No pudimos ${isAdmin ? 'eliminar' : 'cancelar'} el pedido. Intentá nuevamente.`),
+        'error'
+      )
     } finally {
       setDeleteSubmitting(false)
     }

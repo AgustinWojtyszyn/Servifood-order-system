@@ -95,7 +95,7 @@ const Profile = ({ user, loading }) => {
       if (error) {
         setMessage({
           type: 'error',
-          text: error.message
+          text: getUserFriendlyErrorMessage(error, 'No pudimos actualizar el perfil. Intentá nuevamente.')
         })
         setLastUpdateInfo(null)
       } else {
@@ -111,10 +111,10 @@ const Profile = ({ user, loading }) => {
             : '¡Perfil actualizado exitosamente!'
         })
       }
-    } catch (_err) {
+    } catch (err) {
       setMessage({
         type: 'error',
-        text: 'Error al actualizar el perfil'
+        text: getUserFriendlyErrorMessage(err, 'No pudimos actualizar el perfil. Intentá nuevamente.')
       })
       setLastUpdateInfo(null)
     } finally {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { db } from '../../supabaseClient'
 import { confirmAction } from '../../utils/confirm'
 import { notifyError, notifyInfo, notifySuccess, notifyWarning } from '../../utils/notice'
+import { getUserFriendlyErrorMessage } from '../../utils'
 
 const useAdminOptionActions = ({
   customOptions,
@@ -92,7 +93,7 @@ const useAdminOptionActions = ({
 
       if (error) {
         console.error('❌ Error al guardar opción:', error)
-        notifyError(`Error al guardar la opción: ${error.message}`)
+        notifyError(getUserFriendlyErrorMessage(error, 'No pudimos guardar la opción. Intentá nuevamente.'))
       } else {
         setNewOption(null)
         setEditingOptions(false)
@@ -101,7 +102,7 @@ const useAdminOptionActions = ({
       }
     } catch (err) {
       console.error('❌ Error:', err)
-      notifyError('Error al guardar la opción')
+      notifyError(getUserFriendlyErrorMessage(err, 'No pudimos guardar la opción. Intentá nuevamente.'))
     }
   }
 

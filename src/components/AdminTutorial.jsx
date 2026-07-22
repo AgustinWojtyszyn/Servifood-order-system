@@ -19,7 +19,7 @@ const AdminTutorial = ({ isOpen, onClose }) => {
         isOpen
       })
     }
-  }, [])
+  }, [isOpen])
 
   console.log('[DEBUG AdminTutorial] render', {
     pathname: window.location.pathname,

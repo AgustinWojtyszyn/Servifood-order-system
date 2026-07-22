@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { usersService } from '../../services/users'
 import { notifyError, notifySuccess, notifyWarning } from '../../utils/notice'
 import { confirmAction } from '../../utils/confirm'
+import { getUserFriendlyErrorMessage } from '../../utils'
 
 const useAdminUsersActions = ({
   user,
@@ -29,7 +30,7 @@ const useAdminUsersActions = ({
       const roleValue = newRole.toLowerCase()
       const { data, error } = await usersService.updateUserRole(userId, roleValue)
       if (error) {
-        notifyError(`Error al actualizar el rol: ${error.message}`)
+        notifyError(getUserFriendlyErrorMessage(error, 'No pudimos actualizar el rol. Intentá nuevamente.'))
         return
       }
       if (!data || (Array.isArray(data) && data.length === 0)) {
@@ -41,14 +42,14 @@ const useAdminUsersActions = ({
       if (user && user.id === userId) {
         await refreshSession()
       }
-    } catch {
-      notifyError('Error al actualizar el rol')
+    } catch (err) {
+      notifyError(getUserFriendlyErrorMessage(err, 'No pudimos actualizar el rol. Intentá nuevamente.'))
     } finally {
       setRoleUpdatingById(prev => ({ ...prev, [userId]: false }))
     }
   }
 
-  const handleDeleteUser = async (userId, userName) => {
+  const handleDeleteUser = async (userId) => {
     if (!userId || deletingById[userId]) return
     const confirmed = await confirmAction({
       title: 'Eliminar usuario',
@@ -63,13 +64,13 @@ const useAdminUsersActions = ({
       const { error } = await usersService.deleteUser(userId)
 
       if (error) {
-        notifyError(`No se pudo eliminar el usuario: ${error.message}`)
+        notifyError(getUserFriendlyErrorMessage(error, 'No pudimos eliminar el usuario. Intentá nuevamente.'))
       } else {
         notifySuccess('Usuario eliminado exitosamente')
         await refreshAdminData()
       }
-    } catch {
-      notifyError('Error al eliminar el usuario')
+    } catch (err) {
+      notifyError(getUserFriendlyErrorMessage(err, 'No pudimos eliminar el usuario. Intentá nuevamente.'))
     } finally {
       setDeletingById(prev => ({ ...prev, [userId]: false }))
     }

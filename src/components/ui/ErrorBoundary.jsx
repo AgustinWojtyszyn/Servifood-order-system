@@ -33,7 +33,7 @@ class ErrorFallback extends Component {
             </h1>
 
             <p className="text-gray-600 mb-6">
-              Ha ocurrido un error inesperado. Nuestros desarrolladores han sido notificados.
+              No pudimos cargar esta parte de la aplicación. Intentá nuevamente o volvé al inicio.
             </p>
 
             {import.meta.env.DEV && (

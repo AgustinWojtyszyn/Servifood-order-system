@@ -135,7 +135,7 @@ const MonthlyPanel = ({ user, loading }) => {
     <RequireUser user={user} loading={loading}>
       <div className="monthly-page min-h-screen bg-[#f6f7f9] py-6">
         <div
-          className="monthly-container w-full max-w-[1180px] mx-auto space-y-3 px-3 sm:px-4 md:px-6 pb-20 bg-white rounded-2xl shadow-sm border border-slate-200"
+          className="monthly-container w-full max-w-295 mx-auto space-y-3 px-3 sm:px-4 md:px-6 pb-20 bg-white rounded-2xl shadow-sm border border-slate-200"
           style={{
             minHeight: '100vh',
             WebkitOverflowScrolling: 'touch'
@@ -214,7 +214,7 @@ const MonthlyPanel = ({ user, loading }) => {
             </div>
           )}
           {!metrics && !metricsLoading && (
-            <div className="flex items-center justify-center text-center rounded-xl border border-slate-200 bg-white shadow-sm min-h-[260px]">
+            <div className="flex items-center justify-center text-center rounded-xl border border-slate-200 bg-white shadow-sm min-h-65">
               <div className="max-w-md px-4">
                 <p className="text-base font-semibold text-slate-800">Selecciona un rango de fechas</p>
                 <p className="text-sm text-slate-600 mt-1">

@@ -4,6 +4,7 @@ import { Sound } from '../../utils/Sound'
 import { confirmAction } from '../../utils/confirm'
 import { notifyError, notifyInfo, notifySuccess } from '../../utils/notice'
 import { getTomorrowISOInTimeZone } from '../../utils/dateUtils'
+import { getUserFriendlyErrorMessage } from '../../utils'
 
 const useAdminCleanupActions = ({
   archivedOrdersCount,
@@ -34,7 +35,7 @@ const useAdminCleanupActions = ({
         statuses: ['pending']
       })
       if (error) {
-        notifyError(`Ocurrió un error al archivar los pedidos pendientes. ${error.message}`)
+        notifyError(getUserFriendlyErrorMessage(error, 'No pudimos archivar los pedidos pendientes. Intentá nuevamente.'))
       } else {
         const affected = Array.isArray(data) ? data.length : 0
         if (affected === 0) {
@@ -46,8 +47,8 @@ const useAdminCleanupActions = ({
         await onRefreshData?.()
         await refreshArchivedOrdersCount?.()
       }
-    } catch (_err) {
-      notifyError('Error inesperado al archivar pedidos pendientes. Intenta nuevamente.')
+    } catch (err) {
+      notifyError(getUserFriendlyErrorMessage(err, 'No pudimos archivar los pedidos pendientes. Intentá nuevamente.'))
     } finally {
       setArchivingPending(false)
     }
@@ -70,7 +71,7 @@ const useAdminCleanupActions = ({
 
       if (error) {
         console.error('Error deleting archived orders:', error)
-        notifyError(`Error al eliminar los pedidos: ${error.message}`)
+        notifyError(getUserFriendlyErrorMessage(error, 'No pudimos eliminar los pedidos archivados. Intentá nuevamente.'))
       } else {
         const affected = Number.isFinite(deletedCount) ? deletedCount : archivedOrdersCount
         notifySuccess(
@@ -81,9 +82,9 @@ const useAdminCleanupActions = ({
         clearArchivedOrdersCount()
         await onRefreshData?.()
       }
-    } catch (_err) {
-      console.error('Error:', _err)
-      notifyError('Error al eliminar los pedidos')
+    } catch (err) {
+      console.error('Error:', err)
+      notifyError(getUserFriendlyErrorMessage(err, 'No pudimos eliminar los pedidos archivados. Intentá nuevamente.'))
     } finally {
       setDeletingOrders(false)
     }

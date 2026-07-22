@@ -6,6 +6,7 @@ import { calculateStats } from '../utils/daily/dailyOrderCalculations'
 import { notifyError, notifyInfo, notifySuccess } from '../utils/notice'
 import { confirmAction } from '../utils/confirm'
 import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
+import { getUserFriendlyErrorMessage } from '../utils'
 
 export const useDailyOrdersData = (user) => {
   const [orders, setOrders] = useState([])
@@ -188,7 +189,7 @@ export const useDailyOrdersData = (user) => {
 
     const { error } = await db.updateOrderStatus(order.id, 'archived')
     if (error) {
-      notifyError(`Error al archivar el pedido: ${error.message}`)
+      notifyError(getUserFriendlyErrorMessage(error, 'No pudimos archivar el pedido. Intentá nuevamente.'))
       return
     }
     Sound.playSuccess()
@@ -244,7 +245,7 @@ export const useDailyOrdersData = (user) => {
         })
         handleRefresh()
       } else {
-        notifyError(`Error al archivar pedidos: ${error.message}`)
+        notifyError(getUserFriendlyErrorMessage(error, 'No pudimos archivar los pedidos. Intentá nuevamente.'))
       }
     }
   }, [handleRefresh, operationalDate, orders])
