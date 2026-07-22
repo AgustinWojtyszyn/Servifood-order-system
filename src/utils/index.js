@@ -296,6 +296,33 @@ export const getUserFriendlyErrorMessage = (error, fallback = 'No pudimos comple
     return 'No pudimos conectar con el servidor. Revisá tu conexión e intentá nuevamente.'
   }
 
+  if (
+    normalized.includes('row-level security') ||
+    normalized.includes('rls') ||
+    normalized.includes('permission denied') ||
+    normalized.includes('403') ||
+    normalized.includes('not authorized') ||
+    normalized.includes('unauthorized')
+  ) {
+    return 'No tenés permisos para realizar esta acción. Si creés que es un error, contactá a un administrador.'
+  }
+
+  if (
+    normalized.includes('duplicate') ||
+    normalized.includes('unique constraint') ||
+    normalized.includes('duplicate_active_order')
+  ) {
+    return 'Ya existe un registro similar. Revisá la información e intentá nuevamente.'
+  }
+
+  if (
+    normalized.includes('violates foreign key constraint') ||
+    normalized.includes('foreign key') ||
+    normalized.includes('23503')
+  ) {
+    return 'No pudimos completar la acción porque falta información relacionada. Actualizá la pantalla e intentá nuevamente.'
+  }
+
   if (normalized.includes('correo electrónico inválido') || normalized.includes('invalid email')) {
     return 'Ingresá un correo electrónico válido.'
   }

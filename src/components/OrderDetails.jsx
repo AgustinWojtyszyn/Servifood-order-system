@@ -4,7 +4,7 @@ import { supabase, db } from '../supabaseClient'
 import { useAuthContext } from '../contexts/authContextValue'
 import { COMPANY_LIST } from '../constants/companyConfig'
 import RequireUser from './RequireUser'
-import { isOrderEditable } from '../utils'
+import { getUserFriendlyErrorMessage, isOrderEditable } from '../utils'
 import { EDIT_WINDOW_MINUTES } from '../constants/orderRules'
 import { confirmAction } from '../utils/confirm'
 import { notifyError, notifyInfo, notifySuccess } from '../utils/notice'
@@ -194,7 +194,10 @@ const OrderDetails = ({ user, loading }) => {
           })
       const { data, error: deleteError } = result
       if (deleteError) {
-        notifyError(`Error al ${isAdmin ? 'eliminar' : 'cancelar'} el pedido: ${deleteError.message}`)
+        notifyError(getUserFriendlyErrorMessage(
+          deleteError,
+          `No pudimos ${isAdmin ? 'eliminar' : 'cancelar'} el pedido. Intentá nuevamente.`
+        ))
         return
       }
       if (!isAdmin && (!Array.isArray(data) || data.length === 0)) {

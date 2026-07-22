@@ -8,7 +8,7 @@ const DEFAULT_TIMEOUT_MS = {
 const DEFAULT_TITLES = {
   success: 'Listo',
   info: 'Aviso',
-  warning: 'Atencion',
+  warning: 'Atención',
   error: 'No se pudo completar'
 }
 
@@ -24,8 +24,8 @@ const normalizeVariant = (variant = 'info') => {
 
 const normalizeMessage = (message, variant) => {
   const fallback = variant === 'error'
-    ? 'Ocurrio un error. Intentalo de nuevo.'
-    : 'Operacion procesada.'
+    ? 'Ocurrió un error. Intentá de nuevo.'
+    : 'Operación procesada.'
 
   const rawMessage = message instanceof Error
     ? message.message

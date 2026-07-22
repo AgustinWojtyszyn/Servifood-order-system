@@ -1,0 +1,130 @@
+AUDITORIA INTERNA - APLICACION DE PEDIDOS
+Fecha: 2026-07-22
+Proyecto: food-order-app
+
+RESUMEN
+Se audito el flujo de pedidos, cafeteria, errores visibles para usuarios, build, tests y dependencias.
+La aplicacion compila y los tests pasan. Se corrigieron mensajes tecnicos que podian mostrarse al usuario final y se reforzo el normalizador global de errores para que los errores de permisos, RLS, duplicados y relaciones de base de datos se muestren en espanol y de forma amigable.
+
+CORRECCIONES APLICADAS
+1. src/components/OrderDetails.jsx
+   Problema:
+   Al cancelar o eliminar un pedido, el toast podia mostrar deleteError.message directamente. Eso podia exponer mensajes tecnicos de Supabase, RLS o PostgreSQL.
+
+   Correccion:
+   El error ahora pasa por getUserFriendlyErrorMessage con fallback especifico:
+   "No pudimos eliminar/cancelar el pedido. Intenta nuevamente."
+
+2. src/utils/index.js
+   Problema:
+   El normalizador global de errores no cubria varios errores frecuentes de base de datos y permisos.
+
+   Correccion:
+   Se agregaron mensajes amigables para:
+   - row-level security / RLS / permission denied / 403 / unauthorized
+   - duplicate / unique constraint / duplicate_active_order
+   - foreign key / 23503
+
+3. src/utils/notice.js
+   Problema:
+   Algunos textos visibles estaban en espanol sin tildes.
+
+   Correccion:
+   Se ajustaron textos de notificaciones:
+   - "Atencion" -> "Atención"
+   - "Ocurrio un error. Intentalo de nuevo." -> "Ocurrió un error. Intentá de nuevo."
+   - "Operacion procesada." -> "Operación procesada."
+
+CAFETERIA
+Estado auditado:
+El flujo de cafeteria ya quedo preparado para:
+1. Crear pedido de cafeteria con status pendiente.
+2. Asociar delivery_date.
+3. Mostrar el pedido actual en el dashboard de cafeteria.
+4. Mostrar y contabilizar pedidos en AdminCafeteriaSection.
+5. Permitir eliminar pedidos de cafeteria desde el panel admin.
+6. Soportar el caso legacy donde la tabla remota aun no tenga delivery_date.
+
+Observacion critica:
+Si en Supabase no se ejecuto el SQL de migracion/RLS indicado previamente, el frontend puede crear o consultar de forma inconsistente. En ese caso el panel admin puede seguir mostrando 0 aunque el codigo este correcto, porque la tabla remota no tiene columnas/politicas esperadas o no permite SELECT/INSERT/DELETE al usuario autenticado.
+
+SQL relacionado:
+- supabase/migrations/20260722100000_ensure_cafeteria_orders_delivery_date.sql
+- supabase/migrations/20260722101000_ensure_cafeteria_admin_access.sql
+
+FLUJO DE PEDIDOS NORMAL
+Estado auditado:
+1. El submit de pedidos valida duplicados antes de crear.
+2. La creacion real usa create_order_idempotent, lo que reduce duplicados por reintento.
+3. Los mensajes de error principales ya estan en espanol y con fallback amigable.
+4. Se verifico que los servicios soporten filtros de status, fecha, servicio y limite.
+
+Riesgo observado:
+El control definitivo de duplicados debe seguir estando en base de datos/RPC. La validacion frontend es util para UX, pero no debe ser la unica proteccion.
+
+SEGURIDAD Y DEPENDENCIAS
+Comando ejecutado:
+npm audit --omit=dev --audit-level=moderate
+
+Resultado:
+Quedan 2 vulnerabilidades moderadas por uuid < 11.1.1, arrastradas por exceljs@4.4.0.
+
+Detalle:
+exceljs@4.4.0 depende de uuid@8.3.2.
+npm propone npm audit fix --force, pero eso instalaria exceljs@3.4.0, marcado como cambio breaking. No se aplico porque podria afectar la exportacion Excel de pedidos/cafeteria.
+
+Recomendacion:
+No usar --force a ciegas. Evaluar una actualizacion compatible de exceljs cuando exista una version que remueva uuid vulnerable, o reemplazar la dependencia de exportacion si el riesgo se vuelve prioritario.
+
+BUILD Y PERFORMANCE
+Comando ejecutado:
+npm run build
+
+Resultado:
+Build correcto.
+
+Advertencias no bloqueantes:
+1. Browserslist/caniuse-lite desactualizado.
+2. src/supabaseClient.js se importa de forma estatica y dinamica, por lo que Vite no puede separar ese modulo en otro chunk.
+3. El chunk principal supera 1000 kB minificado.
+
+Impacto:
+No son bugs funcionales, pero pueden afectar tiempo de carga inicial. Conviene tratarlos en una iteracion de performance/code splitting.
+
+VERIFICACIONES EJECUTADAS
+1. npm run lint
+   Resultado: OK
+
+2. npm run test
+   Resultado: OK
+   18 archivos de test pasaron.
+   123 tests pasaron.
+
+3. npm run build
+   Resultado: OK
+
+4. npm audit --omit=dev --audit-level=moderate
+   Resultado: queda pendiente uuid via exceljs, sin fix seguro automatico.
+
+ARCHIVOS MODIFICADOS EN ESTA ITERACION
+1. src/components/OrderDetails.jsx
+2. src/utils/index.js
+3. src/utils/notice.js
+
+PENDIENTES RECOMENDADOS
+1. Confirmar en Supabase que las migraciones de cafeteria fueron ejecutadas en el proyecto remoto correcto.
+2. Verificar manualmente con un usuario real:
+   - crear pedido de cafeteria
+   - volver al dashboard
+   - confirmar que aparece el pedido actual
+   - entrar al panel admin
+   - confirmar contador 1
+   - exportar Excel
+   - eliminar pedido
+3. Revisar estrategia de exceljs/uuid sin aplicar downgrade forzado.
+4. Planificar una iteracion de performance para dividir el chunk principal y limpiar imports dinamicos/estaticos de supabaseClient.js.
+
+CONCLUSION
+La aplicacion queda funcionalmente estable segun lint, tests y build.
+La principal condicion externa para que cafeteria contabilice correctamente es que el SQL de Supabase este aplicado en el entorno remoto.
+Los errores visibles al usuario quedaron mas protegidos contra mensajes tecnicos y con textos amigables en espanol.
