@@ -312,19 +312,33 @@ export const db = {
     return { data, error }
   },
 
-  updateCafeteriaOrder: async (orderId, { items, totalItems, companySlug, companyName, notes }) => {
-    const { data, error } = await supabase
+  updateCafeteriaOrder: async (orderId, { items, totalItems, deliveryDate, companySlug, companyName, notes }) => {
+    const payload = {
+      items,
+      total_items: totalItems,
+      delivery_date: deliveryDate || null,
+      company_slug: companySlug || null,
+      company_name: companyName || null,
+      notes: notes || null
+    }
+
+    let { data, error } = await supabase
       .from('cafeteria_orders')
-      .update({
-        items,
-        total_items: totalItems,
-        company_slug: companySlug || null,
-        company_name: companyName || null,
-        notes: notes || null
-      })
+      .update(payload)
       .eq('id', orderId)
       .select()
       .single()
+    if (isMissingDeliveryDateColumn(error)) {
+      const { delivery_date: _deliveryDate, ...legacyPayload } = payload
+      const fallback = await supabase
+        .from('cafeteria_orders')
+        .update(legacyPayload)
+        .eq('id', orderId)
+        .select()
+        .single()
+      data = fallback.data ? { delivery_date: null, ...fallback.data } : fallback.data
+      error = fallback.error
+    }
     return { data, error }
   },
 

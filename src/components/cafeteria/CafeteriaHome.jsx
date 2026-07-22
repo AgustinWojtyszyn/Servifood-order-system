@@ -9,6 +9,15 @@ import { db } from '../../supabaseClient'
 import { COMPANY_LIST } from '../../constants/companyConfig'
 import { getCafeteriaOperationalDate, getCafeteriaWindowLabel, isCafeteriaWithinWindow } from '../../cafeteria/cafeteriaTime'
 
+const matchesAdminOrderForDate = (order, user, deliveryDate) => {
+  if (!order || !user) return false
+  const sameUser = (order.user_id && user.id && order.user_id === user.id) ||
+    (order.admin_email && user.email && order.admin_email === user.email)
+  if (!sameUser) return false
+  if (!order.delivery_date) return true
+  return String(order.delivery_date).slice(0, 10) === deliveryDate
+}
+
 const CafeteriaHome = ({ user, loading }) => {
   const [selectedPlanId, setSelectedPlanId] = useState(null)
   const [previewPlanId, setPreviewPlanId] = useState(null)
@@ -80,6 +89,36 @@ const CafeteriaHome = ({ user, loading }) => {
 
   const createOrder = async (payload) => {
     setError('')
+    const deliveryDate = payload.delivery_date
+    const { data: existingOrders, error: existingError } = await db.getCafeteriaOrders({
+      deliveryDate,
+      statuses: ['pending'],
+      userId: payload.userId,
+      adminEmail: payload.admin_email
+    })
+    if (existingError) {
+      throw existingError
+    }
+
+    const existingOrder = (Array.isArray(existingOrders) ? existingOrders : [])
+      .find((order) => matchesAdminOrderForDate(order, user, deliveryDate))
+
+    if (existingOrder?.id) {
+      const { error: updateError } = await db.updateCafeteriaOrder(existingOrder.id, {
+        items: payload.items,
+        totalItems: payload.totalItems,
+        deliveryDate,
+        companySlug: payload.company_slug,
+        companyName: payload.company_name,
+        notes: payload.notes
+      })
+      if (updateError) {
+        throw updateError
+      }
+      navigate('/cafeteria', { replace: true })
+      return
+    }
+
     const { data, error: createError } = await db.createCafeteriaOrder({
       userId: payload.userId,
       items: payload.items,
@@ -94,10 +133,8 @@ const CafeteriaHome = ({ user, loading }) => {
     if (createError) {
       throw createError
     }
-    navigate('/cafeteria/confirm', {
-      replace: true,
-      state: { orderId: data.id, order: payload, justCreated: true, redirectTo: '/cafeteria' }
-    })
+    saveCafeteriaOrder({ ...payload, id: data?.id })
+    navigate('/cafeteria', { replace: true })
   }
 
   const updateQuantity = (planId, delta) => {

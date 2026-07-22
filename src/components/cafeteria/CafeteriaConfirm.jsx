@@ -13,7 +13,7 @@ import {
 } from '../../cafeteria/cafeteriaStorage'
 import { db } from '../../supabaseClient'
 import { COMPANY_LIST } from '../../constants/companyConfig'
-import { getCafeteriaWindowLabel, isCafeteriaWithinWindow } from '../../cafeteria/cafeteriaTime'
+import { getCafeteriaOperationalDate, getCafeteriaWindowLabel, isCafeteriaWithinWindow } from '../../cafeteria/cafeteriaTime'
 
 const CafeteriaConfirm = ({ user, loading, orderId: orderIdOverride, initialOrder: initialOrderOverride }) => {
   const location = useLocation()
@@ -62,6 +62,7 @@ const CafeteriaConfirm = ({ user, loading, orderId: orderIdOverride, initialOrde
     const payload = {
       ...order,
       createdAt: initialOrder?.createdAt || new Date().toISOString(),
+      delivery_date: initialOrder?.delivery_date || getCafeteriaOperationalDate(),
       userId: initialOrder?.userId || user?.id || null,
       company_slug: companySlug,
       company_name: COMPANY_LIST.find((c) => c.slug === companySlug)?.name || '',
@@ -82,6 +83,7 @@ const CafeteriaConfirm = ({ user, loading, orderId: orderIdOverride, initialOrde
       const { error } = await db.updateCafeteriaOrder(orderId, {
         items: payload.items,
         totalItems: payload.totalItems,
+        deliveryDate: payload.delivery_date,
         companySlug: payload.company_slug,
         companyName: payload.company_name,
         notes: payload.notes

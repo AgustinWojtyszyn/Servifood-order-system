@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Coffee } from 'lucide-react'
 import RequireUser from '../RequireUser'
@@ -6,6 +6,9 @@ import LoadingState from '../ui/LoadingState'
 import { useCafeteriaPendingOrder } from '../../hooks/useCafeteriaPendingOrder'
 import { CAFETERIA_PLANS } from '../../cafeteria/cafeteriaPlans'
 import { getCafeteriaWindowLabel } from '../../cafeteria/cafeteriaTime'
+import { db } from '../../supabaseClient'
+import { confirmAction } from '../../utils/confirm'
+import { getUserFriendlyErrorMessage } from '../../utils'
 
 const formatDeliveryDate = (deliveryDate, createdAt) => {
   const rawDate = deliveryDate || createdAt
@@ -23,7 +26,9 @@ const planNameById = new Map(CAFETERIA_PLANS.map((plan) => [plan.id, plan.name])
 
 const CafeteriaDashboardPage = ({ user, loading }) => {
   const navigate = useNavigate()
-  const { pendingOrder, loading: pendingLoading, error } = useCafeteriaPendingOrder(user)
+  const { pendingOrder, loading: pendingLoading, error, refresh } = useCafeteriaPendingOrder(user)
+  const [actionError, setActionError] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   const itemsSummary = useMemo(() => {
     if (!pendingOrder?.items) return []
@@ -58,6 +63,32 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
   const deliveryDate = formatDeliveryDate(pendingOrder?.delivery_date, pendingOrder?.created_at)
   const deliveryWindow = getCafeteriaWindowLabel()
 
+  const handleDeleteOrder = async () => {
+    if (!pendingOrder?.id || deleting) return
+    const confirmed = await confirmAction({
+      title: 'Eliminar pedido de cafeteria',
+      message: 'Se eliminará tu pedido pendiente de cafeteria.',
+      highlight: 'Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar pedido'
+    })
+    if (!confirmed) return
+
+    setDeleting(true)
+    setActionError('')
+    try {
+      const { error: deleteError } = await db.deleteCafeteriaOrder(pendingOrder.id)
+      if (deleteError) {
+        setActionError(getUserFriendlyErrorMessage(deleteError, 'No pudimos eliminar el pedido. Intentá nuevamente.'))
+        return
+      }
+      await refresh()
+    } catch (err) {
+      setActionError(getUserFriendlyErrorMessage(err, 'No pudimos eliminar el pedido. Intentá nuevamente.'))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <RequireUser user={user} loading={loading}>
       <div className="w-[90%] mx-auto space-y-8">
@@ -77,6 +108,9 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
           )}
           {!pendingLoading && error && (
             <p className="text-sm font-semibold text-red-600">{error}</p>
+          )}
+          {!pendingLoading && actionError && (
+            <p className="text-sm font-semibold text-red-600">{actionError}</p>
           )}
           {!pendingLoading && !error && pendingOrder && (
             <div className="space-y-4">
@@ -124,6 +158,14 @@ const CafeteriaDashboardPage = ({ user, loading }) => {
                   className="inline-flex items-center gap-2 rounded-full bg-slate-900 text-white font-bold text-sm px-5 py-2.5"
                 >
                   Editar pedido
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteOrder}
+                  disabled={deleting}
+                  className="inline-flex items-center gap-2 rounded-full bg-red-600 text-white font-bold text-sm px-5 py-2.5 disabled:opacity-60"
+                >
+                  {deleting ? 'Eliminando...' : 'Eliminar pedido'}
                 </button>
               </div>
             </div>
