@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { ordersService } from '../../services/orders'
 import { EDIT_WINDOW_MINUTES } from '../../constants/orderRules'
-import { isOrderEditable } from '../../utils'
+import { getUserFriendlyErrorMessage, isOrderEditable } from '../../utils'
 import { validateEditOrderForm } from '../../utils/orderEdit/validateEditOrderForm'
 import { buildEditOrderPayload } from '../../utils/orderEdit/buildEditOrderPayload'
 
@@ -56,12 +56,12 @@ export const useEditOrderSubmit = ({
       const { error } = await ordersService.updateOrder(order.id, orderData)
 
       if (error) {
-        setError('Error al actualizar el pedido: ' + error.message)
+        setError(getUserFriendlyErrorMessage(error, 'No pudimos actualizar el pedido. Intentá nuevamente.'))
       } else {
         setSuccess(true)
       }
-    } catch {
-      setError('Error al actualizar el pedido')
+    } catch (err) {
+      setError(getUserFriendlyErrorMessage(err, 'No pudimos actualizar el pedido. Intentá nuevamente.'))
     } finally {
       setLocalLoading(false)
     }

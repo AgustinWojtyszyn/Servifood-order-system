@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { auditService } from '../../services/audit'
 import { healthCheck, supabase } from '../../services/supabase'
+import { getUserFriendlyErrorMessage } from '../../utils'
 
 export const useAuditLogsData = () => {
   const [logs, setLogs] = useState([])
@@ -23,7 +24,7 @@ export const useAuditLogsData = () => {
     setLoading(true)
     setError(null)
     const { data, error } = await auditService.getAuditLogs()
-    if (error) setError(error.message || 'No se pudieron cargar los registros')
+    if (error) setError(getUserFriendlyErrorMessage(error, 'No se pudieron cargar los registros. Intentá nuevamente.'))
     setLogs(data || [])
     setLoading(false)
   }, [])
@@ -34,11 +35,11 @@ export const useAuditLogsData = () => {
     try {
       const res = await healthCheck()
       if (!res?.healthy) {
-        setHealthError(res?.error || 'Supabase respondió con error')
+        setHealthError(getUserFriendlyErrorMessage(res?.error, 'No pudimos comprobar el estado del sistema. Intentá nuevamente.'))
       }
       setHealth(res)
     } catch (err) {
-      setHealthError(err?.message || 'No se pudo obtener salud del sistema')
+      setHealthError(getUserFriendlyErrorMessage(err, 'No se pudo obtener el estado del sistema. Intentá nuevamente.'))
     } finally {
       setHealthLoading(false)
     }
@@ -53,13 +54,13 @@ export const useAuditLogsData = () => {
         limit: 200
       })
       if (error) {
-        setHealthLogsError(error.message || 'No se pudieron cargar los health probes')
+        setHealthLogsError(getUserFriendlyErrorMessage(error, 'No se pudieron cargar los registros de estado. Intentá nuevamente.'))
         setHealthLogs([])
       } else {
         setHealthLogs(data || [])
       }
     } catch (err) {
-      setHealthLogsError(err?.message || 'Error cargando health probes')
+      setHealthLogsError(getUserFriendlyErrorMessage(err, 'No se pudieron cargar los registros de estado. Intentá nuevamente.'))
       setHealthLogs([])
     } finally {
       setHealthLogsLoading(false)
@@ -82,12 +83,12 @@ export const useAuditLogsData = () => {
         .lte('created_at', end.toISOString())
 
       if (error) {
-        setOrdersError(error.message || 'Error al contar pedidos del día')
+        setOrdersError(getUserFriendlyErrorMessage(error, 'No pudimos contar los pedidos del día. Intentá nuevamente.'))
       } else {
         setOrdersCount(count ?? 0)
       }
     } catch (err) {
-      setOrdersError(err?.message || 'Error desconocido al contar pedidos del día')
+      setOrdersError(getUserFriendlyErrorMessage(err, 'No pudimos contar los pedidos del día. Intentá nuevamente.'))
     } finally {
       isFetchingOrdersCountRef.current = false
     }

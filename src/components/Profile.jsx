@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { User, Mail, Save, CheckCircle, AlertCircle } from 'lucide-react'
 import RequireUser from './RequireUser'
+import { getUserFriendlyErrorMessage } from '../utils'
 
 const Profile = ({ user, loading }) => {
   const [submitting, setSubmitting] = useState(false)
@@ -132,11 +133,11 @@ const Profile = ({ user, loading }) => {
         }
       })
       if (error) {
-        setGoogleError(error.message || 'Error al vincular Google.')
+        setGoogleError(getUserFriendlyErrorMessage(error, 'No pudimos vincular Google. Intentá nuevamente.'))
         setGoogleLoading(false)
       }
-    } catch (_err) {
-      setGoogleError('Error al vincular Google. Por favor, intenta nuevamente.')
+    } catch (err) {
+      setGoogleError(getUserFriendlyErrorMessage(err, 'No pudimos vincular Google. Intentá nuevamente.'))
       setGoogleLoading(false)
     }
   }
