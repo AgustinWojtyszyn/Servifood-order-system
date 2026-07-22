@@ -1,6 +1,13 @@
 alter table public.cafeteria_orders
   add column if not exists delivery_date date;
 
+alter table public.cafeteria_orders
+  alter column status set default 'pending';
+
+update public.cafeteria_orders
+set status = 'pending'
+where status is null;
+
 update public.cafeteria_orders
 set delivery_date = ((created_at at time zone 'America/Argentina/Buenos_Aires')::date + 1)
 where delivery_date is null;

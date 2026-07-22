@@ -286,6 +286,7 @@ export const db = {
       user_id: userId,
       items,
       total_items: totalItems,
+      status: 'pending',
       delivery_date: deliveryDate || null,
       company_slug: companySlug || null,
       company_name: companyName || null,
