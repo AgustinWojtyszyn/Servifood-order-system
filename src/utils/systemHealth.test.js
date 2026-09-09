@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  formatIncidentMessage,
+  getCanonicalRecentIncidents,
   getHealthyRpcCount,
   getIncidentStatusLabel,
   getIncidentTone,
@@ -65,5 +67,44 @@ describe('systemHealth utilities', () => {
     expect(getIncidentStatusLabel({ status: 'active' })).toBe('Activo')
     expect(getIncidentTone({ status: 'resolved', severity: 'critical' })).toBe('success')
     expect(getIncidentTone({ status: 'active', severity: 'critical' })).toBe('error')
+  })
+
+  it('replaces legacy object string messages with a readable fallback', () => {
+    expect(formatIncidentMessage({
+      event_type: 'daily_archive_failed',
+      message: '[object Object]'
+    })).toBe('El autoarchivado registró un error en la ejecución original; el detalle técnico no quedó serializado correctamente.')
+  })
+
+  it('extracts a readable message when the payload arrives as an object', () => {
+    expect(formatIncidentMessage({
+      event_type: 'daily_archive_failed',
+      message: { code: '42883', message: 'function missing' }
+    })).toBe('function missing')
+  })
+
+  it('keeps explicit missing-RPC evidence untouched', () => {
+    expect(formatIncidentMessage({
+      event_type: 'daily_archive_failed',
+      message: 'function public.archive_orders_after_daily_report(date) does not exist'
+    })).toBe('function public.archive_orders_after_daily_report(date) does not exist')
+  })
+
+  it('hides an overdue warning when the same report date has an explicit archive failure', () => {
+    const incidents = getCanonicalRecentIncidents([
+      { id: 'overdue', event_type: 'daily_archive_overdue', report_date: '2026-09-09' },
+      { id: 'failed', event_type: 'daily_archive_failed', report_date: '2026-09-09' },
+      { id: 'stale', event_type: 'stale_pending_orders', report_date: '2026-09-09' }
+    ])
+
+    expect(incidents.map((incident) => incident.id)).toEqual(['failed', 'stale'])
+  })
+
+  it('keeps an overdue warning when no terminal archive failure exists', () => {
+    const incidents = getCanonicalRecentIncidents([
+      { id: 'overdue', event_type: 'daily_archive_overdue', report_date: '2026-09-10' }
+    ])
+
+    expect(incidents.map((incident) => incident.id)).toEqual(['overdue'])
   })
 })
