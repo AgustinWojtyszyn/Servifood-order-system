@@ -84,11 +84,11 @@ const IncidentCard = ({ incident }) => {
   )
 }
 
-const SystemHealthPanel = ({ enabled = false }) => {
+const SystemHealthPanel = ({ enabled = false, defaultExpanded = false }) => {
   const [payload, setPayload] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(Boolean(defaultExpanded))
 
   const loadHealth = useCallback(async ({ silent = false } = {}) => {
     if (!enabled) return
