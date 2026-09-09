@@ -14,6 +14,8 @@ import {
 import { getSystemHealthDashboard } from '../../services/systemHealthService'
 import {
   formatHealthDateTime,
+  formatIncidentMessage,
+  getCanonicalRecentIncidents,
   getHealthyRpcCount,
   getIncidentStatusLabel,
   getIncidentTone,
@@ -42,6 +44,7 @@ const Chip = ({ children, tone = 'neutral' }) => (
 
 const IncidentCard = ({ incident }) => {
   const tone = getIncidentTone(incident)
+  const message = formatIncidentMessage(incident)
   const isResolved = String(incident?.status || '').toLowerCase() === 'resolved'
   const Icon = isResolved ? CheckCircle2 : String(incident?.severity || '').toLowerCase() === 'critical' ? ShieldAlert : AlertTriangle
 
@@ -63,8 +66,8 @@ const IncidentCard = ({ incident }) => {
         </span>
       </div>
 
-      {incident?.message && (
-        <p className="mt-2 break-words text-xs font-semibold">{incident.message}</p>
+      {message && (
+        <p className="mt-2 break-words text-xs font-semibold">{message}</p>
       )}
 
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold opacity-85">
@@ -128,7 +131,7 @@ const SystemHealthPanel = ({ enabled = false, defaultExpanded = false }) => {
   const StateIcon = stateIcons[health.state] || AlertTriangle
   const rpcHealthyCount = getHealthyRpcCount(health.criticalRpcs)
   const rpcTotal = health.criticalRpcs.length
-  const recentIncidents = health.recentIncidents.slice(0, 12)
+  const recentIncidents = getCanonicalRecentIncidents(health.recentIncidents).slice(0, 12)
   const hasHistory = recentIncidents.length > 0
 
   return (
@@ -247,7 +250,12 @@ const SystemHealthPanel = ({ enabled = false, defaultExpanded = false }) => {
 
           <div>
             <div className="mb-2 flex items-center justify-between gap-2">
-              <h3 className="text-xs font-black uppercase tracking-wide text-slate-600">Incidentes recientes</h3>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wide text-slate-600">Incidentes recientes</h3>
+                <p className="mt-0.5 text-[11px] font-semibold text-slate-500">
+                  Las alertas de demora se agrupan con el fallo explícito de la misma fecha para evitar duplicados.
+                </p>
+              </div>
               <span className="text-xs font-semibold text-slate-500">
                 Revisado {formatHealthDateTime(health.checkedAt)}
               </span>
