@@ -51,14 +51,17 @@ const mailFrom = Deno.env.get('MAIL_FROM') || ''
 const resendApiKey = Deno.env.get('EMAIL_PROVIDER_API_KEY') || Deno.env.get('RESEND_API_KEY') || ''
 const configuredRecipients = parseRecipients(Deno.env.get('DAILY_REPORT_RECIPIENTS') || '')
 const configuredTestRecipients = parseRecipients(Deno.env.get('TEST_REPORT_RECIPIENT') || '')
+const configuredIgarretaIsemarRecipients = parseRecipients(Deno.env.get('IGARRETA_ISEMAR_REPORT_RECIPIENTS') || '')
 const serviFoodLogoUrl = (Deno.env.get('SERVIFOOD_LOGO_URL') || '').trim()
 const IGARRETA_ISEMAR_REPORT_TYPE = 'daily_igarreta_isemar_consumption'
-const IGARRETA_ISEMAR_RECIPIENTS = [
-  'lcorrea@imasa.com.ar',
-  'ggalvarini@imasa.com.ar',
-  'vcastilla@imasa.com.ar',
-  'mborras@imasa.com.ar'
-]
+const IGARRETA_ISEMAR_RECIPIENTS = configuredIgarretaIsemarRecipients.length
+  ? configuredIgarretaIsemarRecipients
+  : [
+      'lcorrea@imasa.com.ar',
+      'ggalvarini@imasa.com.ar',
+      'vcastilla@imasa.com.ar',
+      'marianelaborras@gmail.com'
+    ]
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -353,7 +356,7 @@ const buildIgarretaIsemarWorkbook = async (rows: { user: string; quantity: numbe
     user: 'TOTAL DIARIO',
     quantity: rows.reduce((sum, row) => sum + row.quantity, 0)
   })
-  worksheet.getCell('A1').note = `ISEMAR - ${formatDateEs(reportDate)}`
+  worksheet.getCell('A1').note = `Igarreta + ISEMAR - ${formatDateEs(reportDate)}`
   addHeaderStyle(worksheet)
   worksheet.lastRow!.font = { bold: true }
   return workbook.xlsx.writeBuffer()
@@ -365,7 +368,7 @@ const sendIgarretaIsemarReport = async ({ reportDate, orders }: { reportDate: st
   const peopleRows = rows.map((row) => `${row.user}: ${row.quantity}`)
   const displayDate = formatDateEs(reportDate)
   const text = [
-    'Reporte diario de consumo - ISEMAR',
+    'Reporte diario de consumo - Igarreta + ISEMAR',
     `Fecha: ${displayDate}`,
     '',
     ...(peopleRows.length ? peopleRows : ['Sin consumo registrado.']),
@@ -374,13 +377,13 @@ const sendIgarretaIsemarReport = async ({ reportDate, orders }: { reportDate: st
     'Se adjunta el Excel con el mismo detalle.'
   ].join('\n')
   const htmlRows = rows.map((row) => `<tr><td>${escapeHtml(row.user)}</td><td>${row.quantity}</td></tr>`).join('')
-  const html = `<h1>Reporte diario de consumo - ISEMAR</h1><p>Fecha: <strong>${escapeHtml(displayDate)}</strong></p><table><thead><tr><th>Usuario</th><th>Consumo del día</th></tr></thead><tbody>${htmlRows || '<tr><td colspan="2">Sin consumo registrado.</td></tr>'}<tr><th>TOTAL DIARIO</th><th>${total}</th></tr></tbody></table><p>Se adjunta el Excel con el mismo detalle.</p>`
+  const html = `<h1>Reporte diario de consumo - Igarreta + ISEMAR</h1><p>Fecha: <strong>${escapeHtml(displayDate)}</strong></p><table><thead><tr><th>Usuario</th><th>Consumo del día</th></tr></thead><tbody>${htmlRows || '<tr><td colspan="2">Sin consumo registrado.</td></tr>'}<tr><th>TOTAL DIARIO</th><th>${total}</th></tr></tbody></table><p>Se adjunta el Excel con el mismo detalle.</p>`
   return sendEmail({
     to: IGARRETA_ISEMAR_RECIPIENTS,
-    subject: `Reporte diario de consumo ISEMAR - ${displayDate}`,
+    subject: `Reporte diario de consumo Igarreta + ISEMAR - ${displayDate}`,
     html,
     text,
-    filename: `consumo_isemar_${reportDate}.xlsx`,
+    filename: `consumo_igarreta_isemar_${reportDate}.xlsx`,
     attachment: await buildIgarretaIsemarWorkbook(rows, reportDate)
   })
 }
