@@ -29,6 +29,21 @@ describe('SystemHealthPanel contract', () => {
     expect(panelSource).toContain('Pedidos afectados:')
   })
 
+  it('filters recent incidents by all, active and resolved states', () => {
+    expect(panelSource).toContain("const [incidentFilter, setIncidentFilter] = useState('all')")
+    expect(panelSource).toContain("{ id: 'all', label: 'Todos'")
+    expect(panelSource).toContain("{ id: 'active', label: 'Activos'")
+    expect(panelSource).toContain("{ id: 'resolved', label: 'Resueltos'")
+    expect(panelSource).toContain('aria-label="Filtrar incidentes"')
+    expect(panelSource).toContain('aria-pressed={active}')
+  })
+
+  it('renders resolved incidents in a more compact layout', () => {
+    expect(panelSource).toContain("isResolved ? 'p-2.5' : 'p-3'")
+    expect(panelSource).toContain("isResolved ? 'text-[13px]' : 'text-sm'")
+    expect(panelSource).toContain("isResolved ? 'mt-1.5 text-[11px] leading-4' : 'mt-2 text-xs'")
+  })
+
   it('refreshes health periodically and manually', () => {
     expect(panelSource).toContain('setInterval(() => loadHealth({ silent: true }), 60000)')
     expect(panelSource).toContain('onClick={() => loadHealth()}')
