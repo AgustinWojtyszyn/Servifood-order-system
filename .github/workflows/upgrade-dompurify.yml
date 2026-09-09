@@ -24,11 +24,11 @@ jobs:
           cache: npm
 
       - name: Refresh DOMPurify dependency and lockfile
-        run: npm install 'dompurify@^3.4.0' --save --package-lock-only --ignore-scripts
+        run: npm install 'dompurify@3.4.0' --save-exact --package-lock-only --ignore-scripts
 
       - name: Verify resolved DOMPurify version
         run: |
-          node -e "const lock=require('./package-lock.json'); const v=lock.packages?.['node_modules/dompurify']?.version; if (v !== '3.4.0') { throw new Error('Expected dompurify 3.4.0, got ' + v) }"
+          node -e "const pkg=require('./package.json'); const lock=require('./package-lock.json'); const v=lock.packages?.['node_modules/dompurify']?.version; if (pkg.dependencies?.dompurify !== '3.4.0' || v !== '3.4.0') { throw new Error('Expected package and lock at dompurify 3.4.0; got ' + pkg.dependencies?.dompurify + ' / ' + v) }"
 
       - name: Commit dependency upgrade
         run: |
