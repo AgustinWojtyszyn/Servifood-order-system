@@ -1,6 +1,64 @@
 const asArray = (value) => Array.isArray(value) ? value : []
 const asCount = (value) => Number.isFinite(Number(value)) ? Number(value) : 0
 
+const LEGACY_OBJECT_TEXT = '[object Object]'
+
+const pickObjectMessage = (value = {}) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return ''
+  const candidates = [value.message, value.details, value.hint, value.error, value.code]
+  return candidates
+    .map((candidate) => String(candidate ?? '').trim())
+    .find((candidate) => candidate && candidate !== LEGACY_OBJECT_TEXT) || ''
+}
+
+export const formatIncidentMessage = (incident = {}) => {
+  const value = incident?.message
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    if (normalized && normalized !== LEGACY_OBJECT_TEXT) return normalized
+  } else {
+    const objectMessage = pickObjectMessage(value)
+    if (objectMessage) return objectMessage
+  }
+
+  const eventType = String(incident?.event_type || '').toLowerCase()
+  if (eventType === 'daily_archive_overdue') {
+    return 'El autoarchivado no se completó dentro del tiempo esperado.'
+  }
+  if (eventType === 'daily_archive_failed') {
+    return 'El autoarchivado registró un error en la ejecución original; el detalle técnico no quedó serializado correctamente.'
+  }
+  if (eventType === 'daily_report_failed') {
+    return 'El reporte automático registró un error en la ejecución original; el detalle técnico no quedó serializado correctamente.'
+  }
+
+  return ''
+}
+
+export const getCanonicalRecentIncidents = (incidents = []) => {
+  const safeIncidents = asArray(incidents)
+  const explicitArchiveFailureDates = new Set(
+    safeIncidents
+      .filter((incident) => String(incident?.event_type || '').toLowerCase() === 'daily_archive_failed')
+      .map((incident) => String(incident?.report_date || '').trim())
+      .filter(Boolean)
+  )
+
+  return safeIncidents.filter((incident) => {
+    const eventType = String(incident?.event_type || '').toLowerCase()
+    const reportDate = String(incident?.report_date || '').trim()
+
+    // An overdue alert is only an early warning. Once the same run has an explicit
+    // archive failure, keep the failure as the canonical historical incident.
+    if (eventType === 'daily_archive_overdue' && reportDate && explicitArchiveFailureDates.has(reportDate)) {
+      return false
+    }
+
+    return true
+  })
+}
+
 export const normalizeSystemHealthDashboard = (payload = null, error = '') => {
   const errorMessage = String(error || '').trim()
   if (errorMessage) {
