@@ -32,6 +32,7 @@ const AuditLogs = () => {
     loadHealth,
     ordersCount,
     ordersError,
+    ordersRealtimeStatus,
     loadOrdersCount,
     healthLogs,
     healthLogsLoading,
@@ -157,6 +158,7 @@ const AuditLogs = () => {
           health={health}
           ordersCount={ordersCount}
           ordersError={ordersError}
+          ordersRealtimeStatus={ordersRealtimeStatus}
           healthRange={healthRange}
           setHealthRange={setHealthRange}
           healthOnlyErrors={healthOnlyErrors}
