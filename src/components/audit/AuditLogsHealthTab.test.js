@@ -9,7 +9,11 @@ const source = readFileSync(join(currentDir, 'AuditLogsHealthTab.jsx'), 'utf8')
 describe('AuditLogsHealthTab system health integration', () => {
   it('surfaces the persistent incident dashboard in the audit health tab', () => {
     expect(source).toContain("import SystemHealthPanel from '../daily/SystemHealthPanel'")
-    expect(source).toContain('<SystemHealthPanel enabled />')
+    expect(source).toContain('<SystemHealthPanel enabled defaultExpanded />')
+  })
+
+  it('shows incident history immediately without requiring an extra click', () => {
+    expect(source).toContain('defaultExpanded')
   })
 
   it('keeps the old lightweight probe as complementary telemetry', () => {
