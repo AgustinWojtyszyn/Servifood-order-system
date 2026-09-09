@@ -63,7 +63,6 @@ export const getStatusColor = (status) => {
   if (normalized === 'archived') return STATUS_COLORS.archived
   if (normalized === 'pending') return STATUS_COLORS.pending
   if (normalized === 'post_report_extra') return STATUS_COLORS.post_report_extra
-  if (normalized === 'cancelled') return STATUS_COLORS.cancelled
   return STATUS_COLORS.unknown
 }
 
@@ -72,7 +71,6 @@ export const getStatusText = (status) => {
   if (normalized === 'archived') return STATUS_LABELS.archived
   if (normalized === 'pending') return STATUS_LABELS.pending
   if (normalized === 'post_report_extra') return STATUS_LABELS.post_report_extra
-  if (normalized === 'cancelled') return STATUS_LABELS.cancelled
   return STATUS_LABELS.unknown
 }
 
