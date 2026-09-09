@@ -1,4 +1,4 @@
-import { Activity, RefreshCcw, ServerCrash, BarChart2 } from 'lucide-react'
+import { Activity, RefreshCcw, ServerCrash, BarChart2, Radio } from 'lucide-react'
 import SystemHealthPanel from '../daily/SystemHealthPanel'
 
 export default function AuditLogsHealthTab({
@@ -10,6 +10,7 @@ export default function AuditLogsHealthTab({
   health,
   ordersCount,
   ordersError,
+  ordersRealtimeStatus,
   healthRange,
   setHealthRange,
   healthOnlyErrors,
@@ -21,6 +22,18 @@ export default function AuditLogsHealthTab({
   truncate,
   formatTimestamp
 }) {
+  const realtimeLabel = ordersRealtimeStatus === 'subscribed'
+    ? 'Realtime conectado'
+    : ordersRealtimeStatus === 'fallback'
+      ? 'Fallback 60s'
+      : 'Conectando…'
+
+  const realtimeClass = ordersRealtimeStatus === 'subscribed'
+    ? 'bg-emerald-100 text-emerald-700'
+    : ordersRealtimeStatus === 'fallback'
+      ? 'bg-amber-100 text-amber-700'
+      : 'bg-gray-100 text-gray-600'
+
   return (
     <>
       <SystemHealthPanel enabled defaultExpanded />
@@ -83,7 +96,13 @@ export default function AuditLogsHealthTab({
           </div>
 
           <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/70">
-            <p className="text-xs font-semibold text-gray-600 uppercase">Pedidos del día</p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-semibold text-gray-600 uppercase">Pedidos del día</p>
+              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold ${realtimeClass}`}>
+                <Radio className="h-3 w-3" />
+                {realtimeLabel}
+              </span>
+            </div>
             <div className="mt-1 flex items-center gap-2">
               <div className="h-9 w-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow">
                 <BarChart2 className="h-5 w-5" />
@@ -92,7 +111,13 @@ export default function AuditLogsHealthTab({
                 <p className="text-lg font-extrabold text-gray-900">
                   {ordersCount === null ? '—' : ordersCount}
                 </p>
-                <p className="text-xs text-gray-600">Pedidos creados hoy (recuento cada 10s)</p>
+                <p className="text-xs text-gray-600">
+                  {ordersRealtimeStatus === 'subscribed'
+                    ? 'Actualiza cuando cambia orders'
+                    : ordersRealtimeStatus === 'fallback'
+                      ? 'Realtime no disponible; respaldo cada 60s'
+                      : 'Preparando actualización en tiempo real'}
+                </p>
               </div>
             </div>
             {ordersError && (
@@ -105,7 +130,7 @@ export default function AuditLogsHealthTab({
           <p className="text-xs font-semibold text-gray-600 uppercase">Qué mide este bloque</p>
           <ul className="mt-2 space-y-1 text-xs text-gray-700 list-disc list-inside">
             <li>Disponibilidad básica de Supabase mediante healthCheck.</li>
-            <li>Conteo casi en tiempo real de pedidos creados durante el día.</li>
+            <li>Conteo de pedidos del día actualizado por Supabase Realtime cuando cambia orders.</li>
             <li>Eventos health_probe disponibles en audit_logs cuando existan.</li>
           </ul>
         </div>
