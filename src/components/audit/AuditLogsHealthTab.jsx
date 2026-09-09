@@ -23,7 +23,7 @@ export default function AuditLogsHealthTab({
 }) {
   return (
     <>
-      <SystemHealthPanel enabled />
+      <SystemHealthPanel enabled defaultExpanded />
 
       <section className="bg-white rounded-2xl shadow-xl border border-emerald-100 p-6 space-y-4">
         <div className="flex items-center justify-between">
