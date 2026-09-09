@@ -16,10 +16,17 @@ describe('AuditLogsHealthTab system health integration', () => {
     expect(source).toContain('defaultExpanded')
   })
 
-  it('keeps the old lightweight probe as complementary telemetry', () => {
+  it('keeps the lightweight probe as complementary telemetry', () => {
     expect(source).toContain('Telemetría rápida')
     expect(source).toContain('Complementa el historial operativo de arriba.')
     expect(source).toContain('Qué mide este bloque')
+  })
+
+  it('shows whether the daily order count is using realtime or fallback refresh', () => {
+    expect(source).toContain('Realtime conectado')
+    expect(source).toContain('Fallback 60s')
+    expect(source).toContain('Actualiza cuando cambia orders')
+    expect(source).toContain('ordersRealtimeStatus')
   })
 
   it('does not present the old future-work list as the primary health experience', () => {
