@@ -7,6 +7,7 @@ import LoadingState from './ui/LoadingState'
 import AdminHeader from './admin/AdminHeader'
 import AdminTabs from './admin/AdminTabs'
 import AdminUsersSection from './admin/AdminUsersSection'
+import AdminCompanyRolesPanel from './admin/AdminCompanyRolesPanel'
 import AdminMenuSection from './admin/AdminMenuSection'
 import CompanyAdminMenuSection from './admin/CompanyAdminMenuSection'
 import AdminOptionsSection from './admin/AdminOptionsSection'
@@ -106,7 +107,17 @@ const AdminPanel = () => {
 
       {/* Users Tab */}
       {!mergedLoading && canManageGlobalAdmin && activeTab === 'users' && (
-        <AdminUsersSection {...usersSection} />
+        <>
+          <AdminCompanyRolesPanel
+            companies={companiesSection.companies}
+            adminEmailDrafts={companiesSection.adminEmailDrafts}
+            savingCompanySlug={companiesSection.savingCompanySlug}
+            onAdminEmailChange={companiesSection.onAdminEmailChange}
+            onAssignCompanyAdmin={companiesSection.onAssignCompanyAdmin}
+            onRemoveCompanyAdmin={companiesSection.onRemoveCompanyAdmin}
+          />
+          <AdminUsersSection {...usersSection} />
+        </>
       )}
 
       {/* Menu Tab */}
