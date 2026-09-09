@@ -22,7 +22,7 @@
     "@supabase/supabase-js": "^2.80.0",
     "clsx": "^2.1.1",
     "deno": "^2.6.8",
-    "dompurify": "^3.3.0",
+    "dompurify": "3.4.0",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.23.24",
