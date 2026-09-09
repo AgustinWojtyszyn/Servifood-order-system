@@ -9,8 +9,7 @@ export const USER_ROLE_VALUES = Object.values(USER_ROLES)
 export const ORDER_STATUS = {
   PENDING: 'pending',
   POST_REPORT_EXTRA: 'post_report_extra',
-  ARCHIVED: 'archived',
-  CANCELLED: 'cancelled'
+  ARCHIVED: 'archived'
 }
 
 export const NOTIFICATION_TYPES = {
