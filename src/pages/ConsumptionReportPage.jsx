@@ -88,6 +88,12 @@ const ConsumptionReportPage = () => {
     return [...new Set(labels)].sort((a, b) => a.localeCompare(b, 'es'))
   }, [companyFilter, orders])
 
+  useEffect(() => {
+    if (locationFilter !== 'all' && !locationOptions.includes(locationFilter)) {
+      setLocationFilter('all')
+    }
+  }, [locationFilter, locationOptions])
+
   const filteredOrders = useMemo(() => {
     const normalizedSearch = normalizeSearchText(searchQuery)
 
@@ -204,7 +210,7 @@ const ConsumptionReportPage = () => {
           top: { style: isTotalRow ? 'medium' : 'thin', color: { argb: isTotalRow ? 'FF94A3B8' : 'FFE2E8F0' } },
           left: { style: isTotalColumn ? 'medium' : 'thin', color: { argb: isTotalColumn ? 'FF94A3B8' : 'FFE2E8F0' } },
           bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          right: { style: 'thin', color: { argb: 'FFE2E8F0' : 'FFE2E8F0' } }
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         }
 
         if (isHeader) {
