@@ -15,46 +15,35 @@ describe('ConsumptionReportPage', () => {
     expect(source).toContain('to: { row: worksheet.rowCount, column: headers.length }')
   })
 
-  it('filters the report by Igarreta or ISEMAR and by ISEMAR predio', () => {
-    expect(source).toContain("const [companyFilter, setCompanyFilter] = useState('all')")
-    expect(source).toContain('<option value="igarreta">Igarreta Maquinas SA</option>')
-    expect(source).toContain('<option value="isemar">ISEMAR</option>')
-    expect(source).toContain("companyFilter === 'isemar'")
-    expect(source).toContain('Predio / sede')
+  it('loads the generic company-scoped consumption RPC', () => {
+    expect(source).toContain('getCompanyConsumptionOrders')
+    expect(source).not.toContain('getIgarretaIsemarConsumptionOrders')
+    expect(source).toContain('Reporte de consumo por empresa')
+  })
+
+  it('builds company filters dynamically from authorized report rows', () => {
+    expect(source).toContain('const companyOptions = useMemo')
+    expect(source).toContain('resolveConsumptionCompanySlug(order)')
+    expect(source).toContain('{companyOptions.map((company) =>')
+    expect(source).toContain('Todas las autorizadas')
+    expect(source).not.toContain('<option value="igarreta">')
+    expect(source).not.toContain('<option value="isemar">')
+  })
+
+  it('filters locations generically after selecting a company', () => {
+    expect(source).toContain('const locationOptions = useMemo')
+    expect(source).toContain("disabled={companyFilter === 'all'}")
+    expect(source).toContain("companyFilter === 'all' ? 'Elegí una empresa' : 'Todas las sedes'")
     expect(source).toContain('resolveConsumptionLocationLabel(order) !== locationFilter')
   })
 
-  it('keeps both filters prominently visible and disables predio until ISEMAR is selected', () => {
-    expect(source).toContain('Filtros del reporte')
-    expect(source).toContain('Elegí la empresa y, para ISEMAR, el predio correspondiente.')
-    expect(source).toContain("disabled={companyFilter !== 'isemar'}")
-    expect(source).toContain("companyFilter === 'isemar' ? 'Todos los predios' : 'Disponible al elegir ISEMAR'")
-    expect(source).toContain('border-2 border-blue-200 bg-blue-50/80')
-  })
-
-  it('shows a four-card monthly summary', () => {
-    expect(source).toContain('buildConsumptionReportSummary(orders)')
-    expect(source).toContain('Igarreta + ISEMAR')
-    expect(source).toContain('ISEMAR · Predio 1')
-    expect(source).toContain('ISEMAR · Predio 2')
-    expect(source).toContain('{summary.total}')
-    expect(source).toContain('{summary.igarreta}')
-  })
-
-  it('adds visible group separators for all ISEMAR predios', () => {
-    expect(source).toContain("companyFilter === 'isemar' && locationFilter === 'all'")
-    expect(source).toContain('startsIsemarGroup')
-    expect(source).toContain('isemarGroupTotals[row.locationLabel]')
-    expect(source).toContain('isemarGroupPeople[row.locationLabel]')
-    expect(source).toContain('colSpan={model.dates.length + 3}')
-  })
-
-  it('makes summary cards clickable quick filters', () => {
-    expect(source).toContain("applyQuickFilter('all')")
-    expect(source).toContain("applyQuickFilter('igarreta')")
-    expect(source).toContain("applyQuickFilter('isemar', predio1Location)")
-    expect(source).toContain("applyQuickFilter('isemar', predio2Location)")
-    expect(source).toContain('aria-pressed={companyFilter')
+  it('shows monthly totals per authorized company without hardcoded company cards', () => {
+    expect(source).toContain('const companyTotals = useMemo')
+    expect(source).toContain('{totalConsumption}')
+    expect(source).toContain('{companyTotals[company.slug] || 0}')
+    expect(source).toContain("applyQuickFilter(company.slug)")
+    expect(source).not.toContain('ISEMAR · Predio 1')
+    expect(source).not.toContain('ISEMAR · Predio 2')
   })
 
   it('filters by user search and clears the search from the input', () => {
