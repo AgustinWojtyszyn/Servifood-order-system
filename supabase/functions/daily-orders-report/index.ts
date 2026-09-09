@@ -3,6 +3,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0'
 import ExcelJS from 'npm:exceljs@4.4.0'
+import { safeError } from '../_shared/error_utils.ts'
 import {
   DAILY_REPORT_TEST_TYPE,
   DAILY_REPORT_TYPE,
@@ -74,11 +75,6 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
   }
   return btoa(binary)
-}
-
-const safeError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error || 'Error desconocido')
-  return message.slice(0, 500)
 }
 
 type ReportFailureContext = {
