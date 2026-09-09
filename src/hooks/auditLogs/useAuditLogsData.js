@@ -14,6 +14,7 @@ export const useAuditLogsData = () => {
 
   const [ordersCount, setOrdersCount] = useState(null)
   const [ordersError, setOrdersError] = useState(null)
+  const [ordersRealtimeStatus, setOrdersRealtimeStatus] = useState('connecting')
 
   const [healthLogs, setHealthLogs] = useState([])
   const [healthLogsLoading, setHealthLogsLoading] = useState(true)
@@ -86,6 +87,7 @@ export const useAuditLogsData = () => {
         setOrdersError(getUserFriendlyErrorMessage(error, 'No pudimos contar los pedidos del día. Intentá nuevamente.'))
       } else {
         setOrdersCount(count ?? 0)
+        setOrdersError(null)
       }
     } catch (err) {
       setOrdersError(getUserFriendlyErrorMessage(err, 'No pudimos contar los pedidos del día. Intentá nuevamente.'))
@@ -100,12 +102,75 @@ export const useAuditLogsData = () => {
     loadOrdersCount()
     loadHealthProbes()
 
-    const interval = setInterval(() => {
-      if (typeof document !== 'undefined' && document?.visibilityState === 'hidden') return
-      loadOrdersCount(true)
-    }, 10000) // 10s para pseudo tiempo real ligero sin gastar en background
+    let disposed = false
+    let refreshTimer = null
+    let fallbackInterval = null
 
-    return () => clearInterval(interval)
+    const isPageHidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden'
+
+    const refreshOrdersSoon = () => {
+      if (disposed || isPageHidden()) return
+      if (refreshTimer) clearTimeout(refreshTimer)
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null
+        loadOrdersCount(true)
+      }, 250)
+    }
+
+    const stopFallback = () => {
+      if (!fallbackInterval) return
+      clearInterval(fallbackInterval)
+      fallbackInterval = null
+    }
+
+    const startFallback = () => {
+      if (fallbackInterval) return
+      fallbackInterval = setInterval(() => {
+        if (!isPageHidden()) loadOrdersCount(true)
+      }, 60000)
+    }
+
+    const channel = supabase
+      .channel('audit-orders-count')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        refreshOrdersSoon
+      )
+      .subscribe((status) => {
+        if (disposed) return
+        if (status === 'SUBSCRIBED') {
+          setOrdersRealtimeStatus('subscribed')
+          stopFallback()
+          return
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setOrdersRealtimeStatus('fallback')
+          startFallback()
+          return
+        }
+        setOrdersRealtimeStatus('connecting')
+      })
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadOrdersCount(true)
+      }
+    }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+    }
+
+    return () => {
+      disposed = true
+      if (refreshTimer) clearTimeout(refreshTimer)
+      stopFallback()
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
+      void supabase.removeChannel(channel)
+    }
   }, [loadHealth, loadHealthProbes, loadLogs, loadOrdersCount])
 
   return {
@@ -121,6 +186,7 @@ export const useAuditLogsData = () => {
 
     ordersCount,
     ordersError,
+    ordersRealtimeStatus,
     loadOrdersCount,
 
     healthLogs,
