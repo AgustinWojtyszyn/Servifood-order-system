@@ -5,24 +5,31 @@ const migration = readFileSync(
   new URL('./20260907162000_fix_igarreta_isemar_viewer_company_access.sql', import.meta.url),
   'utf8'
 )
+const marianelaIdentityRepair = readFileSync(
+  new URL('./20260909134500_fix_marianela_consumption_report_identity.sql', import.meta.url),
+  'utf8'
+)
 
-const TARGET_EMAILS = [
+const BASE_VIEWER_EMAILS = [
   'lcorrea@imasa.com.ar',
   'ggalvarini@imasa.com.ar',
-  'vcastilla@imasa.com.ar',
-  'mborras@imasa.com.ar'
+  'vcastilla@imasa.com.ar'
 ]
+const MARIANELA_EMAIL = 'marianelaborras@gmail.com'
 
 describe('Igarreta + ISEMAR consumption viewer access repair', () => {
-  it('grants the four intended viewers report access to both companies', () => {
-    TARGET_EMAILS.forEach((email) => expect(migration).toContain(email))
+  it('grants the verified viewers report access to both companies', () => {
+    BASE_VIEWER_EMAILS.forEach((email) => expect(migration).toContain(email))
+    expect(marianelaIdentityRepair).toContain(MARIANELA_EMAIL)
     expect(migration).toContain("select u.id, 'consumption_report_viewer', c.slug")
     expect(migration).toContain("c.slug in ('igarreta', 'isemar')")
-    expect(migration).toContain('on conflict (user_id, permission, company_slug) do nothing')
+    expect(marianelaIdentityRepair).toContain("c.slug in ('igarreta', 'isemar')")
+    expect(marianelaIdentityRepair).toContain('on conflict (user_id, permission, company_slug) do nothing')
   })
 
   it('keeps the viewers scoped to the report instead of promoting them to company admins', () => {
     expect(migration).not.toContain('insert into public.company_admins')
+    expect(marianelaIdentityRepair).not.toContain('insert into public.company_admins')
     expect(migration).not.toContain('delete from public.company_admins')
     expect(migration).toContain("up.permission = 'consumption_report_viewer'")
   })
