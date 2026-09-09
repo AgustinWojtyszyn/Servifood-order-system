@@ -7,6 +7,7 @@ import DailyFilters from './daily/DailyFilters'
 import DailyHeader from './daily/DailyHeader'
 import DailyLoader from './daily/DailyLoader'
 import DailyClosePanel from './daily/DailyClosePanel'
+import SystemHealthPanel from './daily/SystemHealthPanel'
 import DailyOrdersTable from './daily/DailyOrdersTable'
 import DailySummary from './daily/DailySummary'
 import DailyPrintStyles from './daily/DailyPrintStyles'
@@ -272,6 +273,8 @@ const DailyOrders = ({ user, loading }) => {
         <DailyClosePanel
           status={dailyCloseStatus}
         />
+
+        <SystemHealthPanel enabled={isGlobalAdmin} />
 
         <div className="mb-4 flex max-w-full gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 print-hide">
           {[
