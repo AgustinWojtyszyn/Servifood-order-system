@@ -1,28 +1,30 @@
-import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.224.0/assert/mod.ts'
-import { safeError } from './error_utils.ts'
+import { describe, expect, it } from 'vitest'
+import { safeError } from './error_utils'
 
-Deno.test('safeError preserves Supabase error fields instead of [object Object]', () => {
-  const message = safeError({
-    code: '42883',
-    message: 'function public.archive_orders_after_daily_report(date) does not exist',
-    details: null,
-    hint: 'No function matches the given name and argument types.'
+describe('safeError', () => {
+  it('preserves Supabase error fields instead of [object Object]', () => {
+    const message = safeError({
+      code: '42883',
+      message: 'function public.archive_orders_after_daily_report(date) does not exist',
+      details: null,
+      hint: 'No function matches the given name and argument types.'
+    })
+
+    expect(message).toContain('code=42883')
+    expect(message).toContain('archive_orders_after_daily_report')
+    expect(message).toContain('hint=No function matches')
+    expect(message).not.toContain('[object Object]')
   })
 
-  assertStringIncludes(message, 'code=42883')
-  assertStringIncludes(message, 'archive_orders_after_daily_report')
-  assertStringIncludes(message, 'hint=No function matches')
-  assertEquals(message.includes('[object Object]'), false)
-})
+  it('keeps Error messages', () => {
+    expect(safeError(new Error('boom'))).toBe('boom')
+  })
 
-Deno.test('safeError keeps Error messages', () => {
-  assertEquals(safeError(new Error('boom')), 'boom')
-})
+  it('serializes otherwise unknown objects', () => {
+    expect(safeError({ reason: 'unexpected' })).toBe('{"reason":"unexpected"}')
+  })
 
-Deno.test('safeError serializes otherwise unknown objects', () => {
-  assertEquals(safeError({ reason: 'unexpected' }), '{"reason":"unexpected"}')
-})
-
-Deno.test('safeError truncates long messages', () => {
-  assertEquals(safeError({ message: '1234567890' }, 8), 'message=')
+  it('truncates long messages', () => {
+    expect(safeError({ message: '1234567890' }, 8)).toBe('message=')
+  })
 })
