@@ -29,7 +29,7 @@ describe('order labels pagination regression', () => {
   it('derives counts and page count from the filtered print-state result instead of raw Supabase count', () => {
     expect(hookSource).toContain('const totalCount = matchingOrders.length')
     expect(hookSource).toContain('Math.ceil(totalCount / PAGE_SIZE)')
-    expect(hookSource).toContain('pending:')
+    expect(hookSource).toContain('pending,')
     expect(hookSource).toContain('printed,')
     expect(hookSource).toContain('all: filteredOrders.length')
   })
