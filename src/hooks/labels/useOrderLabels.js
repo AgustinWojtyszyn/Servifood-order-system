@@ -10,6 +10,7 @@ import {
 } from '../../utils/labels/labelOrderUtils'
 
 const PAGE_SIZE = 50
+const SERVER_PAGE_SIZE = 100
 
 const createInitialFilters = () => ({
   search: '',
@@ -34,11 +35,16 @@ const getStatusesForLabels = (statusFilter) => {
 
 const isLabelPrinted = (order = {}) => Boolean(order?.label_printed_at)
 
+const matchesPrintState = (order = {}, printState = 'pending') => {
+  if (printState === 'printed') return isLabelPrinted(order)
+  if (printState === 'all') return true
+  return !isLabelPrinted(order)
+}
+
 export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminCompanies = [] } = {}) => {
   const [filters, setFilters] = useState(createInitialFilters)
   const [page, setPage] = useState(0)
   const [orders, setOrders] = useState([])
-  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [selectedIds, setSelectedIds] = useState([])
@@ -105,7 +111,6 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
     if (!isAdmin && !isCompanyAdmin) return
     if (!isAdmin && effectiveLocations.length === 0) {
       setOrders([])
-      setTotalCount(0)
       setError('No tenés empresas asignadas para consultar etiquetas.')
       return
     }
@@ -113,34 +118,58 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
     setLoading(true)
     setError('')
     try {
-      const { data, error: queryError, count } = await db.getOrdersForLabels({
-        deliveryDate: filters.deliveryDate || null,
-        fromDate: filters.deliveryDate ? null : (filters.fromDate || null),
-        toDate: filters.deliveryDate ? null : (filters.toDate || null),
-        statuses: getStatusesForLabels(filters.status),
-        service: filters.service === 'all' ? null : filters.service,
-        locations: effectiveLocations,
-        limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE
-      })
+      const loadedOrders = []
+      const seenIds = new Set()
+      let serverOffset = 0
+      let expectedCount = null
+      let hasMore = true
 
-      if (queryError) {
-        setOrders([])
-        setTotalCount(0)
-        setError('No se pudieron cargar los pedidos para etiquetas. Revisá los filtros e intentá nuevamente.')
-        return
+      while (hasMore) {
+        const { data, error: queryError, count } = await db.getOrdersForLabels({
+          deliveryDate: filters.deliveryDate || null,
+          fromDate: filters.deliveryDate ? null : (filters.fromDate || null),
+          toDate: filters.deliveryDate ? null : (filters.toDate || null),
+          statuses: getStatusesForLabels(filters.status),
+          service: filters.service === 'all' ? null : filters.service,
+          locations: effectiveLocations,
+          limit: SERVER_PAGE_SIZE,
+          offset: serverOffset
+        })
+
+        if (queryError) {
+          setOrders([])
+          setError('No se pudieron cargar los pedidos para etiquetas. Revisá los filtros e intentá nuevamente.')
+          return
+        }
+
+        const batch = Array.isArray(data) ? data : []
+        const numericCount = Number(count)
+        if (Number.isFinite(numericCount) && numericCount >= 0) {
+          expectedCount = expectedCount === null
+            ? numericCount
+            : Math.max(expectedCount, numericCount)
+        }
+
+        batch.forEach((order) => {
+          const orderId = order?.id
+          if (!orderId || seenIds.has(orderId)) return
+          seenIds.add(orderId)
+          loadedOrders.push(order)
+        })
+
+        serverOffset += batch.length
+        hasMore = batch.length === SERVER_PAGE_SIZE &&
+          (expectedCount === null || serverOffset < expectedCount)
       }
 
-      setOrders(Array.isArray(data) ? data : [])
-      setTotalCount(Number(count || 0))
+      setOrders(loadedOrders)
     } catch (_err) {
       setOrders([])
-      setTotalCount(0)
       setError('Ocurrió un error consultando los pedidos para etiquetas.')
     } finally {
       setLoading(false)
     }
-  }, [effectiveLocations, filters.deliveryDate, filters.fromDate, filters.service, filters.status, filters.toDate, isAdmin, isCompanyAdmin, page])
+  }, [effectiveLocations, filters.deliveryDate, filters.fromDate, filters.service, filters.status, filters.toDate, isAdmin, isCompanyAdmin])
 
   useEffect(() => {
     fetchOrders()
@@ -161,14 +190,22 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
     }
   }, [filteredOrders])
 
-  const visibleOrders = useMemo(
-    () => filteredOrders.filter((order) => {
-      if (printState === 'printed') return isLabelPrinted(order)
-      if (printState === 'all') return true
-      return !isLabelPrinted(order)
-    }),
+  const matchingOrders = useMemo(
+    () => filteredOrders.filter(order => matchesPrintState(order, printState)),
     [filteredOrders, printState]
   )
+
+  const totalCount = matchingOrders.length
+  const maxPage = Math.max(Math.ceil(totalCount / PAGE_SIZE) - 1, 0)
+
+  useEffect(() => {
+    if (page > maxPage) setPage(maxPage)
+  }, [maxPage, page])
+
+  const visibleOrders = useMemo(() => {
+    const start = page * PAGE_SIZE
+    return matchingOrders.slice(start, start + PAGE_SIZE)
+  }, [matchingOrders, page])
 
   const selectedOrders = useMemo(
     () => selectedIds.map(id => selectedOrderById[id]).filter(Boolean),
@@ -178,7 +215,8 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
   const selectedCount = selectedIds.length
   const visibleSelectedCount = visibleOrders.filter(order => selectedIds.includes(order.id)).length
   const allVisibleSelected = visibleOrders.length > 0 && visibleSelectedCount === visibleOrders.length
-  const maxPage = Math.max(Math.ceil(totalCount / PAGE_SIZE) - 1, 0)
+  const matchingSelectedCount = matchingOrders.filter(order => selectedIds.includes(order.id)).length
+  const allMatchingSelected = matchingOrders.length > 0 && matchingSelectedCount === matchingOrders.length
 
   const toggleOrder = useCallback((order) => {
     const orderId = order?.id
@@ -211,6 +249,27 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
     const visibleIds = new Set(visibleOrders.map(order => order.id))
     setSelectedIds(prev => prev.filter(id => !visibleIds.has(id)))
   }, [visibleOrders])
+
+  const selectAllMatching = useCallback(() => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      matchingOrders.forEach(order => next.add(order.id))
+      return [...next]
+    })
+    setSelectedOrderById(prev => {
+      const next = { ...prev }
+      matchingOrders.forEach(order => {
+        next[order.id] = order
+      })
+      return next
+    })
+    setPrintWarning('')
+  }, [matchingOrders])
+
+  const unselectAllMatching = useCallback(() => {
+    const matchingIds = new Set(matchingOrders.map(order => order.id))
+    setSelectedIds(prev => prev.filter(id => !matchingIds.has(id)))
+  }, [matchingOrders])
 
   const removeSelected = useCallback((orderId) => {
     setSelectedIds(prev => prev.filter(id => id !== orderId))
@@ -280,6 +339,7 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
     })
     setSelectedIds(prev => prev.filter(id => !safeOrderIds.includes(id)))
     setPrintState('printed')
+    setPage(0)
     setPrintWarning('')
     return { data, error: null }
   }, [])
@@ -297,6 +357,7 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
     totalCount,
     orders,
     visibleOrders,
+    matchingOrders,
     filteredOrders,
     printState,
     printStateCounts,
@@ -305,9 +366,12 @@ export const useOrderLabels = ({ isAdmin = false, isCompanyAdmin = false, adminC
     selectedOrders,
     selectedCount,
     allVisibleSelected,
+    allMatchingSelected,
     toggleOrder,
     selectVisible,
     unselectVisible,
+    selectAllMatching,
+    unselectAllMatching,
     removeSelected,
     clearSelected,
     previewMode,
