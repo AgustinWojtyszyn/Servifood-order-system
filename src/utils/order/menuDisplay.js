@@ -104,7 +104,7 @@ const getConfiguredMenuItems = (companyOrSlug) =>
 const getMenuItemKey = (item = {}, fallbackIndex = null) => {
   const slotIndex = getMenuSlotIndex(item, fallbackIndex)
   if (slotIndex === 0) return 'menu_principal'
-  if (slotIndex >= 1 && slotIndex <= 3) return `opcion_${slotIndex}`
+  if (slotIndex >= 1 && slotIndex <= 6) return `opcion_${slotIndex}`
   const text = normalizeSlotTitle(`${item?.name || ''} ${item?.description || ''}`)
   if (text.includes('dieta')) return 'dieta'
   if (text.includes('celiac')) return 'celiacos'
