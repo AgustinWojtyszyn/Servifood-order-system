@@ -7,7 +7,7 @@ const OrderLabelsResults = ({
   orders,
   loading,
   selectedIds,
-  allVisibleSelected,
+  allMatchingSelected,
   totalCount,
   printState,
   printStateCounts,
@@ -15,8 +15,8 @@ const OrderLabelsResults = ({
   maxPage,
   pageSize,
   onToggleOrder,
-  onSelectVisible,
-  onUnselectVisible,
+  onSelectAll,
+  onUnselectAll,
   onPrintOne,
   onPrintStateChange,
   onPageChange
@@ -31,11 +31,13 @@ const OrderLabelsResults = ({
       </div>
       <button
         type="button"
-        onClick={allVisibleSelected ? onUnselectVisible : onSelectVisible}
-        disabled={orders.length === 0}
+        onClick={allMatchingSelected ? onUnselectAll : onSelectAll}
+        disabled={totalCount === 0}
         className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {allVisibleSelected ? 'Quitar visibles' : 'Seleccionar todos visibles'}
+        {allMatchingSelected
+          ? `Quitar todos (${totalCount})`
+          : `Seleccionar todos (${totalCount})`}
       </button>
     </div>
 
@@ -174,7 +176,7 @@ const OrderLabelsResults = ({
     )}
 
     <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 text-sm font-semibold text-slate-600 md:flex-row md:items-center md:justify-between md:px-6">
-      <span>Página {page + 1} de {maxPage + 1} · límite {pageSize}</span>
+      <span>Página {page + 1} de {maxPage + 1} · {pageSize} por página</span>
       <div className="flex gap-2">
         <button type="button" disabled={page <= 0} onClick={() => onPageChange(page - 1)} className="rounded-lg border border-slate-300 px-3 py-2 font-bold disabled:opacity-50">Anterior</button>
         <button type="button" disabled={page >= maxPage} onClick={() => onPageChange(page + 1)} className="rounded-lg border border-slate-300 px-3 py-2 font-bold disabled:opacity-50">Siguiente</button>
