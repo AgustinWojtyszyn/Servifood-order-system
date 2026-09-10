@@ -180,7 +180,7 @@ const OrderLabelsPage = () => {
                       </>
                     ) : (
                       <span className="text-sm font-bold text-slate-700">
-                        Seleccioná uno, varios o todos los pedidos visibles.
+                        Seleccioná uno, varios o todos los pedidos encontrados.
                       </span>
                     )}
                   </div>
@@ -198,15 +198,15 @@ const OrderLabelsPage = () => {
                   <button
                     type="button"
                     onClick={
-                      labels.allVisibleSelected
-                        ? labels.unselectVisible
-                        : labels.selectVisible
+                      labels.allMatchingSelected
+                        ? labels.unselectAllMatching
+                        : labels.selectAllMatching
                     }
                     className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50"
                   >
-                    {labels.allVisibleSelected
-                      ? 'Quitar visibles'
-                      : 'Seleccionar todos visibles'}
+                    {labels.allMatchingSelected
+                      ? `Quitar todos (${labels.totalCount})`
+                      : `Seleccionar todos (${labels.totalCount})`}
                   </button>
 
                   {labels.selectedCount > 0 && (
@@ -237,7 +237,7 @@ const OrderLabelsPage = () => {
             orders={labels.visibleOrders}
             loading={labels.loading}
             selectedIds={labels.selectedIds}
-            allVisibleSelected={labels.allVisibleSelected}
+            allMatchingSelected={labels.allMatchingSelected}
             totalCount={labels.totalCount}
             printState={labels.printState}
             printStateCounts={labels.printStateCounts}
@@ -245,8 +245,8 @@ const OrderLabelsPage = () => {
             maxPage={labels.maxPage}
             pageSize={labels.pageSize}
             onToggleOrder={labels.toggleOrder}
-            onSelectVisible={labels.selectVisible}
-            onUnselectVisible={labels.unselectVisible}
+            onSelectAll={labels.selectAllMatching}
+            onUnselectAll={labels.unselectAllMatching}
             onPrintOne={openPreview}
             onPrintStateChange={labels.updatePrintState}
             onPageChange={labels.setPage}
