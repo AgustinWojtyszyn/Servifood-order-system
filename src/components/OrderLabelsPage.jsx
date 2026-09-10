@@ -7,6 +7,8 @@ import OrderLabelsResults from './labels/OrderLabelsResults'
 import { useOrderLabels } from '../hooks/labels/useOrderLabels'
 import './labels/order-labels.css'
 
+// Regresión histórica: "Seleccionar todos visibles" ya no alcanza cuando hay más de una página.
+
 const requestPrintSuccessConfirmation = (count) => new Promise((resolve) => {
   window.dispatchEvent(new CustomEvent('app-confirm', {
     detail: {
