@@ -35,8 +35,10 @@ const toArray = (value) => {
 export const getRawOrderItems = (order = {}) => toArray(order?.items)
 
 export const getItemOperationalQuantity = (item = {}) => {
-  const quantity = safePositiveNumber(item?.quantity ?? item?.qty ?? item?.count)
-  return quantity || 1
+  const rawQuantity = item?.quantity ?? item?.qty ?? item?.count
+  if (rawQuantity === undefined || rawQuantity === null || rawQuantity === '') return 1
+  const quantity = Number(rawQuantity)
+  return Number.isFinite(quantity) && quantity >= 0 ? quantity : 1
 }
 
 const getItemLabel = (item = {}) => {
