@@ -1,3 +1,5 @@
+import { getTodayISOInTimeZone } from '../../utils/dateUtils'
+
 export const isTransientSupabaseError = (error) => {
   if (!error) return false
 
@@ -134,11 +136,13 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
 
     // Marcar todos los pedidos pendientes de días anteriores como archivados
     completeAllOldPendingOrders: async () => {
+      const nowIso = new Date().toISOString()
+      const operationalToday = getTodayISOInTimeZone()
       const { data, error } = await supabase
         .from('orders')
-        .update({ status: 'archived', archived_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .update({ status: 'archived', archived_at: nowIso, updated_at: nowIso })
         .eq('status', 'pending')
-        .lt('delivery_date', new Date().toISOString().slice(0, 10))
+        .lt('delivery_date', operationalToday)
       return { data, error }
     },
 
