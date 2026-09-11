@@ -41,6 +41,20 @@ describe('useDailyOrdersData daily orders loading', () => {
     expect(source).toContain('await fetchDailyOrders(false, operationalDate)')
   })
 
+  it('polls only the live operational date and pauses while the tab is hidden', () => {
+    const historicalGuard = source.indexOf('if (operationalDate !== liveOperationalDate) return')
+    const intervalSetup = source.indexOf('const interval = setInterval(refreshIfVisible, 30000)')
+
+    expect(source).toContain('const liveOperationalDate = getTomorrowISOInTimeZone()')
+    expect(historicalGuard).toBeGreaterThan(-1)
+    expect(intervalSetup).toBeGreaterThan(historicalGuard)
+    expect(source).toContain("document.visibilityState !== 'visible'")
+    expect(source).toContain("document.addEventListener('visibilitychange', handleVisibilityChange)")
+    expect(source).toContain("document.removeEventListener('visibilitychange', handleVisibilityChange)")
+    expect(source).toContain("if (document.visibilityState === 'visible')")
+    expect(source).toContain('fetchDailyOrders(true, operationalDate)')
+  })
+
   it('routes the refresh button through the filtered daily orders loader', () => {
     expect(dailyOrdersSource).toContain('onRefresh={handleRefresh}')
     expect(dailyHeaderSource).toContain('onRefresh={onRefresh}')
