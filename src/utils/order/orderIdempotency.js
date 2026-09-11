@@ -1,3 +1,9 @@
+const normalizeSignatureQuantity = (value) => {
+  if (value === null || value === undefined || value === '') return 1
+  const quantity = Number(value)
+  return Number.isFinite(quantity) && quantity >= 0 ? quantity : 1
+}
+
 export const computePayloadSignature = (
   items = [],
   responses = [],
@@ -10,7 +16,7 @@ export const computePayloadSignature = (
     .map(i => ({
       id: i.id,
       name: i.name,
-      quantity: i.quantity || 1
+      quantity: normalizeSignatureQuantity(i.quantity)
     }))
     .sort((a, b) => (a.id || '').toString().localeCompare((b.id || '').toString()))
 
@@ -74,7 +80,7 @@ export const buildOrderSignature = (order = {}) => {
     .map(i => ({
       id: i?.id || '',
       name: (i?.name || '').toString().trim().toLowerCase(),
-      quantity: i?.quantity || 1
+      quantity: normalizeSignatureQuantity(i?.quantity)
     }))
     .sort((a, b) => `${a.id}-${a.name}`.localeCompare(`${b.id}-${b.name}`))
 
