@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { addSideItem, createSideBuckets, getMonthlyOrderService, isOptionName } from '../../utils/monthly/monthlyOrderCalculations'
 import { toDisplayString } from '../../utils/monthly/monthlyOrderFormatters'
+import { getItemOperationalQuantity } from '../../utils/order/orderOperationalTotals'
 
 const MonthlyOrderDetailsModal = ({ date, orders = [], dailyBreakdown }) => {
   if (!date) return null
@@ -40,7 +41,8 @@ const MonthlyOrderDetailsModal = ({ date, orders = [], dailyBreakdown }) => {
     }
     items.forEach(it => {
       if (service === 'dinner') return
-      const qty = it?.quantity || 1
+      const qty = getItemOperationalQuantity(it)
+      if (qty <= 0) return
       const name = (it?.name || '').trim()
       if (!name) return
       if (isOptionName(name)) {
@@ -239,9 +241,11 @@ const renderItems = (order, isOptionFn) => {
     }
   }
   if (!items.length) return '—'
-  return items.map((it, idx) => {
+  const visibleItems = items.filter((item) => getItemOperationalQuantity(item) > 0)
+  if (!visibleItems.length) return '—'
+  return visibleItems.map((it, idx) => {
     const name = it?.name || 'Item'
-    const qty = it?.quantity || 1
+    const qty = getItemOperationalQuantity(it)
     const tag = isOptionFn(name) ? 'Opción' : 'Menú'
     return (
       <span key={idx} className="inline-block mr-2 mb-1 px-2 py-0.5 rounded bg-slate-200 text-slate-900 text-[11px] font-semibold">
