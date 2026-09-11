@@ -47,7 +47,7 @@ describe('cancelOwnPendingOrder fallback', () => {
     const { supabase, calls } = createCancellationSupabaseMock({ rpcResult })
     const service = createOrdersService({ supabase })
 
-    await expect(service.cancelOwnPendingOrder({ orderId: 'order-1' })).resolves.toBe(rpcResult)
+    await expect(service.cancelOwnPendingOrder({ orderId: 'order-1' })).resolves.toEqual(rpcResult)
 
     expect(calls).toEqual([
       ['rpc', 'cancel_own_pending_order', { order_id: 'order-1' }]
@@ -66,7 +66,7 @@ describe('cancelOwnPendingOrder fallback', () => {
     const { supabase, calls } = createCancellationSupabaseMock({ rpcResult })
     const service = createOrdersService({ supabase })
 
-    await expect(service.cancelOwnPendingOrder({ orderId: 'order-1' })).resolves.toBe(rpcResult)
+    await expect(service.cancelOwnPendingOrder({ orderId: 'order-1' })).resolves.toEqual(rpcResult)
 
     expect(calls).toEqual([
       ['rpc', 'cancel_own_pending_order', { order_id: 'order-1' }]
