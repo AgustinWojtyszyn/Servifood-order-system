@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, RefreshCw } from 'lucide-react'
 import { TOTALIZER_CONCEPTS, exportTotalizerWorkbook, totalizerService } from '../services/totalizerService'
+import { getTodayISOInTimeZone } from '../utils/dateUtils'
 import { notifyError } from '../utils/notice'
 
 const SERVICES = [
@@ -9,7 +10,6 @@ const SERVICES = [
   { id: 'cena', label: 'Cena' }
 ]
 
-const todayISO = () => new Date().toISOString().slice(0, 10)
 const companyKey = (company) => company.company_slug || company.slug || company.company_name || company.name || 'sin_empresa'
 const companyName = (company) => company.company_name || company.name || company.company_slug || company.slug || 'Sin empresa'
 const SIDE_CONCEPT_CODE = 'guarniciones'
@@ -31,8 +31,8 @@ const buildPreviewRows = ({ rows, companies }) =>
   })
 
 export default function TotalizerPage() {
-  const [fromDate, setFromDate] = useState(todayISO())
-  const [toDate, setToDate] = useState(todayISO())
+  const [fromDate, setFromDate] = useState(getTodayISOInTimeZone())
+  const [toDate, setToDate] = useState(getTodayISOInTimeZone())
   const [service, setService] = useState('all')
   const [rows, setRows] = useState([])
   const [companies, setCompanies] = useState([])
