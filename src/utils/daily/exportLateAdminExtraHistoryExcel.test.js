@@ -62,4 +62,27 @@ describe('late admin extra history Excel', () => {
     expect(details.getCell('L2').value).toBe('Duplicado')
     expect(details.getCell('A1').font).toMatchObject({ name: 'Calibri', bold: true })
   })
+
+  it('does not revive zero quantity items in historical detail', async () => {
+    const workbook = await buildLateAdminExtraHistoryWorkbook({
+      operationalDate: '2026-09-11',
+      rows: [{
+        id: 'history-zero',
+        operational_date: '2026-09-11',
+        created_at: '2026-09-11T13:00:00.000Z',
+        company_name: 'Greif',
+        total_items: 2,
+        detail: {
+          items: [
+            { quantity: 0, name: 'Opción eliminada' },
+            { quantity: 2, name: 'Menú principal' }
+          ]
+        }
+      }]
+    })
+
+    const detail = workbook.getWorksheet('Pedidos extra').getCell('F2').value
+    expect(detail).toContain('2 x Menú principal')
+    expect(detail).not.toContain('Opción eliminada')
+  })
 })
