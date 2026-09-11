@@ -174,7 +174,7 @@ const OrderDetails = ({ user, loading }) => {
       title: isAdmin ? 'Eliminar pedido' : 'Cancelar pedido',
       message: isAdmin
         ? 'Esta acción elimina el pedido por completo.'
-        : 'El pedido quedará archivado para conservar el historial.',
+        : 'Esta acción cancela y elimina el pedido. No quedará archivado.',
       confirmText: isAdmin ? 'Eliminar' : 'Cancelar pedido'
     })
     if (!confirmed) return
@@ -207,12 +207,8 @@ const OrderDetails = ({ user, loading }) => {
         notifyError(`No se pudo cancelar el pedido. Verificá que siga pendiente y dentro de los primeros ${EDIT_WINDOW_MINUTES} minutos.`)
         return
       }
-      notifySuccess(isAdmin ? 'Pedido cancelado.' : 'Pedido cancelado.')
-      if (isAdmin) {
-        navigate('/dashboard', { replace: true })
-      } else {
-        setOrder((prev) => prev ? { ...prev, status: 'archived' } : prev)
-      }
+      notifySuccess('Pedido cancelado.')
+      navigate('/dashboard', { replace: true })
     } catch (error) {
       notifyError(getUserFriendlyErrorMessage(error))
     } finally {
