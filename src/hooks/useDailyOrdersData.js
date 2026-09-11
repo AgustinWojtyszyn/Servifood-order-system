@@ -168,16 +168,36 @@ export const useDailyOrdersData = (user) => {
 
   useEffect(() => {
     if (!user?.id || !hasAdminAccess) return
-    if (hasAdminAccess) {
-      fetchDailyOrders()
 
-      const interval = setInterval(() => {
-        fetchDailyOrders(true)
-      }, 30000)
+    fetchDailyOrders()
 
-      return () => clearInterval(interval)
+    const liveOperationalDate = getTomorrowISOInTimeZone()
+    if (operationalDate !== liveOperationalDate) return
+
+    const refreshIfVisible = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      fetchDailyOrders(true, operationalDate)
     }
-  }, [hasAdminAccess, user, fetchDailyOrders])
+
+    const interval = setInterval(refreshIfVisible, 30000)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshIfVisible()
+      }
+    }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+    }
+
+    return () => {
+      clearInterval(interval)
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
+    }
+  }, [hasAdminAccess, operationalDate, user?.id, fetchDailyOrders])
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
