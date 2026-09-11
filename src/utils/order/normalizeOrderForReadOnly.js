@@ -17,8 +17,15 @@ const safeParseArray = (value) => {
   return []
 }
 
+const hasPositiveOrMissingQuantity = (item = {}) => {
+  const rawQuantity = item?.quantity ?? item?.qty ?? item?.count
+  if (rawQuantity === undefined || rawQuantity === null || rawQuantity === '') return true
+  const quantity = Number(rawQuantity)
+  return !Number.isFinite(quantity) || quantity > 0
+}
+
 const normalizeOrderForReadOnly = (order = {}) => {
-  const parsedItems = safeParseArray(order?.items)
+  const parsedItems = safeParseArray(order?.items).filter(hasPositiveOrMissingQuantity)
   const isAdminExtra = String(order?.order_origin || '').toLowerCase() === 'admin_extra' ||
     Boolean(order?.created_by_admin_id || order?.admin_extra_created_at)
   const normalizedItems = isAdminExtra
