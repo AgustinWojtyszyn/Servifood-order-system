@@ -23,11 +23,17 @@ describe('useDailyOrdersData daily orders loading', () => {
     expect(source).not.toContain('Solicitado por admin')
   })
 
-  it('changes the selected delivery date and reloads through the filtered loader', () => {
+  it('changes the selected delivery date through the unfiltered historical view', () => {
     expect(source).toContain('handleDeliveryDateChange')
     expect(source).toContain('setOperationalDate(nextDate)')
     expect(source).toContain('deliveryDate = operationalDate')
-    expect(dailyOrdersSource).toContain('onDeliveryDateChange={handleDeliveryDateChange}')
+    expect(dailyOrdersSource).toContain('const handleOperationalDateChange = (nextDate) => {')
+    expect(dailyOrdersSource).toContain("setSelectedLocation('all')")
+    expect(dailyOrdersSource).toContain("setSelectedStatus('all')")
+    expect(dailyOrdersSource).toContain("setSelectedDish('all')")
+    expect(dailyOrdersSource).toContain("setSelectedSide('all')")
+    expect(dailyOrdersSource).toContain('handleDeliveryDateChange(nextDate)')
+    expect(dailyOrdersSource).toContain('onDeliveryDateChange={handleOperationalDateChange}')
     expect(dailyHeaderSource).toContain('onDeliveryDateChange(event.target.value)')
   })
 
