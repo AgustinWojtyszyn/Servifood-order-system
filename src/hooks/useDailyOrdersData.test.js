@@ -41,6 +41,17 @@ describe('useDailyOrdersData daily orders loading', () => {
     expect(source).toContain('await fetchDailyOrders(false, operationalDate)')
   })
 
+  it('keeps the newest date request authoritative when loads overlap', () => {
+    expect(source).toContain('const requestSequenceRef = useRef(0)')
+    expect(source).toContain('const requestId = ++requestSequenceRef.current')
+    expect(source).toContain('const isLatestRequest = () => requestId === requestSequenceRef.current')
+    expect(source.match(/if \(!isLatestRequest\(\)\) return \[\]/g)?.length).toBeGreaterThanOrEqual(3)
+    expect(source).toContain('fetchDailyReportRunStatus(nextOperationalDate, requestId)')
+    expect(source).toContain('requestId === null || requestId === requestSequenceRef.current')
+    expect(source).toContain('loadingRequestRef.current === requestId')
+    expect(source).not.toContain('isFetchingRef')
+  })
+
   it('polls only the live operational date and pauses while the tab is hidden', () => {
     const historicalGuard = source.indexOf('if (operationalDate !== liveOperationalDate) return')
     const intervalSetup = source.indexOf('const interval = setInterval(refreshIfVisible, 30000)')
