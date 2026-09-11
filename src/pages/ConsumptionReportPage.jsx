@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download, RefreshCw, Search, X } from 'lucide-react'
 import { useAuthContext } from '../contexts/authContextValue'
 import { getCompanyConsumptionOrders } from '../services/consumptionReportService'
+import { usersService } from '../services/users'
 import {
   buildConsumptionReportModel,
   getConsumptionQuantity,
@@ -34,6 +35,7 @@ const ConsumptionReportPage = () => {
   const [year, setYear] = useState(INITIAL_YEAR)
   const [month, setMonth] = useState(INITIAL_MONTH)
   const [orders, setOrders] = useState([])
+  const [authorizedCompanies, setAuthorizedCompanies] = useState([])
   const [companyFilter, setCompanyFilter] = useState('all')
   const [locationFilter, setLocationFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -46,7 +48,16 @@ const ConsumptionReportPage = () => {
     const reportDates = getMonthDates(year, month)
     setLoading(true)
     setError('')
-    const result = await getCompanyConsumptionOrders({ startDate: reportDates[0], endDate: reportDates.at(-1) })
+
+    const [result, accessResult] = await Promise.all([
+      getCompanyConsumptionOrders({ startDate: reportDates[0], endDate: reportDates.at(-1) }),
+      usersService.getAdminAccessContext()
+    ])
+
+    if (!accessResult?.error && Array.isArray(accessResult?.data?.consumption_report_companies)) {
+      setAuthorizedCompanies(accessResult.data.consumption_report_companies)
+    }
+
     if (result.error) {
       setOrders([])
       setError('No se pudo cargar el reporte de consumo.')
@@ -62,15 +73,24 @@ const ConsumptionReportPage = () => {
 
   const companyOptions = useMemo(() => {
     const bySlug = new Map()
+
+    authorizedCompanies.forEach((company) => {
+      const slug = String(company?.slug || '').trim()
+      if (!slug) return
+      const name = String(company?.name || slug).trim() || slug
+      bySlug.set(slug, name)
+    })
+
     orders.forEach((order) => {
       const slug = resolveConsumptionCompanySlug(order)
       if (!slug) return
       if (!bySlug.has(slug)) bySlug.set(slug, getCompanyLabel(order, slug))
     })
+
     return [...bySlug.entries()]
       .map(([slug, name]) => ({ slug, name }))
       .sort((a, b) => a.name.localeCompare(b.name, 'es'))
-  }, [orders])
+  }, [authorizedCompanies, orders])
 
   useEffect(() => {
     if (companyFilter !== 'all' && !companyOptions.some((company) => company.slug === companyFilter)) {
