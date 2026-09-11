@@ -9,8 +9,7 @@ export const useOrders = (userId = null, options = {}) => {
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
-    archived: 0,
-    cancelled: 0
+    archived: 0
   })
 
   const {
