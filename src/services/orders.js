@@ -1,4 +1,5 @@
 import { db, supabase } from '../supabaseClient'
+import { buildSafeIlikeOrFilter } from './postgrestSearch'
 
 // Compatibility facade for the few legacy imports that still exist.
 // The canonical order service is createOrdersService, exposed through db.
@@ -146,12 +147,16 @@ const getOrderStats = async (userId = null, dateRange = null) => {
 }
 
 const searchOrders = async (searchTerm, userId = null, { limit = 20, status = null } = {}) => {
+  const filter = buildSafeIlikeOrFilter(searchTerm, ['customer_name', 'location', 'comments'])
+  if (!filter) return { data: [], error: null }
+
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100)
   let query = supabase
     .from('orders')
     .select(ORDER_USER_SELECT)
-    .or(`customer_name.ilike.%${searchTerm}%,location.ilike.%${searchTerm}%,comments.ilike.%${searchTerm}%`)
+    .or(filter)
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .limit(safeLimit)
 
   if (userId) query = query.eq('user_id', userId)
   if (status) query = query.eq('status', status)
