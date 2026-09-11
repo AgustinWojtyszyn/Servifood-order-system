@@ -5,6 +5,7 @@ import {
 import { getAdminExtraOrderLabel, isAdminExtraOrder, resolveAdminExtraCreator } from './adminExtraOrders'
 import { getStatusText } from './dailyOrderFormatters'
 import { notifyError, notifyInfo } from '../notice'
+import { getTodayISOInTimeZone } from '../dateUtils'
 
 const formatDeliveryDateLabel = (value) => {
   if (!value) return 'Sin fecha de entrega'
@@ -41,7 +42,7 @@ export function exportDailyOrdersPdf(sortedOrders) {
     return
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayISOInTimeZone()
   const deliveryDateLabel = getExportDeliveryDateLabel(sortedOrders)
   const { turnCounts, byLocationTurn } = buildTurnSummary(sortedOrders)
   const rowsHtml = sortedOrders.map(order => {
@@ -101,7 +102,7 @@ export function exportDailyOrdersPdf(sortedOrders) {
               <tr>
                 <th>Turno</th>
                 <th>Pedidos</th>
-                <th>Items</th>
+                <th>Viandas</th>
               </tr>
             </thead>
             <tbody>
@@ -123,7 +124,7 @@ export function exportDailyOrdersPdf(sortedOrders) {
             </tbody>
           </table>
 
-          <h2>Empresas por turno</h2>
+          <h2>Viandas por empresa y turno</h2>
           <table>
             <thead>
               <tr>
