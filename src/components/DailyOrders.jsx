@@ -37,7 +37,7 @@ import { shareDailyOrdersWhatsApp } from '../utils/daily/shareDailyOrdersWhatsAp
 const DailyOrders = ({ user, loading }) => {
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [exportCompany, setExportCompany] = useState('all')
-  const [selectedStatus, setSelectedStatus] = useState('pending')
+  const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedDish, setSelectedDish] = useState('all')
   const [selectedSide, setSelectedSide] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
@@ -76,6 +76,15 @@ const DailyOrders = ({ user, loading }) => {
     discountingOrders,
     handleCreateOrderDiscount
   } = useDailyOrdersData(user)
+
+  const handleOperationalDateChange = (nextDate) => {
+    if (!nextDate || nextDate === operationalDate) return
+    setSelectedLocation('all')
+    setSelectedStatus('all')
+    setSelectedDish('all')
+    setSelectedSide('all')
+    handleDeliveryDateChange(nextDate)
+  }
 
   const {
     allOrders,
@@ -212,7 +221,7 @@ const DailyOrders = ({ user, loading }) => {
           activeLocationsCount={activeLocationsCount}
           tomorrowLabel={deliveryDateLabel}
           operationalDate={operationalDate}
-          onDeliveryDateChange={handleDeliveryDateChange}
+          onDeliveryDateChange={handleOperationalDateChange}
           exportCompany={exportCompany}
           onExportCompanyChange={setExportCompany}
           locations={locations}
@@ -244,7 +253,7 @@ const DailyOrders = ({ user, loading }) => {
           onCreated={(result) => {
             const nextDate = result?.delivery_date || result?.order?.delivery_date || result?.deliveryDate
             if (nextDate && nextDate !== operationalDate) {
-              handleDeliveryDateChange(nextDate)
+              handleOperationalDateChange(nextDate)
               return
             }
             handleRefresh()
@@ -348,7 +357,7 @@ const DailyOrders = ({ user, loading }) => {
             exportCompany={exportCompany}
             onExportCompanyChange={setExportCompany}
             companyOptions={remitoCompanyOptions}
-            onDeliveryDateChange={handleDeliveryDateChange}
+            onDeliveryDateChange={handleOperationalDateChange}
             onRefresh={handleRefresh}
           />
         )}
