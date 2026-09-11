@@ -139,8 +139,7 @@ const getOrderStats = async (userId = null, dateRange = null) => {
     data: {
       total: rows.length,
       pending: rows.filter(order => order.status === 'pending').length,
-      archived: rows.filter(order => order.status === 'archived').length,
-      cancelled: rows.filter(order => order.status === 'cancelled').length
+      archived: rows.filter(order => order.status === 'archived').length
     },
     error: null
   }
@@ -164,6 +163,10 @@ const searchOrders = async (searchTerm, userId = null, { limit = 20, status = nu
 const bulkUpdateStatus = async (orderIds, status) => {
   if (!Array.isArray(orderIds) || orderIds.length === 0) {
     return { data: null, error: new Error('Lista de IDs de pedidos requerida') }
+  }
+
+  if (String(status || '').toLowerCase() === 'cancelled') {
+    return { data: null, error: new Error('cancelled no es un estado persistente de orders') }
   }
 
   const { data, error } = await supabase
