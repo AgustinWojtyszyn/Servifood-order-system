@@ -38,15 +38,20 @@ export const useDailyOrdersData = (user) => {
     pending: 0,
     postReportExtra: 0
   })
-  const isFetchingRef = useRef(false)
+  const requestSequenceRef = useRef(0)
+  const loadingRequestRef = useRef(null)
   const hasAdminAccess = isGlobalAdmin || isCompanyAdmin
 
-  const fetchDailyReportRunStatus = useCallback(async (reportDate) => {
+  const fetchDailyReportRunStatus = useCallback(async (reportDate, requestId = null) => {
     if (!reportDate) return
+    const isCurrentRequest = () => requestId === null || requestId === requestSequenceRef.current
 
     try {
-      setReportRunError('')
+      if (isCurrentRequest()) {
+        setReportRunError('')
+      }
       const { data, error } = await db.getDailyReportRunStatus({ reportDate })
+      if (!isCurrentRequest()) return
       if (error) {
         console.error('Error fetching daily report run status:', error)
         setReportRun(null)
@@ -55,6 +60,7 @@ export const useDailyOrdersData = (user) => {
       }
       setReportRun(data || null)
     } catch (err) {
+      if (!isCurrentRequest()) return
       console.error('Error fetching daily report run status:', err)
       setReportRun(null)
       setReportRunError('No se pudo consultar el estado del reporte automático.')
@@ -62,20 +68,24 @@ export const useDailyOrdersData = (user) => {
   }, [])
 
   const fetchDailyOrders = useCallback(async (silent = false, deliveryDate = operationalDate) => {
-    if (!user?.id) return
-    if (isFetchingRef.current) return
-    isFetchingRef.current = true
+    if (!user?.id) return []
+
+    const requestId = ++requestSequenceRef.current
+    const isLatestRequest = () => requestId === requestSequenceRef.current
+    const nextOperationalDate = deliveryDate || getTomorrowISOInTimeZone()
+
+    if (!silent) {
+      loadingRequestRef.current = requestId
+      setOrdersLoading(true)
+    }
+
     try {
-      if (!silent) {
-        setOrdersLoading(true)
-      }
-
-      const nextOperationalDate = deliveryDate || getTomorrowISOInTimeZone()
-
       const { data: ordersData, error } = await db.getDailyOrdersForAdmin({
         deliveryDate: nextOperationalDate,
         statuses: ['pending', 'archived', 'post_report_extra']
       })
+
+      if (!isLatestRequest()) return []
 
       if (error) {
         console.error('Error fetching orders:', error)
@@ -86,7 +96,6 @@ export const useDailyOrdersData = (user) => {
         }
         setOrdersError('No se pudieron cargar los pedidos diarios. Usá Actualizar para reintentar.')
       } else {
-        setOrdersError('')
         let peopleData = []
         try {
           const peopleResult = await db.getAdminPeopleUnified()
@@ -96,6 +105,9 @@ export const useDailyOrdersData = (user) => {
             console.warn('[daily-orders] No se pudo enriquecer personas:', peopleError)
           }
         }
+
+        if (!isLatestRequest()) return []
+
         const personById = new Map()
         ;(Array.isArray(peopleData) ? peopleData : []).forEach((person) => {
           ;[person?.person_id, person?.id, person?.primary_user_id, ...(Array.isArray(person?.user_ids) ? person.user_ids : [])]
@@ -142,14 +154,18 @@ export const useDailyOrdersData = (user) => {
           }
         }).filter(Boolean) : []
 
+        if (!isLatestRequest()) return []
+
+        setOrdersError('')
         setOrders(todayOrders)
         setAvailableDishes(Array.from(dishesSet).sort())
         setStats(calculateStats(todayOrders))
         setLastUpdatedAt(new Date().toISOString())
-        await fetchDailyReportRunStatus(nextOperationalDate)
+        await fetchDailyReportRunStatus(nextOperationalDate, requestId)
         return todayOrders
       }
     } catch (err) {
+      if (!isLatestRequest()) return []
       console.error('Error:', err)
       if (!silent) {
         setOrders([])
@@ -158,8 +174,8 @@ export const useDailyOrdersData = (user) => {
       }
       setOrdersError('No se pudieron cargar los pedidos diarios. Usá Actualizar para reintentar.')
     } finally {
-      isFetchingRef.current = false
-      if (!silent) {
+      if (!silent && loadingRequestRef.current === requestId) {
+        loadingRequestRef.current = null
         setOrdersLoading(false)
       }
     }
