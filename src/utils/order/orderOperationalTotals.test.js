@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_BEVERAGE_LABEL,
   DEFAULT_DESSERT_LABEL,
+  getItemOperationalQuantity,
   getOrderBeverageBreakdown,
   getOrderDessertBreakdown,
   getOrderMenuBreakdown,
@@ -30,6 +31,22 @@ describe('orderOperationalTotals', () => {
     expect(getOrderMenuTotal(order)).toBe(10)
     expect(getOrderBeverageBreakdown(order)).toEqual([{ label: DEFAULT_BEVERAGE_LABEL, quantity: 10 }])
     expect(getOrderDessertBreakdown(order)).toEqual([{ label: DEFAULT_DESSERT_LABEL, quantity: 10 }])
+  })
+
+  it('respeta quantity 0 y mantiene el fallback 1 solo cuando falta la cantidad', () => {
+    expect(getItemOperationalQuantity({ name: 'Opción 1', quantity: 0 })).toBe(0)
+    expect(getItemOperationalQuantity({ name: 'Opción 1', quantity: '0' })).toBe(0)
+    expect(getItemOperationalQuantity({ name: 'Opción 1' })).toBe(1)
+
+    const order = baseOrder({
+      total_items: 0,
+      items: [{ name: 'Opción 1', quantity: 0 }]
+    })
+
+    expect(getOrderMenuBreakdown(order)).toEqual([])
+    expect(getOrderMenuTotal(order)).toBe(0)
+    expect(getOrderBeverageBreakdown(order)).toEqual([])
+    expect(getOrderDessertBreakdown(order)).toEqual([])
   })
 
   it('reconcilia una opcion unica de Genneia contra total_items para que la suma cierre exacta', () => {
