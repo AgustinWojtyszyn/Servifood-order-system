@@ -1,4 +1,5 @@
 import { loadExcelJS } from '../loadExcelJS'
+import { getItemOperationalQuantity } from '../order/orderOperationalTotals'
 import { downloadWorkbook } from './dailyOrderCalculations'
 
 const HEADER_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF111827' } }
@@ -61,8 +62,9 @@ const getItemsDetail = (row = {}) => {
   const itemText = items
     .map((item) => {
       if (!item || typeof item !== 'object') return ''
+      const quantity = getItemOperationalQuantity(item)
+      if (quantity <= 0) return ''
       const name = item.name || item.label || item.title || 'Ítem'
-      const quantity = item.quantity || item.qty || item.count || 1
       return `${quantity} x ${name}`
     })
     .filter(Boolean)
