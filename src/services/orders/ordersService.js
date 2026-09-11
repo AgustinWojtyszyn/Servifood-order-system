@@ -121,20 +121,6 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
     archiveAllPendingOrders: archivePendingOrdersByDeliveryDate,
     getDailyReportRunStatus,
 
-    // "Eliminar" pendientes: se cancelan para conservarlos en el histórico (panel mensual)
-    deleteAllPendingOrders: async ({ deliveryDate } = {}) => {
-      if (!deliveryDate) {
-        return { data: null, error: new Error('deliveryDate es requerido para cancelar pedidos pendientes') }
-      }
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('status', 'pending')
-        .eq('delivery_date', deliveryDate)
-        .select('id')
-      return { data, error }
-    },
-
     // Marcar todos los pedidos pendientes de días anteriores como archivados
     completeAllOldPendingOrders: async () => {
       const { data, error } = await supabase
@@ -142,17 +128,6 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
         .update({ status: 'archived', archived_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('status', 'pending')
         .lt('delivery_date', new Date().toISOString().slice(0, 10))
-      return { data, error }
-    },
-
-    // Marcar pedidos pendientes de días anteriores como cancelados (no borrar)
-    cancelPreviousDaysPendingOrders: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('status', 'pending')
-        .lt('delivery_date', new Date().toISOString().slice(0, 10))
-        .select('id') // devuelve ids para confirmar que se actualizaron
       return { data, error }
     },
 
