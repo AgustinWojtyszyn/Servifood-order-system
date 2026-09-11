@@ -4,6 +4,7 @@ import { getCompanyByLocationOrSlug } from '../../constants/companyConfig'
 import { getSideSummaryForOrder } from './dailyOrderSideAssociations'
 import { normalizeOrderForReadOnly } from '../order/normalizeOrderForReadOnly'
 import {
+  getItemOperationalQuantity,
   getOrderBeverageBreakdown,
   getOrderDessertBreakdown,
   getOrderMenuTotal,
@@ -176,14 +177,15 @@ export const getOrderBeverageLabels = (order = {}) => {
 
 export const summarizeOrderItems = (items = []) => {
   if (!Array.isArray(items)) return { principalCount: 0, others: [], remaining: 0, title: '' }
-  const principal = items.filter(
+  const activeItems = items.filter((item) => getItemOperationalQuantity(item) > 0)
+  const principal = activeItems.filter(
     item => item && item.name && item.name.toLowerCase().includes('menú principal')
   )
-  const others = items
+  const others = activeItems
     .filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'))
-    .map(item => ({ name: normalizeDishName(item.name), qty: item.quantity || 1 }))
+    .map(item => ({ name: normalizeDishName(item.name), qty: getItemOperationalQuantity(item) }))
 
-  const principalCount = principal.reduce((sum, item) => sum + (item.quantity || 1), 0)
+  const principalCount = principal.reduce((sum, item) => sum + getItemOperationalQuantity(item), 0)
   const displayedOthers = others.slice(0, 3)
   const remaining = Math.max(others.length - displayedOthers.length, 0)
 
@@ -203,17 +205,18 @@ export const buildOrderPreview = (order) => {
   const items = []
   const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(order)
   if (Array.isArray(normalizedItems)) {
-    const principal = normalizedItems.filter(
+    const activeItems = normalizedItems.filter((item) => getItemOperationalQuantity(item) > 0)
+    const principal = activeItems.filter(
       item => item && item.name && item.name.toLowerCase().includes('menú principal')
     )
-    const others = normalizedItems.filter(
+    const others = activeItems.filter(
       item => item && item.name && !item.name.toLowerCase().includes('menú principal')
     )
     if (principal.length > 0) {
-      const totalPrincipal = principal.reduce((sum, i) => sum + (i.quantity || 1), 0)
+      const totalPrincipal = principal.reduce((sum, i) => sum + getItemOperationalQuantity(i), 0)
       items.push(`Plato Principal: ${totalPrincipal}`)
     }
-    others.forEach(i => items.push(`${normalizeDishName(i.name)} (x${i.quantity || 1})`))
+    others.forEach(i => items.push(`${normalizeDishName(i.name)} (x${getItemOperationalQuantity(i)})`))
   }
 
   const customSide = getSideSummaryForOrder(order).summaryText ||
@@ -283,7 +286,7 @@ export const buildTurnSummary = (ordersList = []) => {
     const loc = order.location || 'Sin ubicación'
 
     const units = getOperationalOrderUnits(order)
-    turnCounts[turn].orders += units
+    turnCounts[turn].orders += 1
     turnCounts[turn].items += units
 
     if (!byLocationTurn[loc]) byLocationTurn[loc] = { lunch: 0, dinner: 0, total: 0 }
@@ -306,7 +309,7 @@ export const buildOperationalSummary = (ordersList = []) => {
     operational.menuBreakdown.forEach(item => {
       if (!item?.label) return
       const normalizedName = normalizeDishName(item.label)
-      dishCounts[normalizedName] = (dishCounts[normalizedName] || 0) + (item.quantity || 1)
+      dishCounts[normalizedName] = (dishCounts[normalizedName] || 0) + Number(item.quantity || 0)
     })
 
     const sideSummary = getSideSummaryForOrder(order)
@@ -350,7 +353,7 @@ export const buildLocationCards = (ordersList = []) => {
       if (!item?.label) return
       const normalizedName = normalizeDishName(item.label)
       byLocation[loc].dishCounts[normalizedName] =
-        (byLocation[loc].dishCounts[normalizedName] || 0) + (item.quantity || 1)
+        (byLocation[loc].dishCounts[normalizedName] || 0) + Number(item.quantity || 0)
     })
 
     const sideSummary = getSideSummaryForOrder(order)
@@ -390,7 +393,7 @@ export const buildPrintStats = (ordersList = []) => {
     const turn = (order.service || 'lunch') === 'dinner' ? 'dinner' : 'lunch'
 
     const units = getOperationalOrderUnits(order)
-    turnCounts[turn].orders += units
+    turnCounts[turn].orders += 1
     turnCounts[turn].items += units
 
     const loc = order.location || 'Sin ubicación'
@@ -446,7 +449,7 @@ export const calculateStats = (ordersData = []) => {
         if (!byDish[normalizedName]) {
           byDish[normalizedName] = 0
         }
-        byDish[normalizedName] += item.quantity || 1
+        byDish[normalizedName] += Number(item.quantity || 0)
       }
     })
 
