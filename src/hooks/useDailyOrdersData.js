@@ -3,6 +3,7 @@ import { db } from '../supabaseClient'
 import { useAuthContext } from '../contexts/authContextValue'
 import { Sound } from '../utils/Sound'
 import { calculateStats, getOperationalOrderUnits } from '../utils/daily/dailyOrderCalculations'
+import { getItemOperationalQuantity } from '../utils/order/orderOperationalTotals'
 import { notifyError, notifyInfo, notifySuccess } from '../utils/notice'
 import { confirmAction } from '../utils/confirm'
 import { getTomorrowISOInTimeZone } from '../utils/dateUtils'
@@ -136,7 +137,12 @@ export const useDailyOrdersData = (user) => {
 
           if (Array.isArray(order.items)) {
             order.items.forEach(item => {
-              if (item && typeof item === 'object' && item.name !== undefined) {
+              if (
+                item &&
+                typeof item === 'object' &&
+                item.name !== undefined &&
+                getItemOperationalQuantity(item) > 0
+              ) {
                 dishesSet.add(item.name)
               }
             })
@@ -254,12 +260,12 @@ export const useDailyOrdersData = (user) => {
   }, [handleRefresh])
 
   const handleArchiveAllPending = useCallback(async () => {
-    const pendingCount = (Array.isArray(orders) ? orders : []).reduce((sum, order) => (
+    const pendingOrders = (Array.isArray(orders) ? orders : []).filter((order) => (
       String(order?.status || '').toLowerCase() === 'pending' &&
       String(order?.delivery_date || '') === operationalDate
-        ? sum + getOperationalOrderUnits(order)
-        : sum
-    ), 0)
+    ))
+    const pendingCount = pendingOrders.length
+    const pendingUnits = pendingOrders.reduce((sum, order) => sum + getOperationalOrderUnits(order), 0)
 
     if (pendingCount === 0) {
       notifyInfo('No hay pedidos pendientes para archivar.')
@@ -268,7 +274,7 @@ export const useDailyOrdersData = (user) => {
 
     const confirmed = await confirmAction({
       title: 'Archivar todos los pedidos pendientes',
-      message: `Se archivarán ${pendingCount} pedido${pendingCount === 1 ? '' : 's'} pendiente${pendingCount === 1 ? '' : 's'} con fecha de entrega ${operationalDate}. Esta acción no se puede deshacer.`,
+      message: `Se archivarán ${pendingCount} pedido${pendingCount === 1 ? '' : 's'} pendiente${pendingCount === 1 ? '' : 's'} (${pendingUnits} vianda${pendingUnits === 1 ? '' : 's'}) con fecha de entrega ${operationalDate}. Esta acción no se puede deshacer.`,
       confirmText: 'Archivar todos'
     })
     if (confirmed) {
