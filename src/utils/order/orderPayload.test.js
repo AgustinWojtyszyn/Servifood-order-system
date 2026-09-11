@@ -233,6 +233,27 @@ describe('order idempotency', () => {
     expect(a).toBe(b)
   })
 
+  it('treats an explicit zero quantity as different from one', () => {
+    const zero = computePayloadSignature(
+      [{ id: 'menu-1', name: 'Menu', quantity: 0 }],
+      [],
+      '',
+      '2026-06-20',
+      'Base',
+      'lunch'
+    )
+    const one = computePayloadSignature(
+      [{ id: 'menu-1', name: 'Menu', quantity: 1 }],
+      [],
+      '',
+      '2026-06-20',
+      'Base',
+      'lunch'
+    )
+
+    expect(zero).not.toBe(one)
+  })
+
   it('scopes storage keys by user, location, service and signature', () => {
     const key = buildIdempotencyStorageKey(
       [{ id: 'menu-1' }],
