@@ -79,6 +79,17 @@ const normalizeLocationLookup = (value = '') =>
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ')
 
+const isMissingRpcError = (error, rpcName = '') => {
+  if (!error) return false
+  if (String(error.code || '').toUpperCase() === 'PGRST202') return true
+
+  const message = String(error.message || error.details || '').toLowerCase()
+  const normalizedRpcName = String(rpcName || '').toLowerCase()
+  return message.includes('could not find the function')
+    && message.includes('schema cache')
+    && (!normalizedRpcName || message.includes(normalizedRpcName))
+}
+
 export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {}) => {
   if (!supabase) {
     throw new Error('createOrdersService requires a supabase client')
@@ -551,7 +562,7 @@ export const createOrdersService = ({ supabase, invalidateCache = () => {} } = {
       const { data, error } = await supabase.rpc('cancel_own_pending_order', {
         order_id: orderId
       })
-      if (error && ['400', '404', 400, 404].includes(error?.status)) {
+      if (isMissingRpcError(error, 'cancel_own_pending_order')) {
         const fallback = await supabase
           .from('orders')
           .delete()
