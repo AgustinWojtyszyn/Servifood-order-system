@@ -75,7 +75,7 @@ describe('daily order calculations', () => {
     })
   })
 
-  it('no revive items con quantity 0 en resumen ni preview', () => {
+  it('no revive items con quantity 0 en resumen ni preview de extras', () => {
     const items = [
       { name: 'Menú principal', quantity: 0 },
       { name: 'Opción 1 - Pollo', quantity: 2 }
@@ -87,6 +87,8 @@ describe('daily order calculations', () => {
     })
 
     expect(buildOrderPreview({
+      order_origin: 'admin_extra',
+      total_items: 2,
       items,
       custom_responses: []
     }).itemsText).toBe('Opción 1 - Pollo (x2)')
