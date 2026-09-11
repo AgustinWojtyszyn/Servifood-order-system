@@ -1,5 +1,6 @@
 import { CAFETERIA_PLANS } from '../../cafeteria/cafeteriaPlans'
 import { downloadWorkbook } from '../daily/dailyOrderCalculations'
+import { getTodayISOInTimeZone } from '../dateUtils'
 import { loadExcelJS } from '../loadExcelJS'
 import { notifyError, notifyInfo, notifySuccess } from '../notice'
 
@@ -70,7 +71,7 @@ export async function exportCafeteriaOrdersExcel(orders = [], companyFilter = 'a
     ]
     ws.addRows(rows)
 
-    const stamp = new Date().toISOString().split('T')[0]
+    const stamp = getTodayISOInTimeZone()
     const companyTag = companyFilter === 'all' ? 'todas' : companyFilter.replace(/\s+/g, '_')
     const fileName = `cafeteria-${companyTag}-${stamp}.xlsx`
 
