@@ -1,3 +1,17 @@
+import {
+  addDaysToISO,
+  formatISODateFromParts,
+  getDatePartsInTimeZone,
+  getTodayISOInTimeZone
+} from '../dateUtils'
+
+const getOperationalDateKey = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return formatISODateFromParts(getDatePartsInTimeZone(date))
+}
+
 export const getLatestOrder = (orders = []) => {
   if (!Array.isArray(orders) || orders.length === 0) return null
   const valid = orders.filter(o => (o?.status || '').toLowerCase() !== 'cancelled')
@@ -7,17 +21,14 @@ export const getLatestOrder = (orders = []) => {
 
 export const findRepeatCandidate = (orders = [], buildOrderSignature) => {
   if (!Array.isArray(orders) || orders.length === 0) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const start = new Date(today)
-  start.setDate(start.getDate() - 2)
+  const todayKey = getTodayISOInTimeZone()
+  const startKey = addDaysToISO(todayKey, -2)
 
   const recent = orders.filter(order => {
     if (!order?.created_at) return false
     if ((order?.status || '').toLowerCase() === 'cancelled') return false
-    const date = new Date(order.created_at)
-    date.setHours(0, 0, 0, 0)
-    return date >= start && date <= today
+    const dayKey = getOperationalDateKey(order.created_at)
+    return Boolean(dayKey && dayKey >= startKey && dayKey <= todayKey)
   })
 
   if (recent.length < 3) return null
@@ -26,7 +37,8 @@ export const findRepeatCandidate = (orders = [], buildOrderSignature) => {
   recent.forEach(order => {
     const sig = buildOrderSignature(order)
     if (!sig) return
-    const dayKey = new Date(order.created_at).toISOString().split('T')[0]
+    const dayKey = getOperationalDateKey(order.created_at)
+    if (!dayKey) return
     if (!groups.has(sig)) {
       groups.set(sig, { days: new Set(), latest: order })
     }
