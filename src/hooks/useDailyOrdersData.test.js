@@ -23,6 +23,11 @@ describe('useDailyOrdersData daily orders loading', () => {
     expect(source).not.toContain('Solicitado por admin')
   })
 
+  it('excludes zero-quantity items from the dish selector', () => {
+    expect(source).toContain('getItemOperationalQuantity(item) > 0')
+    expect(source).toContain('dishesSet.add(item.name)')
+  })
+
   it('changes the selected delivery date through the unfiltered historical view', () => {
     expect(source).toContain('handleDeliveryDateChange')
     expect(source).toContain('setOperationalDate(nextDate)')
@@ -64,6 +69,13 @@ describe('useDailyOrdersData daily orders loading', () => {
     expect(source).toContain("document.removeEventListener('visibilitychange', handleVisibilityChange)")
     expect(source).toContain("if (document.visibilityState === 'visible')")
     expect(source).toContain('fetchDailyOrders(true, operationalDate)')
+  })
+
+  it('counts pending order rows separately from pending units before bulk archive', () => {
+    expect(source).toContain('const pendingOrders = (Array.isArray(orders) ? orders : []).filter')
+    expect(source).toContain('const pendingCount = pendingOrders.length')
+    expect(source).toContain('const pendingUnits = pendingOrders.reduce((sum, order) => sum + getOperationalOrderUnits(order), 0)')
+    expect(source).toContain('${pendingUnits} vianda${pendingUnits === 1 ? \'\' : \'s\'}')
   })
 
   it('routes the refresh button through the filtered daily orders loader', () => {
