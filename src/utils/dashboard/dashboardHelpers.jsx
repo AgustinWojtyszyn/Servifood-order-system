@@ -1,4 +1,5 @@
 import { Moon, Sun } from 'lucide-react'
+import { getItemOperationalQuantity } from '../order/orderOperationalTotals'
 
 const ensureArray = (value) => {
   if (Array.isArray(value)) return value
@@ -28,7 +29,7 @@ const getCustomSideFromResponses = (responses = []) => {
 
 // Resumen legible de items del pedido (similar a DailyOrders)
 const summarizeOrderItems = (items = []) => {
-  const itemsList = ensureArray(items)
+  const itemsList = ensureArray(items).filter((item) => getItemOperationalQuantity(item) > 0)
   if (itemsList.length === 0) {
     return { principalCount: 0, principal: [], principalRemaining: 0, others: [], remaining: 0, title: '' }
   }
@@ -36,12 +37,12 @@ const summarizeOrderItems = (items = []) => {
   const principalRaw = itemsList.filter(
     item => item && item.name && item.name.toLowerCase().includes('menú principal')
   )
-  const principal = principalRaw.map(item => ({ name: item.name, qty: item.quantity || 1 }))
+  const principal = principalRaw.map(item => ({ name: item.name, qty: getItemOperationalQuantity(item) }))
   const others = itemsList
     .filter(item => item && item.name && !item.name.toLowerCase().includes('menú principal'))
-    .map(item => ({ name: item.name, qty: item.quantity || 1 }))
+    .map(item => ({ name: item.name, qty: getItemOperationalQuantity(item) }))
 
-  const principalCount = principal.reduce((sum, item) => sum + (item.qty || 1), 0)
+  const principalCount = principal.reduce((sum, item) => sum + item.qty, 0)
   const displayedPrincipal = principal.slice(0, 2)
   const principalRemaining = Math.max(principal.length - displayedPrincipal.length, 0)
   const displayedOthers = others.slice(0, 3)
@@ -134,7 +135,7 @@ const getStatusBadgeClass = (status = 'pending') => {
 }
 
 const getMainMenuLabel = (order) => {
-  const items = ensureArray(order?.items)
+  const items = ensureArray(order?.items).filter((item) => getItemOperationalQuantity(item) > 0)
   const mainItem = items.find((item) => {
     const name = (item?.name || '').toLowerCase()
     return name.includes('menú principal') || name.includes('menu principal') || name.includes('plato principal')
@@ -153,11 +154,11 @@ const formatHeaderStatus = (status = 'pending') => {
 }
 
 const buildItemsSummary = (items) => {
-  const list = ensureArray(items)
+  const list = ensureArray(items).filter((item) => getItemOperationalQuantity(item) > 0)
   if (list.length === 0) return 'Sin items'
   const displayItems = list.slice(0, 4).map((item) => {
     const name = item?.name || 'Item'
-    const qty = item?.quantity || 1
+    const qty = getItemOperationalQuantity(item)
     return `${name} x${qty}`
   })
   const remaining = list.length - displayItems.length
