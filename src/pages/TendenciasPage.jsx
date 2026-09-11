@@ -7,14 +7,19 @@ import TrendsFilters from '../components/analytics/TrendsFilters'
 import TrendsSummaryCards from '../components/analytics/TrendsSummaryCards'
 import TrendsCharts, { RankingComparisonText } from '../components/analytics/TrendsCharts'
 import { buildRankingComparisonItems, COMPARISON_MODES, getComparisonRange } from '../utils/analytics/trendsHelpers'
+import { getTodayISOInTimeZone } from '../utils/dateUtils'
 import { loadExcelJS } from '../utils/loadExcelJS'
 
 const getDefaultRange = () => {
-  const now = new Date()
-  const start = new Date(now)
-  start.setMonth(start.getMonth() - 1)
-  const format = (d) => d.toISOString().slice(0, 10)
-  return { start: format(start), end: format(now) }
+  const end = getTodayISOInTimeZone()
+  const [year, month, day] = end.split('-').map(Number)
+  const startDate = new Date(Date.UTC(year, month - 2, day))
+  const start = [
+    startDate.getUTCFullYear(),
+    String(startDate.getUTCMonth() + 1).padStart(2, '0'),
+    String(startDate.getUTCDate()).padStart(2, '0')
+  ].join('-')
+  return { start, end }
 }
 
 const TendenciasPage = () => {
