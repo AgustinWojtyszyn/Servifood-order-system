@@ -199,7 +199,7 @@ describe('orders canonical compatibility facade', () => {
     })
 
     expect(mockState.calls).toContainEqual(['select', '*, users(*)'])
-    expect(mockState.calls).toContainEqual(['or', 'customer_name.ilike.%historico%,location.ilike.%historico%,comments.ilike.%historico%'])
+    expect(mockState.calls).toContainEqual(['or', 'customer_name.ilike."%historico%",location.ilike."%historico%",comments.ilike."%historico%"'])
     expect(mockState.calls).toContainEqual(['eq', 'status', 'archived'])
     expect(mockState.calls).toContainEqual(['limit', 10])
     expect(result.data).toHaveLength(1)
