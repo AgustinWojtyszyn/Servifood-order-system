@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { COUNTABLE_STATUSES } from '../../utils/monthly/monthlyOrderConstants'
 import { toDisplayString } from '../../utils/monthly/monthlyOrderFormatters'
 import { normalizeOrderForReadOnly } from '../../utils/order/normalizeOrderForReadOnly'
+import { getItemOperationalQuantity } from '../../utils/order/orderOperationalTotals'
 import {
   addSideItem,
   buildDailyBreakdownFromOrdersByDay,
@@ -115,12 +116,14 @@ export const useMonthlyMetrics = ({ supabase, db, pushLog }) => {
           const { normalizedItems, normalizedCustomResponses } = normalizeOrderForReadOnly(p)
           const items = Array.isArray(normalizedItems) ? normalizedItems : []
           items.forEach(item => {
-            totalMenus += item.quantity || 1
+            const quantity = getItemOperationalQuantity(item)
+            if (quantity <= 0) return
+            totalMenus += quantity
             const nombre = (item.name || '').trim()
-            tiposMenus[nombre] = (tiposMenus[nombre] || 0) + (item.quantity || 1)
+            tiposMenus[nombre] = (tiposMenus[nombre] || 0) + quantity
             if (/^OPC(ION|IÓN)\s*\d+/i.test(nombre)) {
-              totalOpciones += item.quantity || 1
-              tiposOpciones[nombre] = (tiposOpciones[nombre] || 0) + (item.quantity || 1)
+              totalOpciones += quantity
+              tiposOpciones[nombre] = (tiposOpciones[nombre] || 0) + quantity
             }
           })
 
