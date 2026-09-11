@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { getCustomSideFromResponses } from '../utils/daily/dailyOrderCalculations'
+import { getItemOperationalQuantity } from '../utils/order/orderOperationalTotals'
 
 export const matchesDailyOrderStatusFilter = (order, selectedStatus) => {
   if (!order) return false
@@ -46,7 +47,13 @@ export const useDailyOrdersFilters = ({
       ? Array.isArray(statusFilteredOrders) ? statusFilteredOrders : []
       : Array.isArray(statusFilteredOrders) ? statusFilteredOrders.filter(order => {
         if (!order || !Array.isArray(order.items)) return false
-        return order.items.some(item => item && typeof item === 'object' && item.name !== undefined && item.name === selectedDish)
+        return order.items.some(item =>
+          item &&
+          typeof item === 'object' &&
+          item.name !== undefined &&
+          item.name === selectedDish &&
+          getItemOperationalQuantity(item) > 0
+        )
       }) : []
 
     if (selectedSide !== 'all') {
