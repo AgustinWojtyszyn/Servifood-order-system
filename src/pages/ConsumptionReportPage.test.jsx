@@ -21,13 +21,22 @@ describe('ConsumptionReportPage', () => {
     expect(source).toContain('Reporte de consumo por empresa')
   })
 
-  it('builds company filters dynamically from authorized report rows', () => {
-    expect(source).toContain('const companyOptions = useMemo')
-    expect(source).toContain('resolveConsumptionCompanySlug(order)')
+  it('builds company filters from the authorization context before falling back to report rows', () => {
+    expect(source).toContain('usersService.getAdminAccessContext()')
+    expect(source).toContain('consumption_report_companies')
+    expect(source).toContain('const [authorizedCompanies, setAuthorizedCompanies] = useState([])')
+    expect(source).toContain('authorizedCompanies.forEach((company) =>')
+    expect(source).toContain('orders.forEach((order) =>')
     expect(source).toContain('{companyOptions.map((company) =>')
     expect(source).toContain('Todas las autorizadas')
     expect(source).not.toContain('<option value="igarreta">')
     expect(source).not.toContain('<option value="isemar">')
+  })
+
+  it('does not clear known authorized companies when access-context refresh fails', () => {
+    expect(source).toContain("if (!accessResult?.error && Array.isArray(accessResult?.data?.consumption_report_companies))")
+    expect(source).toContain('setAuthorizedCompanies(accessResult.data.consumption_report_companies)')
+    expect(source).not.toContain('setAuthorizedCompanies([])')
   })
 
   it('filters locations generically after selecting a company', () => {
